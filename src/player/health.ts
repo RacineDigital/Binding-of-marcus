@@ -52,6 +52,12 @@ export class Health {
     }
     return added;
   }
+  /** A real red container, even for readers who can't normally hold red (the Blot's gift). */
+  growRedContainer(): boolean {
+    if (this.heartsCount() >= MAX_HEARTS) return false;
+    this.redMax += 2; this.red += 2;
+    return true;
+  }
   addBrass(n: number): void { this.brass = Math.min(6, this.brass + n); }
   addGilded(n: number): void { this.gilded = Math.min(this.redMax / 2, this.gilded + n); }
 

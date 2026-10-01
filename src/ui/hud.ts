@@ -21,33 +21,12 @@ import { ticketFor, doorOdds } from '../game/bargain';
 import { diceFace } from '../items/data/dice';
 import { bindLabel, fmtKeys } from '../core/input';
 import { charById } from '../player/characters';
+import { mapIcon } from '../art/roomicons';
+
+/** The Blot's heart: pop in, beat, fly to the hearts (seconds). */
+const GIFT_POP = 0.45, GIFT_HOLD = 1.7, GIFT_FLY_END = 2.3;
 
 interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null }
-
-let mapIcons: Record<string, HTMLCanvasElement> | null = null;
-function icons(): Record<string, HTMLCanvasElement> {
-  if (mapIcons) return mapIcons;
-  const mk = (fn: (p: PixelArt) => void) => { const p = new PixelArt(7, 7); fn(p); return p.toCanvas(); };
-  mapIcons = {
-    treasure: mk((p) => { p.poly([0.5, 5.5, 0.5, 1.5, 2, 3.5, 3.5, 0.5, 5, 3.5, 6.5, 1.5, 6.5, 5.5], '#f0c850'); }),
-    boss: mk((p) => { p.ball(3.5, 3, 3, 2.8, ramp('#e8e0d0')); p.set(2, 3, '#1a0a0a'); p.set(4, 3, '#1a0a0a'); p.rect(2, 5, 3, 1, '#e8e0d0'); }),
-    shop: mk((p) => { p.ball(3.5, 3.5, 3, 3, ramp('#c89a4a')); p.set(3, 3, '#3a2a1a'); p.set(4, 4, '#3a2a1a'); }),
-    secret: mk((p) => { p.rect(2, 1, 3, 1, '#c8c0b0'); p.set(5, 2, '#c8c0b0'); p.set(4, 3, '#c8c0b0'); p.set(3, 4, '#c8c0b0'); p.set(3, 6, '#c8c0b0'); }),
-    supersecret: mk((p) => { p.rect(2, 1, 3, 1, '#b0a0ff'); p.set(5, 2, '#b0a0ff'); p.set(4, 3, '#b0a0ff'); p.set(3, 4, '#b0a0ff'); p.set(3, 6, '#b0a0ff'); }),
-    challenge: mk((p) => { p.line(0, 0, 6, 6, '#d8d8e0'); p.line(6, 0, 0, 6, '#d8d8e0'); }),
-    sacrifice: mk((p) => { p.line(1, 6, 5, 0, '#e0e0e8'); p.set(5, 0, '#c83a4a'); p.rect(1, 5, 5, 1, '#8a2a3a'); }),
-    arcade: mk((p) => { p.rect(1, 1, 5, 5, '#e8e0d0'); p.set(2, 2, '#1a1010'); p.set(4, 4, '#1a1010'); p.set(3, 3, '#1a1010'); }),
-    cursed: mk((p) => { p.poly([3.5, 0, 6.5, 6.5, 0.5, 6.5], '#8a2a2a'); p.set(3, 3, '#ffb0b0'); p.set(3, 5, '#ffb0b0'); }),
-    library: mk((p) => { p.rect(1, 1, 5, 5, '#6a3a2a'); p.rect(2, 2, 3, 3, '#e8dcc0'); }),
-    miniboss: mk((p) => { p.line(1, 0, 1, 5, '#e0d0b0'); p.line(3, 0, 3, 6, '#e0d0b0'); p.line(5, 0, 5, 5, '#e0d0b0'); }),
-    event: mk((p) => { p.rect(3, 0, 1, 4, '#8ad0c0'); p.set(3, 6, '#8ad0c0'); }),
-    deal: mk((p) => { p.ball(3.5, 4, 2.5, 2.6, ramp('#5a50c0')); p.set(3, 0, '#5a50c0'); p.set(3, 1, '#5a50c0'); }),
-    blessing: mk((p) => { p.rect(2, 2, 3, 5, '#f0e8d0'); p.set(3, 0, '#ffc050'); p.set(3, 1, '#ffc050'); }),
-    echo: mk((p) => { p.ball(3.5, 3, 2.5, 2.5, ramp('#c8e0ff')); p.rect(1, 3, 5, 3, '#c8e0ff'); p.set(1, 6, '#c8e0ff'); p.set(3, 6, '#c8e0ff'); p.set(5, 6, '#c8e0ff'); p.set(2, 3, '#1a2a3a'); p.set(4, 3, '#1a2a3a'); }),
-    lostfound: mk((p) => { p.rect(1, 2, 5, 4, '#efe2c0'); p.set(2, 3, '#8a3a2a'); p.rect(4, 3, 1, 1, '#5a4a32'); p.line(3, 0, 3, 1, '#c8b890'); }),
-  };
-  return mapIcons;
-}
 
 /** 8x8 stat icons drawn from character maps (palette letters below). */
 const STAT_ICON_MAPS: Record<string, string[]> = {
@@ -168,6 +147,9 @@ export class Hud {
   /** A transformation: its name, big, in the middle of the screen. */
   tcard: { name: string; desc: string; t: number } | null = null;
   transformCard(name: string, desc: string): void { this.tcard = { name, desc, t: 0 }; }
+  /** The Blot's heart: pops up mid-screen, beats, then flies to your hearts and becomes a red container. */
+  gift: { t: number; landed: boolean } | null = null;
+  giftHeart(): void { this.gift = { t: 0, landed: false }; this.w.audio.play('chime', { pitch: 0.8 }); this.w.audio.play('heal', { vol: 0.6 }); }
   showNote(title: string, body: string, by: string): void { this.note = { title, text: body, by, t: 0, dur: 3.5 + body.length * 0.03 }; }
 
   /** Speedrun-style run clock under the map. */
@@ -191,6 +173,14 @@ export class Hud {
     this.banners = this.banners.filter((b) => b.t < 3);
     if (this.note && (this.note.t += dt) > this.note.dur) this.note = null;
     if (this.tcard && (this.tcard.t += dt) > 3) this.tcard = null;
+    if (this.gift) {
+      const g = this.gift; g.t += dt;
+      if (!g.landed && g.t >= GIFT_FLY_END) {
+        g.landed = true;
+        if (this.w.player.health.growRedContainer()) { this.w.audio.play('waxHeart', { pitch: 0.7 }); this.toast('A red heart grows in the ink: +1 heart container', 2.4); }
+      }
+      if (g.t > GIFT_FLY_END + 0.6) this.gift = null;
+    }
     for (const t of this.toasts) t.t += dt;
     this.toasts = this.toasts.filter((t) => t.t < t.dur);
     this.floorCardT = Math.max(0, this.floorCardT - dt);
@@ -236,6 +226,7 @@ export class Hud {
     if (eid) this.drawEID(ctx); else this.drawItemPanel(ctx);
     this.drawBanners(ctx);
     this.drawTransformCard(ctx);
+    this.drawGift(ctx);
     this.drawNote(ctx);
     this.drawToasts(ctx);
     this.drawRoomName(ctx);
@@ -385,6 +376,32 @@ export class Hud {
 
   private heartsX(): number { return this.w.player.active ? 34 : 8; }
 
+  private drawGift(ctx: CanvasRenderingContext2D): void {
+    const g = this.gift; if (!g) return;
+    const S = pickupSprites().hud.red.canvas, t = g.t;
+    // where the new container will sit
+    const h = this.w.player.health, n = h.redMax / 2 + (g.landed ? -1 : 0);
+    const tx = this.heartsX() + (n % 6) * 11 + 5.5, ty = 6 + Math.floor(n / 6) * 10 + 5;
+    const cx = VIEW_W / 2, cy = VIEW_H / 2 - 18;
+    let x = cx, y = cy, sc: number, glow = 1;
+    if (t < GIFT_POP) sc = 7 * ease.outBack(t / GIFT_POP);
+    else if (t < GIFT_HOLD) { const beat = Math.max(0, Math.sin((t - GIFT_POP) * 9)); sc = 7 * (1 + beat * 0.12); }
+    else if (t < GIFT_FLY_END) { const k = ease.inOutCubic((t - GIFT_HOLD) / (GIFT_FLY_END - GIFT_HOLD)); x = cx + (tx - cx) * k; y = cy + (ty - cy) * k - Math.sin(k * Math.PI) * 30; sc = 7 + (1 - 7) * k; glow = 1 - k * 0.6; }
+    else { x = tx; y = ty; sc = 1 + Math.max(0, 0.6 - (t - GIFT_FLY_END)) ; glow = Math.max(0, 0.6 - (t - GIFT_FLY_END)); }
+    ctx.save();
+    if (t < GIFT_FLY_END) {
+      // a soft red bloom and rays behind it while it beats
+      ctx.globalAlpha = 0.35 * glow; ctx.fillStyle = '#ff2040';
+      ctx.beginPath(); ctx.arc(x, y, 6 * sc, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.25 * glow; ctx.strokeStyle = '#ff8090'; ctx.lineWidth = 1.2;
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 + t * 1.5; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 4 * sc, y + Math.sin(a) * 4 * sc); ctx.lineTo(x + Math.cos(a) * 7.5 * sc, y + Math.sin(a) * 7.5 * sc); ctx.stroke(); }
+      if (t > GIFT_POP && t < GIFT_HOLD) { ctx.globalAlpha = Math.min(1, (t - GIFT_POP) * 4) * Math.min(1, (GIFT_HOLD - t) * 4); text(ctx, 'A heart grows in the ink', cx, cy + 50, 10, '#ffd0d8', 'center', FONT_TITLE, 400); }
+    } else if (glow > 0) { ctx.globalAlpha = glow; ctx.fillStyle = '#ffffff'; for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ctx.fillRect(x + Math.cos(a) * (4 + (1 - glow) * 12), y + Math.sin(a) * (4 + (1 - glow) * 12), 1, 1); } }
+    ctx.globalAlpha = 1;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(S, x - (S.width / 2) * sc, y - (S.height / 2) * sc, S.width * sc, S.height * sc);
+    ctx.restore();
+  }
   private drawHearts(ctx: CanvasRenderingContext2D): void {
     const h = this.w.player.health;
     const H = pickupSprites().hud;
@@ -543,7 +560,7 @@ export class Hud {
 
   drawMinimap(ctx: CanvasRenderingContext2D, full: boolean): void {
     const w = this.w, f = w.floor;
-    const cw = full ? 14 : 9, ch = full ? 10 : 7, gap = 1;
+    const cw = full ? 15 : 10, ch = full ? 11 : 8, gap = 1;
     // bounds of known rooms
     let minx = 99, miny = 99, maxx = -1, maxy = -1;
     for (const r of f.rooms) {
@@ -565,7 +582,8 @@ export class Hud {
       ctx.strokeStyle = 'rgba(160,140,120,0.35)'; ctx.lineWidth = 0.5; ctx.strokeRect(VIEW_W - 8 - winW, 6, winW, winH);
       ctx.beginPath(); ctx.rect(VIEW_W - 8 - winW, 6, winW, winH); ctx.clip();
     }
-    const IC = icons();
+    // icons are painted at the screen's real pixel size, so they are as sharp as the text
+    const dens = ctx.getTransform().a || 1, isz = full ? 9 : 7;
     for (const r of f.rooms) {
       const secret = r.type === 'secret' || r.type === 'supersecret';
       if (!(r.seen || r.visited)) continue;
@@ -573,11 +591,17 @@ export class Hud {
       const x = ox + (r.gx - minx) * (cw + gap), y = oy + (r.gy - miny) * (ch + gap);
       const W = r.cw * (cw + gap) - gap, Hh = r.ch * (ch + gap) - gap;
       const current = r === w.room;
-      ctx.fillStyle = current ? '#f4ecdc' : r.visited ? '#8a8090' : '#3e3844';
-      ctx.fillRect(x, y, W, Hh);
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x, y + Hh - 0.6, W, 0.6);
-      const ic = IC[r.type];
-      if (ic && !current) ctx.drawImage(ic, x + W / 2 - 3.5, y + Hh / 2 - 3.5);
+      // a bevelled tile: lit top-left edge, shaded bottom-right
+      const base = current ? '#f4ecdc' : r.visited ? '#8a8090' : '#3e3844';
+      ctx.fillStyle = base; ctx.fillRect(x, y, W, Hh);
+      ctx.fillStyle = current ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.18)'; ctx.fillRect(x, y, W, 0.5); ctx.fillRect(x, y, 0.5, Hh);
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(x, y + Hh - 0.6, W, 0.6); ctx.fillRect(x + W - 0.5, y, 0.5, Hh);
+      if (current) {
+        ctx.strokeStyle = `rgba(255,236,170,${0.55 + 0.35 * Math.sin(w.time * 5)})`; ctx.lineWidth = 0.6;
+        ctx.strokeRect(x - 0.6, y - 0.6, W + 1.2, Hh + 1.2);
+      }
+      const ic = mapIcon(r.type, Math.round(isz * dens));
+      if (ic) { ctx.globalAlpha = current ? 0.85 : 1; ctx.drawImage(ic, x + W / 2 - isz / 2, y + Hh / 2 - isz / 2, isz, isz); ctx.globalAlpha = 1; }
     }
     if (!full) ctx.restore();
     // curse label

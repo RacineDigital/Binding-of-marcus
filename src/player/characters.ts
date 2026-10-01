@@ -48,7 +48,7 @@ export const CHARACTERS: CharacterDef[] = [
     base: { damage: 4.4, tears: 2.3, range: 200, shotSpeed: 0.9, speed: 0.9, luck: -1 },
     health: { red: 0, ink: 6, noRed: true }, items: ['ink_maw'], buttons: 0, keys: 0, bombs: 0,
     profile: { shape: 'void' }, flight: true,
-    unlock: 'beat_final', unlockHint: 'Finish the story once.', passive: 'Ink hearts only. Flies, and spews a short, charged ink beam instead of shooting.',
+    unlock: 'beat_final', unlockHint: 'Finish the story once.', passive: 'Ink hearts only, but sometimes a red one grows. Flies, and spews a short, charged ink beam.',
   },
   {
     id: 'ozzie', name: 'Ozzie', title: 'The Gambler', look: 'ozzie',

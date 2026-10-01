@@ -72,6 +72,11 @@ export function startFloor(w: World): void {
   if (floor.curse === 'lost') { /* map hidden */ }
   if (floor.curse === 'seen') revealMap(w, false);
   w.floorIntroT = 2.6;
+  // the Blot: a 45% chance each new chapter that a real red heart grows in the ink
+  if (w.player.char.id === 'blot' && run.floorIndex > 0 && !run.flags['blotHeart' + run.floorIndex]) {
+    run.flags['blotHeart' + run.floorIndex] = true;
+    if (new RNG(run.seed + ':blotheart:' + run.floorIndex).next() < 0.45) w.after(2.4, () => w.hud.giftHeart(), true);
+  }
   // the end game announces itself: the Binding is not the Binding you remember
   const endgame = floor.theme.id === 'binding' && run.floorIndex === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless';
   w.hud.floorCard(floor.label, endgame ? 'It remembers you.' : floor.theme.subtitle, floor.curse, endgame);
