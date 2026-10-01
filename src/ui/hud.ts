@@ -483,7 +483,6 @@ export class Hud {
     const cols = Math.min(ids.length, Math.floor(width / cell));
     const rows = Math.ceil(ids.length / cols);
     const top = bottom - rows * cell;
-    const blind = this.w.blindItems();
     ctx.save();
     ctx.fillStyle = 'rgba(8,6,12,0.4)'; ctx.fillRect(right - cols * cell - 2, top - 2, cols * cell + 4, rows * cell + 4);
     ctx.imageSmoothingEnabled = false;
@@ -491,7 +490,7 @@ export class Hud {
       const x = right - cols * cell + (i % cols) * cell, y = top + Math.floor(i / cols) * cell;
       const age = now - (this.itemSeenAt.get(id) ?? -9);
       if (age < 1.5) { ctx.globalAlpha = (1 - age / 1.5) * 0.8; ctx.fillStyle = '#ffe9a0'; ctx.fillRect(x, y, cell, cell); ctx.globalAlpha = 1; }
-      const icon = itemIconCanvas(id, blind);
+      const icon = itemIconCanvas(id);
       const pad = cell >= 12 ? 1 : 0.5;
       ctx.drawImage(icon, x + pad, y + pad, cell - pad * 2, cell - pad * 2);
       const n = pl.items.get(id) ?? 1;

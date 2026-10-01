@@ -1,12 +1,10 @@
-## What's new in 3.0.3
+## What's new in 3.0.4
 
-- **Clearer stat icons.** Each stat has its own picture and colour now: a yellow running shoe
-  (speed), a red sword (damage), blue tear drops (fire rate), a ruler with a double arrow (range),
-  a cyan shot with speed streaks (shot speed) and a four-leaf clover (luck).
-- **Stats are named.** Hold Tab to see every stat with its name and value, and when one changes
-  the popup says which (for example "+1.0 damage").
-- The announcer voice from 3.0.2 is gone for good (sweets, pages and transformations are no longer
-  read out).
+- **Fixed: Blight of the Unread made your items look duplicated.** That curse hides what's on item
+  pedestals, but it was also hiding the items you already owned, so the item tracker filled up
+  with identical "?" icons. Now only pedestals are hidden (like Isaac's Curse of the Blind): your
+  items always show, and picking a hidden item up shows what it was.
+- The hidden-item icon is a clear question mark now.
 
 ## Download and play
 

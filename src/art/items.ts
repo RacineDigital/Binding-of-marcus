@@ -16,10 +16,10 @@ export function itemIconArt(id: string): PixelArt {
 export function itemIconCanvas(id: string, blind = false): HTMLCanvasElement {
   if (blind) {
     if (!unknown) {
+      // a plain, bold question mark (Blight of the Unread hides what's on the pedestal)
       const p = new PixelArt(18, 18);
-      const c = ramp('#d8d0c0');
-      p.ring(9, 6, 4, c[3], 2); p.rect(9, 9, 2, 4, c[3]); p.rect(9, 14, 2, 2, c[3]);
-      p.clear(5, 7); p.clear(5, 8); p.clear(6, 8);
+      const Q = ['.xxxxx.', 'xx...xx', 'xx...xx', '.....xx', '....xx.', '...xx..', '...xx..', '.......', '...xx..', '...xx..'];
+      Q.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === 'x') { p.set(5 + x, 3 + y, y < 2 ? '#f0e8ff' : '#c8b0ff'); } }));
       p.outline('#140c10');
       unknown = p.toCanvas();
     }

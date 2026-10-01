@@ -985,8 +985,9 @@ export function takeItem(w: World, p: Pickup): void {
 
 function presentItem(w: World, id: string, it: NonNullable<ReturnType<typeof getItem>>): void {
   const pl = w.player;
-  pl.pickupT = 1.1; pl.pickupSprite = itemIconCanvas(id, w.blindItems());
-  w.hud.banner(w.blindItems() ? '???' : it.name, w.blindItems() ? '' : it.pickup, itemIconCanvas(id, w.blindItems()));
+  // (under Blight of the Unread the pedestal hid it; picking it up shows what it was)
+  pl.pickupT = 1.1; pl.pickupSprite = itemIconCanvas(id);
+  w.hud.banner(it.name, it.pickup, itemIconCanvas(id));
   w.audio.play(it.quality >= 3 ? 'itemGetBig' : 'itemGet');
   w.fx.stars(pl.x, pl.y - 30, 14, '#ffe8a0', 60);
   w.fx.ring(pl.x, pl.y - 20, 4, 26, '#fff0c0', 0.4);

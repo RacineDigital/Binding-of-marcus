@@ -2,6 +2,14 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.0.4
+
+- **Fixed: Blight of the Unread made your items look duplicated.** That curse hides what's on item
+  pedestals, but it was also hiding the items you already owned, so the item tracker filled up
+  with identical "?" icons. Now only pedestals are hidden (like Isaac's Curse of the Blind): your
+  items always show, and picking a hidden item up shows what it was.
+- The hidden-item icon is a clear question mark now.
+
 ## What's new in 3.0.3
 
 - **Clearer stat icons.** Each stat has its own picture and colour now: a yellow running shoe
