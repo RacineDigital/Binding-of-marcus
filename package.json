@@ -32,11 +32,11 @@
   },
   "main": "electron/main.cjs",
   "description": "Lost Marcus - a dark top-down roguelike",
-  "author": "Lost Marcus",
+  "author": "Papermoth Games",
   "build": {
     "appId": "com.racinedigital.lostmarcus",
     "productName": "Lost Marcus",
-    "copyright": "Lost Marcus",
+    "copyright": "© Papermoth Games",
     "directories": {
       "output": "release-desktop",
       "buildResources": "electron"

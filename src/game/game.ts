@@ -371,6 +371,7 @@ export function startGame(cv: HTMLCanvasElement, params: URLSearchParams): Game 
   attachDebug(g);
   g.start();
   if (params.has('play')) g.newRun(params.get('char') || 'marcus', params.get('seed') || undefined);
-  else g.menus.openMain();
+  else if (params.has('menu')) g.menus.openMain();
+  else g.menus.openSplash();
   return g;
 }

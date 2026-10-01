@@ -18,6 +18,7 @@ import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
 import { renderMenuScene, mainMenuScreen } from './mainmenu';
+import { splashScreen } from './splash';
 import { ALL_ENEMY_DEFS } from '../enemies/registry';
 import { getSprites, EnemyDef } from '../enemies/enemy';
 import type { Sprite } from '../render/sprite';
@@ -152,6 +153,8 @@ export class MenuSystem {
     this.g.audio.setMusic('menu');
     this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
+  /** Studio splash on launch, then the title. */
+  openSplash(): void { this.stack = [splashScreen(this, () => this.openMain())]; }
   openPause(): void { this.pauseScreen = this.pauseMenu(); this.pauseGuard = 0.2; }
   private pauseGuard = 0;
   inSubmenu(): boolean { return this.stack.length > 0; }
@@ -767,7 +770,7 @@ export class MenuSystem {
   creditsScreen(): Screen {
     const self = this;
     const lines = [
-      ['Lost Marcus', 'title'], ['', ''],
+      ['Lost Marcus', 'title'], ['A Papermoth Games production', ''], ['', ''],
       ['Design, code, pixel art, music and sound', 'h'], ['Generated in-engine — every sprite, room, sound and song', ''], ['is painted or synthesised procedurally at runtime.', ''], ['', ''],
       ['Built with Claude Code', 'h'], ['', ''],
       ['Typefaces', 'h'], ['Cinzel — Natanael Gama (SIL OFL)', ''], ['Pirata One — Rodrigo Fuenzalida & Nicolás Massi (SIL OFL)', ''], ['Barlow Condensed — Jeremy Tribby (SIL OFL)', ''], ['', ''],
