@@ -4,7 +4,9 @@ import { generateFloor } from '../src/generation/floorgen';
 import { ALL_ITEMS, CONSUMABLES } from '../src/items/registry';
 import { ENEMY_DEFS, getEnemy } from '../src/enemies/registry';
 import { BOSSES } from '../src/bosses/registry';
-import { FLOORS, ALT_FLOORS } from '../src/data/floors';
+import { FLOORS, ALT_FLOORS, CHAPTER_POOL, familyOf, FINAL_FLOOR } from '../src/data/floors';
+import { chapterOrder, themeAt } from '../src/generation/floorgen';
+import { SONGS } from '../src/audio/songs';
 import { TEMPLATES } from '../src/rooms/templates';
 import { generateLayout } from '../src/generation/roomgen';
 import { RNG } from '../src/core/rng';
@@ -97,9 +99,24 @@ for (const it of ALL_ITEMS) {
   try { it.icon(p); ok(p.data.some((v) => v !== 0), `item ${it.id} icon draws something`); } catch (e) { ok(false, `item ${it.id} icon throws ${e}`); }
 }
 for (const c of CONSUMABLES) if (c.icon) { const p = new PixelArt(18, 18); try { c.icon(p); } catch (e) { ok(false, `charm ${c.id} icon throws`); } }
-for (const f of [...FLOORS, ...Object.values(ALT_FLOORS)]) {
+for (const f of [...FLOORS, ...Object.values(ALT_FLOORS), ...CHAPTER_POOL]) {
+  ok(!!SONGS[f.music], `floor ${f.id} music ${f.music} exists`);
   for (const id of Object.keys(f.enemies)) ok(!!getEnemy(id), `floor ${f.id} enemy ${id} exists`);
   for (const id of f.bosses) ok(!!getEnemy(id), `floor ${f.id} boss ${id} exists`);
+}
+{
+  const firsts = new Set<string>();
+  for (let i = 0; i < 400; i++) {
+    const seed = 'order' + i;
+    const order = chapterOrder(seed);
+    ok(order.length === FINAL_FLOOR, `chapter order ${seed} has ${FINAL_FLOOR} chapters`);
+    ok(new Set(order.map((t) => familyOf(t))).size === order.length, `chapter order ${seed} never repeats a family`);
+    order.forEach((t, d) => ok((t.tier ?? 0) <= d + 1, `chapter order ${seed}: ${t.id} not too early at depth ${d}`));
+    ok(chapterOrder(seed).map((t) => t.id).join() === order.map((t) => t.id).join(), `chapter order ${seed} is deterministic`);
+    ok(themeAt(seed, FINAL_FLOOR) === FLOORS[FLOORS.length - 1], `chapter order ${seed} ends at The Binding`);
+    firsts.add(order[1].id);
+  }
+  ok(firsts.size >= 6, `second chapter varies between runs (${firsts.size} distinct)`);
 }
 for (const t of TEMPLATES) { ok(t.rows.length === 9 && t.rows.every((r) => r.length === 15), `template ${t.name} is 15x9`); }
 {

@@ -3,7 +3,7 @@
 import { RNG } from '../core/rng';
 import { MAP_SIZE } from '../core/constants';
 import { RoomData, RoomType, Side, DoorKind, opposite } from '../rooms/room';
-import { FLOORS, FloorTheme, FINAL_FLOOR, ALT_FLOORS } from '../data/floors';
+import { FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel } from '../data/floors';
 import type { Run, Floor } from '../game/run';
 import { populateRoom } from './populate';
 import type { SaveManager } from '../save/save';
@@ -31,12 +31,36 @@ function place(c: Ctx, gx: number, gy: number, cw: number, ch: number, type: Roo
   return r;
 }
 
-export function pickTheme(run: Run, fi: number): FloorTheme {
-  const base = FLOORS[Math.min(fi, FINAL_FLOOR)];
-  const alt = ALT_FLOORS[base.id];
-  if (alt && new RNG(`${run.seed}:alt${fi}`).next() < 0.22) return alt;
-  return base;
+/**
+ * The run's chapter order, fixed by the seed: the first chapter is always one of the gentler ones,
+ * the rest are drawn at random from every chapter family (no family twice), and the Binding is
+ * always last. A chapter never shows up more than one step ahead of its usual depth (no Stacks
+ * as Chapter II), but anything easier can appear late: enemy health and budgets follow depth.
+ */
+const orderCache = new Map<string, FloorTheme[]>();
+export function chapterOrder(seed: string): FloorTheme[] {
+  let o = orderCache.get(seed);
+  if (o) return o;
+  const rng = new RNG(seed + ':chapters');
+  const first = rng.pick(CHAPTER_POOL.filter((t) => (t.tier ?? 0) <= 1));
+  o = [first];
+  const used = new Set([familyOf(first)]);
+  while (o.length < FINAL_FLOOR) {
+    const fresh = CHAPTER_POOL.filter((t) => !used.has(familyOf(t)));
+    const fit = fresh.filter((t) => (t.tier ?? 0) <= o!.length + 1);
+    const t = rng.pick(fit.length ? fit : fresh.length ? fresh : CHAPTER_POOL);
+    used.add(familyOf(t)); o.push(t);
+  }
+  if (orderCache.size > 50) orderCache.clear();
+  orderCache.set(seed, o);
+  return o;
 }
+export function themeAt(seed: string, fi: number): FloorTheme {
+  if (fi === FINAL_FLOOR) return FLOORS[FINAL_FLOOR];
+  const order = chapterOrder(seed);
+  return fi < FINAL_FLOOR ? order[fi] : chapterOrder(seed + ':loop' + Math.floor(fi / FINAL_FLOOR))[fi % FINAL_FLOOR];
+}
+export function pickTheme(run: Run, fi: number): FloorTheme { return themeAt(run.seed, fi); }
 
 export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const theme = pickTheme(run, fi);
@@ -59,7 +83,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const floor: Floor = {
     index: fi, theme, rooms: c.rooms, map: c.map, size: MAP_SIZE, startId: 0,
     bossId: c.rooms.findIndex((r) => r.type === 'boss'), curse,
-    label: `${theme.chapter} — ${theme.name}`, alt: theme !== FLOORS[Math.min(fi, FINAL_FLOOR)],
+    label: `${chapterLabel(fi)} — ${theme.name}`, alt: !FLOORS.includes(theme),
   };
   // populate every room (deterministic per room seed, pools consumed in id order)
   const prng = new RNG(`${run.seed}:populate${fi}`);

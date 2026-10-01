@@ -14,11 +14,7 @@ import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
 import { formatSeed, normalizeSeed, RNG } from '../core/rng';
 import { dailySeed, todayKey, runScore } from '../game/progress';
 import { INTRO_STORY, ENDING_STORY } from '../data/lore';
-import { RoomData } from '../rooms/room';
-import { paintRoomBackground, BG_MARGIN } from '../art/roombg';
-import { FLOORS } from '../data/floors';
-import { getSprites } from '../enemies/enemy';
-import { getEnemy } from '../enemies/registry';
+import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
 import { renderMenuScene, mainMenuScreen } from './mainmenu';
@@ -71,7 +67,7 @@ function fmtTime(sec: number): string { const m = Math.floor(sec / 60), s = Math
 export class MenuSystem {
   g: Game;
   stack: Screen[] = [];
-  bgRoom: RoomData | null = null; bgCanvas: HTMLCanvasElement | null = null;
+
   time = 0;
   portraits = new Map<string, PlayerSprites>();
   moths: { a: number; r: number; s: number; y: number }[] = [];
@@ -198,7 +194,7 @@ export class MenuSystem {
         });
         if (g.save.data.run && sel === 0) {
           const r = g.save.data.run;
-          text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${FLOORS[r.floor]?.name ?? ''} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}`, 44, 96 + 9 * 15.5 + 2, 7, COL.dim);
+          text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${themeAt(r.seed, r.floor).name} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}`, 44, 96 + 9 * 15.5 + 2, 7, COL.dim);
         }
         ctx.globalAlpha = 1;
         hint(ctx, `${g.input.usingPad ? 'D-pad' : 'Arrows / WASD'} to choose  ·  ${g.input.usingPad ? 'A' : 'Enter'} to select`);

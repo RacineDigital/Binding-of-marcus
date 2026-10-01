@@ -6,7 +6,7 @@ import { generateLayout } from './roomgen';
 import type { Floor, Run } from '../game/run';
 import { getEnemy, ENEMY_DEFS } from '../enemies/registry';
 import type { Role } from '../enemies/enemy';
-import { FLOORS } from '../data/floors';
+import { FLOORS, DEPTH_BUDGET } from '../data/floors';
 import { TILE } from '../core/constants';
 import type { SaveManager } from '../save/save';
 
@@ -163,7 +163,7 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
   };
   const cast = new Map<string, string>();
   const out: SpawnDef[] = [];
-  let budget = (2.4 + Math.min(room.distance, 6) * 0.55) * th.budget * budgetMul * (room.cw * room.ch > 1 ? 1.8 : 1);
+  let budget = (2.4 + Math.min(room.distance, 6) * 0.55) * DEPTH_BUDGET[Math.min(DEPTH_BUDGET.length - 1, floor.index)] * budgetMul * (room.cw * room.ch > 1 ? 1.8 : 1);
   if (floor.index === 0 && room.distance <= 1) budget = Math.min(budget, 2.5);
   const champ = 0.02 + floor.index * 0.012 + (hard ? 0.06 : 0);
   const order = rng.shuffle(slots.slice());

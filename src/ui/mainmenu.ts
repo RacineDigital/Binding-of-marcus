@@ -5,7 +5,7 @@ import type { MenuSystem, Screen } from './menus';
 import { text, COL, FONT_TITLE, FONT_BODY, measure } from './draw';
 import { VIEW_W, VIEW_H } from '../core/constants';
 import { CHARACTERS } from '../player/characters';
-import { FLOORS } from '../data/floors';
+import { themeAt } from '../generation/floorgen';
 import { formatSeed, RNG } from '../core/rng';
 import { clamp, ease, TAU } from '../core/math';
 import { getEnemy } from '../enemies/registry';
@@ -237,7 +237,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
   const desktop = !!(globalThis as any).bomDesktop;
   const entries: Entry[] = [
     { id: 'continue', label: 'Continue', icon: I.play, enabled: () => !!g.save.data.run,
-      desc: () => { const r = g.save.data.run; if (!r) return 'No story in progress.'; return `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${FLOORS[r.floor]?.name ?? ''} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}${r.mode === 'endless' ? ' · Endless' : ''}`; },
+      desc: () => { const r = g.save.data.run; if (!r) return 'No story in progress.'; return `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${themeAt(r.seed, r.floor).name} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}${r.mode === 'endless' ? ' · Endless' : ''}`; },
       act: () => g.fadeTo(() => { if (!g.continueRun()) ms.openMain(); }, 0.4) },
     { id: 'new', label: 'New Run', icon: I.plus, desc: () => 'Pick a reader, a mode and (optionally) a seed.', act: () => ms.push(ms.newRunScreen()) },
     { id: 'daily', label: 'Daily Run', icon: I.sun, desc: () => 'One seed for everyone today. How far can you get?', act: () => ms.push(ms.dailyScreen()) },

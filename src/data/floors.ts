@@ -1,5 +1,5 @@
 // Floor themes: visuals, ambience, enemy & boss pools, difficulty.
-export type FloorStyle = 'flag' | 'brick' | 'cobble' | 'tile' | 'earth' | 'checker' | 'void' | 'pages';
+export type FloorStyle = 'flag' | 'brick' | 'cobble' | 'tile' | 'earth' | 'checker' | 'void' | 'pages' | 'planks';
 export type WallStyle = 'stone' | 'iron' | 'sewer' | 'ward' | 'cave' | 'chapel' | 'torn' | 'spines';
 export type Ambience = 'dust' | 'embers' | 'drips' | 'motes' | 'ash' | 'glass' | 'ink' | 'pages';
 
@@ -16,7 +16,9 @@ export interface FloorTheme {
   music: string;
   hazards: { spikes: number; pits: number; fires: number; kegs: number; webs?: number };
   fireVariants: number[]; // allowed fire variants
-  hpMul: number; budget: number; // difficulty scaling
+  hpMul: number; budget: number; // legacy per-theme scaling (difficulty now comes from depth)
+  /** How tough this chapter's cast is by design (0 = Cellar ... 7 = Binding). */
+  tier?: number;
 }
 
 export const FLOORS: FloorTheme[] = [
@@ -109,7 +111,8 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 2.3, budget: 2.3,
   },
 ];
-export const FINAL_FLOOR = FLOORS.length - 1;
+export const FINAL_FLOOR = 7;
+FLOORS.forEach((f, i) => { f.tier = i; });
 
 /** Alternate takes on chapters I–VII. A floor is sometimes replaced by its variant (seeded). */
 type ThemeOverride = Partial<Omit<FloorTheme, 'pal' | 'hazards'>> & { pal?: Partial<FloorTheme['pal']>; hazards?: Partial<FloorTheme['hazards']> };
@@ -139,3 +142,91 @@ export const ALT_FLOORS: Record<string, FloorTheme> = {
     pal: { floor: '#141a2e', floor2: '#10142a', wall: '#1e2846', wall2: '#161e38', accent: '#4a8aff' },
     enemies: { blot: 8, voideye: 5, pagewraith: 5, hollowmaw: 4, mirrorshade: 3, drowner: 3 } }),
 };
+
+// ---------------------------------------------------------------------------- new chapters
+export const NEW_FLOORS: FloorTheme[] = [
+  {
+    id: 'attic', name: 'The Attic', subtitle: 'Dust sheets over everything nobody wanted', chapter: '', tier: 1,
+    floor: 'planks', wall: 'stone', ambience: 'dust',
+    pal: { floor: '#5a4632', floor2: '#4a3a2a', grout: '#1e140e', wall: '#4a3c34', wall2: '#382c26', mortar: '#1a120e',
+      rock: '#7a6a5a', accent: '#d8b070', stain: '#3a3020', heap: '#e0d8c4', heapKind: 'linen' },
+    ambient: '#0a0608', darkness: 0.46, playerLight: 96,
+    enemies: { moth: 9, mite: 7, sheetghost: 6, nursedoll: 4, spool: 5, mimic: 3, ragcrawler: 5, candlewick: 3 },
+    bosses: ['wardrobe', 'mothmother', 'sleepwalker'],
+    music: 'attic', hazards: { spikes: 0.15, pits: 0.2, fires: 0.3, kegs: 0.1, webs: 0.25 }, fireVariants: [0, 0, 2],
+    hpMul: 1.15, budget: 1.1,
+  },
+  {
+    id: 'greenhouse', name: 'The Greenhouse', subtitle: 'Glass, rot and something blooming', chapter: '', tier: 2,
+    floor: 'earth', wall: 'cave', ambience: 'motes',
+    pal: { floor: '#34402a', floor2: '#2a3422', grout: '#121a0e', wall: '#3a4a3a', wall2: '#2a3a2c', mortar: '#101a12',
+      rock: '#5a6a4a', accent: '#a8d070', stain: '#4a6a2a', heap: '#8a7a4a', heapKind: 'refuse' },
+    ambient: '#040a04', darkness: 0.4, playerLight: 92,
+    enemies: { leech: 6, bloater: 5, cinderhopper: 6, dripling: 6, pillbug: 6, gasper: 5, sludge: 4, mitenest: 3 },
+    bosses: ['grubmother', 'bilgemaw', 'matron'],
+    music: 'greenhouse', hazards: { spikes: 0.25, pits: 0.35, fires: 0.2, kegs: 0.1, webs: 0.2 }, fireVariants: [2, 2, 0],
+    hpMul: 1.3, budget: 1.3,
+  },
+  {
+    id: 'printshop', name: 'The Print Shop', subtitle: 'Iron type, inky rollers, no one at the press', chapter: '', tier: 3,
+    floor: 'brick', wall: 'iron', ambience: 'pages',
+    pal: { floor: '#3a3438', floor2: '#2e2a2e', grout: '#121014', wall: '#3e3a40', wall2: '#2c282e', mortar: '#100e12',
+      rock: '#5a5660', accent: '#c83a3a', stain: '#1a1a2e', heap: '#e6dcc0', heapKind: 'pages' },
+    ambient: '#060408', darkness: 0.42, playerLight: 88,
+    enemies: { valvehead: 5, pagewraith: 5, blot: 5, stoker: 5, spool: 6, rustcrab: 4, sootsprite: 4, blotlet: 3 },
+    bosses: ['oldstoker', 'blottedman', 'furnaceheart'],
+    music: 'printshop', hazards: { spikes: 0.3, pits: 0.2, fires: 0.4, kegs: 0.35 }, fireVariants: [0, 1, 3],
+    hpMul: 1.5, budget: 1.5,
+  },
+  {
+    id: 'cistern', name: 'The Frozen Cistern', subtitle: 'Ice where the water used to be', chapter: '', tier: 3,
+    floor: 'cobble', wall: 'sewer', ambience: 'glass',
+    pal: { floor: '#4a5e6a', floor2: '#3c4e5a', grout: '#1a2630', wall: '#3e5260', wall2: '#2e3e4a', mortar: '#121c24',
+      rock: '#7a8e9a', accent: '#a8e0ff', stain: '#6a8aa0', heap: '#c8d8e0', heapKind: 'refuse' },
+    ambient: '#020610', darkness: 0.44, playerLight: 90,
+    enemies: { drowner: 6, sludge: 5, grateeye: 5, voideye: 3, mirrorshade: 3, leech: 6, rat: 5, sheetghost: 3 },
+    bosses: ['bilgemaw', 'ratking', 'choirmaster'],
+    music: 'underworks', hazards: { spikes: 0.3, pits: 0.4, fires: 0.15, kegs: 0.15 }, fireVariants: [1, 1, 3],
+    hpMul: 1.5, budget: 1.5,
+  },
+  {
+    id: 'clocktower', name: 'The Clocktower', subtitle: 'Every gear is counting down', chapter: '', tier: 4,
+    floor: 'tile', wall: 'iron', ambience: 'motes',
+    pal: { floor: '#5a4a34', floor2: '#4a3c2a', grout: '#1c1408', wall: '#4a3e30', wall2: '#362c22', mortar: '#140e08',
+      rock: '#8a7a5a', accent: '#e0b050', stain: '#3a2a10', heap: '#b8904a', heapKind: 'coal' },
+    ambient: '#080604', darkness: 0.44, playerLight: 88,
+    enemies: { valvehead: 6, wheelwraith: 5, skullorbit: 5, choirboy: 4, censer: 4, spool: 5, boneknight: 3, cherubmoth: 3 },
+    bosses: ['bellringer', 'ossuaryknight', 'sleepwalker'],
+    music: 'clocktower', hazards: { spikes: 0.35, pits: 0.4, fires: 0.3, kegs: 0.2 }, fireVariants: [0, 1, 1],
+    hpMul: 1.7, budget: 1.7,
+  },
+  {
+    id: 'stacks', name: 'The Library Stacks', subtitle: 'Shelves taller than the dark', chapter: '', tier: 5,
+    floor: 'tile', wall: 'spines', ambience: 'pages',
+    pal: { floor: '#4a2e2a', floor2: '#3a2422', grout: '#160c0a', wall: '#4a2a26', wall2: '#361e1c', mortar: '#140a08',
+      rock: '#7a5a4a', accent: '#e8c070', stain: '#2a1a3a', heap: '#e6dcc0', heapKind: 'pages' },
+    ambient: '#080406', darkness: 0.48, playerLight: 86,
+    enemies: { pagewraith: 6, blot: 5, moth: 5, mimic: 4, penitent: 4, spool: 4, mirrorshade: 3, cherubmoth: 4 },
+    bosses: ['blottedman', 'mothmother', 'choirmaster'],
+    music: 'chapel', hazards: { spikes: 0.3, pits: 0.35, fires: 0.4, kegs: 0.15, webs: 0.2 }, fireVariants: [0, 1, 3],
+    hpMul: 1.9, budget: 1.9,
+  },
+];
+for (const [k, v] of Object.entries(ALT_FLOORS)) v.tier = FLOORS.find((f) => f.id === k)?.tier ?? 0;
+
+/** Every theme a non-final chapter can use. */
+export const CHAPTER_POOL: FloorTheme[] = [...FLOORS.slice(0, FINAL_FLOOR), ...Object.values(ALT_FLOORS), ...NEW_FLOORS];
+const FAMILY: Record<string, string> = { rootcellar: 'cellar', coalchute: 'boiler', flooded: 'underworks', morgue: 'ward', catacombs: 'depths', belfry: 'chapel', inkwell: 'hollow' };
+export const familyOf = (t: FloorTheme): string => FAMILY[t.id] ?? t.id;
+
+/** Difficulty comes from how deep you are, not which chapter you are in. */
+export const DEPTH_HP = [1, 1.15, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3];
+export const DEPTH_BUDGET = [0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3];
+const BOSS_TIER_HP = [240, 290, 300, 320, 380, 380, 400, 900];
+export function enemyHpMul(depth: number, tier: number, boss: boolean): number {
+  const d = Math.min(DEPTH_HP.length - 1, depth), t = Math.min(7, tier);
+  if (boss) return DEPTH_HP[d] * Math.min(1.25, Math.max(0.6, BOSS_TIER_HP[d] / BOSS_TIER_HP[t]));
+  return DEPTH_HP[d] * Math.min(1.5, Math.max(0.65, (1 + 0.12 * d) / (1 + 0.12 * t)));
+}
+export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+export function chapterLabel(depth: number): string { return depth >= FINAL_FLOOR ? 'Final Chapter' : `Chapter ${ROMAN[depth] ?? depth + 1}`; }

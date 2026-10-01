@@ -47,6 +47,35 @@ function floorFlag(c: Ctx): void {
   }
   cracks(c, 3 + c.rng.int(0, 3), darken(grout, 0.05));
 }
+function floorPlanks(c: Ctx): void {
+  // Long floorboards with grain, knots, nail heads and dark gaps.
+  const { p, x0, y0, w, h } = c;
+  const base = hex(c.t.pal.floor), alt = hex(c.t.pal.floor2), grout = hex(c.t.pal.grout);
+  const ph = 7;
+  for (let y = 0; y < h; y++) {
+    const row = Math.floor(y / ph), ly = y % ph;
+    // each row is split into boards of varying length
+    let x = -Math.floor(hash2(row, 9, c.seed) * 60), board = 0;
+    while (x < w) {
+      const len = 34 + Math.floor(hash2(row, board, c.seed + 3) * 50);
+      const tone = jit(mix(base, alt, hash2(row, board, c.seed + 5)), 0.1, hash2(board, row, c.seed + 7));
+      for (let i = Math.max(0, x); i < Math.min(w, x + len); i++) {
+        let v = tone;
+        const grain = Math.sin((i + row * 13) * 0.18 + Math.sin(i * 0.05 + board) * 2 + ly * 0.9);
+        if (grain > 0.82) v = darken(v, 0.1); else if (grain < -0.9) v = lighten(v, 0.05);
+        if (ly === 0) v = grout; else if (ly === 1) v = lighten(v, 0.07); else if (ly === ph - 1) v = darken(v, 0.12);
+        if (i === x || i === x + len - 1) v = darken(grout, 0);
+        if ((i === x + 2 || i === x + len - 3) && (ly === 2 || ly === ph - 2)) v = hex('#8a8078');
+        p.set(x0 + i, y0 + y, v);
+      }
+      // a knot now and then
+      if (ly === 3 && hash2(row, board, c.seed + 11) < 0.25) { const kx = x + 6 + Math.floor(hash2(board, row, c.seed + 13) * Math.max(1, len - 12)); if (kx > 0 && kx < w - 1) { p.set(x0 + kx, y0 + y, darken(tone, 0.3)); p.set(x0 + kx + 1, y0 + y, darken(tone, 0.2)); } }
+      x += len; board++;
+    }
+  }
+  const dust = fbm(0, 0, c.seed, 1); void dust;
+  cracks(c, 2, darken(grout, 0.05));
+}
 function floorBrick(c: Ctx): void {
   const { p, x0, y0, w, h } = c;
   const base = hex(c.t.pal.floor), alt = hex(c.t.pal.floor2), grout = hex(c.t.pal.grout);
@@ -675,6 +704,7 @@ export function paintRoomBackground(room: RoomData, theme: FloorTheme): HTMLCanv
     case 'checker': floorChecker(c); break;
     case 'void': floorVoid(c); break;
     case 'pages': floorPages(c); break;
+    case 'planks': floorPlanks(c); break;
   }
   calmFloor(c);
   decor(c);

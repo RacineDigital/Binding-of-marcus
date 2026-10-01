@@ -180,6 +180,74 @@ export const SONGS: Record<string, Song> = {
         melody: '7:4 6:2 5:2 4:4 5:4 | 6:8 4:8 | 5:4 4:2 3:2 2:4 3:4 | 4:16 | 7:4 9:4 10:4 9:4 | 8:4 7:4 6:8 | 5:4 6:4 7:4 8:4 | 7:16' },
     ],
   },
+  // ------------------------------------------------------------------ The Attic: shoegaze / darkwave
+  attic: {
+    title: 'Dust Sheets', genre: 'Shoegaze darkwave', bpm: 88, key: 40, scale: 'aeolian', bars: 16,
+    chords: [0, 5, 3, 6, 0, 5, 2, 6, 3, 4, 0, 5, 3, 4, 6, 6],
+    reverb: { seconds: 4, damp: 0.6, mix: 0.55 },
+    parts: [
+      { kind: 'pad', sound: 'warm', octave: 3, layer: 'both', vol: 0.45, rev: 0.5 },
+      { kind: 'arp', sound: 'clean', octave: 3, rate: 2, seq: [0, 2, 4, 3, 2, 4], layer: 'both', vol: 0.42, echo: true, pan: -0.25, rev: 0.4 },
+      { kind: 'pad', sound: 'glass', octave: 4, layer: 'calm', vol: 0.3, rev: 0.7 },
+      { kind: 'synthbass', octave: 1, pat: ['x---------------'], layer: 'calm', vol: 0.45, cut: 240, grit: 0 },
+      { kind: 'synthbass', octave: 1, pat: ['x.......x...x...'], layer: 'combat', vol: 0.55, cut: 420, grit: 0.25 },
+      { kind: 'guitar', low: 40, riff: ['X-------X-------'], voicing: 'oct', gain: 0.7, layer: 'combat', vol: 0.4 },
+      { kind: 'drums', style: 'synth', layer: 'combat', vol: 0.8,
+        kick: ['x.......x.x.....'], snare: ['........x.......'], hat: ['x.x.x.x.x.x.x.x.'], cym: ['c...............', '................', '................', '................'] },
+      { kind: 'lead', sound: 'saw', octave: 4, layer: 'combat', vol: 0.4, glide: true, rev: 0.45, from: 4,
+        melody: '4:8 3:4 2:4 | 0:12 r:4 | 2:4 3:4 4:8 | 6:12 r:4 | 7:8 6:4 4:4 | 5:12 4:4 | 3:4 4:4 6:4 4:4 | 4:16' },
+    ],
+  },
+  // ------------------------------------------------------------------ The Greenhouse: witch house
+  greenhouse: {
+    title: 'Something Blooming', genre: 'Witch house', bpm: 70, key: 37, scale: 'phrygian', bars: 8,
+    chords: [0, 0, 1, 0, 5, 5, 6, 1],
+    reverb: { seconds: 4.4, damp: 0.6, mix: 0.6 },
+    parts: [
+      { kind: 'pad', sound: 'choir', octave: 4, layer: 'both', vol: 0.45, rev: 0.7 },
+      { kind: 'lead', sound: 'bell', octave: 5, layer: 'both', vol: 0.4, rev: 0.7,
+        melody: '0:4 r:2 1:2 0:4 r:4 | 3:4 r:4 1:8 | 0:4 r:2 1:2 0:4 7:4 | 6:12 r:4' },
+      { kind: 'pad', sound: 'warm', octave: 2, layer: 'calm', vol: 0.4, rev: 0.4 },
+      { kind: 'synthbass', octave: 0, pat: ['x-------x--x----', 'x-------x---x---'], layer: 'combat', vol: 0.8, cut: 180, grit: 0.15 },
+      { kind: 'drums', style: 'synth', layer: 'combat', vol: 0.85,
+        kick: ['x.......x..x....', 'x.......x...x...'], snare: ['........x.......'], hat: ['x.x.x.x.x.xxx.x.', 'x.x.x.x.xxxxx.x.'] },
+      { kind: 'pad', sound: 'supersaw', octave: 3, layer: 'combat', vol: 0.25, rev: 0.5, cut: 1600 },
+    ],
+  },
+  // ------------------------------------------------------------------ The Print Shop: EBM / industrial techno
+  printshop: {
+    title: 'Ink on Iron', genre: 'EBM / industrial techno', bpm: 128, key: 45, scale: 'phrygian', bars: 16,
+    chords: [0, 0, 0, 1, 0, 0, 5, 6, 0, 0, 0, 1, 3, 1, 0, 0],
+    reverb: { seconds: 1.6, damp: 0.4, mix: 0.25 },
+    parts: [
+      { kind: 'synthbass', octave: 1, pat: ['x.x.x.x.x.x.x.x.'], layer: 'calm', vol: 0.45, cut: 260, grit: 0.2 },
+      { kind: 'drums', style: 'industrial', layer: 'calm', vol: 0.35, hat: ['..x...x...x...x.'] },
+      { kind: 'perc', sound: 'pipe', midi: 67, pat: ['x...............', '........x.......'], layer: 'calm', vol: 0.3, rev: 0.4 },
+      { kind: 'synthbass', octave: 1, pat: ['xxoxxxoxxxoxxxox'], layer: 'combat', vol: 0.6, cut: 620, grit: 0.55 },
+      { kind: 'drums', style: 'industrial', layer: 'combat', vol: 0.95,
+        kick: ['x...x...x...x...'], snare: ['....x.......x...'], hat: ['..x...x...x...x.', '..x...x...x.x.x.'], cym: ['c...............', '................', '................', '................'] },
+      { kind: 'perc', sound: 'anvil', midi: 77, pat: ['......x.......x.'], layer: 'combat', vol: 0.35, pan: 0.3 },
+      { kind: 'lead', sound: 'square', octave: 4, layer: 'combat', vol: 0.4, from: 4, rev: 0.2,
+        melody: '0:2 r:2 0:2 1:2 0:4 r:4 | 3:2 r:2 1:4 0:8 | 0:2 r:2 0:2 1:2 3:4 4:4 | 3:8 1:8' },
+    ],
+  },
+  // ------------------------------------------------------------------ The Clocktower: baroque metal
+  clocktower: {
+    title: 'Counting Down', genre: 'Baroque metal', bpm: 140, key: 38, scale: 'harmonic', bars: 16,
+    chords: [0, 3, 4, 0, 5, 3, 4, 4, 0, 3, 6, 0, 5, 1, 4, 4],
+    reverb: { seconds: 2.8, damp: 0.5, mix: 0.4 },
+    parts: [
+      { kind: 'arp', sound: 'harp', octave: 4, rate: 1, seq: [0, 1, 2, 3, 2, 1, 2, 1], layer: 'both', vol: 0.32, pan: 0.2, rev: 0.25 },
+      { kind: 'pad', sound: 'organ', octave: 3, layer: 'both', vol: 0.35, rev: 0.4 },
+      { kind: 'stacc', sound: 'strings', octave: 3, pat: ['0.0.2.0.1.0.2.0.'], layer: 'calm', vol: 0.35 },
+      { kind: 'guitar', low: 38, riff: ['0.0.0.0.0.0.0.0.', 'X---0.0.X---0.0.'], layer: 'combat', vol: 0.58 },
+      { kind: 'bass', octave: 1, followGuitar: true, layer: 'combat', vol: 0.5, grit: 0.5 },
+      { kind: 'drums', style: 'metal', layer: 'combat', vol: 0.9,
+        kick: ['xxxxxxxxxxxxxxxx', 'x.x.x.x.x.x.x.x.'], snare: ['....x.......x...'], cym: ['c...r...r...r...', 'r...r...r...r...', 'r...r...r...r...', 'r...r...c.c.c.c.'] },
+      { kind: 'lead', sound: 'guitar', octave: 4, layer: 'combat', vol: 0.45, from: 8, pan: -0.3,
+        melody: '7:2 6:2 7:2 4:2 5:2 4:2 3:2 2:2 | 3:4 4:4 6:8 | 7:2 6:2 7:2 9:2 8:2 7:2 6:2 5:2 | 4:16 | 3:2 4:2 5:2 6:2 7:4 4:4 | 5:4 3:4 1:8 | 2:4 3:4 4:4 6:4 | 7:16' },
+    ],
+  },
   // ------------------------------------------------------------------ bosses
   boss: {
     title: 'Teeth in the Dark', genre: 'Darksynth / industrial', bpm: 140, key: 40, scale: 'phrygian', bars: 16, only: 'combat',

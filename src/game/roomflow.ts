@@ -12,13 +12,13 @@ import { RNG } from '../core/rng';
 import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
 import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../items/familiar_rt';
-import { generateFloor, addBargainRoom } from '../generation/floorgen';
+import { generateFloor, addBargainRoom, pickTheme } from '../generation/floorgen';
 import { itemIconCanvas } from '../art/items';
 import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
-import { FINAL_FLOOR, FLOORS } from '../data/floors';
+import { FINAL_FLOOR, enemyHpMul } from '../data/floors';
 import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
@@ -43,7 +43,7 @@ export function startFloor(w: World): void {
   w.hud.floorCard(floor.label, floor.theme.subtitle, floor.curse);
   w.audio.setMusic(floor.theme.music);
   w.audio.prepareMusic(w.run.floorIndex >= FINAL_FLOOR ? 'bossFinal' : w.run.floorIndex >= 4 ? 'boss2' : 'boss');
-  const nextTheme = FLOORS[Math.min(FLOORS.length - 1, w.run.floorIndex + 1)];
+  const nextTheme = pickTheme(w.run, w.run.floorIndex + 1);
   if (nextTheme) w.audio.prepareMusic(nextTheme.music);
   if (w.run.floorIndex === 0) w.audio.prepareMusic('death');
   w.audio.setIntensity(0);
@@ -229,7 +229,7 @@ function unstick(w: World): void {
 export function spawnEnemy(w: World, id: string, x: number, y: number, quick: boolean): Enemy | null {
   const def = getEnemy(id);
   if (!def) { console.warn('unknown enemy', id); return null; }
-  const e = new Enemy(def, x, y, w.theme.hpMul * (w.run.challenge === 'hard' || w.run.mode === 'hard' ? 1.3 : 1));
+  const e = new Enemy(def, x, y, enemyHpMul(w.run.floorIndex, w.theme.tier ?? 0, !!def.boss) * (w.run.challenge === 'hard' || w.run.mode === 'hard' ? 1.3 : 1));
   e.spawnT = quick ? 0.25 : 0.55;
   def.init?.(e, w);
   w.enemies.push(e);
