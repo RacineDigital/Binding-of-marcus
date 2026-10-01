@@ -1,5 +1,6 @@
 // Pooled projectile simulation. Player shots read behaviour from an AttackProfile so every modifier
 // composes with every other; enemy shots use a small set of scripted motions.
+import { resetInterp } from '../game/interp';
 import { TAU, angleDiff, clamp, dist2 } from '../core/math';
 import { AttackProfile, luckChance } from './profile';
 import { pointBlocked } from '../rooms/collide';
@@ -41,7 +42,7 @@ export class Projectiles {
   alloc(): Proj | null {
     const p = this.free.pop();
     if (!p) return null;
-    p.active = true; p.hits.length = 0; p.t = 0; p.dist = 0; p.z = 0; p.target = null; p.retarget = 0; p.orbit = false; p.back = false;
+    resetInterp(p); p.active = true; p.hits.length = 0; p.t = 0; p.dist = 0; p.z = 0; p.target = null; p.retarget = 0; p.orbit = false; p.back = false;
     p.falling = 0; p.curve = 0; p.accel = 0; p.delay = 0; p.lob = false; p.creep = ''; p.splitE = 0; p.wig = 0; p.phase = 0;
     p.homing = 0; p.pierce = 0; p.bounce = 0; p.prof = null; p.depth = 0; p.crit = false; p.fromFamiliar = false; p.spectral = false;
     p.knock = 1; p.tint = null; p.creepAcc = 0; p.drop = 0; p.statusFixed = null; p.aimAtPlayerAfterDelay = false; p.life = 0; p.noWall = false; p.gravityWell = false;

@@ -45,6 +45,7 @@ export class World {
   props!: PropSet;
   doors: DoorRT[] = [];
   time = 0; roomTime = 0; hitstopT = 0; trauma = 0; camX = 0; camY = 0; camTX = 0; camTY = 0;
+  icamX = 0; icamY = 0; renderCamX = 0; renderCamY = 0;
   obstacleLayer: HTMLCanvasElement | null = null; obstacleDirty = true;
   transition: Transition | null = null;
   lockdown = false;       // doors held shut (boss fight, challenge waves)
@@ -651,10 +652,6 @@ export class World {
     const W = 480, H = 270;
     let tx = room.pxW > W ? clamp(pl.x - W / 2, 0, room.pxW - W) : 0;
     let ty = room.pxH > H ? clamp(pl.y - H / 2 - 8, 0, room.pxH - H) : 0;
-    // subtle drift toward the player and aim direction
-    const lead = pl.aiming ? 5 : 0;
-    tx += clamp((pl.x - (tx + W / 2)) * 0.03, -6, 6) + Math.cos(pl.aimAng) * lead * 0.5;
-    ty += clamp((pl.y - (ty + H / 2)) * 0.03, -5, 5) + Math.sin(pl.aimAng) * lead * 0.4;
     this.camTX = tx; this.camTY = ty;
     const k = 1 - Math.exp(-10 * dt);
     this.camX += (tx - this.camX) * k; this.camY += (ty - this.camY) * k;

@@ -22,8 +22,7 @@ export function renderWorld(w: World): void {
   const r = w.r, ctx = r.ctx, room = w.room, theme = w.theme;
   const shakeAmt = w.trauma * w.trauma * 7;
   const shx = shakeAmt ? (Math.random() * 2 - 1) * shakeAmt : 0, shy = shakeAmt ? (Math.random() * 2 - 1) * shakeAmt : 0;
-  const camX = Math.round(w.camX + shx), camY = Math.round(w.camY + shy);
-  w.camX = w.camX; // keep float for simulation
+  const camX = Math.round(w.renderCamX + shx), camY = Math.round(w.renderCamY + shy);
   let darkness = theme.darkness + (w.floor.curse === 'dark' ? 0.25 : 0) + (w.run.challenge === 'darkness' ? 0.3 : 0);
   if (room.type === 'treasure' || room.type === 'shop' || room.type === 'blessing') darkness *= 0.75;
   r.beginFrame(theme.ambient, Math.min(0.9, darkness));

@@ -4,6 +4,10 @@ import { Bindings, DEFAULT_BINDINGS } from '../core/input';
 export interface Settings {
   music: number; sfx: number; shake: number; scale: 'sharp' | 'integer' | 'stretch'; diagonalAim: boolean;
   showStats: boolean; showFps: boolean; fireDropChance: number; bindings: Bindings; fullscreen: boolean; hudScale: number;
+  /** Blend frames between simulation steps (smooth on 120+ Hz displays). */
+  interpolate: boolean;
+  /** Frame-rate cap; 0 = match the display refresh rate. */
+  fpsCap: number;
 }
 export interface SaveData {
   version: number;
@@ -24,7 +28,7 @@ const KEY = 'binding-of-marcus-save-v1';
 export function defaultSave(): SaveData {
   return {
     version: 1, unlocks: [], itemsSeen: [], bossesBeaten: [], challengesDone: [], stats: {},
-    settings: { music: 0.7, sfx: 0.8, shake: 1, scale: 'sharp', diagonalAim: false, showStats: true, showFps: false, fireDropChance: 0.1, bindings: structuredClone(DEFAULT_BINDINGS), fullscreen: false, hudScale: 1 },
+    settings: { music: 0.7, sfx: 0.8, shake: 1, scale: 'sharp', diagonalAim: false, showStats: true, showFps: false, fireDropChance: 0.1, bindings: structuredClone(DEFAULT_BINDINGS), fullscreen: false, hudScale: 1, interpolate: true, fpsCap: 0 },
     run: null, bestTime: 0, lastSeed: '', introSeen: false,
   };
 }

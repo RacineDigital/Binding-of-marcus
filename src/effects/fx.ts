@@ -44,7 +44,7 @@ export class FX {
   spawn(kind: PK, x: number, y: number): Particle | null {
     const p = this.free.pop();
     if (!p) return null;
-    p.active = true; p.kind = kind; p.x = x; p.y = y; p.z = 0; p.vx = 0; p.vy = 0; p.vz = 0;
+    (p as { _ix?: number })._ix = undefined; p.active = true; p.kind = kind; p.x = x; p.y = y; p.z = 0; p.vx = 0; p.vy = 0; p.vz = 0;
     p.life = 0; p.max = 0.5; p.size = 1; p.size2 = 1; p.color = '#fff'; p.color2 = null; p.grav = 0; p.drag = 0;
     p.glow = false; p.bounce = 0.3; p.decal = null; p.above = true;
     return p;

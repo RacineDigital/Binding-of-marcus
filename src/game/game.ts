@@ -5,6 +5,7 @@ import { AudioEngine } from '../audio/audio';
 import { SaveManager } from '../save/save';
 import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
 import { World } from './world';
+import { snapshotWorld, applyInterp, restoreInterp } from './interp';
 import { Run } from './run';
 import { Player } from '../player/player';
 import { charById } from '../player/characters';
@@ -61,6 +62,10 @@ export class Game {
   start(): void {
     this.last = performance.now();
     const frame = (now: number) => {
+      requestAnimationFrame(frame);
+      const cap = this.save.data.settings.fpsCap;
+      // small tolerance so a 144 cap on a 144 Hz display never drops frames to timing jitter
+      if (cap && now - this.last < 1000 / cap - 1.2) return;
       const dt = Math.min(0.1, (now - this.last) / 1000);
       this.last = now;
       this.fpsAcc += dt; this.fpsN++;
@@ -75,7 +80,6 @@ export class Game {
       this.render(dt);
       const t2 = performance.now();
       this.perf.update = this.perf.update * 0.95 + (t1 - t0) * 0.05; this.perf.render = this.perf.render * 0.95 + (t2 - t1) * 0.05;
-      requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
   }
@@ -104,13 +108,17 @@ export class Game {
       if (inp.wasPressed('swap') && w.player.consumables.length > 1) { w.player.consumables.push(w.player.consumables.shift()!); this.audio.play('pageGet', { vol: 0.4 }); }
       if (inp.isDown('drop')) { this.dropHold += dt; if (this.dropHold > 0.8 && w.player.charms.length) { this.dropCharm(); this.dropHold = -99; } } else this.dropHold = 0;
     }
+    snapshotWorld(w);
     w.update(dt);
   }
 
   private render(dt: number): void {
     const r = this.r;
     if (this.scene === 'run' && this.world) {
-      this.world.render();
+      // blend between the last two 60 Hz simulation steps for smooth high refresh-rate output
+      const alpha = this.paused || this.save.data.settings.interpolate === false ? 1 : Math.min(1, this.acc / FIXED_DT);
+      applyInterp(this.world, alpha);
+      try { this.world.render(); } finally { restoreInterp(); }
       r.shakeX = 0; r.shakeY = 0;
       r.present();
       const ui = r.uiBegin();
