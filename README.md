@@ -1,4 +1,4 @@
-# Binding of Marcus
+# Lost Marcus
 
 A top-down, room-by-room action roguelike for Windows and the browser. Marcus goes down into the cellar of his late
 grandfather's bindery, where the frightening stories the old bookbinder stitched shut have come
@@ -11,12 +11,27 @@ image or audio asset files.
 
 Open the repository's **Releases** page and download one of these:
 
-- **Windows:** `Binding-of-Marcus-Setup-X.Y.Z.exe` (installer with shortcuts) or
-  `Binding-of-Marcus-X.Y.Z-portable.exe` (no install). Progress is saved to
-  `%APPDATA%\Binding of Marcus\saves`. F11 toggles fullscreen. The .exe is not code-signed, so
+- **Windows:** `Lost-Marcus-Setup-X.Y.Z.exe` (installer with shortcuts) or
+  `Lost-Marcus-X.Y.Z-portable.exe` (no install). Progress is saved to
+  `%APPDATA%\Lost Marcus\saves`. F11 toggles fullscreen. The .exe is not code-signed, so
   SmartScreen may warn: click **More info**, then **Run anyway**.
-- **Any computer:** the zip. Unzip it and double-click **Binding of Marcus.html**. It is one
+- **Any computer:** the zip. Unzip it and double-click **Lost Marcus.html**. It is one
   self-contained file that runs offline in any modern browser and saves in the browser's storage.
+
+### Discord status (desktop)
+The Windows version can show what you're doing on your Discord profile ("Playing Lost Marcus",
+the chapter, the boss you're fighting and how long the run has lasted). It needs a Discord
+application, whose name is what Discord shows after "Playing":
+
+1. Go to https://discord.com/developers/applications, click **New Application** and give it the
+   name you want people to see (for example *Lost Marcus (Beta)*).
+2. Copy the **Application ID** from the General Information page and put it in
+   `DISCORD_CLIENT_ID` in `electron/main.cjs` (or set the `LOST_MARCUS_DISCORD_ID` environment
+   variable).
+3. Optional: under **Rich Presence → Art Assets**, upload a 512×512 or larger image named `logo`.
+   It appears as the big picture on the status card.
+
+It turns itself off when Discord isn't running and can be switched off in Options → Discord status.
 
 ### Saving
 The game autosaves on every room you enter and when you close it, so **Continue** puts you back in

@@ -182,8 +182,8 @@ export class MenuSystem {
         // title
         const ty = 54;
         inkBlot(ctx, 128, ty - 10, 230, 46, self.time, 'rgba(8,4,12,0.55)');
-        text(ctx, 'Binding', 40, ty - 4, 30, '#efe2c8', 'left', FONT_TITLE, 400);
-        text(ctx, 'of Marcus', 120, ty + 20, 22, '#c8a878', 'left', FONT_TITLE, 400);
+        text(ctx, 'Lost', 40, ty - 4, 30, '#efe2c8', 'left', FONT_TITLE, 400);
+        text(ctx, 'Marcus', 90, ty + 20, 24, '#c8a878', 'left', FONT_TITLE, 400);
         // drips from the title
         ctx.fillStyle = '#efe2c8';
         for (const [x, l] of [[52, 6], [96, 9], [141, 4], [176, 7]] as [number, number][]) { const len = l + Math.sin(self.time * 1.3 + x) * 2; ctx.fillRect(x, ty + 1, 1.2, len); ctx.beginPath(); ctx.arc(x + 0.6, ty + 1 + len, 1.3, 0, TAU); ctx.fill(); }
@@ -601,6 +601,7 @@ export class MenuSystem {
       { label: 'Scaling', value: () => ({ sharp: 'Sharp (fit)', integer: 'Pixel perfect', stretch: 'Nearest (fit)' } as any)[st().scale], ok: () => { const m = ['sharp', 'integer', 'stretch'] as const; st().scale = m[(m.indexOf(st().scale) + 1) % 3]; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fullscreen', value: () => (document.fullscreenElement ? 'On' : 'Off'), ok: () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); } },
       { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
+      ...((window as any).bomDesktop?.setPresence ? [{ label: 'Discord status', value: () => (st().discord !== false ? 'On' : 'Off'), ok: () => { st().discord = st().discord === false; g.save.markDirty(); } }] : []),
       { label: 'Run timer', value: () => (st().timer ? 'On' : 'Off'), ok: () => { st().timer = !st().timer; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },
@@ -730,10 +731,10 @@ export class MenuSystem {
   creditsScreen(): Screen {
     const self = this;
     const lines = [
-      ['Binding of Marcus', 'title'], ['', ''],
+      ['Lost Marcus', 'title'], ['', ''],
       ['Design, code, pixel art, music and sound', 'h'], ['Generated in-engine — every sprite, room, sound and song', ''], ['is painted or synthesised procedurally at runtime.', ''], ['', ''],
       ['Built with Claude Code', 'h'], ['', ''],
-      ['Typefaces', 'h'], ['Pirata One — Rodrigo Fuenzalida & Nicolás Massi (SIL OFL)', ''], ['Barlow Condensed — Jeremy Tribby (SIL OFL)', ''], ['', ''],
+      ['Typefaces', 'h'], ['Cinzel — Natanael Gama (SIL OFL)', ''], ['Pirata One — Rodrigo Fuenzalida & Nicolás Massi (SIL OFL)', ''], ['Barlow Condensed — Jeremy Tribby (SIL OFL)', ''], ['', ''],
       ['With gratitude to', 'h'], ['Every grandparent who read the scary parts quietly', ''], ['and the room-by-room roguelikes that came before.', ''], ['', ''],
       ['Thank you for reading.', 'title'],
     ];

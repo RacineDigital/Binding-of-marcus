@@ -7,6 +7,7 @@ import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
 import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
 import { recordScore, checkProgress, RunMode } from './progress';
+import { updatePresence } from './presence';
 import { Run } from './run';
 import { Player } from '../player/player';
 import { charById } from '../player/characters';
@@ -51,7 +52,7 @@ export class Game {
     window.addEventListener('keydown', unlockAudio);
     window.addEventListener('pointerdown', unlockAudio);
     window.addEventListener('gamepadconnected', unlockAudio);
-    // F9 (or F12) saves a screenshot: to Pictures/Binding of Marcus on desktop, a download in the browser
+    // F9 (or F12) saves a screenshot: to Pictures/Lost Marcus on desktop, a download in the browser
     window.addEventListener('keydown', (e) => { if (e.code === 'F9' || e.code === 'F12') { e.preventDefault(); this.screenshot(cv); } });
     // closing the window mid-run keeps your exact spot
     window.addEventListener('beforeunload', () => { if (this.scene === 'run' && this.world && !this.world.player.dead && this.world.deathT < 0) this.saveSnapshot(); this.save.flush(); });
@@ -104,6 +105,7 @@ export class Game {
   private playAcc = 0;
   private step(dt: number): void {
     this.audio.update(dt);
+    updatePresence(this, dt);
     if (this.scene === 'run' && !this.paused) { this.playAcc += dt; if (this.playAcc >= 10) { this.save.stat('playTime', this.playAcc); this.playAcc = 0; } }
     for (const u of this.unlockQueue) u.t += dt;
     this.unlockQueue = this.unlockQueue.filter((u) => u.t < 3.5);

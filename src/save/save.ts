@@ -14,6 +14,8 @@ export interface Settings {
   fpsCap: number;
   /** Show a run timer on the HUD. */
   timer?: boolean;
+  /** Show what you're playing in Discord (desktop). */
+  discord?: boolean;
 }
 export interface SaveData {
   version: number;
@@ -110,7 +112,7 @@ export class SaveManager {
     if (n === this.slot) { this.data = this.loadSlot(n); this.dirty = false; }
   }
   /** The whole slot as JSON (for export) and import from a file. */
-  exportSlot(): string { const { settings, ...rest } = this.data; void settings; return JSON.stringify({ game: 'binding-of-marcus', version: 2, save: rest }, null, 1); }
+  exportSlot(): string { const { settings, ...rest } = this.data; void settings; return JSON.stringify({ game: 'lost-marcus', version: 2, save: rest }, null, 1); }
   importSlot(json: string): boolean {
     try {
       const o = JSON.parse(json); const d = o.save ?? o;

@@ -1,3 +1,11 @@
+## What's new in 2.2 (beta)
+
+- The game is now called **Lost Marcus**, with a new title logo. Desktop saves from Binding of
+  Marcus are copied over automatically the first time you start it.
+- Discord status: shows the chapter you're in, the boss you're fighting and the run time.
+- The Rust Crab and the Bone Knight are gone: they blocked every shot from the front, so only bombs
+  could kill them.
+
 ## What's new in 2.1
 
 **2.1.1:** the Options menu scrolls (mouse wheel, arrows or hover/click), so every setting is reachable.
@@ -18,18 +26,18 @@
 ## Download and play
 
 ### Windows (recommended)
-- **Binding-of-Marcus-Setup-X.Y.Z.exe**: installer with Start-menu and desktop shortcuts.
-- **Binding-of-Marcus-X.Y.Z-portable.exe**: no install needed. Just double-click it.
+- **Lost-Marcus-Setup-X.Y.Z.exe**: installer with Start-menu and desktop shortcuts.
+- **Lost-Marcus-X.Y.Z-portable.exe**: no install needed. Just double-click it.
 
-Your progress is saved automatically to `%APPDATA%\Binding of Marcus\saves`. Press F11 for fullscreen.
+Your progress is saved automatically to `%APPDATA%\Lost Marcus\saves`. Press F11 for fullscreen.
 
 > Windows SmartScreen may warn about an unrecognised app because the .exe is not code-signed.
 > Click **More info**, then **Run anyway**.
 
 ### Any computer (browser version)
-1. Download **Binding-of-Marcus-VERSION.zip** and unzip it.
-2. Double-click **Binding of Marcus.html**. It runs offline in Chrome, Edge or Firefox.
+1. Download **Lost-Marcus-VERSION.zip** and unzip it.
+2. Double-click **Lost Marcus.html**. It runs offline in Chrome, Edge or Firefox.
 
 ### Other files
-- **Binding-of-Marcus-VERSION.html**: the browser version as a single file.
-- **Binding-of-Marcus-VERSION-web.zip**: a multi-file build for web hosts (itch.io, Netlify, GitHub Pages).
+- **Lost-Marcus-VERSION.html**: the browser version as a single file.
+- **Lost-Marcus-VERSION-web.zip**: a multi-file build for web hosts (itch.io, Netlify, GitHub Pages).

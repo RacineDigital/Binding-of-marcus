@@ -190,27 +190,66 @@ export function renderMenuScene(ms: MenuSystem, dt: number): void {
 // ---------------------------------------------------------------------------- main menu
 interface Entry { id: string; label: string; desc: () => string; enabled?: () => boolean; act: () => void; icon: (ctx: CanvasRenderingContext2D, x: number, y: number, c: string) => void }
 
+const FONT_LOGO = "'Cinzel', 'Trajan Pro', Georgia, serif";
+
+/** Draw a word letter by letter with tracking; alphaOf lets single letters fade. Returns the width. */
+function tracked(ctx: CanvasRenderingContext2D, word: string, x: number, y: number, track: number, alphaOf?: (i: number) => number): number {
+  let cx = x;
+  for (let i = 0; i < word.length; i++) {
+    const a = alphaOf ? alphaOf(i) : 1;
+    if (a < 1) { ctx.save(); ctx.globalAlpha *= a; ctx.fillText(word[i], cx, y); ctx.restore(); } else ctx.fillText(word[i], cx, y);
+    cx += ctx.measureText(word[i]).width + (i < word.length - 1 ? track : 0);
+  }
+  return cx - x;
+}
+function trackedWidth(ctx: CanvasRenderingContext2D, word: string, track: number): number {
+  let w = 0;
+  for (let i = 0; i < word.length; i++) w += ctx.measureText(word[i]).width + (i < word.length - 1 ? track : 0);
+  return w;
+}
+
+/**
+ * Title: engraved Roman capitals, like a name pressed into a book cover. LOST sits small and widely
+ * spaced between two rules; MARCUS is lit from below like candlelight, and its last letter keeps
+ * fading, as if it is slipping away.
+ */
 function drawLogo(ctx: CanvasRenderingContext2D, t: number, a: number): void {
   ctx.save(); ctx.globalAlpha = a;
-  const x = 34, y = 50;
-  // ink glow behind the title
-  const glow = ctx.createRadialGradient(x + 70, y - 4, 4, x + 70, y - 4, 100);
-  glow.addColorStop(0, 'rgba(140,20,34,0.32)'); glow.addColorStop(1, 'rgba(140,20,34,0)');
-  ctx.fillStyle = glow; ctx.fillRect(x - 40, y - 60, 230, 110);
-  text(ctx, 'Binding', x + 1.2, y + 1.2, 34, '#5a0e18', 'left', FONT_TITLE, 400, false);
-  text(ctx, 'Binding', x, y, 34, '#f0e4cc', 'left', FONT_TITLE, 400, false);
-  text(ctx, 'of Marcus', x + 70.8, y + 22.8, 22, '#5a0e18', 'left', FONT_TITLE, 400, false);
-  text(ctx, 'of Marcus', x + 70, y + 22, 22, '#d4b080', 'left', FONT_TITLE, 400, false);
-  // ink drips running off the letters
-  ctx.fillStyle = '#f0e4cc';
-  for (const [dx, l, sp] of [[8, 7, 0.7], [44, 10, 1.1], [88, 5, 0.9], [118, 8, 1.3]] as [number, number, number][]) {
-    const len = l + Math.sin(t * sp + dx) * 2.5;
-    ctx.fillRect(x + dx, y + 2, 1.2, len); ctx.beginPath(); ctx.arc(x + dx + 0.6, y + 2 + len, 1.3, 0, TAU); ctx.fill();
-  }
-  // a stitched thread under the title
-  ctx.strokeStyle = 'rgba(200,60,70,0.7)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]); ctx.lineDashOffset = -t * 6;
-  ctx.beginPath(); ctx.moveTo(x, y + 30); ctx.lineTo(x + 160, y + 30); ctx.stroke(); ctx.setLineDash([]);
-  text(ctx, 'some stories should stay shut', x + 2, y + 40, 6.5, 'rgba(200,180,160,0.6)', 'left', FONT_BODY, 500, false);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  const x = 34, y = 58;
+  ctx.font = `700 34px ${FONT_LOGO}`;
+  const W = trackedWidth(ctx, 'MARCUS', 2.5);
+  const cx = x + W / 2;
+  // warm candle glow behind the name
+  const flick = 0.85 + Math.sin(t * 7.3) * 0.05 + Math.sin(t * 13.1) * 0.04;
+  const glow = ctx.createRadialGradient(cx, y - 10, 4, cx, y - 10, 110);
+  glow.addColorStop(0, `rgba(210,140,60,${0.2 * flick})`); glow.addColorStop(1, 'rgba(210,140,60,0)');
+  ctx.fillStyle = glow; ctx.fillRect(x - 50, y - 70, W + 100, 120);
+  // LOST, small and spaced, between two rules
+  ctx.font = `600 11px ${FONT_LOGO}`;
+  const lw = trackedWidth(ctx, 'LOST', 9);
+  const ly = y - 33;
+  ctx.fillStyle = '#c9a46a';
+  tracked(ctx, 'LOST', cx - lw / 2, ly, 9);
+  ctx.fillStyle = 'rgba(201,164,106,0.55)';
+  ctx.fillRect(x, ly - 4, cx - lw / 2 - x - 8, 0.8);
+  ctx.fillRect(cx + lw / 2 + 8, ly - 4, x + W - (cx + lw / 2 + 8), 0.8);
+  // MARCUS: shadow, then a candlelit fill
+  ctx.font = `700 34px ${FONT_LOGO}`;
+  const fade = (i: number) => (i === 5 ? 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.9)) : 1);
+  ctx.fillStyle = 'rgba(20,8,6,0.85)';
+  tracked(ctx, 'MARCUS', x + 1.5, y + 1.5, 2.5, fade);
+  const grad = ctx.createLinearGradient(0, y - 26, 0, y + 2);
+  grad.addColorStop(0, '#f6ecd8'); grad.addColorStop(0.55, '#e3c79a'); grad.addColorStop(1, '#a8743e');
+  ctx.fillStyle = grad;
+  tracked(ctx, 'MARCUS', x, y, 2.5, fade);
+  // a ruled line with a diamond, like a printer's ornament
+  const ry = y + 9;
+  ctx.fillStyle = 'rgba(201,164,106,0.55)';
+  ctx.fillRect(x, ry, W / 2 - 6, 0.8); ctx.fillRect(cx + 6, ry, W / 2 - 6, 0.8);
+  ctx.fillStyle = '#c9a46a';
+  ctx.beginPath(); ctx.moveTo(cx, ry - 2.6); ctx.lineTo(cx + 2.6, ry + 0.4); ctx.lineTo(cx, ry + 3.4); ctx.lineTo(cx - 2.6, ry + 0.4); ctx.fill();
+  text(ctx, 'some stories should stay shut', cx, y + 22, 6.5, 'rgba(200,180,160,0.6)', 'center', FONT_BODY, 500, false);
   ctx.restore();
 }
 
@@ -297,7 +336,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
       // footer
       const info = g.save.slotInfo(g.save.slot);
       text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played${store.kind === 'file' ? '  ·  F11 fullscreen' : ''}`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.55)', 'right');
-      text(ctx, 'v2.1', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.35)', 'right');
+      text(ctx, 'v2.2 beta', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.35)', 'right');
       text(ctx, g.input.usingPad ? 'D-pad to choose · A to select' : 'Arrows / mouse to choose · Enter or click to select', X0 - 12, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'left');
     },
   };
@@ -320,7 +359,7 @@ export function profilesScreen(ms: MenuSystem): Screen {
       case 'Export save': {
         if (n !== g.save.slot) { flash('Switch to this slot first.'); break; }
         const blob = new Blob([g.save.exportSlot()], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `binding-of-marcus-slot${n}.json`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `lost-marcus-slot${n}.json`; a.click();
         setTimeout(() => URL.revokeObjectURL(a.href), 2000);
         flash('Save exported.');
         break;
@@ -328,7 +367,7 @@ export function profilesScreen(ms: MenuSystem): Screen {
       case 'Import save': {
         if (n !== g.save.slot) { flash('Switch to this slot first.'); break; }
         const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
-        inp.onchange = () => { const f = inp.files?.[0]; if (!f) return; f.text().then((s) => flash(g.save.importSlot(s) ? 'Save imported.' : 'That file is not a Binding of Marcus save.')); };
+        inp.onchange = () => { const f = inp.files?.[0]; if (!f) return; f.text().then((s) => flash(g.save.importSlot(s) ? 'Save imported.' : 'That file is not a Lost Marcus save.')); };
         inp.click();
         break;
       }

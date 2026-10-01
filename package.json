@@ -1,7 +1,7 @@
 {
-  "name": "binding-of-marcus",
+  "name": "lost-marcus",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -27,15 +27,16 @@
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
     "@fontsource/pirata-one": "^5.3.0"
   },
   "main": "electron/main.cjs",
-  "description": "Binding of Marcus - a dark top-down roguelike",
-  "author": "Binding of Marcus",
+  "description": "Lost Marcus - a dark top-down roguelike",
+  "author": "Lost Marcus",
   "build": {
-    "appId": "com.racinedigital.bindingofmarcus",
-    "productName": "Binding of Marcus",
-    "copyright": "Binding of Marcus",
+    "appId": "com.racinedigital.lostmarcus",
+    "productName": "Lost Marcus",
+    "copyright": "Lost Marcus",
     "directories": {
       "output": "release-desktop",
       "buildResources": "electron"
@@ -43,6 +44,7 @@
     "files": [
       "electron/main.cjs",
       "electron/preload.cjs",
+      "electron/discord.cjs",
       "electron/icon.png",
       "package.json"
     ],
@@ -76,11 +78,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "shortcutName": "Binding of Marcus",
-      "artifactName": "Binding-of-Marcus-Setup-${version}.${ext}"
+      "shortcutName": "Lost Marcus",
+      "artifactName": "Lost-Marcus-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "Binding-of-Marcus-${version}-portable.${ext}"
+      "artifactName": "Lost-Marcus-${version}-portable.${ext}"
     },
     "linux": {
       "target": [

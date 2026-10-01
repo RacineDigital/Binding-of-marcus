@@ -2,6 +2,8 @@ import { buildPlayerSprites } from '../art/marcus';
 import { LOOKS } from '../art/look';
 
 export async function boot(): Promise<void> {
+  // the logo face is only used on canvas, so ask for it explicitly before the first frame
+  await Promise.all(["700 32px 'Cinzel'", "600 12px 'Cinzel'"].map((f) => document.fonts.load(f))).catch(() => {});
   await document.fonts.ready;
   const params = new URLSearchParams(location.search);
   document.getElementById('boot')?.remove();

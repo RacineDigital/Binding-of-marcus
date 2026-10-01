@@ -1,4 +1,4 @@
-// Bridge between the game page and the desktop shell (file saves, fullscreen, screenshots).
+// Bridge between the game page and the desktop shell (file saves, fullscreen, screenshots, Discord status).
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('bomDesktop', {
   readSave: (key) => ipcRenderer.sendSync('save:read', key),
@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('bomDesktop', {
   screenshot: (dataUrl) => ipcRenderer.invoke('screenshot', dataUrl),
   toggleFullscreen: () => ipcRenderer.send('win:fullscreen'),
   quit: () => ipcRenderer.send('win:quit'),
+  setPresence: (p) => ipcRenderer.send('presence', p),
 });

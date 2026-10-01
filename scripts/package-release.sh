@@ -9,16 +9,16 @@ npm run build
 npm run build:single
 
 rm -rf release
-mkdir -p "release/Binding-of-Marcus"
-cp dist-single/index.html "release/Binding-of-Marcus/Binding of Marcus.html"
-cp .github/release/PLAY.txt "release/Binding-of-Marcus/PLAY.txt"
+mkdir -p "release/Lost-Marcus"
+cp dist-single/index.html "release/Lost-Marcus/Lost Marcus.html"
+cp .github/release/PLAY.txt "release/Lost-Marcus/PLAY.txt"
 
 # 1. Zip with the standalone game + instructions (the main download)
-(cd release && zip -qr "Binding-of-Marcus-$VERSION.zip" Binding-of-Marcus)
+(cd release && zip -qr "Lost-Marcus-$VERSION.zip" Lost-Marcus)
 # 2. The standalone HTML on its own
-cp dist-single/index.html "release/Binding-of-Marcus-$VERSION.html"
+cp dist-single/index.html "release/Lost-Marcus-$VERSION.html"
 # 3. Multi-file web build for hosting on itch.io / Netlify / GitHub Pages
-(cd dist && zip -qr "../release/Binding-of-Marcus-$VERSION-web.zip" .)
+(cd dist && zip -qr "../release/Lost-Marcus-$VERSION-web.zip" .)
 
-rm -rf "release/Binding-of-Marcus"
+rm -rf "release/Lost-Marcus"
 ls -lh release

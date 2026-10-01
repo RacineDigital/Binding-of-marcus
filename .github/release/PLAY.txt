@@ -1,9 +1,9 @@
-BINDING OF MARCUS
-=================
+LOST MARCUS
+===========
 
 HOW TO PLAY
 -----------
-Double-click "Binding of Marcus.html". It opens in your web browser and runs
+Double-click "Lost Marcus.html". It opens in your web browser and runs
 offline. You don't need to install anything. Chrome, Edge or Firefox work best.
 
 Click the window once so the browser allows sound. Press F11 for fullscreen.

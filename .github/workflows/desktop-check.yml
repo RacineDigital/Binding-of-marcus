@@ -28,6 +28,6 @@ jobs:
           Write-Host "Packaged app self-test passed"
       - uses: actions/upload-artifact@v4
         with:
-          name: binding-of-marcus-windows
+          name: lost-marcus-windows
           path: release-desktop/*.exe
           retention-days: 14

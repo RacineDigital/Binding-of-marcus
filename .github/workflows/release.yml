@@ -56,7 +56,7 @@ jobs:
           sed -e "s/VERSION/$TAG/g" -e "s/X\.Y\.Z/${TAG#v}/g" .github/release/notes.md > release-notes.md
           gh release create "$TAG" release/* \
             --target "$GITHUB_SHA" \
-            --title "Binding of Marcus $TAG" \
+            --title "Lost Marcus $TAG" \
             --notes-file release-notes.md
 
   windows:
