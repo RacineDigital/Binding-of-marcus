@@ -13,6 +13,33 @@ export function text(ctx: CanvasRenderingContext2D, s: string, x: number, y: num
   ctx.fillStyle = color; ctx.fillText(s, x, y);
   return ctx.measureText(s).width;
 }
+/** The logo face: engraved Roman capitals. */
+export const FONT_LOGO = "'Cinzel', 'Trajan Pro', Georgia, serif";
+/**
+ * Page heading in the logo's style: spaced capitals, with a printer's rule and diamond under
+ * centred headings. Returns the width.
+ */
+export function heading(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, size: number, color: string, align: 'left' | 'center' = 'center', rule = align === 'center'): number {
+  const S = s.toUpperCase();
+  ctx.save();
+  ctx.font = `700 ${size}px ${FONT_LOGO}`; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  const track = size * 0.09;
+  (ctx as any).letterSpacing = `${track}px`;
+  const w = ctx.measureText(S).width - track;
+  const x0 = align === 'center' ? x - w / 2 : x;
+  ctx.fillStyle = 'rgba(40,20,10,0.25)'; ctx.fillText(S, x0 + size * 0.06, y + size * 0.06);
+  ctx.fillStyle = color; ctx.fillText(S, x0, y);
+  (ctx as any).letterSpacing = '0px';
+  if (rule) {
+    const ry = y + size * 0.45, half = Math.max(w * 0.5, 24) + 6, d = size * 0.18;
+    ctx.globalAlpha *= 0.55; ctx.fillStyle = color;
+    ctx.fillRect(x0 + w / 2 - half, ry, half - d - 3, 0.6); ctx.fillRect(x0 + w / 2 + d + 3, ry, half - d - 3, 0.6);
+    ctx.globalAlpha /= 0.55;
+    ctx.beginPath(); ctx.moveTo(x0 + w / 2, ry - d); ctx.lineTo(x0 + w / 2 + d, ry + 0.3); ctx.lineTo(x0 + w / 2, ry + d + 0.6); ctx.lineTo(x0 + w / 2 - d, ry + 0.3); ctx.fill();
+  }
+  ctx.restore();
+  return w;
+}
 export function measure(ctx: CanvasRenderingContext2D, s: string, size: number, font = FONT_BODY, weight = 600): number {
   ctx.font = `${weight} ${size}px ${font}`; return ctx.measureText(s).width;
 }

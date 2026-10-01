@@ -1,8 +1,8 @@
 // Front-end and overlay menus. Keyboard and controller navigable; drawn crisp over an animated scene.
 import type { Game } from '../game/game';
 import type { World } from '../game/world';
-import { MenuKey, ACTION_ORDER, ACTION_LABELS, keyLabel, DEFAULT_BINDINGS, Action } from '../core/input';
-import { text, COL, FONT_TITLE, FONT_BODY, wrap, measure } from './draw';
+import { MenuKey, ACTION_ORDER, ACTION_LABELS, keyLabel, DEFAULT_BINDINGS, Action, bindLabel } from '../core/input';
+import { text, COL, FONT_TITLE, FONT_BODY, wrap, measure, heading, panel } from './draw';
 import { VIEW_W, VIEW_H } from '../core/constants';
 import { CHARACTERS, CharacterDef } from '../player/characters';
 import { buildPlayerSprites, PlayerSprites } from '../art/marcus';
@@ -50,6 +50,19 @@ function page(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
   for (let i = 0; i < 90; i++) ctx.fillRect(x + r() * w, y + r() * h, 1 + r() * 4, 0.5);
   ctx.restore();
   ctx.strokeStyle = 'rgba(70,45,25,0.6)'; ctx.lineWidth = 0.6; ctx.stroke();
+  // a book-cover frame: double rule with diamonds at the corners
+  ctx.strokeStyle = 'rgba(95,62,32,0.32)'; ctx.lineWidth = 0.6; ctx.strokeRect(x + 6, y + 6, w - 12, h - 12);
+  ctx.strokeStyle = 'rgba(95,62,32,0.18)'; ctx.lineWidth = 0.4; ctx.strokeRect(x + 8.5, y + 8.5, w - 17, h - 17);
+  ctx.fillStyle = 'rgba(95,62,32,0.45)';
+  for (const [cx, cy] of [[x + 6, y + 6], [x + w - 6, y + 6], [x + 6, y + h - 6], [x + w - 6, y + h - 6]]) {
+    ctx.beginPath(); ctx.moveTo(cx, cy - 2.4); ctx.lineTo(cx + 2.4, cy); ctx.lineTo(cx, cy + 2.4); ctx.lineTo(cx - 2.4, cy); ctx.fill();
+  }
+  // a ribbon bookmark hanging over the top edge
+  const bx = x + w - 30, bl = 11 + (seed % 3) * 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx + 1, y - 2, 7, bl);
+  const rg = ctx.createLinearGradient(bx, 0, bx + 7, 0); rg.addColorStop(0, '#6e1420'); rg.addColorStop(0.5, '#9a2232'); rg.addColorStop(1, '#5a0e18');
+  ctx.fillStyle = rg; ctx.beginPath(); ctx.moveTo(bx, y - 3); ctx.lineTo(bx + 7, y - 3); ctx.lineTo(bx + 7, y + bl); ctx.lineTo(bx + 3.5, y + bl - 3.5); ctx.lineTo(bx, y + bl); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,200,200,0.15)'; ctx.fillRect(bx + 1, y - 3, 0.6, bl - 2);
   ctx.restore();
 }
 function inkBlot(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, t: number, color = 'rgba(30,24,60,0.85)'): void {
@@ -64,7 +77,29 @@ function inkBlot(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   }
   ctx.fill(); ctx.restore();
 }
-function hint(ctx: CanvasRenderingContext2D, s: string): void { text(ctx, s, VIEW_W / 2, VIEW_H - 8, 6.5, 'rgba(220,205,185,0.65)', 'center'); }
+/** Key labels drawn as little keycaps, right-aligned at rx. */
+function keycaps(ctx: CanvasRenderingContext2D, labels: string[], rx: number, y: number): void {
+  let x = rx;
+  for (let i = labels.length - 1; i >= 0; i--) {
+    const w = Math.max(9, measure(ctx, labels[i], 6.5) + 6);
+    x -= w;
+    ctx.fillStyle = 'rgba(60,40,24,0.22)'; ctx.beginPath(); ctx.roundRect(x, y - 7.2, w, 9.5, 1.8); ctx.fill();
+    ctx.fillStyle = 'rgba(255,248,232,0.75)'; ctx.beginPath(); ctx.roundRect(x, y - 8, w, 9, 1.8); ctx.fill();
+    ctx.strokeStyle = 'rgba(70,45,25,0.55)'; ctx.lineWidth = 0.5; ctx.stroke();
+    text(ctx, labels[i], x + w / 2, y - 1.3, 6.5, INK, 'center', FONT_BODY, 600, false);
+    x -= 3;
+  }
+}
+/** Control hints in a small dark pill along the bottom edge. */
+function hint(ctx: CanvasRenderingContext2D, s: string): void {
+  const w = measure(ctx, s, 6.5) + 16, h = 10, x = VIEW_W / 2 - w / 2, y = VIEW_H - 15;
+  ctx.save();
+  ctx.fillStyle = 'rgba(12,8,10,0.82)';
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(201,164,106,0.35)'; ctx.lineWidth = 0.5; ctx.stroke();
+  ctx.restore();
+  text(ctx, s, VIEW_W / 2, y + 7.4, 6.5, 'rgba(230,215,195,0.85)', 'center', FONT_BODY, 600, false);
+}
 function fmtTime(sec: number): string { const m = Math.floor(sec / 60), s = Math.floor(sec % 60); return `${m}:${String(s).padStart(2, '0')}`; }
 
 export class MenuSystem {
@@ -223,7 +258,7 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 70, 26, 340, 212, 1, 17);
-        text(ctx, 'Daily Run', 240, 56, 20, INK, 'center', FONT_TITLE, 400, false);
+        heading(ctx, 'Daily Run', 240, 56, 14, INK);
         text(ctx, day, 240, 70, 8.5, INK2, 'center', FONT_BODY, 600, false);
         const sp = self.sprites(ch);
         ctx.save(); ctx.translate(150, 170); ctx.scale(3.5, 3.5);
@@ -356,7 +391,7 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 40, 20, 400, 228, 1, 7);
-        text(ctx, 'Challenges', 240, 44, 18, INK, 'center', FONT_TITLE, 400, false);
+        heading(ctx, 'Challenges', 240, 44, 13, INK);
         CHALLENGES.forEach((c, i) => {
           const y = 70 + i * 32;
           const locked = c.unlock && !g.save.isUnlocked(c.unlock);
@@ -386,7 +421,7 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 30, 20, 420, 228, 1, 11);
-        text(ctx, 'The Readers', 240, 44, 18, INK, 'center', FONT_TITLE, 400, false);
+        heading(ctx, 'The Readers', 240, 44, 13, INK);
         CHARACTERS.forEach((c, i) => {
           const x = 70 + i * 85, y = 120;
           const un = !c.unlock || g.save.isUnlocked(c.unlock);
@@ -430,7 +465,7 @@ export class MenuSystem {
     const renderBeasts = (ctx: CanvasRenderingContext2D) => {
       const kills = g.save.data.kills ?? {};
       const met = beasts.filter((d) => kills[d.id]).length;
-      text(ctx, 'Bestiary', 30, 30, 16, INK, 'left', FONT_TITLE, 400, false);
+      heading(ctx, 'Bestiary', 30, 31, 12, INK, 'left');
       text(ctx, `${met} / ${beasts.length} creatures recorded · Enter for curios`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
       const rowsVisible = 6, box = 29;
       const selRow = Math.floor(bsel / bcols);
@@ -476,7 +511,7 @@ export class MenuSystem {
         if (tab === 'beasts') { renderBeasts(ctx); return; }
         const seen = new Set(g.save.data.itemsSeen);
         const found = all.filter((i) => seen.has(i.id)).length;
-        text(ctx, 'Collection', 30, 30, 16, INK, 'left', FONT_TITLE, 400, false);
+        heading(ctx, 'Collection', 30, 31, 12, INK, 'left');
         text(ctx, `${found} / ${all.length} curios found · Enter for the bestiary`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
         const rowsVisible = 8;
         const selRow = Math.floor(sel / cols);
@@ -537,7 +572,7 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 20, 14, 440, 244, 1, 21);
-        text(ctx, 'Run History', 40, 38, 16, INK, 'left', FONT_TITLE, 400, false);
+        heading(ctx, 'Run History', 40, 38, 12, INK, 'left');
         const L = list();
         if (!L.length) text(ctx, 'No finished runs yet. Every story you finish or lose is written down here.', 240, 120, 8, INK2, 'center', FONT_BODY, 600, false);
         L.slice(scroll, scroll + 9).forEach((r, k) => {
@@ -565,7 +600,7 @@ export class MenuSystem {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 20, 14, 440, 244, 1, 9);
         const S = g.save.data.stats;
-        text(ctx, 'Statistics', 40, 38, 16, INK, 'left', FONT_TITLE, 400, false);
+        heading(ctx, 'Statistics', 40, 38, 12, INK, 'left');
         const rows: [string, string][] = [
           ['Runs started', String(S.runs ?? 0)], ['Stories finished', String(S.wins ?? 0)], ['Deaths', String(S.deaths ?? 0)],
           ['Enemies defeated', String(S.kills ?? 0)], ['Bosses defeated', String(S.bossKills ?? 0)], ['Curios collected', String(S.itemsCollected ?? 0)],
@@ -574,7 +609,7 @@ export class MenuSystem {
         ];
         rows.forEach(([k, v], i) => { text(ctx, k, 40, 54 + i * 14, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 200, 54 + i * 14, 9, INK, 'right', FONT_BODY, 600, false); });
         const un = ACHIEVEMENTS.filter((a) => g.save.isUnlocked(a.id)).length;
-        text(ctx, 'Achievements', 230, 38, 16, INK, 'left', FONT_TITLE, 400, false);
+        heading(ctx, 'Achievements', 230, 38, 12, INK, 'left');
         text(ctx, `${un} / ${ACHIEVEMENTS.length}`, 440, 38, 8, INK2, 'right', FONT_BODY, 600, false);
         ACHIEVEMENTS.slice(scroll, scroll + 10).forEach((a, i) => {
           const got = g.save.isUnlocked(a.id);
@@ -645,7 +680,7 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 90, 16, 300, 240, 1, 4);
-        text(ctx, 'Options', 240, 40, 16, INK, 'center', FONT_TITLE, 400, false);
+        heading(ctx, 'Options', 240, 40, 13, INK);
         if (scroll > 0) text(ctx, '▲', 240, 51, 7, INK2, 'center', FONT_BODY, 600, false);
         if (scroll + VIS < opts.length) text(ctx, '▼ more', 240, TOP + VIS * ROW - 2, 7, INK2, 'center', FONT_BODY, 600, false);
         opts.forEach((o, i) => {
@@ -693,12 +728,13 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 80, 8, 320, 256, 1, 6);
-        text(ctx, 'Controls', 240, 28, 14, INK, 'center', FONT_TITLE, 400, false);
+        heading(ctx, 'Controls', 240, 27, 11, INK, 'center', false);
         ACTION_ORDER.forEach((a, i) => {
           const y = 42 + i * 12.5;
           if (i === sel) inkBlot(ctx, 240, y - 3, 290, 12, self.time, 'rgba(40,30,60,0.15)');
           text(ctx, ACTION_LABELS[a], 98, y, 7.5, i === sel ? INK : INK2, 'left', FONT_BODY, 600, false);
-          text(ctx, waiting && i === sel ? 'Press a key…' : g.save.data.settings.bindings[a].map(keyLabel).join(' / '), 382, y, 7.5, waiting && i === sel ? '#8a2a2a' : INK, 'right', FONT_BODY, 600, false);
+          if (waiting && i === sel) text(ctx, 'Press a key…', 382, y, 7.5, '#8a2a2a', 'right', FONT_BODY, 600, false);
+          else keycaps(ctx, g.save.data.settings.bindings[a].map(keyLabel), 382, y);
         });
         const y = 42 + ACTION_ORDER.length * 12.5;
         if (sel === ACTION_ORDER.length) inkBlot(ctx, 240, y - 3, 200, 12, self.time, 'rgba(40,30,60,0.15)');
@@ -777,25 +813,54 @@ export class MenuSystem {
       },
       render(ctx) {
         const w = g.world; if (!w) return;
-        ctx.fillStyle = 'rgba(4,2,6,0.72)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        text(ctx, 'Paused', 60, 50, 22, '#efe2c8', 'left', FONT_TITLE, 400);
+        // a deep, vignetted backdrop so the room (and any title card) falls away
+        ctx.fillStyle = 'rgba(4,2,6,0.84)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        const vg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, 60, VIEW_W / 2, VIEW_H / 2, 300);
+        vg.addColorStop(0, 'rgba(60,30,20,0.12)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+        ctx.fillStyle = vg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        heading(ctx, 'Paused', 48, 46, 17, '#efe2c8', 'left');
+        ctx.fillStyle = 'rgba(201,164,106,0.45)'; ctx.fillRect(48, 53, 150, 0.6);
         items.forEach((it, i) => {
-          const y = 80 + i * 18;
-          if (i === sel) inkBlot(ctx, 120, y - 3.5, 160, 16, self.time);
-          text(ctx, it, 60 + (i === sel ? 4 : 0), y, i === sel ? 11 : 9.5, i === sel ? '#fff4dc' : '#b8a890', 'left', FONT_TITLE, 400);
+          const y = 76 + i * 18;
+          if (i === sel) inkBlot(ctx, 108, y - 3.5, 160, 16, self.time);
+          text(ctx, it, 48 + (i === sel ? 4 : 0), y, i === sel ? 11 : 9.5, i === sel ? '#fff4dc' : '#b8a890', 'left', FONT_TITLE, 400);
+        });
+        // your controls, as currently bound
+        const cx0 = 44, cy0 = 160;
+        panel(ctx, cx0, cy0, 176, 92, 0.9);
+        text(ctx, 'CONTROLS', cx0 + 8, cy0 + 11, 6.5, '#c9a46a', 'left', FONT_BODY, 600, false);
+        const b = g.save.data.settings.bindings;
+        const one = (a: Action) => [bindLabel(a)];
+        const rows: [string, string[]][] = [
+          ['Move', g.input.usingPad ? ['L-stick'] : [b.moveUp, b.moveLeft, b.moveDown, b.moveRight].map((c) => keyLabel(c[0] ?? ''))],
+          ['Fire', g.input.usingPad ? ['R-stick'] : [b.shootUp, b.shootLeft, b.shootDown, b.shootRight].map((c) => keyLabel(c[0] ?? ''))],
+          ['Bomb', one('bomb')], ['Active item', one('active')], ['Page / sweet', one('consumable')],
+          ['Swap', one('swap')], ['Drop charm (hold)', one('drop')], ['Map (hold)', one('map')],
+        ];
+        rows.forEach(([label, caps], i) => {
+          const col = i < 4 ? 0 : 1, row = i % 4;
+          const x = cx0 + 8 + col * 86, y = cy0 + 29 + row * 16;
+          text(ctx, label, x, y, 6.5, COL.dim, 'left', FONT_BODY, 600, false);
+          keycaps(ctx, caps, x + 79, y + 1);
         });
         // run info
         const r = w.run;
-        const x0 = 250;
-        text(ctx, w.floor.label, x0, 50, 10, '#e6d6bc', 'left', FONT_TITLE, 400);
-        text(ctx, `Seed  ${formatSeed(r.seed)}`, x0, 64, 9, COL.gold, 'left', FONT_BODY, 600);
-        const st: [string, string][] = [['Time', fmtTime(r.stats.time)], ['Enemies defeated', String(r.stats.kills)], ['Rooms cleared', String(r.stats.roomsCleared)], ['Secrets found', String(r.stats.secretsFound)], ['Damage taken', String(r.stats.damageTaken / 2) + ' hearts']];
-        st.forEach(([k, v], i) => { text(ctx, k, x0, 80 + i * 11, 7.5, COL.dim); text(ctx, v, x0 + 170, 80 + i * 11, 7.5, COL.text, 'right'); });
-        text(ctx, 'Curios', x0, 145, 8, COL.dim);
+        const x0 = 246;
+        panel(ctx, x0 - 10, 30, 214, 222, 0.75);
+        text(ctx, w.floor.label, x0, 48, 10, '#e6d6bc', 'left', FONT_TITLE, 400);
+        text(ctx, `Seed  ${formatSeed(r.seed)}`, x0, 62, 9, COL.gold, 'left', FONT_BODY, 600);
+        const st: [string, string][] = [['Time', fmtTime(r.stats.time)], ['Enemies defeated', String(r.stats.kills)], ['Rooms cleared', String(r.stats.roomsCleared)], ['Secrets found', String(r.stats.secretsFound)], ['Damage taken', `${r.stats.damageTaken / 2} hearts`]];
+        st.forEach(([k, v], i) => {
+          const y = 80 + i * 12;
+          if (i % 2 === 0) { ctx.fillStyle = 'rgba(255,240,220,0.035)'; ctx.fillRect(x0 - 4, y - 8, 194, 11); }
+          text(ctx, k, x0, y, 7.5, COL.dim); text(ctx, v, x0 + 186, y, 7.5, COL.text, 'right');
+        });
+        text(ctx, 'Curios', x0, 152, 8, COL.dim);
         const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
-        ids.forEach((id, i) => ctx.drawImage(itemIconCanvas(id), x0 + (i % 10) * 18, 150 + Math.floor(i / 10) * 18));
-        if (w.player.transformations.size) text(ctx, [...w.player.transformations].map((t) => t[0].toUpperCase() + t.slice(1)).join(' · '), x0, 250, 7, '#c8a0ff');
-        hint(ctx, 'Esc to resume');
+        if (!ids.length) text(ctx, 'Nothing yet.', x0, 166, 7, 'rgba(168,156,140,0.6)');
+        ids.forEach((id, i) => ctx.drawImage(itemIconCanvas(id), x0 + (i % 10) * 18, 156 + Math.floor(i / 10) * 18));
+        if (w.player.transformations.size) text(ctx, [...w.player.transformations].map((t) => t[0].toUpperCase() + t.slice(1)).join(' · '), x0, 246, 7, '#c8a0ff');
+        hint(ctx, `${bindLabel('pause')} to resume`);
       },
     };
     return scr;

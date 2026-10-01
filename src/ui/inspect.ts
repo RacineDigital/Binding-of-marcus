@@ -6,6 +6,7 @@ import { describeItem, DescLine } from '../items/describe';
 import { itemIconCanvas } from '../art/items';
 import { pickupSprites } from '../art/pickups';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { bindLabel as K, fmtKeys } from '../core/input';
 
 export interface InspectInfo {
   key: string;
@@ -30,7 +31,7 @@ const PICKUP_TEXT: Record<string, [string, string, string]> = {
   gilded: ['Gilded Heart', 'Worth its weight', 'Adds 1 gilded heart. Spills buttons when it breaks.'],
   key: ['Key', 'Opens things', 'Opens locked doors, locked boxes and the treasure room on later chapters.'],
   goldKey: ['Golden Key', 'Opens everything', 'Every lock on this floor opens for free.'],
-  bomb: ['Cherry Bomb', 'Handle with care', 'Place with Space. Breaks rocks, opens hidden walls and hurts everything nearby.'],
+  bomb: ['Cherry Bomb', 'Handle with care', 'Place with {bomb}. Breaks rocks, opens hidden walls and hurts everything nearby.'],
   bomb2: ['Two Cherry Bombs', 'Handle with care', '+2 cherry bombs.'],
   goldBomb: ['Golden Bomb', 'Infinite fuse', 'Cherry bombs are free for the rest of the floor.'],
   spark: ['Spark Jar', 'A little lightning', 'Charges your active item by 1.'],
@@ -40,30 +41,36 @@ const PICKUP_TEXT: Record<string, [string, string, string]> = {
   button10: ['Gold Button', 'Currency', '+10 buttons.'],
 };
 
+/** Item text can name controls as {action}; show whatever the player has bound. */
 export function inspectInfo(w: World, p: Pickup): InspectInfo | null {
+  const info = inspectRaw(w, p);
+  if (info) { info.lines = info.lines.map((l) => ({ ...l, text: fmtKeys(l.text) })); info.subtitle = fmtKeys(info.subtitle); }
+  return info;
+}
+function inspectRaw(w: World, p: Pickup): InspectInfo | null {
   const blind = w.blindItems();
   if (p.kind === 'item' && p.data.id) {
     const it = getItem(p.data.id); if (!it) return null;
     if (blind) return { key: 'blind', icon: itemIconCanvas(it.id, true), title: '???', subtitle: 'Something hidden by the Blight', lines: [{ text: 'You cannot make out what it is.', color: 'plain' }], quality: -1, kindLabel: '' };
-    const kindLabel = it.kind === 'active' ? 'ACTIVE ITEM  ·  E to use' : it.kind === 'familiar' ? 'FAMILIAR' : it.kind === 'trinket' ? 'CHARM' : 'PASSIVE ITEM';
+    const kindLabel = it.kind === 'active' ? `ACTIVE ITEM  ·  ${K('active')} to use` : it.kind === 'familiar' ? 'FAMILIAR' : it.kind === 'trinket' ? 'CHARM' : 'PASSIVE ITEM';
     return { key: it.id, icon: itemIconCanvas(it.id, false), title: it.name, subtitle: it.pickup, lines: describeItem(it), quality: it.quality, kindLabel, tags: it.tags, itemId: it.id };
   }
   if (p.kind === 'charm' && p.data.id) {
     const it = getItem(p.data.id) ?? getConsumable(p.data.id) as any;
     if (!it) return null;
     const lines: DescLine[] = it.effect ? (getItem(p.data.id) ? describeItem(getItem(p.data.id)!) : it.effect.map((t: string) => ({ text: t, color: 'plain' as const }))) : [];
-    return { key: p.data.id, icon: itemIconCanvas(p.data.id, false), title: it.name, subtitle: it.pickup ?? it.desc ?? '', lines, quality: -1, kindLabel: 'CHARM  ·  hold R to drop' };
+    return { key: p.data.id, icon: itemIconCanvas(p.data.id, false), title: it.name, subtitle: it.pickup ?? it.desc ?? '', lines, quality: -1, kindLabel: `CHARM  ·  hold ${K('drop')} to drop` };
   }
   if (p.kind === 'page' && p.data.id) {
     const c = getConsumable(p.data.id); if (!c) return null;
-    return { key: c.id, icon: pickupSprites().page.canvas, title: c.name, subtitle: c.desc, lines: c.effect.map((t) => ({ text: t, color: 'plain' })), quality: -1, kindLabel: 'TORN PAGE  ·  Q to use' };
+    return { key: c.id, icon: pickupSprites().page.canvas, title: c.name, subtitle: c.desc, lines: c.effect.map((t) => ({ text: t, color: 'plain' })), quality: -1, kindLabel: `TORN PAGE  ·  ${K('consumable')} to use` };
   }
   if (p.kind === 'sweet') {
     const eff = SWEET_EFFECTS[w.run.sweetMap[p.data.color ?? 0] ?? 0];
     const known = !!eff && w.run.identified.has(eff.id);
     return { key: 'sweet' + (p.data.color ?? 0), icon: pickupSprites().sweets[(p.data.color ?? 0) % pickupSprites().sweets.length].canvas,
       title: known ? eff.name : 'Unmarked Sweet', subtitle: known ? 'Identified' : 'Who knows what it does',
-      lines: [{ text: known ? eff.desc : 'A random effect. Eat it to find out (Q).', color: 'plain' }], quality: -1, kindLabel: 'SWEET  ·  Q to use' };
+      lines: [{ text: known ? eff.desc : 'A random effect. Eat it ({consumable}) to find out.', color: 'plain' }], quality: -1, kindLabel: `SWEET  ·  ${K('consumable')} to use` };
   }
   const t = PICKUP_TEXT[p.kind];
   if (t) {

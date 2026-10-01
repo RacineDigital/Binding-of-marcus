@@ -2,7 +2,7 @@
 // drying pages, Marcus reading by a candle) with a menu that works with keys, pad and mouse,
 // plus the save-profile picker.
 import type { MenuSystem, Screen } from './menus';
-import { text, COL, FONT_TITLE, FONT_BODY, measure } from './draw';
+import { text, COL, FONT_TITLE, FONT_BODY, measure, heading, FONT_LOGO } from './draw';
 import { VIEW_W, VIEW_H } from '../core/constants';
 import { CHARACTERS } from '../player/characters';
 import { themeAt } from '../generation/floorgen';
@@ -190,7 +190,6 @@ export function renderMenuScene(ms: MenuSystem, dt: number): void {
 // ---------------------------------------------------------------------------- main menu
 interface Entry { id: string; label: string; desc: () => string; enabled?: () => boolean; act: () => void; icon: (ctx: CanvasRenderingContext2D, x: number, y: number, c: string) => void }
 
-const FONT_LOGO = "'Cinzel', 'Trajan Pro', Georgia, serif";
 
 /** Draw a word letter by letter with tracking; alphaOf lets single letters fade. Returns the width. */
 function tracked(ctx: CanvasRenderingContext2D, word: string, x: number, y: number, track: number, alphaOf?: (i: number) => number): number {
@@ -336,7 +335,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
       // footer
       const info = g.save.slotInfo(g.save.slot);
       text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played${store.kind === 'file' ? '  ·  F11 fullscreen' : ''}`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.55)', 'right');
-      text(ctx, 'v2.2 beta', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.35)', 'right');
+      text(ctx, 'v2.3 beta', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.35)', 'right');
       text(ctx, g.input.usingPad ? 'D-pad to choose · A to select' : 'Arrows / mouse to choose · Enter or click to select', X0 - 12, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'left');
     },
   };
@@ -398,7 +397,7 @@ export function profilesScreen(ms: MenuSystem): Screen {
     },
     render(ctx) {
       ctx.fillStyle = 'rgba(4,2,8,0.78)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-      text(ctx, 'Save Slots', VIEW_W / 2, 40, 18, '#efe2c8', 'center', FONT_TITLE, 400);
+      heading(ctx, 'Save Slots', VIEW_W / 2, 40, 13, '#efe2c8');
       for (let i = 0; i < SLOTS; i++) {
         const info = g.save.slotInfo(i + 1), x = cardX(i), on = sel === i && row === 0, cur = g.save.slot === i + 1;
         ctx.fillStyle = on ? 'rgba(60,24,34,0.95)' : 'rgba(20,14,24,0.92)'; ctx.fillRect(x, 60, 116, 110);

@@ -29,6 +29,21 @@ const PAD: Partial<Record<Action, number[]>> = {
   bomb: [4], active: [5, 7], consumable: [6], focus: [10], pause: [9], map: [8], drop: [11],
 };
 
+const PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'L3', 'R3'];
+let liveInput: Input | null = null;
+
+/** What to press for an action right now: your own key binding, or the controller button when playing on a pad. */
+export function bindLabel(a: Action): string {
+  const inp = liveInput;
+  if (inp?.usingPad) { const b = PAD[a]?.[0]; if (b !== undefined) return PAD_NAMES[b]; }
+  const codes = inp?.bindings[a] ?? DEFAULT_BINDINGS[a];
+  return codes.length ? keyLabel(codes[0]) : 'unbound';
+}
+/** Replace {action} placeholders in display text with the current control, e.g. "Place with {bomb}". */
+export function fmtKeys(s: string): string {
+  return s.replace(/\{(\w+)\}/g, (m, a) => (a in DEFAULT_BINDINGS ? bindLabel(a as Action) : m));
+}
+
 export type MenuKey = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back' | 'tabL' | 'tabR';
 
 export function keyLabel(code: string): string {
@@ -67,6 +82,7 @@ export class Input {
   toView: ((cx: number, cy: number) => [number, number]) | null = null;
 
   constructor(target: HTMLElement) {
+    liveInput = this;
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Tab' || e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       this.usingPad = false;
