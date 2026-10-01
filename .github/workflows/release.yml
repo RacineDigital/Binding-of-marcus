@@ -1,8 +1,13 @@
 name: Release
 
-# Push a tag like v1.0.0 to build the game and publish it as a GitHub Release.
+# Publishes a GitHub Release with the downloadable game whenever:
+#   - a commit changes the version in package.json (the release is tagged v<version>), or
+#   - a tag like v1.2.0 is pushed.
+# Nothing is published if a release for that version already exists.
 on:
   push:
+    branches: ['**']
+    paths: ['package.json']
     tags: ['v*']
 
 permissions:
@@ -13,19 +18,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - name: Build and package
-        run: bash scripts/package-release.sh "$GITHUB_REF_NAME"
-      - name: Publish release
+      - name: Work out the version
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          sed "s/VERSION/$GITHUB_REF_NAME/g" .github/release/notes.md > release-notes.md
-          gh release create "$GITHUB_REF_NAME" release/* \
-            --title "Binding of Marcus $GITHUB_REF_NAME" \
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then TAG="$GITHUB_REF_NAME"; else TAG="v$(node -p "require('./package.json').version")"; fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.version.outputs.skip != 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.version.outputs.skip != 'true'
+        run: npm ci
+      - if: steps.version.outputs.skip != 'true'
+        run: npm test
+      - name: Build and package
+        if: steps.version.outputs.skip != 'true'
+        run: bash scripts/package-release.sh "${{ steps.version.outputs.tag }}"
+      - name: Publish release
+        if: steps.version.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          sed "s/VERSION/$TAG/g" .github/release/notes.md > release-notes.md
+          gh release create "$TAG" release/* \
+            --target "$GITHUB_SHA" \
+            --title "Binding of Marcus $TAG" \
             --notes-file release-notes.md

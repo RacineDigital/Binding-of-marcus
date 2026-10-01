@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "tsx tests/run.ts",
     "smoke": "tsx tests/smoke.ts",
-    "build:single": "tsc --noEmit && vite build --mode single"
+    "build:single": "tsc --noEmit && vite build --mode single",
+    "release": "bash scripts/package-release.sh"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
