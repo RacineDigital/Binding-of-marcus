@@ -19,6 +19,7 @@ import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { FINAL_FLOOR, FLOORS } from '../data/floors';
+import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 
@@ -27,7 +28,7 @@ export function startFloor(w: World): void {
   const run = w.run;
   const floor = generateFloor(run, run.floorIndex, w.game.save);
   w.floor = floor; w.theme = floor.theme; w.props = propsFor(floor.theme);
-  run.flags.hitThisFloor = false; run.flags.bossHit = false;
+  run.flags.hitThisFloor = false; run.flags.bossHit = false; run.flags.floorStartTime = run.stats.time;
   w.player.clearTemp((t) => !!t.floor);
   const start = floor.rooms[floor.startId];
   const c = start.center();
@@ -55,6 +56,8 @@ export function nextFloor(w: World): void {
   if (run.floorIndex >= FINAL_FLOOR) { w.game.onVictory(); return; }
   run.floorIndex++;
   w.game.save.stat('floorsCleared', 1);
+  onChapterCleared(w);
+  checkProgress(w);
   // free cached room canvases of the old floor
   for (const r of w.floor.rooms) r.bgCache = null;
   startFloor(w);
@@ -85,7 +88,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.roomTime = 0; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
-  w.proj.enemySpeedMul = [0.8, 0.86, 0.92, 0.96, 1, 1.02, 1.05, 1.08][Math.min(7, w.run.floorIndex)];
+  w.proj.enemySpeedMul = [0.8, 0.86, 0.92, 0.96, 1, 1.02, 1.05, 1.08][Math.min(7, w.run.floorIndex)] * (w.run.mode === 'hard' ? 1.12 : 1);
   // pickups & npcs
   w.pickups = room.pickups.map((s) => {
     const p = new Pickup(s.kind, s.x, s.y);
@@ -151,6 +154,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
     room.flags.announced = true;
     w.hud.roomName(ROOM_NAMES[room.type]);
     if (room.type === 'secret' || room.type === 'supersecret') w.audio.play('secret');
+    if (room.type === 'supersecret') w.game.save.unlock('supersecret');
     if (room.type === 'deal') w.audio.stinger('deal');
     if (room.type === 'blessing') w.audio.stinger('blessing');
   }
@@ -181,7 +185,7 @@ function unstick(w: World): void {
 export function spawnEnemy(w: World, id: string, x: number, y: number, quick: boolean): Enemy | null {
   const def = getEnemy(id);
   if (!def) { console.warn('unknown enemy', id); return null; }
-  const e = new Enemy(def, x, y, w.theme.hpMul * (w.run.challenge === 'hard' ? 1.3 : 1));
+  const e = new Enemy(def, x, y, w.theme.hpMul * (w.run.challenge === 'hard' || w.run.mode === 'hard' ? 1.3 : 1));
   e.spawnT = quick ? 0.25 : 0.55;
   def.init?.(e, w);
   w.enemies.push(e);
@@ -317,12 +321,14 @@ function onClear(w: World, reward: boolean): void {
     if (!h.noRed && h.red <= 2 && h.red < h.redMax && rng.chance(0.45)) kind = 'heart';
     else if (w.player.keys === 0 && rng.chance(0.3)) kind = 'key';
     else if (w.player.bombs === 0 && rng.chance(0.3)) kind = 'bomb';
+    else if (w.run.mode === 'hard' && rng.chance(0.12)) kind = null;
     if (kind) {
       const p = freeSpotNear(w, room.center().x, room.center().y);
       spawnDrop(w, kind, p.x, p.y, true, rng);
     }
   }
   chargeActive(w, room.cw * room.ch >= 4 ? 2 : 1);
+  checkProgress(w);
   familiarsOnRoomClear(w);
   w.itemHook('onRoomClear');
   w.player.clearTemp((t) => !!t.room);
@@ -499,7 +505,7 @@ export function touchPickup(w: World, p: Pickup): void {
     if (pl.buttons < p.price) return;
   }
   if (p.kind === 'item') { takeItem(w, p); return; }
-  const payShop = () => { if (p.price > 0) { pl.buttons -= p.price; w.audio.play('buy', { x: p.x }); p.price = 0; p.shop = false; } };
+  const payShop = () => { if (p.price > 0) { pl.buttons -= p.price; w.audio.play('buy', { x: p.x }); p.price = 0; p.shop = false; w.game.save.stat('purchases', 1); } };
   switch (p.kind) {
     case 'button': case 'button5': case 'button10': {
       const v = p.kind === 'button' ? 1 : p.kind === 'button5' ? 5 : 10;
@@ -669,6 +675,7 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
   w.run.stats.items.push(id);
   w.game.save.collectItem(id);
   pl.recompute();
+  checkProgress(w);
   syncFamiliars(w);
   // transformations
   const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp'];

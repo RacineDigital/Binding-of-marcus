@@ -15,6 +15,7 @@ export interface RunStats {
 
 export class Run {
   seed: string; charId: string; floorIndex = 0; challenge: string | null = null;
+  mode: 'normal' | 'hard' | 'daily' = 'normal';
   rng: RNG;
   pools: ItemPools;
   stats: RunStats = { kills: 0, time: 0, roomsCleared: 0, items: [], damageTaken: 0, bossesKilled: [], secretsFound: 0, buttonsCollected: 0, floorsCleared: 0 };

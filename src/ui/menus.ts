@@ -11,7 +11,8 @@ import { ALL_ITEMS, getItem, CONSUMABLES } from '../items/registry';
 import { itemIconCanvas } from '../art/items';
 import { describeItem } from '../items/describe';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
-import { formatSeed, normalizeSeed } from '../core/rng';
+import { formatSeed, normalizeSeed, RNG } from '../core/rng';
+import { dailySeed, todayKey, runScore } from '../game/progress';
 import { INTRO_STORY, ENDING_STORY } from '../data/lore';
 import { RoomData } from '../rooms/room';
 import { paintRoomBackground, BG_MARGIN } from '../art/roombg';
@@ -192,7 +193,7 @@ export class MenuSystem {
   // ------------------------------------------------------------ main
   private mainScreen(): Screen {
     const self = this, g = this.g;
-    const items = ['CONTINUE', 'NEW RUN', 'CHALLENGES', 'CHARACTERS', 'COLLECTION', 'STATISTICS', 'OPTIONS', 'CREDITS'];
+    const items = ['CONTINUE', 'NEW RUN', 'DAILY RUN', 'CHALLENGES', 'CHARACTERS', 'COLLECTION', 'STATISTICS', 'OPTIONS', 'CREDITS'];
     let sel = g.save.data.run ? 0 : 1;
     const enabled = (i: number) => i !== 0 || !!g.save.data.run;
     return {
@@ -205,12 +206,13 @@ export class MenuSystem {
             switch (sel) {
               case 0: g.fadeTo(() => { if (!g.continueRun()) self.openMain(); }, 0.4); break;
               case 1: self.push(self.newRunScreen()); break;
-              case 2: self.push(self.challengesScreen()); break;
-              case 3: self.push(self.charactersScreen()); break;
-              case 4: self.push(self.collectionScreen()); break;
-              case 5: self.push(self.statsScreen()); break;
-              case 6: self.push(self.optionsScreen()); break;
-              case 7: self.push(self.creditsScreen()); break;
+              case 2: self.push(self.dailyScreen()); break;
+              case 3: self.push(self.challengesScreen()); break;
+              case 4: self.push(self.charactersScreen()); break;
+              case 5: self.push(self.collectionScreen()); break;
+              case 6: self.push(self.statsScreen()); break;
+              case 7: self.push(self.optionsScreen()); break;
+              case 8: self.push(self.creditsScreen()); break;
             }
           }
         }
@@ -227,20 +229,55 @@ export class MenuSystem {
         ctx.fillStyle = '#efe2c8';
         for (const [x, l] of [[52, 6], [96, 9], [141, 4], [176, 7]] as [number, number][]) { const len = l + Math.sin(self.time * 1.3 + x) * 2; ctx.fillRect(x, ty + 1, 1.2, len); ctx.beginPath(); ctx.arc(x + 0.6, ty + 1 + len, 1.3, 0, TAU); ctx.fill(); }
         items.forEach((it, i) => {
-          const y = 104 + i * 18;
+          const y = 96 + i * 15.5;
           const on = i === sel, en = enabled(i);
-          if (on) inkBlot(ctx, 92, y - 3.5, 118 + Math.sin(self.time * 4) * 2, 16, self.time);
+          if (on) inkBlot(ctx, 92, y - 3.5, 118 + Math.sin(self.time * 4) * 2, 14, self.time);
           const x = 44 + (on ? 6 : 0);
           text(ctx, it, x, y, on ? 11 : 9.5, !en ? 'rgba(160,150,140,0.35)' : on ? '#fff4dc' : '#b8a890', 'left', FONT_TITLE, 400);
           if (on) { const ms = self.sprites(CHARACTERS[0]); ctx.drawImage(ms.head.side.normal.canvas, x - 22, y - 13); }
         });
         if (g.save.data.run && sel === 0) {
           const r = g.save.data.run;
-          text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${FLOORS[r.floor]?.name ?? ''} · Seed ${formatSeed(r.seed)}`, 44, 104 + 8 * 18 + 6, 7, COL.dim);
+          text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${FLOORS[r.floor]?.name ?? ''} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}`, 44, 96 + 9 * 15.5 + 2, 7, COL.dim);
         }
         ctx.globalAlpha = 1;
         hint(ctx, `${g.input.usingPad ? 'D-pad' : 'Arrows / WASD'} to choose  ·  ${g.input.usingPad ? 'A' : 'Enter'} to select`);
-        text(ctx, 'v0.9', VIEW_W - 6, VIEW_H - 6, 6, 'rgba(200,190,170,0.4)', 'right');
+        text(ctx, 'v2.0', VIEW_W - 6, VIEW_H - 6, 6, 'rgba(200,190,170,0.4)', 'right');
+      },
+    };
+  }
+
+  // ------------------------------------------------------------ daily run
+  private dailyScreen(): Screen {
+    const self = this, g = this.g;
+    const seed = dailySeed(), day = todayKey();
+    const pool = CHARACTERS.filter((c) => !c.unlock || g.save.isUnlocked(c.unlock));
+    const ch = pool[new RNG(seed + ':char').int(0, pool.length - 1)];
+    return {
+      t: 0,
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back') { self.pop(); return; }
+          if (k === 'confirm') { g.audio.play('itemGet', { vol: 0.5 }); g.fadeTo(() => { self.stack = []; g.newRun(ch.id, seed, null, 'daily'); }, 0.5); }
+        }
+      },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        page(ctx, 70, 26, 340, 212, 1, 17);
+        text(ctx, 'Daily Run', 240, 56, 20, INK, 'center', FONT_TITLE, 400, false);
+        text(ctx, day, 240, 70, 8.5, INK2, 'center', FONT_BODY, 600, false);
+        const sp = self.sprites(ch);
+        ctx.save(); ctx.translate(150, 170); ctx.scale(3.5, 3.5);
+        sp.bodyIdle.down[Math.floor(self.time * 1.5) % 2].draw(ctx, 0, 0);
+        sp.head.down[(self.time % 4) < 0.15 ? 'blink' : 'normal'].draw(ctx, 0, -10);
+        ctx.restore();
+        const S = g.save.data.stats;
+        const rows: [string, string][] = [['Reader', ch.name], ['Seed', formatSeed(seed)], ['Today\'s best', S['best_daily_' + day] ? String(S['best_daily_' + day]) : '—'], ['Best ever (Normal)', S.best_normal ? String(S.best_normal) : '—']];
+        rows.forEach(([k, v], i) => { text(ctx, k, 230, 104 + i * 16, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 380, 104 + i * 16, 9, INK, 'right', FONT_TITLE, 400, false); });
+        text(ctx, 'Everyone gets the same floors, items and bosses today.', 240, 186, 7, INK2, 'center', FONT_BODY, 600, false);
+        inkBlot(ctx, 240, 208, 90, 14, self.time, 'rgba(40,30,60,0.2)');
+        text(ctx, 'Begin', 240, 212, 11, INK, 'center', FONT_TITLE, 400, false);
+        hint(ctx, 'Enter to begin · Esc back');
       },
     };
   }
@@ -249,8 +286,10 @@ export class MenuSystem {
   private newRunScreen(challenge: string | null = null, forceChar?: string): Screen {
     const self = this, g = this.g;
     let ci = forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0;
-    let row = 0; // 0 = character, 1 = seed, 2 = start
+    let row = 0; // 0 = character, 1 = mode, 2 = seed, 3 = start
     let seed = ''; let editing = false;
+    const hardOpen = g.save.isUnlocked('beat_final') && !challenge;
+    let hard = false;
     const unlocked = (c: CharacterDef) => !c.unlock || g.save.isUnlocked(c.unlock);
     const scr: Screen = {
       t: 0,
@@ -258,11 +297,12 @@ export class MenuSystem {
         if (editing) return;
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
-          if (k === 'up') { row = (row + 2) % 3; self.sfxMove(); }
-          if (k === 'down') { row = (row + 1) % 3; self.sfxMove(); }
+          if (k === 'up') { row = (row + 3) % 4; if (row === 1 && !hardOpen) row = 0; self.sfxMove(); }
+          if (k === 'down') { row = (row + 1) % 4; if (row === 1 && !hardOpen) row = 2; self.sfxMove(); }
           if ((k === 'left' || k === 'right') && row === 0 && !forceChar) { ci = (ci + (k === 'left' ? -1 : 1) + CHARACTERS.length) % CHARACTERS.length; self.sfxMove(); }
+          if ((k === 'left' || k === 'right' || k === 'confirm') && row === 1) { hard = !hard; self.sfxMove(); continue; }
           if (k === 'confirm') {
-            if (row === 1) {
+            if (row === 2) {
               editing = true; g.input.textCapture = (key) => {
                 if (key === 'Enter' || key === 'Escape') { editing = false; g.input.textCapture = null; g.input.clearMenu(); return; }
                 if (key === 'Backspace') seed = seed.slice(0, -1);
@@ -273,7 +313,7 @@ export class MenuSystem {
             const c = CHARACTERS[ci];
             if (!unlocked(c)) { g.audio.play('deny'); continue; }
             g.audio.play('itemGet', { vol: 0.5 });
-            g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge); }, 0.5);
+            g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, hard ? 'hard' : 'normal'); }, 0.5);
           }
         }
       },
@@ -316,14 +356,14 @@ export class MenuSystem {
           text(ctx, c.passive, x0, hy + 20, 7, '#4a3a6a', 'left', FONT_BODY, 600, false);
         }
         // seed & start
-        const opts = [`Seed: ${editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random'}`, 'Begin'];
-        [0, 1, 2].forEach((r) => {
-          const y = 206 + (r === 0 ? -200 : r * 0) + (r === 2 ? 14 : 0);
-          if (r === 0) return;
+        const opts = [hardOpen ? `Mode: ${hard ? 'Second Edition (Hard)' : 'Normal'}` : 'Mode: Normal', `Seed: ${editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random'}`, 'Begin'];
+        [1, 2, 3].forEach((r) => {
+          const y = 192 + (r - 1) * 13;
           const on = row === r;
-          if (on) inkBlot(ctx, 240, y - 3, 110, 13, self.time, 'rgba(40,30,60,0.2)');
-          text(ctx, opts[r - 1], 240, y, on ? 9.5 : 8.5, on ? INK : INK2, 'center', FONT_TITLE, 400, false);
+          if (on) inkBlot(ctx, 300, y - 3, 150, 12, self.time, 'rgba(40,30,60,0.2)');
+          text(ctx, opts[r - 1], 300, y, on ? 9 : 8, r === 1 && !hardOpen ? 'rgba(90,70,54,0.5)' : on ? (r === 1 && hard ? '#8a1a1a' : INK) : INK2, 'center', FONT_TITLE, 400, false);
         });
+        if (row === 1 && hard) text(ctx, 'Tougher enemies, harsher hits, more champions; better treasure. Score x1.5.', 300, 233, 6.5, '#8a2a2a', 'center', FONT_BODY, 600, false);
         if (row === 0) text(ctx, '— character —', 110, 186, 7, INK2, 'center', FONT_BODY, 600, false);
         hint(ctx, editing ? 'Type an 8-character seed · Enter to confirm' : '←/→ character · ↑/↓ options · Enter to begin · Esc back');
       },
@@ -475,9 +515,9 @@ export class MenuSystem {
           ['Runs started', String(S.runs ?? 0)], ['Stories finished', String(S.wins ?? 0)], ['Deaths', String(S.deaths ?? 0)],
           ['Enemies defeated', String(S.kills ?? 0)], ['Bosses defeated', String(S.bossKills ?? 0)], ['Curios collected', String(S.itemsCollected ?? 0)],
           ['Secrets found', String(S.secretsFound ?? 0)], ['Buttons gathered', String(S.buttons ?? 0)], ['Chapters closed', String(S.floorsCleared ?? 0)],
-          ['Bargains struck', String(S.deals ?? 0)], ['Sweets eaten', String(S.sweetsEaten ?? 0)], ['Best time', g.save.data.bestTime ? fmtTime(g.save.data.bestTime) : '—'],
+          ['Bargains struck', String(S.deals ?? 0)], ['Best time', g.save.data.bestTime ? fmtTime(g.save.data.bestTime) : '—'], ['Best score', S.best_normal ? String(S.best_normal) : '—'], ['Best score (Hard)', S.best_hard ? String(S.best_hard) : '—'],
         ];
-        rows.forEach(([k, v], i) => { text(ctx, k, 40, 56 + i * 15, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 200, 56 + i * 15, 9, INK, 'right', FONT_BODY, 600, false); });
+        rows.forEach(([k, v], i) => { text(ctx, k, 40, 54 + i * 14, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 200, 54 + i * 14, 9, INK, 'right', FONT_BODY, 600, false); });
         const un = ACHIEVEMENTS.filter((a) => g.save.isUnlocked(a.id)).length;
         text(ctx, 'Achievements', 230, 38, 16, INK, 'left', FONT_TITLE, 400, false);
         text(ctx, `${un} / ${ACHIEVEMENTS.length}`, 440, 38, 8, INK2, 'right', FONT_BODY, 600, false);
@@ -713,8 +753,13 @@ export class MenuSystem {
         st.forEach(([k, v], i) => { text(ctx, k, 160, 92 + i * 10, 7.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 320, 92 + i * 10, 7.5, INK, 'right', FONT_BODY, 600, false); });
         const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
         ids.slice(0, 26).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), 125 + (i % 13) * 18, 146 + Math.floor(i / 13) * 18));
+        const sc = r.flags.score as { score: number; best: number; isBest: boolean } | undefined;
+        if (sc) {
+          text(ctx, `Score ${sc.score}`, 240, 190, 11, INK, 'center', FONT_TITLE, 400, false);
+          text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, 240, 199, 7, sc.isBest ? '#8a2a2a' : INK2, 'center', FONT_BODY, 600, false);
+        }
         items.forEach((it, i) => {
-          const y = 206 + i * 16;
+          const y = 214 + i * 15;
           if (i === sel) inkBlot(ctx, 240, y - 3, 140, 14, self.time, 'rgba(40,30,60,0.2)');
           text(ctx, it, 240, y, 10, INK, 'center', FONT_TITLE, 400, false);
         });
@@ -733,6 +778,12 @@ export class MenuSystem {
         ctx.globalAlpha = clamp(this.t - 9, 0, 1);
         text(ctx, 'THE END', VIEW_W / 2, 170, 24, '#c8a878', 'center', FONT_TITLE, 400);
         text(ctx, `${fmtTime(w.run.stats.time)} · ${w.run.stats.kills} enemies · Seed ${formatSeed(w.run.seed)}`, VIEW_W / 2, 186, 8, COL.dim, 'center');
+        const sc = w.run.flags.score as { score: number; best: number; isBest: boolean } | undefined;
+        if (sc) {
+          text(ctx, `Score ${sc.score}`, VIEW_W / 2, 206, 12, '#efe2c8', 'center', FONT_TITLE, 400);
+          text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, VIEW_W / 2, 216, 7, sc.isBest ? COL.gold : COL.dim, 'center');
+          runScore(w.run, true).parts.forEach(([k, v], i) => text(ctx, `${k} ${v >= 0 ? '+' : ''}${v}`, VIEW_W / 2 - 150 + (i % 5) * 75, 232 + Math.floor(i / 5) * 9, 6, COL.dim, 'center'));
+        }
         ctx.globalAlpha = 1;
         if (this.t > 4) hint(ctx, 'Press Enter');
         void self;

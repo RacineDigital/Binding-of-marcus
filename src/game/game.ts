@@ -6,6 +6,7 @@ import { SaveManager } from '../save/save';
 import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
 import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
+import { recordScore, checkProgress, RunMode } from './progress';
 import { Run } from './run';
 import { Player } from '../player/player';
 import { charById } from '../player/characters';
@@ -137,7 +138,7 @@ export class Game {
       const a = Math.min(1, u.t * 4, (3.5 - u.t) * 3);
       ui.globalAlpha = Math.max(0, a);
       // bottom-left, above the charms (the bottom-right corner holds the item tracker)
-      const tx = 6, ty = VIEW_H - 56 - i * 26;
+      const tx = this.scene === 'run' ? 6 : VIEW_W - 150, ty = VIEW_H - (this.scene === 'run' ? 56 : 40) - i * 26;
       ui.fillStyle = 'rgba(12,8,16,0.92)'; ui.fillRect(tx, ty, 144, 22);
       ui.strokeStyle = '#c8a050'; ui.lineWidth = 0.6; ui.strokeRect(tx, ty, 144, 22);
       text(ui, 'UNLOCKED', tx + 6, ty + 9, 6, COL.gold);
@@ -148,10 +149,11 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- run lifecycle
-  newRun(charId: string, seed?: string, challenge: string | null = null): void {
+  newRun(charId: string, seed?: string, challenge: string | null = null, mode: RunMode = 'normal'): void {
     const s = seed ? normalizeSeed(seed) : randomSeed();
     const run = new Run(s.length ? s : randomSeed(), charId, (id) => this.save.isUnlocked(id));
-    run.challenge = challenge;
+    run.challenge = challenge; run.mode = mode;
+    if (mode === 'daily') this.save.unlock('daily_first');
     const ch = charById(charId);
     const pl = new Player(ch);
     const h = new Health();
@@ -179,7 +181,7 @@ export class Game {
     const w = this.world; if (!w) return;
     const pl = w.player;
     this.save.data.run = {
-      seed: w.run.seed, charId: w.run.charId, floor: w.run.floorIndex, challenge: w.run.challenge,
+      seed: w.run.seed, charId: w.run.charId, floor: w.run.floorIndex, challenge: w.run.challenge, mode: w.run.mode,
       health: pl.health.serialize(), buttons: pl.buttons, keys: pl.keys, bombs: pl.bombs, goldKey: pl.goldKey, goldBomb: pl.goldBomb,
       items: [...pl.items.entries()], order: pl.itemOrder, active: pl.active, charge: pl.charge, consumables: pl.consumables, charms: pl.charms,
       consumableSlots: pl.consumableSlots, charmSlots: pl.charmSlots, temp: pl.temp.filter((t) => !t.room && !t.floor && t.time === undefined),
@@ -191,7 +193,7 @@ export class Game {
     const s = this.save.data.run; if (!s) return false;
     try {
       const run = new Run(s.seed, s.charId, (id) => this.save.isUnlocked(id));
-      run.challenge = s.challenge; run.floorIndex = s.floor; run.pools.restore(s.pools ?? []);
+      run.challenge = s.challenge; run.mode = s.mode ?? 'normal'; run.floorIndex = s.floor; run.pools.restore(s.pools ?? []);
       run.stats = s.stats; run.flags = s.flags; run.identified = new Set(s.identified ?? []);
       const pl = new Player(charById(s.charId));
       pl.health = Health.from(s.health);
@@ -219,6 +221,8 @@ export class Game {
     this.save.stat('deaths', 1);
     this.save.data.run = null; this.save.markDirty();
     if ((this.save.data.stats.deaths ?? 0) >= 1) this.save.unlock('first_death');
+    this.world.run.flags.score = recordScore(this.save, this.world.run, false);
+    checkProgress(this.world);
     this.scene = 'dead';
     this.menus.openDeath(this.world);
     this.audio.setMusic('death');
@@ -232,6 +236,8 @@ export class Game {
     const t = w.run.stats.time;
     if (!this.save.data.bestTime || t < this.save.data.bestTime) this.save.data.bestTime = t;
     if (t < 25 * 60) this.save.unlock('speedrun');
+    if (w.run.mode === 'hard' && !w.run.challenge) this.save.unlock('win_hard');
+    w.run.flags.score = recordScore(this.save, w.run, true);
     this.save.data.run = null; this.save.markDirty();
     this.fadeTo(() => { this.scene = 'ending'; this.menus.openEnding(w); this.audio.setMusic('ending'); }, 1.2);
   }

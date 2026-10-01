@@ -26,6 +26,7 @@ import { propsFor, PropSet } from '../art/props';
 import { BG_MARGIN } from '../art/roombg';
 import { RNG } from '../core/rng';
 import { rollDropKind, spawnDrop } from './drops';
+import { checkProgress } from './progress';
 import * as flow from './roomflow';
 import { renderWorld } from './worldrender';
 import { Hud } from '../ui/hud';
@@ -219,7 +220,7 @@ export class World {
     const phase = (this.roomTime + (c + r) * 0) % 3;
     return phase > 1.6 && phase < 2.8;
   }
-  dmgScale(c: number): number { return this.run.floorIndex >= 5 && c === 1 ? 2 : c; }
+  dmgScale(c: number): number { return this.run.floorIndex >= (this.run.mode === 'hard' ? 3 : 5) && c === 1 ? 2 : c; }
 
   private updateCorpses(dt: number): void {
     for (const c of this.corpses) {
@@ -325,7 +326,7 @@ export class World {
     e.def.onDeath?.(e, this);
     this.run.stats.kills++;
     this.itemHook('onKill', e);
-    this.game.save.stat('kills', 1);
+    if (this.game.save.stat('kills', 1) % 50 === 0) checkProgress(this);
     // kill-charged actives
     const act = this.player.active ? getItem(this.player.active) : null;
     if (act?.active?.type === 'kill') this.player.charge = Math.min(act.active.charge, this.player.charge + 1);

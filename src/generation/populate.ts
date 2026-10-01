@@ -149,7 +149,7 @@ function nearDoor(room: RoomData, c: number, r: number): boolean {
   return false;
 }
 
-function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number; r: number; ch: string }[], budgetMul = 1): SpawnDef[] {
+function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number; r: number; ch: string }[], budgetMul = 1, hard = false): SpawnDef[] {
   const th = floor.theme;
   const pool = Object.entries(th.enemies).filter(([id]) => getEnemy(id));
   const pickRole = (role: Role | 'any'): string | null => {
@@ -165,7 +165,7 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
   const out: SpawnDef[] = [];
   let budget = (2.4 + Math.min(room.distance, 6) * 0.55) * th.budget * budgetMul * (room.cw * room.ch > 1 ? 1.8 : 1);
   if (floor.index === 0 && room.distance <= 1) budget = Math.min(budget, 2.5);
-  const champ = 0.02 + floor.index * 0.012;
+  const champ = 0.02 + floor.index * 0.012 + (hard ? 0.06 : 0);
   const order = rng.shuffle(slots.slice());
   let placed = 0;
   for (const s of order) {
@@ -207,7 +207,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       // big rooms: decorate the seams with pillars
       if (room.cw === 2) for (const r of [1, room.rows - 2]) if (rng.chance(0.5)) room.setOb(17, r, Ob.Pillar);
       ensurePaths(room);
-      room.spawns = castEnemies(room, floor, rng, slots);
+      room.spawns = castEnemies(room, floor, rng, slots, 1, run.mode === 'hard');
       freeSpawns(room, room.spawns);
       if (room.spawns.length === 0) room.cleared = true;
       break;
@@ -231,7 +231,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'treasure': {
       for (const [c, r] of [[1, 1], [13, 1], [1, 7], [13, 7]]) if (rng.chance(0.6)) room.setOb(c, r, Ob.Rock, 0, rng.int(0, 5));
-      const choice = fi >= 2 && rng.chance(0.2);
+      const choice = run.mode === 'hard' ? fi >= 1 && rng.chance(0.5) : fi >= 2 && rng.chance(0.2);
       if (choice) { item(cx - 36, cy + 4, 'treasure', 'treasure', { group: 1 }); item(cx + 36, cy + 4, 'treasure', 'treasure', { group: 1 }); }
       else item(cx, cy + 4, 'treasure', 'treasure');
       break;
@@ -278,7 +278,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
         const sl: { c: number; r: number; ch: string }[] = [];
         stamp(new RoomData(-1, 0, 0, 1, 1, 'normal', 'tmp'), pickTemplate(rng, fi).rows, 0, 0, false, false, rng, floor, sl);
         const fake = Object.assign(Object.create(RoomData.prototype), room, { doors: room.doors }) as RoomData;
-        waves.push(castEnemies(fake, floor, rng, sl.filter((s) => room.at(s.c, s.r) === Ob.None), 1 + wv * 0.4));
+        waves.push(castEnemies(fake, floor, rng, sl.filter((s) => room.at(s.c, s.r) === Ob.None), 1 + wv * 0.4, run.mode === 'hard'));
       }
       room.waves = waves;
       break;
@@ -298,7 +298,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       else if (r < 0.75) {
         item(cx, cy, 'curse', 'deal');
         const sl = [{ c: 2, r: 2, ch: 'M' }, { c: 12, r: 6, ch: 'M' }, { c: 2, r: 6, ch: 'F' }, { c: 12, r: 2, ch: 'F' }];
-        room.spawns = castEnemies(room, floor, rng, sl, 1.3);
+        room.spawns = castEnemies(room, floor, rng, sl, 1.3, run.mode === 'hard');
         freeSpawns(room, room.spawns);
       } else for (let i = 0; i < 3; i++) pk(rng.pick(['ink', 'page', 'sweet', 'button5']), cx + (i - 1) * 24, cy);
       break;
