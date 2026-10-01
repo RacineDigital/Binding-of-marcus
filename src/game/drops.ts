@@ -17,7 +17,7 @@ const TABLES: Record<DropTable, [string, number][]> = {
 };
 
 export function rollDropKind(rng: RNG, luck: number, table: DropTable): string | null {
-  if (table === 'room' && rng.next() < Math.max(0.1, 0.34 - luck * 0.025)) return null;
+  if (table === 'room' && rng.next() < Math.max(0.08, 0.24 - luck * 0.025)) return null;
   const e = rng.weighted(TABLES[table], (x) => x[1]);
   return e ? e[0] : null;
 }

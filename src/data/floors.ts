@@ -29,7 +29,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { mite: 10, moth: 7, ragcrawler: 9, gasper: 7, dripling: 6, pillbug: 5, mitenest: 3, spool: 4, candlewick: 2 },
     bosses: ['grubmother', 'wardrobe', 'twinsnips'],
     music: 'cellar', hazards: { spikes: 0.15, pits: 0.3, fires: 0.45, kegs: 0.15 }, fireVariants: [0, 0, 0, 2],
-    hpMul: 1, budget: 1,
+    hpMul: 1, budget: 0.9,
   },
   {
     id: 'boiler', name: 'The Boiler Rooms', subtitle: 'The house still breathes down here', chapter: 'Chapter II',
@@ -40,7 +40,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { sootsprite: 8, valvehead: 6, stoker: 7, rustcrab: 5, cinderhopper: 6, pipeworm: 4, mite: 4, gasper: 4, moth: 3 },
     bosses: ['furnaceheart', 'oldstoker', 'grubmother'],
     music: 'boiler', hazards: { spikes: 0.25, pits: 0.2, fires: 0.6, kegs: 0.35 }, fireVariants: [0, 0, 1, 2],
-    hpMul: 1.25, budget: 1.3,
+    hpMul: 1.15, budget: 1.1,
   },
   {
     id: 'underworks', name: 'The Underworks', subtitle: 'Everything drains down eventually', chapter: 'Chapter III',
@@ -51,7 +51,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { rat: 8, leech: 6, bloater: 5, grateeye: 5, sludge: 6, drowner: 5, pillbug: 3, dripling: 4, stoker: 2 },
     bosses: ['ratking', 'bilgemaw', 'furnaceheart'],
     music: 'underworks', hazards: { spikes: 0.2, pits: 0.45, fires: 0.25, kegs: 0.2 }, fireVariants: [0, 2, 2, 1],
-    hpMul: 1.55, budget: 1.6,
+    hpMul: 1.3, budget: 1.3,
   },
   {
     id: 'ward', name: 'The Forgotten Ward', subtitle: 'Nobody came to visit', chapter: 'Chapter IV',
@@ -62,7 +62,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { orderly: 6, wheelwraith: 5, nursedoll: 6, sheetghost: 7, mimic: 3, dripsentinel: 5, leech: 3, bloater: 3, moth: 3 },
     bosses: ['matron', 'sleepwalker', 'ratking'],
     music: 'ward', hazards: { spikes: 0.3, pits: 0.3, fires: 0.25, kegs: 0.15 }, fireVariants: [1, 1, 0, 2],
-    hpMul: 1.9, budget: 1.95,
+    hpMul: 1.5, budget: 1.5,
   },
   {
     id: 'depths', name: 'The Depths', subtitle: 'Older than the house above', chapter: 'Chapter V',
@@ -73,7 +73,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { boneknight: 5, skullorbit: 5, gravedigger: 5, ossspider: 7, marrowmaw: 3, cinderhopper: 3, sheetghost: 3, sludge: 3, rustcrab: 3 },
     bosses: ['ossuaryknight', 'mothmother', 'sleepwalker'],
     music: 'depths', hazards: { spikes: 0.4, pits: 0.45, fires: 0.35, kegs: 0.2, webs: 0.3 }, fireVariants: [0, 1, 1, 3],
-    hpMul: 2.3, budget: 2.3,
+    hpMul: 1.7, budget: 1.7,
   },
   {
     id: 'chapel', name: 'The Chapel', subtitle: 'Wax remembers every prayer', chapter: 'Chapter VI',
@@ -84,7 +84,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { choirboy: 6, candlewick: 6, censer: 5, penitent: 5, cherubmoth: 6, boneknight: 3, orderly: 3, nursedoll: 2 },
     bosses: ['bellringer', 'choirmaster', 'matron'],
     music: 'chapel', hazards: { spikes: 0.3, pits: 0.35, fires: 0.55, kegs: 0.15 }, fireVariants: [0, 1, 1, 3],
-    hpMul: 2.7, budget: 2.7,
+    hpMul: 1.9, budget: 1.9,
   },
   {
     id: 'hollow', name: 'The Hollow', subtitle: 'The page tears here', chapter: 'Chapter VII',
@@ -95,7 +95,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { blot: 6, voideye: 5, pagewraith: 6, mirrorshade: 3, hollowmaw: 3, cherubmoth: 3, skullorbit: 3, penitent: 3, wheelwraith: 3 },
     bosses: ['blottedman', 'choirmaster', 'mothmother'],
     music: 'hollow', hazards: { spikes: 0.35, pits: 0.5, fires: 0.3, kegs: 0.2 }, fireVariants: [1, 3, 3, 2],
-    hpMul: 3.1, budget: 3.1,
+    hpMul: 2.1, budget: 2.1,
   },
   {
     id: 'binding', name: 'The Binding', subtitle: 'The last page is still blank', chapter: 'Final Chapter',
@@ -106,7 +106,7 @@ export const FLOORS: FloorTheme[] = [
     enemies: { blot: 4, pagewraith: 5, voideye: 4, boneknight: 3, choirboy: 3, penitent: 3, mirrorshade: 3, orderly: 3, stoker: 3, skullorbit: 3 },
     bosses: ['unbound'],
     music: 'binding', hazards: { spikes: 0.3, pits: 0.35, fires: 0.3, kegs: 0.2 }, fireVariants: [0, 1, 3],
-    hpMul: 3.5, budget: 3.4,
+    hpMul: 2.3, budget: 2.3,
   },
 ];
 export const FINAL_FLOOR = FLOORS.length - 1;

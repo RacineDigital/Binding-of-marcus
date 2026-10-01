@@ -79,6 +79,9 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
   w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: 'down' } : null;
   w.roomTime = 0; w.roomRng = new RNG(room.seed + ':rt');
+  // a beat to read the room before anything fires; enemy shots are slower on early chapters
+  w.proj.enemyGrace = room.cleared ? 0 : 0.9;
+  w.proj.enemySpeedMul = [0.8, 0.86, 0.92, 0.96, 1, 1.02, 1.05, 1.08][Math.min(7, w.run.floorIndex)];
   // pickups & npcs
   w.pickups = room.pickups.map((s) => {
     const p = new Pickup(s.kind, s.x, s.y);
@@ -305,6 +308,9 @@ function onClear(w: World, reward: boolean): void {
     const rng = new RNG(room.seed + ':clear');
     let kind = rollDropKind(rng, w.player.stats.luck, 'room');
     if (room.type === 'miniboss') kind = rng.chance(0.5) ? 'chest' : 'heart';
+    // pity: low on health makes hearts much more likely
+    const h = w.player.health;
+    if (!h.noRed && h.red <= 2 && h.red < h.redMax && rng.chance(0.45)) kind = 'heart';
     if (kind) {
       const p = freeSpotNear(w, room.center().x, room.center().y);
       spawnDrop(w, kind, p.x, p.y, true, rng);

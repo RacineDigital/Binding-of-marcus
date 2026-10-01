@@ -109,6 +109,7 @@ export class World {
     this.enemies = this.enemies.filter((e) => !e.dead);
     this.separateEnemies();
     updateFamiliars(this, dt);
+    this.proj.enemyGrace = Math.max(0, this.proj.enemyGrace - dt);
     this.proj.update(this, dt);
     updateBeams(this, dt);
     updateBombs(this, dt);
@@ -192,7 +193,8 @@ export class World {
       if (e.dead || e.hidden || e.spawnT > 0 || e.friendly || e.charm > 0 || e.z > 12) continue;
       const c = e.def.contact ?? 1;
       if (c <= 0) continue;
-      const rr = e.r + pl.r - 2;
+      // contact hitbox a little smaller than the sprite so grazes feel fair
+      const rr = e.r * 0.8 + pl.hitR;
       if (dist2(e.x, e.y, pl.x, pl.y) < rr * rr) this.hurtPlayer(this.dmgScale(c), e.def.name);
     }
     // spikes & fires & creep
@@ -213,7 +215,7 @@ export class World {
     const phase = (this.roomTime + (c + r) * 0) % 3;
     return phase > 1.6 && phase < 2.8;
   }
-  dmgScale(c: number): number { return this.run.floorIndex >= 3 && c === 1 ? 2 : c; }
+  dmgScale(c: number): number { return this.run.floorIndex >= 5 && c === 1 ? 2 : c; }
 
   private updateCorpses(dt: number): void {
     for (const c of this.corpses) {
@@ -341,7 +343,7 @@ export class World {
       this.hud.toast('The jacket takes the blow.', 1.2); return false;
     }
     const res = pl.health.damage(half, !!o.redFirst);
-    if (!o.noIframes) pl.iframes = 1.0 + this.player.count('pocket_watch') * 0.3;
+    if (!o.noIframes) pl.iframes = 1.25 + this.player.count('pocket_watch') * 0.3;
     pl.hurtT = 0.45;
     this.hitstop(res.brassBroke ? 0.05 : 0.09);
     this.shake(res.brassBroke ? 2 : 4);

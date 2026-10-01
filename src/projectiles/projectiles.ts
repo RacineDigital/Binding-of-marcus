@@ -36,6 +36,10 @@ export class Projectiles {
   list: Proj[] = [];
   private free: Proj[] = [];
   explosionsThisFrame = 0;
+  /** Enemy shot speed multiplier (gentler on early chapters). */
+  enemySpeedMul = 1;
+  /** Seconds left in which enemies may not fire (set when entering a room). */
+  enemyGrace = 0;
   constructor() { for (let i = 0; i < MAX_PROJ; i++) { const p = new Proj(); this.list.push(p); this.free.push(p); } }
   count(): number { return MAX_PROJ - this.free.length; }
   clear(): void { for (const p of this.list) if (p.active) this.kill(p); }
@@ -75,7 +79,9 @@ export class Projectiles {
 
   /** Spawn an enemy projectile. */
   enemy(x: number, y: number, ang: number, spd: number, o: Partial<{ drop: number; r: number; dmg: number; range: number; shape: string; curve: number; accel: number; delay: number; lob: boolean; lobH: number; creep: string; homing: number; bounce: number; wig: number; split: number; splitSpd: number; z: number; spectral: boolean; aimAfterDelay: boolean; life: number }> = {}): Proj | null {
+    if (this.enemyGrace > 0) return null;
     const p = this.alloc(); if (!p) return null;
+    spd *= this.enemySpeedMul;
     p.team = Team.Enemy;
     p.x = x; p.y = y; p.bx = x; p.by = y; p.z = o.z ?? 8;
     p.spd = spd; p.vx = Math.cos(ang) * spd; p.vy = Math.sin(ang) * spd;
