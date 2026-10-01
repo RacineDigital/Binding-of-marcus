@@ -63,12 +63,15 @@ sprite preview sheets.
   - Bouncing explosive shots detonate on each wall hit.
   - Larger shots orbit wider.
   - Beams bend toward enemies and reflect off walls.
-- **144 items:** 99 passives, 26 actives and 19 familiars. Each one is a data definition with stat
+- **173 items:** 123 passives, 29 actives and 21 familiars. Each one is a data definition with stat
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
-- **Seven transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
-  thread, bone, void) triggers one.
+- **Reference items.** A Drain Gang / Bladee set (Icedancer, Gluee, Red Light, 333, Exeter...), a
+  Playboi Carti set (Whole Lotta Red, Die Lit, Vamp Anthem, Magnolia, Sky, Stop Breathing...) and
+  internet-era objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug).
+- **Nine transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
+  thread, bone, void, drain, vamp) triggers one.
 - **Eight chapters:**
   1. The Cellar
   2. The Boiler Rooms
@@ -97,7 +100,9 @@ sprite preview sheets.
   Bargain rooms (the Inkwell, where you pay in hearts, or the Wax Chapel, a free blessing) can
   appear after a boss. The same seed always produces the same layouts, room contents, bosses, shop
   stock and pedestal items.
-- **Rooms** come from 40 hand-made templates with role-based enemy slots, mirrored at random. They
+- **Rooms** are a mix of procedurally generated layouts (mirrored rock clusters, walls, pillars, pit
+  lakes, rings, corridors, hazards) and 40 handmade templates, with role-based enemy slots. Deeper
+  rooms can roll a variant: Ambush (a second wave), Champion Den, Lights Out or Gilded Room. They
   contain rocks, chalk-marked stones with rewards inside, iron blocks, pits, spikes, timed spikes,
   four kinds of fire, paper/coal/wax heaps, powder kegs, urns, pillars and webs.
 - **Health.** Red felt hearts, wax hearts (temporary), ink hearts (burst when lost), brass hearts
@@ -106,13 +111,22 @@ sprite preview sheets.
 - **Resources and pickups.** Buttons (currency), keys, cherry bombs, spark jars (active-item
   charge), tin, locked, crimson and reliquary boxes, slot machines, a fortune owl, beggars, a
   wishing well, the seamstress and the grandfather clock.
-- **Progression.** The save file holds 28 achievements that unlock items, characters and
-  challenges, plus an item collection, statistics, settings and a resumable run (Continue).
+- **Progression.** 49 achievements unlock items, characters, challenges and Hard mode, so the item
+  pool grows as you play. The save also holds an item collection, statistics, best scores, settings
+  and a resumable run (Continue).
+- **Modes.** Normal, Second Edition (Hard, unlocked by finishing the story) and a Daily Run with the
+  same seed and reader for everyone that day. Every run ends with a score and a personal best.
 - **Five characters:** Marcus, Wren, Edda, Elias and The Blot. **Five challenge runs.**
 - **Audio.** Around 80 layered sound effects are rendered offline at startup with variants, pitch
-  jitter, stereo panning, voice limiting and a shared reverb. Music is an adaptive sequencer with a
-  track per chapter, a calm layer, a combat layer that fades in during fights, and dedicated boss
-  tracks.
+  jitter, stereo panning, voice limiting and a shared reverb. The soundtrack is rendered offline in
+  the background: synthesized distorted guitars (double-tracked, palm-muted chugs and power chords),
+  a full drum kit, synth bass, pads, organ, choir and strings. Each chapter has its own genre (dark
+  synthwave, industrial rock, darkwave, chamber rock, djent, gothic metal, industrial darksynth,
+  symphonic gothic metal) with a calm stem and a combat stem that crossfade with the fight.
+- **Smooth on any display.** The simulation runs at a fixed 60 Hz and rendering interpolates between
+  steps, so 120/144/165/240 Hz monitors get smooth motion (frame cap and smoothing are in Options).
+- **HUD.** Collected items show as an icon grid in the bottom-right corner; standing next to an item
+  or shop pickup shows a readable card with its effects and price.
 
 ## Architecture
 
