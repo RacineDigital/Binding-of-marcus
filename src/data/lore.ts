@@ -25,6 +25,13 @@ export const INTRO_STORY = [
   'The week after the funeral, the cellar door would not stay closed.',
   'Something below had come unbound.',
 ];
+/** After the Last Page: the ending for going all the way through the Margins. */
+export const TRUE_ENDING_STORY = [
+  'Nothing was left to write itself in.',
+  'Marcus filled the margins with his own small handwriting:',
+  '"He found the way out on his own."',
+  'The book closed. This time, he was holding it.',
+];
 export const ENDING_STORY = [
   'The last page was blank.',
   'Marcus dipped his fingers in the ink and wrote the only ending he knew:',

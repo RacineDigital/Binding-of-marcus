@@ -68,7 +68,9 @@ export class World {
   stuckT = 0;
   /** Closest pedestal or shop pickup, for the inspect card. */
   nearInspect: Pickup | null = null;
-  trapdoor: { x: number; y: number; t: number; kind: 'down' | 'light'; armed?: boolean } | null = null;
+  trapdoor: { x: number; y: number; t: number; kind: 'down' | 'light' | 'portal'; armed?: boolean } | null = null;
+  /** After the Binding (once the story is finished): the door that ends the run as a win. */
+  exitDoor: { x: number; y: number; t: number } | null = null;
   ambient: { x: number; y: number; vx: number; vy: number; life: number; kind: number }[] = [];
   telegraphs: { x: number; y: number; r: number; t: number; dur: number; color: string }[] = [];
   corpses: { e: Enemy; t: number; dur: number }[] = [];

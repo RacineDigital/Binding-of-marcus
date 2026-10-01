@@ -220,8 +220,16 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'boss': {
+      if (floor.theme.id === 'lastpage') {
+        // a huge bare arena with four pillars to hide behind
+        room.bossId = 'unwritten';
+        for (const [c, r] of [[7, 5], [room.cols - 8, 5], [7, room.rows - 6], [room.cols - 8, room.rows - 6]]) room.setOb(c, r, Ob.Pillar);
+        break;
+      }
       stamp(room, BOSS_TEMPLATE, 0, 0, false, false, rng, floor, slots);
-      const opts = floor.theme.bosses.filter((b) => getEnemy(b));
+      // the Margins has several boss rooms: no boss twice
+      const used = new Set(floor.rooms.filter((r) => r !== room && r.bossId).map((r) => r.bossId));
+      const opts = floor.theme.bosses.filter((b) => getEnemy(b) && !used.has(b));
       // the chapter's own bosses are most likely; earlier chapters' bosses can reappear
       room.bossId = rng.weighted(opts, (b) => (opts.indexOf(b) < 2 ? 3 : 1)) ?? opts[0];
       room.flags.bossItem = run.pools.roll('boss', prng);

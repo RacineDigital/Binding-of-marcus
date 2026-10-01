@@ -57,12 +57,14 @@ export function renderWorld(w: World): void {
     ctx.globalAlpha = 1;
   }
   // trapdoor
-  if (w.trapdoor) {
+  if (w.trapdoor && w.trapdoor.kind === 'portal') drawPortal(w, ctx, w.trapdoor.x - camX, w.trapdoor.y - camY, w.trapdoor.t);
+  else if (w.trapdoor) {
     const t = w.trapdoor; const S = pickupSprites();
     const f = Math.min(3, Math.floor(t.t / 0.18));
     S.trapdoor[f].draw(ctx, t.x - camX, t.y - camY);
     if (f === 3) r.addLight(t.x - camX, t.y - camY, 26, 0.3);
   }
+  if (w.exitDoor) drawExitDoor(w, ctx, w.exitDoor.x - camX, w.exitDoor.y - camY, w.exitDoor.t);
   // --------------------------------------------------------------- y-sorted entities
   drawables.length = 0;
   for (const e of w.enemies) drawables.push({ y: e.y + (e.def.boss ? -4 : 0), kind: 0, ref: e });
@@ -179,11 +181,27 @@ function drawEnemy(w: World, ctx: CanvasRenderingContext2D, e: Enemy, camX: numb
 }
 
 function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: number, sy: number): void {
-  // shadow
+  const boss = e.isBoss && !e.dead && !e.hidden;
+  // shadow (bosses get a heavier, layered one)
   if (!e.hidden) {
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     const sr = e.r * (e.z > 0 ? Math.max(0.4, 1 - e.z / 80) : 1);
+    if (boss) { ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.beginPath(); ctx.ellipse(sx, sy, sr * 1.45, Math.max(2, sr * 0.55), 0, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.ellipse(sx, sy, sr, Math.max(1.5, sr * 0.35), 0, 0, TAU); ctx.fill();
+  }
+  // bosses: a soft aura in the chapter's accent (red when badly hurt), a slow breath while idle,
+  // and ink dripping off them near the end
+  let breathe = false;
+  if (boss) {
+    const hurt = e.hpFrac() < 0.3;
+    const pulse = 0.5 + 0.5 * Math.sin(w.time * (hurt ? 6 : 2));
+    w.r.addGlow(sx, sy - e.z - e.hitY, e.r * 3.2, hurt ? '#ff2040' : w.theme.pal.accent, 0.08 + 0.06 * pulse);
+    if (hurt && Math.random() < 0.12) w.fx.burst(e.x + (Math.random() - 0.5) * e.r * 1.4, e.y, e.hitY * (0.5 + Math.random()), 1, e.def.gore ?? '#1a1430', 20, 0.6);
+    if (e.state === 'idle' && e.sx === 1 && e.sy === 1) {
+      breathe = true;
+      const b = Math.sin(w.time * 2.4 + e.id) * 0.022;
+      ctx.save(); ctx.translate(sx, sy); ctx.scale(1 - b * 0.5, 1 + b); ctx.translate(-sx, -sy);
+    }
   }
   if (e.def.draw) { e.def.draw(e, ctx, w, sx, sy); }
   else {
@@ -201,6 +219,7 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
       spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
     }
   }
+  if (breathe) ctx.restore();
   if (e.fear > 0 || e.confuse > 0) {
     ctx.fillStyle = e.fear > 0 ? '#c060ff' : '#ffe060';
     const a = w.time * 6;
@@ -291,6 +310,58 @@ function drawDoor(w: World, ctx: CanvasRenderingContext2D, d: import('./world').
 
 // ------------------------------------------------------------------ ambient particles
 let lastT = 0;
+/** A tear in the page: a swirling ink vortex rimmed with torn paper, opening over a second. */
+function drawPortal(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  const k = ease.outBack(Math.min(1, t / 0.9));
+  const rx = 15 * k, ry = 8 * k;
+  if (rx <= 0.5) return;
+  ctx.save();
+  // torn paper rim
+  ctx.fillStyle = '#e6dcc0';
+  ctx.beginPath();
+  for (let i = 0; i <= 24; i++) {
+    const a = (i / 24) * TAU, j = 1.18 + 0.12 * Math.sin(i * 2.7 + 1.3);
+    const px = x + Math.cos(a) * rx * j, py = y + Math.sin(a) * ry * j;
+    if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+  }
+  ctx.fill();
+  // the void, with ink swirling in
+  ctx.fillStyle = '#07050f'; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill();
+  for (let i = 0; i < 3; i++) {
+    const s = 1 - i * 0.28;
+    ctx.strokeStyle = ['#5a3ad0', '#8a5aff', '#c8b0ff'][i]; ctx.lineWidth = 1.2 - i * 0.3;
+    ctx.beginPath(); ctx.ellipse(x, y, rx * s, ry * s, 0, w.time * (2 + i) + i, w.time * (2 + i) + i + Math.PI * 1.2); ctx.stroke();
+  }
+  ctx.restore();
+  w.r.addGlow(x, y, 40, '#7a50ff', 0.5 * k);
+  w.r.addLight(x, y, 50, 0.6 * k);
+}
+
+/** The way out: a plain door standing in the boss room, with a lit EXIT sign over it. */
+function drawExitDoor(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  const k = Math.min(1, t / 0.6);
+  const rise = Math.round((1 - k) * 34);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x - 20, y - 64, 40, 64); ctx.clip();
+  const by = y + rise;
+  // frame and door
+  ctx.fillStyle = '#2a1c14'; ctx.fillRect(x - 13, by - 34, 26, 34);
+  ctx.fillStyle = '#6a4a30'; ctx.fillRect(x - 11, by - 32, 22, 32);
+  ctx.fillStyle = '#7e5a3a'; ctx.fillRect(x - 9, by - 30, 8, 12); ctx.fillRect(x + 1, by - 30, 8, 12); ctx.fillRect(x - 9, by - 15, 8, 13); ctx.fillRect(x + 1, by - 15, 8, 13);
+  ctx.fillStyle = '#e0c060'; ctx.fillRect(x + 6, by - 17, 2, 2);
+  // a sliver of light under it
+  ctx.fillStyle = 'rgba(255,240,200,0.8)'; ctx.fillRect(x - 10, by - 1, 20, 1);
+  // EXIT sign
+  const sy = by - 44;
+  ctx.fillStyle = '#101810'; ctx.fillRect(x - 12, sy, 24, 9);
+  ctx.fillStyle = '#3aff7a'; ctx.font = '700 7px ' + 'monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.globalAlpha = 0.85 + 0.15 * Math.sin(w.time * 9);
+  ctx.fillText('EXIT', x, sy + 7.5);
+  ctx.restore();
+  w.r.addGlow(x, sy + 4, 26, '#3aff7a', 0.45 * k);
+  w.r.addLight(x, by - 10, 46, 0.5 * k);
+}
+
 /** Debug overlay: every hurtbox and shot as the collision code sees them (screen space). */
 export function drawHitboxes(w: World, ctx: CanvasRenderingContext2D): void {
   const camX = w.renderCamX, camY = w.renderCamY;

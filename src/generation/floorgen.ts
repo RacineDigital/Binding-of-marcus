@@ -3,7 +3,7 @@
 import { RNG } from '../core/rng';
 import { MAP_SIZE } from '../core/constants';
 import { RoomData, RoomType, Side, DoorKind, opposite } from '../rooms/room';
-import { FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel } from '../data/floors';
+import { MARGINS_THEME, LASTPAGE_THEME, MARGINS_FLOOR, LASTPAGE_FLOOR, FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel } from '../data/floors';
 import type { Run, Floor } from '../game/run';
 import { populateRoom } from './populate';
 import type { SaveManager } from '../save/save';
@@ -60,39 +60,57 @@ export function themeAt(seed: string, fi: number): FloorTheme {
   const order = chapterOrder(seed);
   return fi < FINAL_FLOOR ? order[fi] : chapterOrder(seed + ':loop' + Math.floor(fi / FINAL_FLOOR))[fi % FINAL_FLOOR];
 }
-export function pickTheme(run: Run, fi: number): FloorTheme { return themeAt(run.seed, fi); }
+export function pickTheme(run: Run, fi: number): FloorTheme {
+  if (run.flags.margins && fi === MARGINS_FLOOR) return MARGINS_THEME;
+  if (run.flags.margins && fi === LASTPAGE_FLOOR) return LASTPAGE_THEME;
+  return themeAt(run.seed, fi);
+}
 
 export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const theme = pickTheme(run, fi);
   const base = new RNG(`${run.seed}:floor${fi}`);
   const isFinal = fi === FINAL_FLOOR;
-  const target = isFinal ? 7 : Math.min(19, 7 + Math.floor(fi * 1.5) + base.int(0, 2));
+  const special = theme === MARGINS_THEME ? 'margins' : theme === LASTPAGE_THEME ? 'lastpage' : null;
+  const target = isFinal ? 7 : special === 'margins' ? 24 + base.int(0, 2) : Math.min(19, 7 + Math.floor(fi * 1.5) + base.int(0, 2));
   let c: Ctx | null = null;
-  for (let attempt = 0; attempt < 200; attempt++) {
+  for (let attempt = 0; attempt < 400; attempt++) {
     const rng = new RNG(`${run.seed}:floor${fi}:a${attempt}`);
     const ctx: Ctx = { rng, map: new Int16Array(MAP_SIZE * MAP_SIZE).fill(-1), rooms: [], seed: run.seed, fi };
-    if (tryBuild(ctx, target, fi, isFinal)) { c = ctx; break; }
+    if (special === 'lastpage') { buildLastPage(ctx); c = ctx; break; }
+    // the Margins wants five boss rooms; settle for fewer if the map won't have it
+    const bosses = special === 'margins' ? Math.max(3, 5 - Math.floor(attempt / 150)) : 1;
+    if (tryBuild(ctx, target, fi, isFinal, bosses)) { c = ctx; break; }
   }
   if (!c) throw new Error('floor generation failed');
   const rng = c.rng;
   // curses
   let curse: string | null = null;
-  if (fi > 0 && !isFinal && rng.chance(0.18 + fi * 0.02)) curse = rng.pick(CURSES);
+  if (fi > 0 && !isFinal && !special && rng.chance(0.18 + fi * 0.02)) curse = rng.pick(CURSES);
   if (run.challenge === 'darkness') curse = 'dark';
   if (curse === 'maze') curse = 'lost';
   const floor: Floor = {
     index: fi, theme, rooms: c.rooms, map: c.map, size: MAP_SIZE, startId: 0,
     bossId: c.rooms.findIndex((r) => r.type === 'boss'), curse,
-    label: `${chapterLabel(fi)} — ${theme.name}`, alt: !FLOORS.includes(theme),
+    label: special ? `${theme.chapter} — ${theme.name}` : `${chapterLabel(fi)} — ${theme.name}`, alt: !FLOORS.includes(theme),
   };
   // populate every room (deterministic per room seed, pools consumed in id order)
   const prng = new RNG(`${run.seed}:populate${fi}`);
   for (const r of c.rooms) populateRoom(r, floor, run, prng, save);
   sprinkleMarkedRocks(floor, rng);
+  // only one of the Margins' boss rooms leads on, and nothing about its door says which
+  if (special === 'margins') rng.pick(c.rooms.filter((r) => r.type === 'boss')).flags.trueBoss = true;
   return floor;
 }
 
-function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean): boolean {
+/** The Last Page: a landing and, through one door, a huge arena. */
+function buildLastPage(c: Ctx): void {
+  place(c, 6, 10, 1, 1, 'start');
+  place(c, 5, 8, 2, 2, 'boss');
+  c.rooms.forEach((r, i) => (r.distance = i));
+  connectDoors(c, c.fi);
+}
+
+function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean, bosses = 1): boolean {
   const rng = c.rng;
   const cx = 6, cy = 6;
   place(c, cx, cy, 1, 1, 'start');
@@ -159,12 +177,20 @@ function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean): boolean
     if (rng.chance(0.45)) optional.push('event');
     specials.push(...rng.shuffle(optional));
   }
-  const needed = 1 + Math.min(2, specials.length);
+  if (bosses > 1) {
+    // the Margins: one to three treasure rooms and a shop between several boss rooms
+    specials.length = 0;
+    specials.push('shop', 'treasure');
+    if (rng.chance(0.7)) specials.push('treasure');
+    if (rng.chance(0.35)) specials.push('treasure');
+  }
+  const needed = bosses + Math.min(bosses > 1 ? 2 : 2, specials.length);
   if (deadEnds.length < needed) return false;
-  // boss at the furthest dead end
+  // boss at the furthest dead end (the Margins: the furthest few)
   const boss = deadEnds.shift()!;
   if (boss.distance < (isFinal ? 2 : 3)) return false;
   boss.type = 'boss';
+  for (let i = 1; i < bosses; i++) { const b = deadEnds.shift()!; if (b.distance < 2) return false; b.type = 'boss'; }
   const pool = rng.shuffle(deadEnds.slice());
   for (const t of specials) {
     // keep treasure away from the start a little

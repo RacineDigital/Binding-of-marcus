@@ -151,5 +151,32 @@ const counts = {
   bosses: BOSSES.filter((b) => !['snipA', 'snipB', 'ratprince', 'blottedhalf', 'bilgeseg'].includes(b.id)).length, floors: FLOORS.length, characters: CHARACTERS.length,
 };
 console.log('content:', JSON.stringify(counts));
+// beyond the Binding: the Margins and the Last Page
+{
+  const { MARGINS_FLOOR, LASTPAGE_FLOOR } = await import('../src/data/floors');
+  const { getEnemy } = await import('../src/enemies/registry');
+  let bossTotal = 0, fives = 0;
+  for (let i = 0; i < 60; i++) {
+    const run = new Run('margins' + i, 'marcus', () => true);
+    run.flags.margins = true;
+    const fl = generateFloor(run, MARGINS_FLOOR);
+    ok(fl.theme.id === 'margins', 'margins theme');
+    const bosses = fl.rooms.filter((r) => r.type === 'boss');
+    bossTotal += bosses.length; if (bosses.length === 5) fives++;
+    ok(bosses.length >= 3, `margins has several boss rooms (${bosses.length})`);
+    ok(bosses.filter((r) => r.flags.trueBoss).length === 1, 'exactly one boss room leads on');
+    ok(new Set(bosses.map((r) => r.bossId)).size === bosses.length, 'no boss twice in the Margins');
+    ok(bosses.every((r) => !!getEnemy(r.bossId!)), 'margins bosses exist');
+    ok(bosses.every((r) => r.doors.every((d) => d.kind === 'boss') && fl.rooms.every((o) => o.doors.filter((d) => d.to === r.id).every((d) => d.kind === 'boss' && !d.locked))), 'boss doors all look the same');
+    ok(fl.rooms.some((r) => r.type === 'shop'), 'margins has a shop');
+    const tr = fl.rooms.filter((r) => r.type === 'treasure').length;
+    ok(tr >= 1 && tr <= 3, `margins has 1-3 treasure rooms (${tr})`);
+    ok(fl.rooms.length >= 24, `margins is huge (${fl.rooms.length})`);
+    const lp = generateFloor(run, LASTPAGE_FLOOR);
+    const arena = lp.rooms.find((r) => r.type === 'boss');
+    ok(lp.theme.id === 'lastpage' && !!arena && arena.cw === 2 && arena.ch === 2 && arena.bossId === 'unwritten', 'last page arena');
+  }
+  console.log(`margins: ${(bossTotal / 60).toFixed(1)} boss rooms on average, ${fives}/60 with five`);
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

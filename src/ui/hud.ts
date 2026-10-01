@@ -198,8 +198,8 @@ export class Hud {
     const eid = w.game.save.data.settings.descStyle !== 'card';
     if (w.game.save.data.settings.showStats && !(eid && this.panelFade > 0.05)) this.drawStats(ctx);
     this.drawConsumables(ctx);
-    if (w.floor.curse !== 'lost' && !this.fullMap) this.drawMinimap(ctx, false);
-    else text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right');
+    if (w.floor.curse === 'lost') { if (!this.fullMap) text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right'); }
+    else if (!this.fullMap) this.drawMinimap(ctx, false);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);

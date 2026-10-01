@@ -1,5 +1,6 @@
 // Room lifecycle: entering, doors, clearing, rewards, special rooms and floor progression.
 import type { World, DoorRT } from './world';
+import type { Run } from './run';
 import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef, SpawnDef } from '../rooms/room';
 import { TILE, VIEW_W, VIEW_H } from '../core/constants';
 import { paintRoomBackground } from '../art/roombg';
@@ -20,12 +21,18 @@ import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
-import { FINAL_FLOOR, enemyHpMul } from '../data/floors';
+import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, enemyHpMul } from '../data/floors';
 import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 
 // ------------------------------------------------------------------ floors
+/** The Binding and the Last Page get the final boss theme; the Margins' many bosses the late one. */
+function bossMusic(run: Run): string {
+  const fi = run.floorIndex;
+  if (fi === FINAL_FLOOR || (run.flags.margins && fi === LASTPAGE_FLOOR)) return 'bossFinal';
+  return fi >= 4 ? 'boss2' : 'boss';
+}
 export function startFloor(w: World): void {
   const run = w.run;
   const floor = generateFloor(run, run.floorIndex, w.game.save);
@@ -44,7 +51,7 @@ export function startFloor(w: World): void {
   w.floorIntroT = 2.6;
   w.hud.floorCard(floor.label, floor.theme.subtitle, floor.curse);
   w.audio.setMusic(floor.theme.music);
-  w.audio.prepareMusic(w.run.floorIndex === FINAL_FLOOR ? 'bossFinal' : w.run.floorIndex >= 4 ? 'boss2' : 'boss');
+  w.audio.prepareMusic(bossMusic(w.run));
   const nextTheme = pickTheme(w.run, w.run.floorIndex + 1);
   if (nextTheme) w.audio.prepareMusic(nextTheme.music);
   if (w.run.floorIndex === 0) w.audio.prepareMusic('death');
@@ -87,14 +94,14 @@ export function restoreFloor(w: World, st: any): void {
   w.floorIntroT = 0.8;
   w.hud.roomName('Continued · ' + floor.label);
   w.audio.setMusic(floor.theme.music);
-  w.audio.prepareMusic(run.floorIndex === FINAL_FLOOR ? 'bossFinal' : run.floorIndex >= 4 ? 'boss2' : 'boss');
+  w.audio.prepareMusic(bossMusic(run));
   w.audio.setIntensity(w.enemies.length ? 1 : 0);
 }
 
 export function nextFloor(w: World): void {
   const run = w.run;
   run.stats.floorsCleared++;
-  if (run.floorIndex >= FINAL_FLOOR && run.mode !== 'endless') { w.game.onVictory(); return; }
+  if (run.floorIndex >= FINAL_FLOOR && run.mode !== 'endless' && !run.flags.margins) { w.game.onVictory(); return; }
   onLeaveFloor(w);
   run.floorIndex++;
   w.game.save.stat('floorsCleared', 1);
@@ -126,7 +133,8 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.enemies = []; w.proj.clear(); w.beams = []; w.bombs = []; w.creep = []; w.fx.clear(); w.bossList = [];
   w.pendingKegs = []; w.lockdown = false; w.labels = [];
   w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
-  w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: 'down' } : null;
+  w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: room.flags.trap.kind ?? 'down' } : null;
+  w.exitDoor = room.flags.exit ? { x: room.flags.exit.x, y: room.flags.exit.y, t: 2 } : null;
   w.roomTime = 0; w.roomHit = false; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
@@ -267,7 +275,7 @@ function startBoss(w: World, room: RoomData): void {
     const def = introDef ?? w.bossList[0]?.def;
     w.hud.bossIntro(def?.name ?? 'Boss', def?.desc ?? '', w.bossList[0]);
     w.audio.stinger('bossIntro');
-    w.audio.setMusic('boss' + (w.run.floorIndex === FINAL_FLOOR ? 'Final' : w.run.floorIndex >= 4 ? '2' : ''));
+    w.audio.setMusic(bossMusic(w.run));
   } else {
     w.hud.roomName(w.bossList[0]?.def.name ?? 'Lurker');
   }
@@ -481,6 +489,8 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.proj.clear();
   if (room.type === 'miniboss') { w.lockdown = false; return; }
   const fi = w.run.floorIndex;
+  // finished the story before? then the Binding offers a way out and a way further in
+  const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless';
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
   if (!w.run.flags.bossHit) w.game.save.unlock('flawless_boss');
@@ -490,6 +500,30 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();
+    if (w.run.flags.margins && fi === LASTPAGE_FLOOR) { w.game.save.unlock('beat_unwritten'); w.game.onVictory(); return; }
+    if (w.run.flags.margins && fi === MARGINS_FLOOR) {
+      // every boss in the Margins pays out; only one opens the way to the Last Page
+      spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
+      const rng = new RNG(room.seed + ':bossdrop');
+      spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
+      if (room.flags.trueBoss) {
+        w.trapdoor = { x: c.x, y: c.y + 30, t: 0, kind: 'portal' };
+        room.flags.trap = { x: c.x, y: c.y + 30, kind: 'portal' };
+        w.audio.stinger('lostfound'); w.hud.toast('The page tears open.');
+      } else w.hud.toast('Nothing beyond this one. Not this door.');
+      return;
+    }
+    if (fi >= goal && beyond) {
+      // the story can end here (EXIT), or go on through the tear
+      spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
+      w.exitDoor = { x: c.x - 56, y: c.y + 30, t: 0 };
+      room.flags.exit = { x: c.x - 56, y: c.y + 30 };
+      w.trapdoor = { x: c.x + 56, y: c.y + 30, t: 0, kind: 'portal' };
+      room.flags.trap = { x: c.x + 56, y: c.y + 30, kind: 'portal' };
+      w.audio.stinger('lostfound');
+      w.hud.banner('Two ways on', 'The EXIT ends the story. The tear goes further in.');
+      return;
+    }
     if (fi >= goal) { w.game.onVictory(); return; }
     spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
     const rng = new RNG(room.seed + ':bossdrop');
@@ -539,10 +573,25 @@ export function updateSpecial(w: World, dt: number): void {
     // a trapdoor that opens under your feet waits until you've stepped off it
     const d2 = dist2(pl.x, pl.y, t.x, t.y);
     if (d2 > 18 * 18) t.armed = true;
-    if (t.t > 0.8 && t.armed && d2 < 11 * 11 && !w.transition && w.deathT < 0 && !w.game.fading) {
+    if (t.t > 0.8 && t.armed && d2 < (t.kind === 'portal' ? 14 : 11) ** 2 && !w.transition && w.deathT < 0 && !w.game.fading) {
       pl.controlLock = 1.5; pl.vx = pl.vy = 0;
-      w.audio.play('fall');
-      w.game.fadeTo(() => nextFloor(w), 0.7);
+      if (t.kind === 'portal') {
+        // through the tear: past the Binding into the Margins (or on to the Last Page)
+        w.run.flags.margins = true;
+        w.audio.play('secret'); w.whiteFlash = 0.5;
+        w.game.fadeTo(() => nextFloor(w), 1.1);
+      } else {
+        w.audio.play('fall');
+        w.game.fadeTo(() => nextFloor(w), 0.7);
+      }
+    }
+  }
+  if (w.exitDoor) {
+    const x = w.exitDoor; x.t += dt;
+    if (x.t > 0.8 && Math.abs(pl.x - x.x) < 10 && pl.y - x.y < 6 && pl.y - x.y > -10 && !w.transition && w.deathT < 0 && !w.game.fading) {
+      pl.controlLock = 2; pl.vx = pl.vy = 0;
+      w.audio.play('door'); w.exitDoor = null;
+      w.game.onVictory();
     }
   }
   // challenge room: pressure button starts waves

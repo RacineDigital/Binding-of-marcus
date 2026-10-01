@@ -13,7 +13,8 @@ import { describeItem } from '../items/describe';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
 import { formatSeed, normalizeSeed, RNG } from '../core/rng';
 import { dailySeed, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
-import { INTRO_STORY, ENDING_STORY } from '../data/lore';
+import { INTRO_STORY, ENDING_STORY, TRUE_ENDING_STORY } from '../data/lore';
+import { FINAL_FLOOR } from '../data/floors';
 import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
@@ -935,7 +936,7 @@ export class MenuSystem {
       update(keys) { if (this.t > 4 && keys.includes('confirm')) g.fadeTo(() => g.quitToMenu(), 0.8); },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        ENDING_STORY.forEach((l, i) => { ctx.globalAlpha = clamp((this.t - i * 2.2) * 1, 0, 1); text(ctx, l, VIEW_W / 2, 60 + i * 22, 11, '#efe2c8', 'center', i === 2 ? FONT_TITLE : FONT_BODY, i === 2 ? 400 : 600); });
+        (w.run.flags.margins && w.run.floorIndex > FINAL_FLOOR ? TRUE_ENDING_STORY : ENDING_STORY).forEach((l, i) => { ctx.globalAlpha = clamp((this.t - i * 2.2) * 1, 0, 1); text(ctx, l, VIEW_W / 2, 60 + i * 22, 11, '#efe2c8', 'center', i === 2 ? FONT_TITLE : FONT_BODY, i === 2 ? 400 : 600); });
         ctx.globalAlpha = clamp(this.t - 9, 0, 1);
         text(ctx, 'THE END', VIEW_W / 2, 170, 24, '#c8a878', 'center', FONT_TITLE, 400);
         text(ctx, `${fmtTime(w.run.stats.time)} · ${w.run.stats.kills} enemies · Seed ${formatSeed(w.run.seed)}`, VIEW_W / 2, 186, 8, COL.dim, 'center');

@@ -8,7 +8,7 @@ import type { World } from '../game/world';
 
 // ------------------------------------------------------------------ Grubmother
 const grubBrain: BossBrain = {
-  idleTime: [0.9, 1.5], phases: [0.5],
+  idleTime: [1.05, 1.6], phases: [0.5],
   idle(e, w, dt) { chase(e, w, 26 + e.data.phase * 14, dt); e.setAnim('idle'); e.animate(dt, 6); },
   attacks: [
     { id: 'spray', weight: 3,
@@ -19,7 +19,7 @@ const grubBrain: BossBrain = {
         e.frame = 1;
         if (!e.data.sprayed) { e.data.sprayed = true; e.data.sprayN = 0; w.audio.play('bossSpit', { x: e.x }); }
         const want = Math.floor((t - 0.6) / 0.05);
-        const n = e.data.phase ? 16 : 11;
+        const n = e.data.phase ? 13 : 9;
         while (e.data.sprayN < Math.min(n, want)) {
           e.data.sprayN++;
           shoot(e, w, aimAngle(e, w) + (Math.random() - 0.5) * 1.1, 110 + Math.random() * 60, { r: 3.5 + Math.random() * 1.5 });
@@ -44,7 +44,7 @@ const grubBrain: BossBrain = {
         if (e.hidden) {
           e.hidden = false; e.invuln = false; e.data.tele = false;
           e.setAnim('rear'); e.frame = 1; e.sy = 1.4; e.sx = 0.8;
-          ringShot(e, w, e.data.phase ? 14 : 10, 120, Math.random());
+          ringShot(e, w, e.data.phase ? 12 : 8, 115, Math.random());
           w.fx.shards(e.x, e.y, 16, '#6a5a48', 130); w.shake(5); w.audio.play('erupt', { x: e.x });
         }
         return t > 3.1;
@@ -56,7 +56,7 @@ const grubBrain: BossBrain = {
         if (t > 0.7 && !e.data.born) {
           e.data.born = true;
           const alive = w.enemies.filter((x) => !x.dead && !x.isBoss).length;
-          if (alive < 4) for (let i = 0; i < 2; i++) { const k = w.spawnEnemy(e.data.phase ? 'ragcrawler' : 'mite', e.x + (i ? 16 : -16), e.y + 8, true); if (k) k.noDrop = true; }
+          if (alive < 3) for (let i = 0; i < 2; i++) { const k = w.spawnEnemy(e.data.phase ? 'ragcrawler' : 'mite', e.x + (i ? 16 : -16), e.y + 8, true); if (k) k.noDrop = true; }
           w.audio.play('hatch', { x: e.x }); w.fx.spray(e.x, e.y, 10, Math.PI / 2, 2, 12, '#c8a080', 70, 0.5, '#8a6a50');
         }
         if (t > 1.2) { e.data.born = false; return true; }
@@ -96,7 +96,7 @@ function paintGrub(p: any, f: number, rear: number, mouth: number): void {
 }
 const grubmother: EnemyDef = {
   id: 'grubmother', name: 'The Grubmother', desc: 'She has been eating the foundations for years.', boss: true,
-  hp: 230, r: 16, speed: 30, role: 'boss', cost: 0, hitY: 14, mass: 8, gore: '#c8a080', goreDecal: '#6a4a38', noKnock: true, noSeparate: false,
+  hp: 210, r: 16, speed: 30, role: 'boss', cost: 0, hitY: 14, mass: 8, gore: '#c8a080', goreDecal: '#6a4a38', noKnock: true, noSeparate: false,
   sprites: () => ({
     idle: frames(62, 44, 4, (p, f) => paintGrub(p, f, 0, 0.2)),
     rear: frames(62, 50, 2, (p, f) => paintGrub(p, 0, 1, f ? 1 : 0.4)),
@@ -202,7 +202,7 @@ function paintWardrobe(p: any, open: number, tilt: number, bob: number): void {
 }
 const wardrobe: EnemyDef = {
   id: 'wardrobe', name: 'The Wardrobe', desc: 'Every child knows what lives inside.', boss: true,
-  hp: 250, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 10, gore: '#6a4028', goreDecal: '#3a2418', noKnock: true,
+  hp: 225, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 10, gore: '#6a4028', goreDecal: '#3a2418', noKnock: true,
   sprites: () => ({
     closed: frames(50, 60, 1, (p) => paintWardrobe(p, 0, 0, 0)),
     tilt: frames(50, 60, 1, (p) => paintWardrobe(p, 0.15, 1, 1)),
@@ -286,13 +286,13 @@ function paintSnip(p: any, f: number, open: number, brass: boolean): void {
   p.set(cx - 2, cy - 2, '#ffffff');
 }
 const snipA: EnemyDef = {
-  id: 'snipA', name: 'Snip', desc: '', boss: true, hp: 125, r: 9, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, gore: '#c8ccd8', goreDecal: '#5a1a24',
+  id: 'snipA', name: 'Snip', desc: '', boss: true, hp: 110, r: 9, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, gore: '#c8ccd8', goreDecal: '#5a1a24',
   sprites: () => ({ walk: frames(36, 38, 4, (p, f) => paintSnip(p, f, 0, false)), open: frames(36, 38, 1, (p) => paintSnip(p, 0, 1, false)) }),
   init(e) { e.anim = 'walk'; e.data.idleT = 1; },
   update(e, w, dt) { bossUpdate(e, w, dt, snipBrainA); },
 };
 const snipB: EnemyDef = {
-  id: 'snipB', name: 'Snap', desc: '', boss: true, hp: 125, r: 9, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, gore: '#c89a3a', goreDecal: '#5a1a24',
+  id: 'snipB', name: 'Snap', desc: '', boss: true, hp: 110, r: 9, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, gore: '#c89a3a', goreDecal: '#5a1a24',
   sprites: () => ({ walk: frames(36, 38, 4, (p, f) => paintSnip(p, f, 0, true)), open: frames(36, 38, 1, (p) => paintSnip(p, 0, 1, true)) }),
   init(e) { e.anim = 'walk'; e.data.idleT = 1.6; },
   update(e, w, dt) { bossUpdate(e, w, dt, snipBrainB); },

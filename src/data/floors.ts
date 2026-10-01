@@ -106,7 +106,7 @@ export const FLOORS: FloorTheme[] = [
       rock: '#7a6a58', accent: '#e8d8a0', stain: '#2b2f66', heap: '#e6dcc0', heapKind: 'pages' },
     ambient: '#08040a', darkness: 0.42, playerLight: 86,
     enemies: { blot: 4, pagewraith: 5, voideye: 4, choirboy: 3, penitent: 3, mirrorshade: 3, orderly: 3, stoker: 3, skullorbit: 3 },
-    bosses: ['unbound'],
+    bosses: ['unbound', 'bookbinder'],
     music: 'binding', hazards: { spikes: 0.3, pits: 0.35, fires: 0.3, kegs: 0.2 }, fireVariants: [0, 1, 3],
     hpMul: 2.3, budget: 2.3,
   },
@@ -163,7 +163,7 @@ export const NEW_FLOORS: FloorTheme[] = [
       rock: '#5a6a4a', accent: '#a8d070', stain: '#4a6a2a', heap: '#8a7a4a', heapKind: 'refuse' },
     ambient: '#040a04', darkness: 0.4, playerLight: 92,
     enemies: { leech: 6, bloater: 5, cinderhopper: 6, dripling: 6, pillbug: 6, gasper: 5, sludge: 4, mitenest: 3 },
-    bosses: ['grubmother', 'bilgemaw', 'matron'],
+    bosses: ['thornwife', 'grubmother', 'bilgemaw'],
     music: 'greenhouse', hazards: { spikes: 0.25, pits: 0.35, fires: 0.2, kegs: 0.1, webs: 0.2 }, fireVariants: [2, 2, 0],
     hpMul: 1.3, budget: 1.3,
   },
@@ -174,7 +174,7 @@ export const NEW_FLOORS: FloorTheme[] = [
       rock: '#5a5660', accent: '#c83a3a', stain: '#1a1a2e', heap: '#e6dcc0', heapKind: 'pages' },
     ambient: '#060408', darkness: 0.42, playerLight: 88,
     enemies: { valvehead: 5, pagewraith: 5, blot: 5, stoker: 5, spool: 6, sootsprite: 4, blotlet: 3 },
-    bosses: ['oldstoker', 'blottedman', 'furnaceheart'],
+    bosses: ['typesetter', 'blottedman', 'oldstoker'],
     music: 'printshop', hazards: { spikes: 0.3, pits: 0.2, fires: 0.4, kegs: 0.35 }, fireVariants: [0, 1, 3],
     hpMul: 1.5, budget: 1.5,
   },
@@ -185,7 +185,7 @@ export const NEW_FLOORS: FloorTheme[] = [
       rock: '#7a8e9a', accent: '#a8e0ff', stain: '#6a8aa0', heap: '#c8d8e0', heapKind: 'refuse' },
     ambient: '#020610', darkness: 0.44, playerLight: 90,
     enemies: { drowner: 6, sludge: 5, grateeye: 5, voideye: 3, mirrorshade: 3, leech: 6, rat: 5, sheetghost: 3 },
-    bosses: ['bilgemaw', 'ratking', 'choirmaster'],
+    bosses: ['rimebride', 'bilgemaw', 'ratking'],
     music: 'underworks', hazards: { spikes: 0.3, pits: 0.4, fires: 0.15, kegs: 0.15 }, fireVariants: [1, 1, 3],
     hpMul: 1.5, budget: 1.5,
   },
@@ -196,7 +196,7 @@ export const NEW_FLOORS: FloorTheme[] = [
       rock: '#8a7a5a', accent: '#e0b050', stain: '#3a2a10', heap: '#b8904a', heapKind: 'coal' },
     ambient: '#080604', darkness: 0.44, playerLight: 88,
     enemies: { valvehead: 6, wheelwraith: 5, skullorbit: 5, choirboy: 4, censer: 4, spool: 5, cherubmoth: 3 },
-    bosses: ['bellringer', 'ossuaryknight', 'sleepwalker'],
+    bosses: ['pendulum', 'bellringer', 'sleepwalker'],
     music: 'clocktower', hazards: { spikes: 0.35, pits: 0.4, fires: 0.3, kegs: 0.2 }, fireVariants: [0, 1, 1],
     hpMul: 1.7, budget: 1.7,
   },
@@ -215,6 +215,35 @@ export const NEW_FLOORS: FloorTheme[] = [
 for (const [k, v] of Object.entries(ALT_FLOORS)) v.tier = FLOORS.find((f) => f.id === k)?.tier ?? 0;
 
 /** Every theme a non-final chapter can use. */
+// ---------------------------------------------------------------------------- beyond the Binding
+/**
+ * The Margins: reached through the portal that opens after the Binding (once the story has been
+ * finished before). A huge chapter of the hardest creatures with several boss rooms; only one of
+ * them leads on, to the Last Page.
+ */
+export const MARGINS_THEME: FloorTheme = {
+  id: 'margins', name: 'The Margins', subtitle: 'Where the notes nobody was meant to read are kept', chapter: 'Epilogue', tier: 7,
+  floor: 'pages', wall: 'torn', ambience: 'ink',
+  pal: { floor: '#c8bea6', floor2: '#b4a98e', grout: '#4a3e30', wall: '#2a2238', wall2: '#1e182a', mortar: '#0c0812',
+    rock: '#5e5668', accent: '#c83a4a', stain: '#2b2f66', heap: '#e6dcc0', heapKind: 'pages' },
+  ambient: '#06040c', darkness: 0.48, playerLight: 92,
+  enemies: { pagewraith: 6, voideye: 5, mirrorshade: 5, blot: 4, hollowmaw: 3, penitent: 4, orderly: 3, censer: 3, ossspider: 4, marrowmaw: 3,
+    skullorbit: 3, wheelwraith: 3, sheetghost: 3, stoker: 3, drowner: 3, gravedigger: 3 },
+  bosses: ['grubmother', 'wardrobe', 'furnaceheart', 'oldstoker', 'ratking', 'bilgemaw', 'matron', 'sleepwalker', 'ossuaryknight',
+    'mothmother', 'bellringer', 'choirmaster', 'blottedman', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'bookbinder'],
+  music: 'binding', hazards: { spikes: 0.35, pits: 0.4, fires: 0.35, kegs: 0.25, webs: 0.15 }, fireVariants: [1, 3, 3],
+  hpMul: 2.5, budget: 2.5,
+};
+/** The Last Page: one huge, empty page and what is writing itself onto it. */
+export const LASTPAGE_THEME: FloorTheme = {
+  ...MARGINS_THEME, id: 'lastpage', name: 'The Last Page', subtitle: 'It has been waiting for you to arrive', chapter: 'The End',
+  floor: 'pages', wall: 'torn', ambience: 'pages',
+  pal: { ...MARGINS_THEME.pal, floor: '#e6dcc4', floor2: '#ddd2b8', grout: '#a89878', wall: '#14101c', wall2: '#0c0a12', stain: '#14163a' },
+  darkness: 0.3, enemies: { blot: 1 }, bosses: ['unwritten'], music: 'binding', hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
+};
+/** Chapter indices beyond the Binding when a run goes through the portal. */
+export const MARGINS_FLOOR = FINAL_FLOOR + 1, LASTPAGE_FLOOR = FINAL_FLOOR + 2;
+
 export const CHAPTER_POOL: FloorTheme[] = [...FLOORS.slice(0, FINAL_FLOOR), ...Object.values(ALT_FLOORS), ...NEW_FLOORS];
 const FAMILY: Record<string, string> = { rootcellar: 'cellar', coalchute: 'boiler', flooded: 'underworks', morgue: 'ward', catacombs: 'depths', belfry: 'chapel', inkwell: 'hollow' };
 export const familyOf = (t: FloorTheme): string => FAMILY[t.id] ?? t.id;

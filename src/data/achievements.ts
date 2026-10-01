@@ -10,6 +10,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'beat_ch6', name: 'Last Rites', desc: 'Defeat the Chapter VI boss.', unlocks: 'Unlocks Elias.' },
   { id: 'beat_ch7', name: 'Through the Hollow', desc: 'Defeat the Chapter VII boss.', unlocks: 'Unlocks the Ossuary Key.' },
   { id: 'beat_final', name: 'The Binding Holds', desc: 'Finish the story.', unlocks: 'Unlocks The Blot, the Challenges and Second Edition (Hard mode).' },
+  { id: 'beat_unwritten', name: 'The Last Page', desc: 'Go through the tear after the Binding and defeat what waits on the Last Page.', unlocks: 'Your name in the margins, in gold.', hidden: true },
   { id: 'flawless_boss', name: 'Untouched', desc: 'Defeat a boss without taking damage.', unlocks: 'Unlocks the Glass Heart.' },
   { id: 'secrets_10', name: 'Hollow Walls', desc: 'Find 10 secrets.', unlocks: 'Unlocks the Chalk Line.' },
   { id: 'transform_moth', name: 'Mothkin', desc: 'Become Mothkin.', unlocks: 'Unlocks the Moth Cocoon.', hidden: true },

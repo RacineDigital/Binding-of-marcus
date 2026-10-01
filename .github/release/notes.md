@@ -1,3 +1,27 @@
+## What's new in 2.5 (beta)
+
+- **Beyond the Binding.** Finish the story once, and next time the Binding opens two ways on: an
+  EXIT door (ends the run as a win) or a tear in the page. The tear leads to **The Margins**: a
+  huge chapter of the hardest creatures with five identical boss rooms, treasure rooms and a shop.
+  Every boss drops a boss item; only one opens the way to **The Last Page** and **The Unwritten**,
+  which rewrites itself into the bosses you've beaten.
+- **Five new themed bosses:** the Thornwife (Greenhouse), the Rime Bride (Frozen Cistern), the
+  Pendulum (Clocktower), the Typesetter (Print Shop) and the Bookbinder (The Binding). Every
+  chapter now has at least two bosses that fit it.
+- **Bosses look better:** heavier shadows, a glow in the chapter's colours (red when they're nearly
+  dead), a breathing idle and ink dripping off them at low health. Chapter I bosses are a bit
+  gentler.
+- **The Lost & Found:** a third room that can open after a boss, next to the Inkwell and the Wax
+  Chapel. It holds the items you left behind; take one, leave one of yours.
+- **Bargain door odds on the HUD**, like Isaac's devil/angel chance. They drop when you get hit.
+- **Stat icons**, with +/- readouts when a stat changes.
+- **Hold Tab** to see what your active item, charms, pages and sweets do, plus the door odds.
+- **Accurate hitboxes:** shots collide where they're drawn, for you and for enemies.
+- **Fixed:** beams, lasers, ghost shots and arcing shots couldn't put out fires or blow up kegs.
+- **Collection, Bestiary and Achievements** scroll with the mouse wheel and show a scrollbar; what
+  you've found is grouped by set.
+- **Inkwell prices** show the hearts you'd really pay (wax or ink once you're out of red).
+
 ## What's new in 2.4 (beta)
 
 - **Papermoth Games.** A studio splash on launch: a folded-paper moth flutters in (any key skips it).

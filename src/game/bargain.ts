@@ -8,6 +8,7 @@ import type { RoomData } from '../rooms/room';
 import { getItem } from '../items/registry';
 import { RNG } from '../core/rng';
 import { addBargainRoom } from '../generation/floorgen';
+import { FINAL_FLOOR } from '../data/floors';
 
 export type BargainKind = 'deal' | 'blessing' | 'lostfound';
 export const BARGAIN_NAMES: Record<BargainKind, string> = { deal: 'The Inkwell', blessing: 'Wax Chapel', lostfound: 'Lost & Found' };
@@ -38,6 +39,8 @@ export function doorOdds(w: World): DoorOdds {
   else parts.push({ label: 'Hit by the boss', value: '+0%', good: false });
   if (f.lastDoorFloor === fi - 1) { c *= 0.5; parts.push({ label: 'A door opened last chapter', value: 'x1/2', good: false }); }
   if (fi === 0) { c = 0; parts.push({ label: 'No doors in Chapter I', value: '0%', good: false }); }
+  else if (fi === FINAL_FLOOR && w.run.mode !== 'endless') { c = 0; parts.push({ label: 'No doors in the final chapter', value: '0%', good: false }); }
+  else if (f.margins && fi > FINAL_FLOOR) { c = 0; parts.push({ label: 'No doors past the Binding', value: '0%', good: false }); }
   return { total: Math.max(0, Math.min(1, c)), parts, split: doorSplit(w) };
 }
 

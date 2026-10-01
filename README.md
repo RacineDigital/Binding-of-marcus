@@ -78,7 +78,7 @@ sprite preview sheets.
 | Steady (slow, precise movement) | Shift | L3 |
 | Swap consumable | F | |
 | Drop charm (hold) | R | R3 |
-| Full map (hold) | Tab | Back |
+| Map and item info (hold) | Tab | Back |
 | Pause | Esc / P | Start |
 | Screenshot | F9 / F12 | |
 | Fullscreen (desktop) | F11 / Alt+Enter | |
@@ -133,9 +133,18 @@ Menus also work with the mouse: hover, click and scroll.
 
   Every chapter has its own floor and wall painter, palette, ambient particles, lighting, enemy
   pool, boss pool and music.
-- **45 enemy types and 15 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
-  card, several attack patterns, phase changes and a death sequence. The Rat King and the Blotted
-  Man tear themselves in half. The Unbound has three phases.
+- **45 enemy types and 21 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
+  card, several attack patterns, phase changes and a death sequence. Every chapter has at least two
+  bosses that fit it: the Thornwife in the Greenhouse, the Rime Bride in the Frozen Cistern, the
+  Pendulum in the Clocktower, the Typesetter in the Print Shop and the Bookbinder in the Binding
+  join the originals. The Rat King and the Blotted Man tear themselves in half. The Unbound has
+  three phases.
+- **Beyond the Binding.** Once you've finished the story, beating the Binding opens two ways on: an
+  EXIT door that ends the run as a win, and a tear in the page. The tear leads to **The Margins**, a
+  huge chapter of the hardest creatures with five identical boss rooms, one to three treasure rooms
+  and a shop. Every boss there drops a boss item, but only one of them opens the way to **The Last
+  Page**, a huge arena where **The Unwritten** waits: it rewrites itself into the shapes of the
+  bosses you've beaten (and fights like them) before throwing everything at once.
 - **Seeded floors.** Floors are built on a hidden 13×13 grid with 1×1, 2×1, 1×2 and 2×2 rooms.
   Each floor places:
   - a boss room at the furthest dead end;
@@ -145,9 +154,12 @@ Menus also work with the mouse: hover, click and scroll.
   - a Crawlspace (secret room) and a Deep Crawlspace (super secret room) behind walls you have to
     bomb open.
 
-  Bargain rooms (the Inkwell, where you pay in hearts, or the Wax Chapel, a free blessing) can
-  appear after a boss. The same seed always produces the same layouts, room contents, bosses, shop
-  stock and pedestal items.
+  Bargain rooms can appear after a boss: the Inkwell (pay in hearts), the Wax Chapel (a free
+  blessing) or the Lost & Found (things you left behind, traded one-for-one for something you
+  carry). The odds are on the HUD like Isaac's devil/angel chance: getting hit this chapter costs
+  +35%, getting hit by the boss costs +15%, and a door last chapter halves it. Hold Tab to see the
+  breakdown. The same seed always produces the same layouts, room contents, bosses, shop stock and
+  pedestal items.
 - **Rooms** are a mix of procedurally generated layouts (mirrored rock clusters, walls, pillars, pit
   lakes, rings, corridors, hazards) and 40 handmade templates, with role-based enemy slots. Deeper
   rooms can roll a variant: Ambush (a second wave), Champion Den, Lights Out or Gilded Room. They
@@ -186,7 +198,10 @@ Menus also work with the mouse: hover, click and scroll.
   shop pickup, page, sweet or charm shows its description in the style of the External Item
   Descriptions mod: quality-coloured name, stat arrows, effects, transformation progress, whether
   it is new to your collection, and the price. A large card style is available in Options, along
-  with an optional run timer.
+  with an optional run timer. Stats have icons and show +/- changes; holding Tab shows the full map
+  and what your active item, charms, pages and sweets do.
+- **Hitboxes** match what you see: shots collide where they're drawn (their height above their
+  shadow), and Marcus is hurt on a chin-to-hips capsule just inside his sprite.
 
 ## Architecture
 
