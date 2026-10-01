@@ -11,6 +11,7 @@ import { clamp, ease, TAU } from '../core/math';
 import { getEnemy } from '../enemies/registry';
 import { getSprites } from '../enemies/enemy';
 import { SLOTS, store } from '../save/save';
+import { CHALLENGES } from '../data/achievements';
 
 // ---------------------------------------------------------------------------- scene painting
 interface SceneLayers { far: HTMLCanvasElement; mid: HTMLCanvasElement; near: HTMLCanvasElement; pages: { x: number; y: number; w: number; h: number; c: string }[] }
@@ -273,70 +274,96 @@ function fmtHours(sec: number): string { const h = Math.floor(sec / 3600), m = M
 export function mainMenuScreen(ms: MenuSystem): Screen {
   const g = ms.g;
   const desktop = !!(globalThis as any).bomDesktop;
-  const entries: Entry[] = [
-    { id: 'continue', label: 'Continue', icon: I.play, enabled: () => !!g.save.data.run,
-      desc: () => { const r = g.save.data.run; if (!r) return 'No story in progress.'; return `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${themeAt(r.seed, r.floor).name} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}${r.mode === 'endless' ? ' · Endless' : ''}`; },
-      act: () => g.fadeTo(() => { if (!g.continueRun()) ms.openMain(); }, 0.4) },
+  const run = g.save.data.run;
+  const entries: Entry[] = [];
+  // only what you can use right now: Continue appears with a story in progress, Challenges once one is open
+  if (run) entries.push({ id: 'continue', label: 'Continue', icon: I.play,
+    desc: () => `${CHARACTERS.find((c) => c.id === run.charId)?.name ?? ''} · ${themeAt(run.seed, run.floor).name} · Seed ${formatSeed(run.seed)}${run.mode === 'hard' ? ' · Hard' : run.mode === 'endless' ? ' · Endless' : ''}`,
+    act: () => g.fadeTo(() => { if (!g.continueRun()) ms.openMain(); }, 0.4) });
+  entries.push(
     { id: 'new', label: 'New Run', icon: I.plus, desc: () => 'Pick a reader, a mode and (optionally) a seed.', act: () => ms.push(ms.newRunScreen()) },
-    { id: 'daily', label: 'Daily Run', icon: I.sun, desc: () => 'One seed for everyone today. How far can you get?', act: () => ms.push(ms.dailyScreen()) },
-    { id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) },
-    { id: 'characters', label: 'Characters', icon: I.person, desc: () => 'Every reader you have met in the cellar.', act: () => ms.push(ms.charactersScreen()) },
-    { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. The bestiary is in here too.`, act: () => ms.push(ms.collectionScreen()) },
+    { id: 'daily', label: 'Daily Run', icon: I.sun, desc: () => 'One seed for everyone today.', act: () => ms.push(ms.dailyScreen()) },
+  );
+  if (CHALLENGES.some((c) => !c.unlock || g.save.isUnlocked(c.unlock))) entries.push({ id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) });
+  entries.push(
+    { id: 'journal', label: 'Journal', icon: I.book, desc: () => 'Readers, collection, bestiary, past runs and statistics.', act: () => ms.push(journalScreen(ms)) },
+    { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls, save slots and credits.', act: () => ms.push(ms.optionsScreen()) },
+  );
+  if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Close the book for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
+  return entryList(ms, entries, { logo: true });
+}
+
+/** The Journal: everything you have seen and done, one level down from the title. */
+export function journalScreen(ms: MenuSystem): Screen {
+  const g = ms.g;
+  const entries: Entry[] = [
+    { id: 'characters', label: 'Readers', icon: I.person, desc: () => 'Every reader you have met in the cellar.', act: () => ms.push(ms.charactersScreen()) },
+    { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press Enter inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
     { id: 'history', label: 'Run History', icon: I.history, desc: () => `Your last ${Math.min(30, g.save.data.history?.length ?? 0)} stories, good and bad.`, act: () => ms.push(ms.historyScreen()) },
     { id: 'stats', label: 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements.', act: () => ms.push(ms.statsScreen()) },
-    { id: 'profiles', label: 'Save Slots', icon: I.bookmark, desc: () => `Playing on slot ${g.save.slot}. Switch, back up or erase save slots.`, act: () => ms.push(profilesScreen(ms)) },
-    { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls and accessibility.', act: () => ms.push(ms.optionsScreen()) },
-    { id: 'credits', label: 'Credits', icon: I.scroll, desc: () => 'Who stitched this together.', act: () => ms.push(ms.creditsScreen()) },
   ];
-  if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Close the book for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
-  const enabled = (i: number) => entries[i].enabled?.() ?? true;
-  let sel = enabled(0) ? 0 : 1;
+  return entryList(ms, entries, { title: 'Journal', back: true });
+}
+
+/** A vertical list of menu entries over the title scene (the title menu and its submenus). */
+function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?: string; back?: boolean }): Screen {
+  const g = ms.g;
+  let sel = 0;
   let hover = -1;
-  const Y0 = 104, DY = 13.5, X0 = 40;
-  const select = (i: number) => { if (i !== sel && enabled(i)) { sel = i; ms.sfxMove(); } };
+  const DY = 17, X0 = 46;
+  const Y0 = o.logo ? 124 : 92;
+  const select = (i: number) => { if (i !== sel) { sel = i; ms.sfxMove(); } };
   return {
     t: 0,
     update(keys) {
       for (const k of keys) {
-        if (k === 'up' || k === 'down') { let i = sel; do { i = (i + (k === 'up' ? -1 : 1) + entries.length) % entries.length; } while (!enabled(i)); sel = i; ms.sfxMove(); }
-        if (k === 'confirm' && enabled(sel)) { ms.sfxOk(); entries[sel].act(); }
+        if (k === 'back' && o.back) { ms.pop(); return; }
+        if (k === 'up' || k === 'down') { sel = (sel + (k === 'up' ? -1 : 1) + entries.length) % entries.length; ms.sfxMove(); }
+        if (k === 'confirm') { ms.sfxOk(); entries[sel].act(); }
       }
     },
     pointer(x, y, click) {
       hover = -1;
       for (let i = 0; i < entries.length; i++) {
         const ey = Y0 + i * DY;
-        if (x >= X0 - 14 && x <= X0 + 110 && y >= ey - 9 && y <= ey + 4) { hover = i; break; }
+        if (x >= X0 - 16 && x <= X0 + 120 && y >= ey - 10 && y <= ey + 5) { hover = i; break; }
       }
-      if (hover >= 0) { select(hover); if (click && enabled(hover)) { ms.sfxOk(); entries[hover].act(); } }
+      if (hover >= 0) { select(hover); if (click) { ms.sfxOk(); entries[hover].act(); } }
     },
     render(ctx) {
       const a = ease.outCubic(clamp(this.t * 1.4, 0, 1));
-      drawLogo(ctx, ms.time, a);
+      if (o.logo) drawLogo(ctx, ms.time, a);
       ctx.save(); ctx.globalAlpha = a;
+      if (o.title) {
+        // a soft shade so the submenu reads over the scene
+        const sh = ctx.createLinearGradient(0, 0, 260, 0); sh.addColorStop(0, 'rgba(4,2,6,0.82)'); sh.addColorStop(1, 'rgba(4,2,6,0)');
+        ctx.fillStyle = sh; ctx.fillRect(0, 0, 260, VIEW_H);
+        heading(ctx, o.title, X0 - 12, 62, 15, '#efe2c8', 'left');
+        ctx.fillStyle = 'rgba(201,164,106,0.45)'; ctx.fillRect(X0 - 12, 69, 120, 0.6);
+      }
       entries.forEach((e, i) => {
-        const y = Y0 + i * DY, on = i === sel, en = enabled(i);
+        const y = Y0 + i * DY, on = i === sel;
         const slide = on ? 5 + Math.sin(ms.time * 5) * 0.6 : 0;
         if (on) {
           // brushed ink stroke behind the selection, and a needle cursor
-          const w = measure(ctx, e.label, 11, FONT_TITLE, 400) + 30;
-          const grad = ctx.createLinearGradient(X0 - 18, 0, X0 - 18 + w, 0);
+          const w = measure(ctx, e.label, 12, FONT_TITLE, 400) + 34;
+          const grad = ctx.createLinearGradient(X0 - 20, 0, X0 - 20 + w, 0);
           grad.addColorStop(0, 'rgba(120,22,34,0.85)'); grad.addColorStop(1, 'rgba(120,22,34,0)');
-          ctx.fillStyle = grad; ctx.fillRect(X0 - 18, y - 9, w, 12);
-          ctx.fillStyle = '#d8d8e0'; ctx.fillRect(X0 - 30 + Math.sin(ms.time * 6) * 1.5, y - 3.5, 9, 1); ctx.fillRect(X0 - 31 + Math.sin(ms.time * 6) * 1.5, y - 4, 1, 2);
+          ctx.fillStyle = grad; ctx.fillRect(X0 - 20, y - 10, w, 14);
+          ctx.fillStyle = '#d8d8e0'; ctx.fillRect(X0 - 32 + Math.sin(ms.time * 6) * 1.5, y - 4, 9, 1); ctx.fillRect(X0 - 33 + Math.sin(ms.time * 6) * 1.5, y - 4.5, 1, 2);
         }
-        const col = !en ? 'rgba(160,150,140,0.3)' : on ? '#fff2dc' : '#b8a890';
-        e.icon(ctx, X0 - 12 + slide, y - 3.2, on ? '#ff8a8a' : en ? 'rgba(200,180,160,0.55)' : 'rgba(160,150,140,0.25)');
-        text(ctx, e.label, X0 + slide, y, on ? 11 : 9.5, col, 'left', FONT_TITLE, 400);
+        e.icon(ctx, X0 - 13 + slide, y - 3.6, on ? '#ff8a8a' : 'rgba(200,180,160,0.5)');
+        text(ctx, e.label, X0 + slide, y, on ? 12 : 10.5, on ? '#fff2dc' : '#b8a890', 'left', FONT_TITLE, 400);
       });
-      // description of the highlighted entry
-      text(ctx, entries[sel].desc(), X0 - 12, VIEW_H - 20, 7, 'rgba(225,210,190,0.8)', 'left', FONT_BODY, 500);
+      // one quiet line describing the highlighted entry
+      text(ctx, entries[sel].desc(), X0 - 13, Y0 + entries.length * DY + 4, 7, 'rgba(225,210,190,0.6)', 'left', FONT_BODY, 500);
       ctx.restore();
-      // footer
-      const info = g.save.slotInfo(g.save.slot);
-      text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played${store.kind === 'file' ? '  ·  F11 fullscreen' : ''}`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.55)', 'right');
-      text(ctx, 'v2.3 beta', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.35)', 'right');
-      text(ctx, g.input.usingPad ? 'D-pad to choose · A to select' : 'Arrows / mouse to choose · Enter or click to select', X0 - 12, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'left');
+      if (o.back) text(ctx, g.input.usingPad ? 'B back' : 'Esc back', X0 - 13, VIEW_H - 10, 6.5, 'rgba(200,185,165,0.45)', 'left');
+      if (o.logo) {
+        const info = g.save.slotInfo(g.save.slot);
+        text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'right');
+        text(ctx, 'v2.4 beta  ·  Papermoth Games', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
+      }
     },
   };
 }

@@ -17,7 +17,7 @@ import { INTRO_STORY, ENDING_STORY } from '../data/lore';
 import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
-import { renderMenuScene, mainMenuScreen } from './mainmenu';
+import { renderMenuScene, mainMenuScreen, profilesScreen } from './mainmenu';
 import { splashScreen } from './splash';
 import { ALL_ENEMY_DEFS } from '../enemies/registry';
 import { getSprites, EnemyDef } from '../enemies/enemy';
@@ -650,6 +650,7 @@ export class MenuSystem {
       { label: 'Fire button-drop chance', value: () => pct(st().fireDropChance), left: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance - 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); }, right: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance + 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); } },
       { label: 'Controls', value: () => '', ok: () => self.push(self.controlsScreen(overlay)) },
     ];
+    if (!overlay) opts.push({ label: 'Save slots', value: () => `Slot ${g.save.slot}`, ok: () => self.push(profilesScreen(self)) }, { label: 'Credits', value: () => '', ok: () => self.push(self.creditsScreen()) });
     if (!overlay) opts.push({ label: 'Erase all progress', value: () => '', ok: () => self.push(self.confirmScreen('Erase every unlock, statistic and saved run?', () => { g.save.reset(); self.openMain(); })) });
     opts.forEach((o) => { if (o.ok && !o.left) { o.left = o.ok; o.right = o.ok; } });
     // more options than fit on the page: show a window that follows the selection
@@ -684,7 +685,7 @@ export class MenuSystem {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 90, 16, 300, 240, 1, 4);
         heading(ctx, 'Options', 240, 40, 13, INK);
-        if (scroll > 0) text(ctx, '▲', 240, 51, 7, INK2, 'center', FONT_BODY, 600, false);
+        if (scroll > 0) text(ctx, '▲', 240, 57, 6, INK2, 'center', FONT_BODY, 600, false);
         if (scroll + VIS < opts.length) text(ctx, '▼ more', 240, TOP + VIS * ROW - 2, 7, INK2, 'center', FONT_BODY, 600, false);
         opts.forEach((o, i) => {
           if (i < scroll || i >= scroll + VIS) return;

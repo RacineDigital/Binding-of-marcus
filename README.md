@@ -167,6 +167,9 @@ Menus also work with the mouse: hover, click and scroll.
   pool grows as you play. The save also holds the Collection (every curio, plus a Bestiary of every
   creature with kill counts), Run History (your last 30 runs, any of which you can replay by seed),
   statistics, best scores and settings.
+- **Costumes.** Items that would show on you do (rings, spectacles, masks, crowns, halos, wings,
+  capes), the strongest items restyle your whole outfit, and every transformation gives you a new
+  look (King Vamp: pale, red-eyed, crowned and caped).
 - **Modes.** Normal; Second Edition (Hard) and Endless (the story keeps going after The Binding,
   harder each chapter), both unlocked by finishing the story; and a Daily Run with the same seed and
   reader for everyone that day. Every run ends with a score and a personal best.
