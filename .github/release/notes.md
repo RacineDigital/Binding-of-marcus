@@ -1,5 +1,9 @@
 ## What's new in 2.7 (beta)
 
+**2.7.1:** the four newest characters are hard to earn now. Ozzie: beat It Remembers holding a die.
+Nell: beat the Unwritten. Bram: beat three chapter bosses in one run without any of them hitting
+you. Wick: finish the story as Mothkin.
+
 - **The end game makes itself known.** Once you've finished the story, the Binding is never the
   same: its chapter card warns you in red, and its boss is always **It Remembers**: the Unbound,
   awake, with every attack open from the start and more health (like Mom's Heart becoming It Lives).

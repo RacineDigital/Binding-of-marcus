@@ -496,7 +496,15 @@ export function onBossKilled(w: World, e: Enemy): void {
   const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless';
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
-  if (!w.run.flags.bossHit) w.game.save.unlock('flawless_boss');
+  if (!w.run.flags.bossHit) {
+    w.game.save.unlock('flawless_boss');
+    // Bram: three chapter bosses in one run, none of which touched you
+    w.run.flags.cleanBosses = (w.run.flags.cleanBosses ?? 0) + 1;
+    if (w.run.flags.cleanBosses >= 3) w.game.save.unlock('unlock_bram');
+  }
+  // Ozzie: It Remembers, beaten with a die in hand (or in your pockets)
+  const pl0 = w.player, hasDie = (id: string | null) => !!id && !!getItem(id)?.tags?.includes('dice');
+  if (e.def.id === 'itremembers' && (hasDie(pl0.active) || pl0.itemOrder.some((id) => (pl0.items.get(id) ?? 0) > 0 && hasDie(id)))) w.game.save.unlock('unlock_ozzie');
   const endless = w.run.mode === 'endless' && !w.run.challenge;
   const goal = endless ? Infinity : w.run.challenge ? CHALLENGES.find((c) => c.id === w.run.challenge)?.goal ?? FINAL_FLOOR : FINAL_FLOOR;
   if (endless && fi === FINAL_FLOOR) { w.game.creditWin(); w.hud.banner('The story goes on', 'Endless: the chapters loop, and they bite harder'); }

@@ -195,9 +195,10 @@ Menus also work with the mouse: hover, click and scroll.
 - **Modes.** Normal; Second Edition (Hard) and Endless (the story keeps going after The Binding,
   harder each chapter), both unlocked by finishing the story; and a Daily Run with the same seed and
   reader for everyone that day. Every run ends with a score and a personal best.
-- **Nine characters:** Marcus, Wren, Edda, Elias, The Blot, and four who start with items: Ozzie
-  (the D6), Nell (the Burning Glass and a lantern), Bram (a bone folder and a tin heart) and Wick
-  (flies, with two moths). **Five challenge runs.**
+- **Nine characters:** Marcus, Wren, Edda, Elias, The Blot, and four hard-won readers who start with
+  items: Ozzie (the D6; beat It Remembers holding a die), Nell (the Burning Glass and a lantern;
+  beat the Unwritten), Bram (a bone folder and a tin heart; beat three bosses in one run without
+  any of them hitting you) and Wick (flies, with two moths; finish the story as Mothkin). **Five challenge runs.**
 - **Audio.** Around 80 layered sound effects are rendered offline at startup with variants, pitch
   jitter, stereo panning, voice limiting and a shared reverb. The soundtrack is rendered offline in
   the background: synthesized distorted guitars (double-tracked, palm-muted chugs and power chords),

@@ -274,6 +274,7 @@ export class Game {
     w.run.won = true;
     if (!w.run.challenge && !w.run.flags.credited) { this.save.stat('wins', 1); this.save.unlock('beat_final'); }
     if (w.run.charId !== 'marcus' && !w.run.challenge) this.save.unlock('win_' + w.run.charId);
+    if (w.player.transformations.has('moth') && !w.run.challenge) this.save.unlock('unlock_wick');
     if (w.run.challenge) { if (!this.save.data.challengesDone.includes(w.run.challenge)) this.save.data.challengesDone.push(w.run.challenge); this.save.unlock('ch_' + w.run.challenge); }
     const t = w.run.stats.time;
     if (!this.save.data.bestTime || t < this.save.data.bestTime) this.save.data.bestTime = t;
