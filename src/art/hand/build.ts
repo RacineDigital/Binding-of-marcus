@@ -12,6 +12,8 @@ export interface HandRig {
   torso: Record<'down' | 'up' | 'side', string[]>;
   legsFront: { idle: string[]; leftUp: string[]; rightUp: string[] };
   legsSide: { idle: string[]; strideA: string[]; strideB: string[] };
+  /** Legs held still while flying. */
+  legsFly?: { front: string[]; side: string[] };
   /** Palette keys for raised arms in the pickup pose. */
   sleeve: string; skin: string; outline: string;
   /** Ghosts fade out below the knee. */
@@ -52,6 +54,7 @@ export function buildHandSprites(R: HandRig): PlayerSprites {
   }
   const body = {} as PlayerSprites['body'];
   const bodyIdle = {} as PlayerSprites['bodyIdle'];
+  const fly = {} as PlayerSprites['fly'];
   const F = R.legsFront, Sd = R.legsSide;
   // frame 0 is standing; 1..8 are the walk: a foot up for three frames, both down, the other foot
   const seq = {
@@ -64,6 +67,8 @@ export function buildHandSprites(R: HandRig): PlayerSprites {
     body[d] = seq[d].map((legs, i) => new Sprite(bodyArt(R, d, legs, bob[i]), BW / 2, BH));
     const legsIdle = d === 'side' ? Sd.idle : F.idle;
     bodyIdle[d] = [new Sprite(bodyArt(R, d, legsIdle, 0), BW / 2, BH), new Sprite(bodyArt(R, d, legsIdle, 1), BW / 2, BH)];
+    const fl = R.legsFly ? (d === 'side' ? R.legsFly.side : R.legsFly.front) : legsIdle;
+    fly[d] = [new Sprite(bodyArt(R, d, fl, 0), BW / 2, BH), new Sprite(bodyArt(R, d, fl, 1), BW / 2, BH)];
   }
   // pickup pose: both arms raised over the head
   const pk = new PixelArt(BW, BH + 6);
@@ -97,5 +102,5 @@ export function buildHandSprites(R: HandRig): PlayerSprites {
     death.push(new Sprite(p, 16, 20));
   }
   const portrait = head.down.normal;
-  return { head, body, bodyIdle, death, pickup, portrait };
+  return { head, body, bodyIdle, fly, death, pickup, portrait };
 }

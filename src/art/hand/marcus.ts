@@ -208,6 +208,24 @@ export const LEGS_FRONT = {
     '...oxxxxo.........',
   ],
 };
+/**
+ * Hovering legs, angel-style: together, hanging straight, toes pointed down. From the side they
+ * trail a little behind, as if drifting forward.
+ */
+export const LEGS_FLY = {
+  front: [
+    '.....ojjJJjjo.....',
+    '.....ojjoojjo.....',
+    '.....onNooNno.....',
+    '......oxooxo......',
+  ],
+  side: [
+    '......ojjjjo......',
+    '.....ojjjjo.......',
+    '....onnNNo........',
+    '....oxxxo.........',
+  ],
+};
 export const LEGS_SIDE = {
   idle: [
     '......ojjjjo......',

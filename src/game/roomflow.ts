@@ -45,10 +45,14 @@ export function isEndingFloor(run: Run): boolean {
   if (run.flags.room4 && fi === ROOM4_FLOOR) return true;
   return fi === FINAL_FLOOR && run.mode !== 'endless';
 }
-/** The Binding gets Last Rites; the Last Page and Room 4 the older final theme; the rest the boss themes. */
-function bossMusic(run: Run): string {
+/**
+ * Each ending boss has its own theme: Last Rites at the Binding, Unwriting for the Unwritten on the
+ * Last Page, The Final Draft for the Author in the Foreword. Room 4 keeps the older final theme.
+ */
+export function bossMusic(run: Run): string {
   const fi = run.floorIndex;
   if (fi === FINAL_FLOOR && !run.flags.margins) return 'finalBinding';
+  if (run.flags.margins && fi === LASTPAGE_FLOOR) return run.flags.light ? 'finalAuthor' : 'finalUnwritten';
   if (fi === FINAL_FLOOR || (run.flags.margins && fi === LASTPAGE_FLOOR) || (run.flags.room4 && fi === ROOM4_FLOOR)) return 'bossFinal';
   return fi >= 4 ? 'boss2' : 'boss';
 }

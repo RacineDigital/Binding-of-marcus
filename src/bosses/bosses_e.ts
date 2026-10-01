@@ -330,11 +330,12 @@ const echo: EnemyDef = {
   draw(e, ctx, w, sx, sy) {
     const sp = w.game.menus.sprites(charById(e.data.char ?? 'marcus'));
     const dir = (e.data.dir ?? 'down') as 'down' | 'up' | 'side';
-    const moving = true, f = Math.floor(e.t * 11) % 8 + 1;
+    const flies = !!charById(e.data.char ?? 'marcus').flight, f = Math.floor(e.t * 11) % 8 + 1;
     ctx.save();
     ctx.globalAlpha = 0.55 + 0.25 * Math.sin(e.t * 7) * Math.sin(e.t * 2.3);
     ctx.filter = 'grayscale(1) brightness(1.3) sepia(0.4) hue-rotate(170deg) saturate(2.2)';
-    const body = moving ? sp.body[dir][f] ?? sp.body[dir][0] : sp.bodyIdle[dir][0];
+    // an echo of a reader who flew hovers with its legs still
+    const body = flies ? sp.fly[dir][Math.floor(e.t * 1.6) % 2] : sp.body[dir][f] ?? sp.body[dir][0];
     body.draw(ctx, sx, sy + 1, { flip: dir === 'side' && e.flip, flash: e.flash > 0 ? 0.6 : 0 });
     sp.head[dir].normal.draw(ctx, sx, sy - 9, { flip: dir === 'side' && e.flip, flash: e.flash > 0 ? 0.6 : 0 });
     ctx.restore();

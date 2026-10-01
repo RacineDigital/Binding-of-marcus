@@ -419,6 +419,8 @@ export class Player {
     const walkFrame = Math.floor(this.walkDist / WALK_STEP) % WALK_FRAMES;
     let body;
     if (this.pickupT > 0) body = s.pickup;
+    // fliers never walk: their legs hang still, angel-style, whether moving or not
+    else if (this.flight) body = s.fly[this.bodyDir][Math.floor(w.time * 1.6) % 2];
     else if (moving) body = s.body[this.bodyDir][1 + (walkFrame % (s.body[this.bodyDir].length - 1))];
     else body = s.bodyIdle[this.bodyDir][Math.floor(w.time * 1.6) % 2];
     const by = sy - hover;
@@ -431,7 +433,7 @@ export class Player {
     else if (this.blinkT < 0) hs = 'blink';
     const head = s.head[this.headDir][hs];
     // the head rides on the torso: it dips exactly when the body does, a whole pixel, never a half
-    const bob = this.pickupT > 0 ? 0 : moving ? WALK_BOB[walkFrame] : (Math.floor(w.time * 1.6) % 2);
+    const bob = this.pickupT > 0 ? 0 : moving && !this.flight ? WALK_BOB[walkFrame] : (Math.floor(w.time * 1.6) % 2);
     const headY = by - 10 + bob;
     const hsq = this.fireFlash > 0 ? { sx: 1.06, sy: 0.92 } : { sx: this.squashX, sy: this.squashY };
     // costume pieces are layered around the body and head

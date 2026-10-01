@@ -1251,7 +1251,7 @@ function drawBeast(ctx: CanvasRenderingContext2D, d: EnemyDef, x: number, y: num
 
 /** A reader standing at (0, 0), with whatever they always wear (a braid, a beard, wings if they fly). */
 function drawReader(ctx: CanvasRenderingContext2D, sp: PlayerSprites, c: CharacterDef, t: number): void {
-  const body = sp.bodyIdle.down[Math.floor(t * 1.5) % 2], head = sp.head.down[(t % 4) < 0.15 ? 'blink' : 'normal'];
+  const body = (c.flight ? sp.fly : sp.bodyIdle).down[Math.floor(t * 1.5) % 2], head = sp.head.down[(t % 4) < 0.15 ? 'blink' : 'normal'];
   const acc = costumeFor([], [], [], !!c.flight, c.look).acc;
   const fr: Frame = { ctx, t, hx: -head.ox, hy: -10 - head.oy, hw: head.w, hflip: false, hdir: 'down', bx: -body.ox, by: -body.oy, bw: body.w, bflip: false, bdir: 'down' };
   drawCostume(fr, acc, 'back');

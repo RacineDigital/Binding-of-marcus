@@ -13,7 +13,7 @@ const MARCUS_RIG: HandRig = {
   head: { down: HM.HEAD_DOWN, side: HM.HEAD_SIDE, up: HM.HEAD_UP },
   faces: { down: HM.FACE_DOWN, side: HM.FACE_SIDE },
   torso: { down: HM.TORSO_DOWN, up: HM.TORSO_UP, side: HM.TORSO_SIDE },
-  legsFront: HM.LEGS_FRONT, legsSide: HM.LEGS_SIDE,
+  legsFront: HM.LEGS_FRONT, legsSide: HM.LEGS_SIDE, legsFly: HM.LEGS_FLY,
   sleeve: 'C', skin: 'S', outline: 'o',
 };
 
@@ -23,6 +23,7 @@ export interface PlayerSprites {
   head: Record<HeadDir, Record<HeadState, Sprite>>;
   body: Record<'down' | 'up' | 'side', Sprite[]>; // index 0 = idle, 1..6 walk
   bodyIdle: Record<'down' | 'up' | 'side', Sprite[]>; // breathing frames
+  fly: Record<'down' | 'up' | 'side', Sprite[]>; // hovering: legs still, toes pointed
   death: Sprite[];
   pickup: Sprite; // arms raised holding item
   portrait: Sprite;
@@ -322,5 +323,5 @@ export function buildPlayerSprites(L: CharacterLook): PlayerSprites {
   const pickup = new Sprite(pk, BW / 2, BH + 6);
   // portrait (large head for menus)
   const portrait = new Sprite(paintHead(L, 'down', 'normal'), HW / 2, HH);
-  return { head, body, bodyIdle, death, pickup, portrait };
+  return { head, body, bodyIdle, fly: bodyIdle, death, pickup, portrait };
 }

@@ -270,5 +270,17 @@ console.log('content:', JSON.stringify(counts));
   const fs = await import('fs');
   ok(JSON.parse(fs.readFileSync('package.json', 'utf8')).version === GAME_VERSION, 'GAME_VERSION matches package.json');
 }
+// the ending bosses each have their own theme
+{
+  const { bossMusic } = await import('../src/game/roomflow');
+  const { SONGS } = await import('../src/audio/songs');
+  const { LASTPAGE_FLOOR, ROOM4_FLOOR } = await import('../src/data/floors');
+  const r = new Run('MUSIC1', 'marcus', () => true);
+  r.floorIndex = FINAL_FLOOR; ok(bossMusic(r) === 'finalBinding', 'the Binding plays Last Rites');
+  r.flags.margins = true; r.floorIndex = LASTPAGE_FLOOR; ok(bossMusic(r) === 'finalUnwritten', 'the Last Page plays Unwriting');
+  r.flags.light = true; ok(bossMusic(r) === 'finalAuthor', 'the Foreword plays The Final Draft');
+  const h = new Run('MUSIC2', 'marcus', () => true); h.flags.room4 = true; h.floorIndex = ROOM4_FLOOR; ok(bossMusic(h) === 'bossFinal', 'Room 4 keeps the final theme');
+  for (const id of ['finalBinding', 'finalUnwritten', 'finalAuthor']) ok(!!SONGS[id], `${id} is in the soundtrack`);
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);
