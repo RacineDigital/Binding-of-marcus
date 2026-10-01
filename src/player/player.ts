@@ -1,0 +1,359 @@
+// Marcus (or another character): movement, attacking, animation state and inventory.
+import type { World } from '../game/world';
+import { Health } from './health';
+import { computeStats, FinalStats, StatMods } from './stats';
+import { AttackProfile, baseProfile, mergeProfile, primaryMode, AttackMode, ProfilePart } from '../projectiles/profile';
+import { CharacterDef } from './characters';
+import { buildPlayerSprites, PlayerSprites, HeadDir, HeadState } from '../art/marcus';
+import { LOOKS } from '../art/look';
+import { volley, Beam, meleeSwing, Swing, SHOT_PX } from '../projectiles/weapons';
+import { clamp, TAU } from '../core/math';
+import { moveBody } from '../rooms/collide';
+import { getItem } from '../items/registry';
+import { Side } from '../rooms/room';
+import { TILE } from '../core/constants';
+
+export interface TempEffect { id: string; stats?: StatMods; attack?: ProfilePart; room?: boolean; time?: number; floor?: boolean; flight?: boolean }
+
+const MOVE_PX = 118;
+
+export class Player {
+  x = 0; y = 0; z = 0; vx = 0; vy = 0; r = 5.5; hitR = 4;
+  char: CharacterDef;
+  spr: PlayerSprites;
+  health = new Health();
+  buttons = 0; keys = 0; bombs = 0;
+  goldKey = false; goldBomb = false;
+  items = new Map<string, number>(); itemOrder: string[] = [];
+  active: string | null = null; charge = 0; timedAcc = 0; activeRoomUses = 0;
+  consumables: { kind: 'page' | 'sweet'; id: string }[] = []; consumableSlots = 1;
+  charms: string[] = []; charmSlots = 1;
+  stats!: FinalStats; prof!: AttackProfile; mode: AttackMode = 'shot';
+  flight = false; spectralBody = false;
+  temp: TempEffect[] = [];
+  transformations = new Set<string>();
+  // animation / state
+  headDir: HeadDir = 'down'; headFlip = false; bodyDir: 'down' | 'up' | 'side' = 'down'; bodyFlip = false;
+  walkDist = 0; idleT = 0; blinkT = 2; fireFlash = 0; hurtT = 0; iframes = 0; happyT = 0;
+  pickupT = 0; pickupSprite: HTMLCanvasElement | null = null;
+  aimAng = Math.PI / 2; aiming = false; lastAim = { x: 0, y: 1 };
+  fireCd = 0; wcharge = 0; wasAiming = false; altHand = 1;
+  swing: Swing | null = null;
+  dead = false; deathT = 0;
+  squashX = 1; squashY = 1;
+  controlLock = 0;
+  invisible = false;
+  constructor(char: CharacterDef) {
+    this.char = char;
+    this.spr = buildPlayerSprites(LOOKS[char.look] ?? LOOKS.marcus);
+    this.flight = !!char.flight;
+    this.recompute();
+  }
+
+  count(id: string): number { return this.items.get(id) ?? 0; }
+  has(id: string): boolean { return this.items.has(id) || this.charms.includes(id); }
+  tagCount(tag: string): number {
+    let n = 0;
+    for (const [id, c] of this.items) if (getItem(id)?.tags?.includes(tag)) n += c;
+    return n;
+  }
+
+  recompute(): void {
+    const mods: StatMods[] = [];
+    const prof = baseProfile();
+    if (this.char.profile) mergeProfile(prof, this.char.profile);
+    let flight = !!this.char.flight, spectral = false;
+    const addItem = (id: string, n: number) => {
+      const it = getItem(id); if (!it) return;
+      for (let i = 0; i < n; i++) {
+        if (it.stats) mods.push(it.stats);
+        if (it.attack) mergeProfile(prof, it.attack);
+      }
+      if (it.flight) flight = true;
+      if (it.spectralBody) spectral = true;
+    };
+    for (const [id, n] of this.items) addItem(id, n);
+    for (const id of this.charms) addItem(id, 1);
+    for (const t of this.temp) { if (t.stats) mods.push(t.stats); if (t.attack) mergeProfile(prof, t.attack); if (t.flight) flight = true; }
+    for (const tf of this.transformations) {
+      const T = TRANSFORM_EFFECTS[tf];
+      if (T) { if (T.stats) mods.push(T.stats); if (T.attack) mergeProfile(prof, T.attack); if (T.flight) flight = true; }
+    }
+    // Stacked homing / piercing etc. are bounded to keep extreme builds sane.
+    prof.shots = Math.min(prof.shots, 16);
+    prof.split = Math.min(prof.split, 8);
+    prof.chain = Math.min(prof.chain, 6);
+    prof.bounce = Math.min(prof.bounce, 8);
+    if (prof.pierce > 50) prof.pierce = 999;
+    if (prof.modes.has('charge') || prof.modes.has('burst') || prof.modes.has('beam')) { /* tears scale charge time */ }
+    const st = computeStats(this.char.base, mods);
+    // Charged modes trade fire rate for power.
+    this.stats = st; this.prof = prof; this.mode = primaryMode(prof);
+    this.flight = flight; this.spectralBody = spectral;
+  }
+
+  addTemp(t: TempEffect): void { this.temp.push(t); this.recompute(); }
+  clearTemp(pred: (t: TempEffect) => boolean): void {
+    const n = this.temp.length; this.temp = this.temp.filter((t) => !pred(t));
+    if (this.temp.length !== n) this.recompute();
+  }
+
+  healRed(half: number, fx = false): number {
+    const h = this.health.healRed(half);
+    if (fx && h > 0) this.happyT = 0.4;
+    return h;
+  }
+
+  chargeTime(): number {
+    // Higher fire rate charges faster.
+    return clamp(this.prof.chargeTime * (2.73 / this.stats.fireRate), 0.25, 3.2);
+  }
+
+  update(w: World, dt: number): void {
+    if (this.dead) { this.deathT += dt; return; }
+    const inp = w.input;
+    const locked = this.controlLock > 0 || w.inputLocked();
+    if (this.controlLock > 0) this.controlLock -= dt;
+    // ------------------------------------------------ movement
+    const mv = locked ? { x: 0, y: 0 } : inp.moveVector();
+    const focus = !locked && inp.isDown('focus');
+    const top = MOVE_PX * this.stats.speed * (focus ? 0.55 : 1);
+    const tx = mv.x * top, ty = mv.y * top;
+    const accel = (mv.x || mv.y) ? 30 : 24;
+    const k = 1 - Math.exp(-accel * dt);
+    this.vx += (tx - this.vx) * k; this.vy += (ty - this.vy) * k;
+    if (Math.abs(this.vx) < 0.5 && !mv.x) this.vx = 0;
+    if (Math.abs(this.vy) < 0.5 && !mv.y) this.vy = 0;
+    // door funnel: when pushing into a wall near an open door, slide toward it
+    this.doorAssist(w, mv.x, mv.y, dt);
+    const doors = w.openDoorList();
+    const before = { x: this.x, y: this.y };
+    moveBody(w.room, this, this.vx * dt, this.vy * dt, this.flight ? 'fly' : 'walk', doors);
+    const moved = Math.hypot(this.x - before.x, this.y - before.y);
+    this.walkDist += moved;
+    if (moved < 0.05) this.idleT += dt; else this.idleT = 0;
+    if (mv.x || mv.y) {
+      if (Math.abs(mv.x) > Math.abs(mv.y) * 1.1) { this.bodyDir = 'side'; this.bodyFlip = mv.x < 0; }
+      else this.bodyDir = mv.y < 0 ? 'up' : 'down';
+    }
+    // ------------------------------------------------ aim & attack
+    const aim = locked ? null : inp.aimVector();
+    this.aiming = !!aim;
+    if (aim) { this.aimAng = Math.atan2(aim.y, aim.x); this.lastAim = aim; }
+    this.attack(w, dt, aim);
+    // head direction: aim wins, else movement
+    const hx = aim ? aim.x : mv.x, hy = aim ? aim.y : mv.y;
+    if (hx || hy) {
+      if (Math.abs(hx) > Math.abs(hy) * 0.9) { this.headDir = 'side'; this.headFlip = hx < 0; }
+      else this.headDir = hy < 0 ? 'up' : 'down';
+    }
+    // ------------------------------------------------ timers
+    this.fireFlash = Math.max(0, this.fireFlash - dt);
+    this.hurtT = Math.max(0, this.hurtT - dt);
+    this.happyT = Math.max(0, this.happyT - dt);
+    this.iframes = Math.max(0, this.iframes - dt);
+    this.pickupT = Math.max(0, this.pickupT - dt);
+    this.blinkT -= dt; if (this.blinkT < -0.12) this.blinkT = 1.5 + Math.random() * 3;
+    this.squashX += (1 - this.squashX) * Math.min(1, dt * 14);
+    this.squashY += (1 - this.squashY) * Math.min(1, dt * 14);
+    if (this.swing) { this.swing.t += dt; if (this.swing.t >= this.swing.dur) this.swing = null; }
+    // timed temp effects
+    let changed = false;
+    for (const t of this.temp) if (t.time !== undefined) { t.time -= dt; if (t.time <= 0) changed = true; }
+    if (changed) this.clearTemp((t) => t.time !== undefined && t.time <= 0);
+    // timed active charge
+    const act = this.active ? getItem(this.active) : null;
+    if (act?.active?.type === 'timed' && this.charge < act.active.charge) {
+      this.charge = Math.min(act.active.charge, this.charge + dt);
+    }
+  }
+
+  private doorAssist(w: World, mx: number, my: number, dt: number): void {
+    if (!mx && !my) return;
+    const room = w.room;
+    for (const d of w.openDoorList()) {
+      const L = room.ox, T = room.oy, R = room.ox + room.cols * TILE, B = room.oy + room.rows * TILE;
+      if (d.side === Side.N && my < -0.5 && this.y - this.r < T + 3 && Math.abs(this.x - d.pos) < 18) this.vx += (d.pos - this.x) * 18 * dt * 4;
+      if (d.side === Side.S && my > 0.5 && this.y + this.r > B - 3 && Math.abs(this.x - d.pos) < 18) this.vx += (d.pos - this.x) * 18 * dt * 4;
+      if (d.side === Side.W && mx < -0.5 && this.x - this.r < L + 3 && Math.abs(this.y - d.pos) < 18) this.vy += (d.pos - this.y) * 18 * dt * 4;
+      if (d.side === Side.E && mx > 0.5 && this.x + this.r > R - 3 && Math.abs(this.y - d.pos) < 18) this.vy += (d.pos - this.y) * 18 * dt * 4;
+    }
+  }
+
+  /** Muzzle position: in front of Marcus at hand height, alternating hands. */
+  muzzle(ang: number): { x: number; y: number; z: number } {
+    const px = -Math.sin(ang), py = Math.cos(ang);
+    const side = this.altHand * 3;
+    return { x: this.x + Math.cos(ang) * 6 + px * side, y: this.y + Math.sin(ang) * 3 + py * side * 0.5 + 1, z: 12 };
+  }
+
+  private attack(w: World, dt: number, aim: { x: number; y: number } | null): void {
+    this.fireCd -= dt;
+    const mode = this.mode;
+    const prof = this.prof, st = this.stats;
+    const ang = this.aimAng;
+    const charged = mode === 'charge' || mode === 'burst' || mode === 'beam';
+    if (charged) {
+      if (aim) {
+        this.wcharge = Math.min(1, this.wcharge + dt / this.chargeTime());
+        if (this.wcharge >= 1 && !this.wasAiming) { /* noop */ }
+        if (this.wcharge >= 1 && Math.random() < 0.3) w.fx.sparks(this.x, this.y - 22, 1, '#b8b0ff', 30, 0.2);
+      } else if (this.wasAiming && this.wcharge > 0) {
+        this.releaseCharged(w, mode);
+        this.wcharge = 0;
+      } else this.wcharge = Math.max(0, this.wcharge - dt * 3);
+      this.wasAiming = !!aim;
+      return;
+    }
+    if (mode === 'melee') {
+      if (aim) {
+        this.wcharge = Math.min(1, this.wcharge + dt / (this.chargeTime() * 1.3));
+        if (this.fireCd <= 0 && this.wcharge < 0.35) {
+          this.swing = meleeSwing(w, prof, st, this.x, this.y - 8, ang, false);
+          this.fireCd = 1 / Math.max(1.2, st.fireRate * 0.55);
+          this.onFired(w, ang, 'swing');
+        }
+      } else if (this.wasAiming) {
+        if (this.wcharge >= 1) { this.swing = meleeSwing(w, prof, st, this.x, this.y - 8, this.aimAng, true); this.onFired(w, this.aimAng, 'spin'); w.shake(3); }
+        this.wcharge = 0;
+      }
+      this.wasAiming = !!aim;
+      return;
+    }
+    this.wasAiming = !!aim;
+    if (!aim || this.fireCd > 0) return;
+    this.fireCd += 1 / st.fireRate;
+    if (this.fireCd < 0) this.fireCd = 0;
+    if (mode === 'laser') {
+      const n = Math.max(1, Math.min(5, prof.shots));
+      for (let i = 0; i < n; i++) {
+        const b = new Beam(prof);
+        b.ang = ang; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.14; b.laser = true; b.dur = 0.12;
+        b.width = 2 + (st.size - 1) * 3; b.dmg = st.damage; b.color = '#ff5a6a';
+        w.beams.push(b);
+      }
+      this.onFired(w, ang, 'laser');
+      return;
+    }
+    const m = this.muzzle(ang);
+    volley(w, prof, st, m.x, m.y, m.z, ang, { inherit: { vx: this.vx, vy: this.vy } });
+    this.altHand = -this.altHand;
+    this.onFired(w, ang, 'shot');
+  }
+
+  private releaseCharged(w: World, mode: AttackMode): void {
+    const c = this.wcharge, prof = this.prof, st = this.stats, ang = this.aimAng;
+    const m = this.muzzle(ang);
+    if (mode === 'beam') {
+      if (c < 1) return;
+      const n = Math.max(1, Math.min(5, prof.shots));
+      for (let i = 0; i < n; i++) {
+        const b = new Beam(prof);
+        b.ang = ang; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
+        b.dur = 0.5; b.width = 7 * Math.min(2.2, st.size); b.dmg = st.damage * 0.55;
+        b.color = prof.tint ?? '#6a58ff';
+        w.beams.push(b);
+      }
+      w.shake(2.5);
+      this.onFired(w, ang, 'beam');
+      return;
+    }
+    if (mode === 'burst') {
+      const n = Math.round(3 + 13 * c) + (prof.shots - 1) * 2;
+      for (let i = 0; i < n; i++) {
+        const a = ang + (Math.random() - 0.5) * 0.9;
+        w.proj.player(w, prof, m.x, m.y, m.z, a, st.damage * 0.9, SHOT_PX * st.shotSpeed * (0.7 + Math.random() * 0.6), st.range * (0.7 + Math.random() * 0.5), st.size * (0.8 + Math.random() * 0.5));
+      }
+      w.shake(1 + c * 2);
+      this.onFired(w, ang, 'burst');
+      return;
+    }
+    // charge
+    volley(w, prof, st, m.x, m.y, m.z, ang, { dmgMul: 0.3 + c * 3.7, sizeMul: 0.6 + c * 1.1, speedMul: 1 + c * 0.25, rangeMul: 1 + c * 0.3, inherit: { vx: this.vx, vy: this.vy } });
+    if (c >= 1) w.shake(2);
+    this.onFired(w, ang, c >= 1 ? 'bigshot' : 'shot');
+  }
+
+  private onFired(w: World, ang: number, kind: string): void {
+    this.fireFlash = 0.11;
+    this.squashX = 1.08; this.squashY = 0.93;
+    const m = this.muzzle(ang);
+    w.fx.spray(m.x, m.y, m.z, ang, 1.2, 2, this.prof.tint ?? '#3a3f9a', 40, 0.15);
+    w.audio.play(kind === 'beam' ? 'beam' : kind === 'laser' ? 'laser' : kind === 'swing' || kind === 'spin' ? 'swing' : kind === 'burst' || kind === 'bigshot' ? 'bigshot' : 'shoot', { vol: 0.5, x: this.x });
+    w.itemHook('onFire', ang);
+  }
+
+  // ------------------------------------------------------------ render
+  render(ctx: CanvasRenderingContext2D, w: World, sx: number, sy: number): void {
+    const s = this.spr;
+    if (this.dead) {
+      const f = Math.min(5, Math.floor(this.deathT / 0.14));
+      s.death[f].draw(ctx, sx, sy + 2);
+      return;
+    }
+    if (this.invisible) return;
+    // shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+    ctx.beginPath(); ctx.ellipse(sx, sy, this.flight ? 5 : 7, 2.5, 0, 0, TAU); ctx.fill();
+    const flicker = this.iframes > 0 && Math.floor(this.iframes * 18) % 2 === 0;
+    const alpha = flicker ? 0.35 : this.char.id === 'elias' ? 0.85 : 1;
+    const hover = this.flight ? 3 + Math.sin(w.time * 5) * 1.5 : 0;
+    const moving = Math.hypot(this.vx, this.vy) > 12;
+    let body;
+    if (this.pickupT > 0) body = s.pickup;
+    else if (moving) body = s.body[this.bodyDir][1 + (Math.floor(this.walkDist / 4.2) % 6)];
+    else body = s.bodyIdle[this.bodyDir][Math.floor(w.time * 1.6) % 2];
+    const by = sy - hover;
+    const o = { flip: this.bodyDir === 'side' && this.bodyFlip, alpha, sx: this.squashX, sy: this.squashY, flash: this.hurtT > 0.3 ? (this.hurtT - 0.3) * 4 : 0, tint: this.hurtT > 0 ? '#ff2030' : undefined, tintAmt: this.hurtT > 0 ? this.hurtT * 0.8 : 0 };
+    const headAbove = this.headDir === 'up';
+    let hs: HeadState = 'normal';
+    if (this.hurtT > 0) hs = 'hurt';
+    else if (this.fireFlash > 0) hs = 'fire';
+    else if (this.happyT > 0 || this.pickupT > 0) hs = 'happy';
+    else if (this.blinkT < 0) hs = 'blink';
+    const head = s.head[this.headDir][hs];
+    const bob = moving ? (Math.floor(this.walkDist / 4.2) % 3 === 0 ? 1 : 0) : (Math.floor(w.time * 1.6) % 2);
+    const headY = by - 10 + bob * 0.5;
+    const hsq = this.fireFlash > 0 ? { sx: 1.06, sy: 0.92 } : { sx: this.squashX, sy: this.squashY };
+    // the held-up item
+    if (!headAbove) body.draw(ctx, sx, by, o);
+    head.draw(ctx, sx, headY, { ...o, flip: this.headDir === 'side' && this.headFlip, sx: hsq.sx, sy: hsq.sy });
+    if (headAbove) body.draw(ctx, sx, by, o);
+    if (this.pickupT > 0 && this.pickupSprite) {
+      const k = Math.min(1, (1.1 - this.pickupT) * 6);
+      ctx.drawImage(this.pickupSprite, Math.round(sx - 8), Math.round(headY - 34 - k * 4));
+    }
+    // charge meter
+    if (this.wcharge > 0.02 && (this.mode === 'charge' || this.mode === 'burst' || this.mode === 'beam' || this.mode === 'melee')) {
+      const wbar = 16, x0 = Math.round(sx - wbar / 2), y0 = Math.round(headY - 30);
+      ctx.fillStyle = '#0c0a12'; ctx.fillRect(x0 - 1, y0 - 1, wbar + 2, 4);
+      const full = this.wcharge >= 1;
+      ctx.fillStyle = full ? (Math.floor(w.time * 12) % 2 ? '#ffffff' : '#c8c0ff') : '#8a7cff';
+      ctx.fillRect(x0, y0, Math.round(wbar * this.wcharge), 2);
+    }
+    // melee swing arc
+    if (this.swing) {
+      const sw = this.swing, k = sw.t / sw.dur;
+      ctx.save();
+      ctx.globalAlpha = 1 - k;
+      ctx.strokeStyle = sw.big ? '#e8e0ff' : '#d8d0c0'; ctx.lineWidth = sw.big ? 4 : 3;
+      const a0 = sw.ang - sw.arc / 2, a1 = sw.ang + sw.arc / 2;
+      const sweep = a0 + (a1 - a0) * Math.min(1, k * 2.2);
+      ctx.beginPath(); ctx.ellipse(sx, sy - 8, sw.radius * 0.9, sw.radius * 0.75, 0, a0, sweep); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(sx, sy - 8, sw.radius, sw.radius * 0.85, 0, a0, sweep); ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+/** Transformation bonuses (granted by collecting 3 items sharing a tag). */
+export const TRANSFORM_EFFECTS: Record<string, { name: string; desc: string; stats?: StatMods; attack?: ProfilePart; flight?: boolean }> = {
+  moth: { name: 'Mothkin', desc: 'Flight. Speed up. Dusty wings.', stats: { speed: 0.2 }, flight: true },
+  ink: { name: 'Inkblooded', desc: 'Shots leave ink puddles. Damage up.', stats: { damage: 1 }, attack: { creep: true } },
+  clock: { name: 'Clockwork', desc: 'Fire rate up. Shots wind forward faster.', stats: { tears: 0.7 }, attack: { accel: 0.8 } },
+  wax: { name: 'Waxen Saint', desc: 'Shots burn. A halo of heat.', stats: { damage: 0.5 }, attack: { burn: 0.25, tint: '#f0c060' } },
+  thread: { name: 'Needleworker', desc: 'Shots pierce and stitch enemies together.', attack: { pierce: 2, chain: 1, chainChance: 0.2 } },
+  bone: { name: 'Ossified', desc: 'Brass heart every floor. Bony shots.', stats: { damage: 0.7 }, attack: { shape: 'bone', knock: 1 } },
+  void: { name: 'Hollowed', desc: 'Spectral homing shots.', attack: { spectral: true, homing: 0.4 } },
+};

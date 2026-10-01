@@ -1,0 +1,40 @@
+// Achievements: each unlocks new content (items, characters, challenges) rather than raw power.
+export interface Achievement { id: string; name: string; desc: string; unlocks: string; hidden?: boolean }
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'first_death', name: 'Ink on the Floor', desc: 'Die for the first time.', unlocks: 'Unlocks the Second Draft in the treasure pool.' },
+  { id: 'beat_ch1', name: 'Chapter I Closed', desc: 'Defeat the Chapter I boss.', unlocks: 'Unlocks Split Nib.' },
+  { id: 'beat_ch2', name: 'Out of the Steam', desc: 'Defeat the Chapter II boss.', unlocks: 'Unlocks Wren.' },
+  { id: 'beat_ch3', name: 'Drained', desc: 'Defeat the Chapter III boss.', unlocks: 'Unlocks the Bellows Lung.' },
+  { id: 'beat_ch4', name: 'Discharged', desc: 'Defeat the Chapter IV boss.', unlocks: 'Unlocks Edda.' },
+  { id: 'beat_ch5', name: 'Bone Deep', desc: 'Defeat the Chapter V boss.', unlocks: 'Unlocks the Bone Folder.' },
+  { id: 'beat_ch6', name: 'Last Rites', desc: 'Defeat the Chapter VI boss.', unlocks: 'Unlocks Elias.' },
+  { id: 'beat_ch7', name: 'Through the Hollow', desc: 'Defeat the Chapter VII boss.', unlocks: 'Unlocks the Ossuary Key.' },
+  { id: 'beat_final', name: 'The Binding Holds', desc: 'Finish the story.', unlocks: 'Unlocks The Blot and the Challenges.' },
+  { id: 'flawless_boss', name: 'Untouched', desc: 'Defeat a boss without taking damage.', unlocks: 'Unlocks the Glass Heart.' },
+  { id: 'secrets_10', name: 'Hollow Walls', desc: 'Find 10 secrets.', unlocks: 'Unlocks the Chalk Line.' },
+  { id: 'transform_moth', name: 'Mothkin', desc: 'Become Mothkin.', unlocks: 'Unlocks the Moth Cocoon.', hidden: true },
+  { id: 'transform_ink', name: 'Inkblooded', desc: 'Become Inkblooded.', unlocks: 'Unlocks the Inkwell Heart.', hidden: true },
+  { id: 'transform_clock', name: 'Clockwork', desc: 'Become Clockwork.', unlocks: 'Unlocks the Stopped Watch.', hidden: true },
+  { id: 'transform_wax', name: 'Waxen Saint', desc: 'Become the Waxen Saint.', unlocks: 'Unlocks the Votive Crown.', hidden: true },
+  { id: 'transform_thread', name: 'Needleworker', desc: 'Become the Needleworker.', unlocks: 'Unlocks the Tailor\'s Shears.', hidden: true },
+  { id: 'transform_bone', name: 'Ossified', desc: 'Become Ossified.', unlocks: 'Unlocks the Marrow Flute.', hidden: true },
+  { id: 'transform_void', name: 'Hollowed', desc: 'Become Hollowed.', unlocks: 'Unlocks the Void Page.', hidden: true },
+  { id: 'win_wren', name: 'Slingshot Saga', desc: 'Finish the story as Wren.', unlocks: 'Unlocks the Ricochet Stone.' },
+  { id: 'win_edda', name: 'Hemmed In', desc: 'Finish the story as Edda.', unlocks: 'Unlocks the Golden Thimble.' },
+  { id: 'win_elias', name: 'Rest Now', desc: 'Finish the story as Elias.', unlocks: 'Unlocks the Bookbinder\'s Press.' },
+  { id: 'win_blot', name: 'Stain Remover', desc: 'Finish the story as The Blot.', unlocks: 'Unlocks the Blotting Paper.' },
+  { id: 'speedrun', name: 'Bedtime', desc: 'Finish the story in under 25 minutes.', unlocks: 'Unlocks the Pocket Watch.' },
+  { id: 'ch_glass', name: 'Burning Glass Challenge', desc: 'Complete "Magnifying Glass".', unlocks: 'Unlocks the Prism.' },
+  { id: 'ch_swarm', name: 'Swarm Challenge', desc: 'Complete "The Menagerie".', unlocks: 'Unlocks the Moth Queen.' },
+  { id: 'ch_darkness', name: 'Darkness Challenge', desc: 'Complete "Lights Out".', unlocks: 'Unlocks the Pocket Lantern.' },
+  { id: 'ch_twins', name: 'Twins Challenge', desc: 'Complete "Double Trouble".', unlocks: 'Unlocks the Mirror Twin.' },
+  { id: 'ch_ink', name: 'Ink Challenge', desc: 'Complete "Inkstorm".', unlocks: 'Unlocks the Fountain Pen.' },
+];
+export interface ChallengeDef { id: string; name: string; desc: string; char: string; rules: string[]; unlock?: string }
+export const CHALLENGES: ChallengeDef[] = [
+  { id: 'glass', name: 'Magnifying Glass', desc: 'One fragile heart and a burning beam.', char: 'marcus', rules: ['Start with the Burning Glass', 'Only one heart container', 'Reach the Chapel'], unlock: 'beat_final' },
+  { id: 'swarm', name: 'The Menagerie', desc: 'Let the little ones fight for you.', char: 'marcus', rules: ['Start with three familiars', 'Your own shots are weakened'], unlock: 'beat_final' },
+  { id: 'darkness', name: 'Lights Out', desc: 'Every floor is unlit.', char: 'wren', rules: ['Permanent Blight of the Unlit'], unlock: 'beat_final' },
+  { id: 'twins', name: 'Double Trouble', desc: 'Every boss arrives with a sibling.', char: 'edda', rules: ['Bosses come in pairs'], unlock: 'beat_final' },
+  { id: 'ink', name: 'Inkstorm', desc: 'Split ink everywhere.', char: 'blot', rules: ['Start with Split Nib and Inkwell Heart'], unlock: 'win_blot' },
+];
