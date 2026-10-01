@@ -50,6 +50,8 @@ export class Game {
     window.addEventListener('keydown', unlockAudio);
     window.addEventListener('pointerdown', unlockAudio);
     window.addEventListener('gamepadconnected', unlockAudio);
+    // closing the window mid-run keeps your exact spot
+    window.addEventListener('beforeunload', () => { if (this.scene === 'run' && this.world && !this.world.player.dead && this.world.deathT < 0) this.saveSnapshot(); this.save.flush(); });
   }
 
   applySettings(): void {
@@ -85,8 +87,10 @@ export class Game {
     requestAnimationFrame(frame);
   }
 
+  private playAcc = 0;
   private step(dt: number): void {
     this.audio.update(dt);
+    if (this.scene === 'run' && !this.paused) { this.playAcc += dt; if (this.playAcc >= 10) { this.save.stat('playTime', this.playAcc); this.playAcc = 0; } }
     for (const u of this.unlockQueue) u.t += dt;
     this.unlockQueue = this.unlockQueue.filter((u) => u.t < 3.5);
     if (this.fading) {
@@ -181,7 +185,15 @@ export class Game {
     this.world.startFloor();
   }
 
-  /** Serialise the run at the start of each floor so Continue can resume there. */
+  private lastAutosave = 0;
+  /** Save the run (throttled) — called on every room change so progress is never lost. */
+  autosave(): void {
+    const now = performance.now();
+    if (now - this.lastAutosave < 1500) return;
+    this.lastAutosave = now;
+    this.saveSnapshot(); this.save.flush();
+  }
+  /** Serialise the run, including the current floor's state, so Continue resumes in the same room. */
   saveSnapshot(): void {
     const w = this.world; if (!w) return;
     const pl = w.player;
@@ -191,6 +203,7 @@ export class Game {
       items: [...pl.items.entries()], order: pl.itemOrder, active: pl.active, charge: pl.charge, consumables: pl.consumables, charms: pl.charms,
       consumableSlots: pl.consumableSlots, charmSlots: pl.charmSlots, temp: pl.temp.filter((t) => !t.room && !t.floor && t.time === undefined),
       transformations: [...pl.transformations], pools: w.run.pools.serialize(), stats: w.run.stats, flags: w.run.flags, identified: [...w.run.identified],
+      floorState: flow.serializeFloor(w), savedAt: Date.now(),
     };
     this.save.markDirty();
   }
@@ -210,7 +223,8 @@ export class Game {
       this.world = new World(this, run, pl);
       this.world.syncFamiliars();
       this.scene = 'run'; this.paused = false;
-      this.world.startFloor();
+      if (s.floorState && s.floorState.floor === s.floor) flow.restoreFloor(this.world, s.floorState);
+      else this.world.startFloor();
       return true;
     } catch (e) { console.error('continue failed', e); this.save.data.run = null; return false; }
   }

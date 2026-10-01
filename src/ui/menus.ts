@@ -685,7 +685,7 @@ export class MenuSystem {
   // ------------------------------------------------------------ pause
   private pauseMenu(): Screen {
     const self = this, g = this.g;
-    const items = ['Resume', 'Options', 'Restart (same character)', 'Exit to menu'];
+    const items = ['Resume', 'Options', 'Restart (same character)', 'Save & quit to menu'];
     let sel = 0;
     const scr: Screen = {
       t: 0,
@@ -698,7 +698,7 @@ export class MenuSystem {
             if (sel === 0) { g.paused = false; return; }
             if (sel === 1) { self.push(self.optionsScreen(true)); return; }
             if (sel === 2) { const c = g.world!.run.charId, ch = g.world!.run.challenge; g.paused = false; g.fadeTo(() => g.newRun(c, undefined, ch), 0.4); return; }
-            if (sel === 3) { g.saveSnapshot(); g.fadeTo(() => g.quitToMenu(), 0.4); return; }
+            if (sel === 3) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => g.quitToMenu(), 0.4); return; }
           }
         }
       },

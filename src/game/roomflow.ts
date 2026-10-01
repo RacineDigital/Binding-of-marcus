@@ -50,6 +50,45 @@ export function startFloor(w: World): void {
   w.game.saveSnapshot();
 }
 
+/** Snapshot of the current floor's mutable state (for mid-run saves). */
+export function serializeFloor(w: World): any {
+  if (!w.floor || !w.room) return null;
+  persistRoom(w);
+  return {
+    floor: w.run.floorIndex, room: w.room.id, px: Math.round(w.player.x), py: Math.round(w.player.y),
+    rooms: w.floor.rooms.map((r) => ({
+      c: r.cleared, v: r.visited, s: r.seen, d: r.discovered,
+      g: Array.from(r.grid), h: Array.from(r.ghp, (x) => Math.round(x * 10) / 10), gv: Array.from(r.gvar),
+      p: r.pickups, n: r.npcs, f: { ...r.flags, lights: undefined }, sp: r.spawns, wv: r.waves,
+      dr: r.doors.map((d) => [d.locked ? 1 : 0, d.hidden ? 1 : 0, d.chained ? 1 : 0]),
+    })),
+  };
+}
+
+/** Rebuild a floor from its seed and lay a saved state over it, resuming in the saved room. */
+export function restoreFloor(w: World, st: any): void {
+  const run = w.run;
+  const floor = generateFloor(run, run.floorIndex, w.game.save);
+  w.floor = floor; w.theme = floor.theme; w.props = propsFor(floor.theme);
+  floor.rooms.forEach((r, i) => {
+    const s = st.rooms[i]; if (!s) return;
+    r.cleared = s.c; r.visited = s.v; r.seen = s.s; r.discovered = s.d;
+    if (s.g?.length === r.grid.length) { r.grid.set(s.g); r.ghp.set(s.h); r.gvar.set(s.gv); }
+    r.pickups = s.p ?? []; r.npcs = s.n ?? []; r.flags = { ...(s.f ?? {}) }; r.spawns = s.sp ?? r.spawns; r.waves = s.wv ?? r.waves;
+    (s.dr ?? []).forEach((d: number[], k: number) => { const door = r.doors[k]; if (door) { door.locked = !!d[0]; door.hidden = !!d[1]; door.chained = !!d[2]; } });
+  });
+  w.trapdoor = null;
+  const id = floor.rooms[st.room] ? st.room : floor.startId;
+  enterRoom(w, id, null, false);
+  w.player.x = st.px; w.player.y = st.py; w.player.vx = w.player.vy = 0;
+  w.snapCamera();
+  w.floorIntroT = 0.8;
+  w.hud.roomName('Continued · ' + floor.label);
+  w.audio.setMusic(floor.theme.music);
+  w.audio.prepareMusic(run.floorIndex >= FINAL_FLOOR ? 'bossFinal' : run.floorIndex >= 4 ? 'boss2' : 'boss');
+  w.audio.setIntensity(w.enemies.length ? 1 : 0);
+}
+
 export function nextFloor(w: World): void {
   const run = w.run;
   run.stats.floorsCleared++;
@@ -150,6 +189,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   const hasEnemies = w.enemies.length > 0;
   w.audio.setIntensity(hasEnemies ? 1 : 0);
   if (from !== null) w.audio.play(hasEnemies ? 'doorSlam' : 'door', { vol: 0.6 });
+  if (from !== null) w.game.autosave();
   if (room.flags.variant && !room.cleared && !room.flags.announced) {
     room.flags.announced = true;
     w.hud.roomName(VARIANT_NAMES[room.flags.variant] ?? '');

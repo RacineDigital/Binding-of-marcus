@@ -3,11 +3,12 @@ name: Release
 # Publishes a GitHub Release with the downloadable game whenever:
 #   - a commit changes package.json or the release packaging (the release is tagged v<version>), or
 #   - a tag like v1.2.0 is pushed.
-# Nothing is published if a release for that version already exists.
+# The Linux job publishes the browser builds; the Windows job adds the .exe installer and a
+# portable .exe. Nothing is published if a release for that version already exists.
 on:
   push:
     branches: ['**']
-    paths: ['package.json', 'scripts/package-release.sh', '.github/release/**', '.github/workflows/release.yml']
+    paths: ['package.json', 'scripts/package-release.sh', '.github/release/**', '.github/workflows/release.yml', 'electron/**']
     tags: ['v*']
 
 permissions:
@@ -16,6 +17,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      skip: ${{ steps.version.outputs.skip }}
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v4
       - name: Work out the version
@@ -47,8 +53,36 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          sed "s/VERSION/$TAG/g" .github/release/notes.md > release-notes.md
+          sed -e "s/VERSION/$TAG/g" -e "s/X\.Y\.Z/${TAG#v}/g" .github/release/notes.md > release-notes.md
           gh release create "$TAG" release/* \
             --target "$GITHUB_SHA" \
             --title "Binding of Marcus $TAG" \
             --notes-file release-notes.md
+
+  windows:
+    needs: release
+    if: needs.release.outputs.skip != 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the Windows app
+        run: npm run dist:win
+      - name: Self-test the packaged app
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "release-desktop/win-unpacked" -Filter "*.exe" | Select-Object -First 1
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Error "Packaged app self-test failed ($($p.ExitCode))"; exit 1 }
+          Write-Host "Packaged app self-test passed"
+      - name: Attach the .exe files to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: gh release upload "$TAG" release-desktop/*.exe --clobber

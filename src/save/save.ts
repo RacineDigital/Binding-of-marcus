@@ -23,9 +23,33 @@ export interface SaveData {
   bestTime: number;
   lastSeed: string;
   introSeen: boolean;
+  lastPlayed?: number;
+  /** Finished runs, newest first (for the run history screen). */
+  history?: RunRecord[];
+  /** Enemy kill counts by id (bestiary). */
+  kills?: Record<string, number>;
 }
+export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 
-const KEY = 'binding-of-marcus-save-v1';
+/**
+ * Where saves live. The desktop build writes JSON files in the user's app-data folder (through the
+ * preload bridge); the browser build uses localStorage. Both expose the same tiny key/value API.
+ */
+interface Store { read(key: string): string | null; write(key: string, json: string): void; remove(key: string): void; kind: 'file' | 'browser' }
+const desktop = (globalThis as any).bomDesktop as { readSave(k: string): string | null; writeSave(k: string, j: string): void; deleteSave(k: string): void } | undefined;
+const LEGACY_KEY = 'binding-of-marcus-save-v1';
+export const store: Store = desktop
+  ? { kind: 'file', read: (k) => desktop.readSave(k), write: (k, j) => desktop.writeSave(k, j), remove: (k) => desktop.deleteSave(k) }
+  : {
+    kind: 'browser',
+    read: (k) => { try { return localStorage.getItem('bom:' + k); } catch { return null; } },
+    write: (k, j) => { try { localStorage.setItem('bom:' + k, j); } catch (e) { console.warn('save failed', e); } },
+    remove: (k) => { try { localStorage.removeItem('bom:' + k); } catch { /* ignore */ } },
+  };
+export const SLOTS = 3;
+
+/** Summary of a save slot for the profile picker. */
+export interface SlotInfo { slot: number; empty: boolean; unlocks: number; wins: number; runs: number; playTime: number; hasRun: boolean; lastPlayed: number }
 
 export function defaultSave(): SaveData {
   return {
@@ -37,26 +61,68 @@ export function defaultSave(): SaveData {
 
 export class SaveManager {
   data: SaveData;
+  settings: Settings;
+  slot = 1;
   onUnlock: ((id: string) => void) | null = null;
-  private dirty = false;
+  private dirty = false; private settingsDirty = false;
   constructor() {
-    this.data = defaultSave();
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const d = JSON.parse(raw);
-        const def = defaultSave();
-        this.data = { ...def, ...d, settings: { ...def.settings, ...(d.settings ?? {}), bindings: { ...def.settings.bindings, ...(d.settings?.bindings ?? {}) } } };
-      }
-    } catch (e) { console.warn('save load failed', e); }
+    const def = defaultSave();
+    this.settings = def.settings;
+    // one-time migration of the original single localStorage save into slot 1
+    if (store.kind === 'browser') {
+      try {
+        const old = localStorage.getItem(LEGACY_KEY);
+        if (old && !store.read('slot1')) { store.write('slot1', old); const o = JSON.parse(old); if (o.settings) store.write('settings', JSON.stringify(o.settings)); }
+      } catch { /* ignore */ }
+    }
+    try { const raw = store.read('settings'); if (raw) { const st = JSON.parse(raw); this.settings = { ...def.settings, ...st, bindings: { ...def.settings.bindings, ...(st.bindings ?? {}) } }; } } catch (e) { console.warn('settings load failed', e); }
+    try { const meta = JSON.parse(store.read('meta') ?? '{}'); if (meta.slot >= 1 && meta.slot <= SLOTS) this.slot = meta.slot; } catch { /* ignore */ }
+    this.data = this.loadSlot(this.slot);
     setInterval(() => this.flush(), 2000);
-    window.addEventListener('beforeunload', () => this.flush());
+    window.addEventListener('beforeunload', () => { this.markDirty(); this.flush(); });
   }
-  markDirty(): void { this.dirty = true; }
+  private loadSlot(n: number): SaveData {
+    const def = defaultSave();
+    let d: SaveData = def;
+    try { const raw = store.read('slot' + n); if (raw) { const o = JSON.parse(raw); d = { ...def, ...o }; } } catch (e) { console.warn('slot load failed', e); }
+    d.settings = this.settings; // settings are shared by every slot
+    return d;
+  }
+  /** Switch to another save slot (saving the current one first). */
+  useSlot(n: number): void {
+    this.markDirty(); this.flush();
+    this.slot = n; this.data = this.loadSlot(n);
+    store.write('meta', JSON.stringify({ slot: n }));
+  }
+  slotInfo(n: number): SlotInfo {
+    let o: any = null;
+    try { const raw = n === this.slot ? JSON.stringify(this.data) : store.read('slot' + n); o = raw ? JSON.parse(raw) : null; } catch { o = null; }
+    const st = o?.stats ?? {};
+    const empty = !o || (!(st.runs > 0) && !(o.unlocks?.length));
+    return { slot: n, empty, unlocks: o?.unlocks?.length ?? 0, wins: st.wins ?? 0, runs: st.runs ?? 0, playTime: st.playTime ?? 0, hasRun: !!o?.run, lastPlayed: o?.lastPlayed ?? 0 };
+  }
+  eraseSlot(n: number): void {
+    store.remove('slot' + n);
+    if (n === this.slot) { this.data = this.loadSlot(n); this.dirty = false; }
+  }
+  /** The whole slot as JSON (for export) and import from a file. */
+  exportSlot(): string { const { settings, ...rest } = this.data; void settings; return JSON.stringify({ game: 'binding-of-marcus', version: 2, save: rest }, null, 1); }
+  importSlot(json: string): boolean {
+    try {
+      const o = JSON.parse(json); const d = o.save ?? o;
+      if (!Array.isArray(d.unlocks) || typeof d.stats !== 'object') return false;
+      this.data = { ...defaultSave(), ...d, settings: this.settings }; this.markDirty(); this.flush(); return true;
+    } catch { return false; }
+  }
+  markDirty(): void { this.dirty = true; this.settingsDirty = true; }
+  markSettings(): void { this.settingsDirty = true; }
   flush(): void {
+    if (this.settingsDirty) { this.settingsDirty = false; store.write('settings', JSON.stringify(this.settings)); }
     if (!this.dirty) return;
     this.dirty = false;
-    try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) { console.warn('save failed', e); }
+    this.data.lastPlayed = Date.now();
+    const { settings, ...rest } = this.data; void settings;
+    store.write('slot' + this.slot, JSON.stringify(rest));
   }
   isUnlocked(id: string): boolean { return this.data.unlocks.includes(id); }
   unlock(id: string): boolean {
@@ -72,5 +138,5 @@ export class SaveManager {
   }
   collectItem(id: string): void { if (!this.data.itemsSeen.includes(id)) { this.data.itemsSeen.push(id); this.markDirty(); } this.stat('itemsCollected', 1); }
   markBoss(id: string): void { if (!this.data.bossesBeaten.includes(id)) { this.data.bossesBeaten.push(id); this.markDirty(); } this.stat('bossKills', 1); }
-  reset(): void { const s = this.data.settings; this.data = defaultSave(); this.data.settings = s; this.markDirty(); this.flush(); }
+  reset(): void { this.data = defaultSave(); this.data.settings = this.settings; this.markDirty(); this.flush(); }
 }
