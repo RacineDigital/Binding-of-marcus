@@ -12,7 +12,7 @@ import { clamp, TAU } from '../core/math';
 import { moveBody } from '../rooms/collide';
 import { getItem } from '../items/registry';
 import { Side } from '../rooms/room';
-import { TILE } from '../core/constants';
+import { TILE, HURT_TOP, HURT_BOT, HURT_R } from '../core/constants';
 
 export interface TempEffect { id: string; stats?: StatMods; attack?: ProfilePart; room?: boolean; time?: number; floor?: boolean; flight?: boolean }
 
@@ -196,6 +196,26 @@ export class Player {
       if (d.side === Side.W && mx < -0.5 && this.x - this.r < L + 3 && Math.abs(this.y - d.pos) < 18) this.vy += (d.pos - this.y) * 18 * dt * 4;
       if (d.side === Side.E && mx > 0.5 && this.x + this.r > R - 3 && Math.abs(this.y - d.pos) < 18) this.vy += (d.pos - this.y) * 18 * dt * 4;
     }
+  }
+
+  /**
+   * Where Marcus can be hurt, in screen space (the way shots are drawn): an upright capsule over
+   * his torso and face, a little inside the sprite so grazes feel fair.
+   */
+  hurtCapsule(): { x: number; y0: number; y1: number; r: number } {
+    const lift = this.flight ? 3 : 0;
+    return { x: this.x, y0: this.y - HURT_TOP - lift, y1: this.y - HURT_BOT - lift, r: HURT_R };
+  }
+  /** Squared distance from a screen-space point to the hurt capsule's spine. */
+  hurtDist2(x: number, y: number): number {
+    const c = this.hurtCapsule();
+    const cy = Math.max(c.y0, Math.min(c.y1, y));
+    return (x - c.x) * (x - c.x) + (y - cy) * (y - cy);
+  }
+  /** Does a round thing of radius r drawn at (x, y) touch Marcus? */
+  hurtBy(x: number, y: number, r: number): boolean {
+    const rr = HURT_R + r;
+    return this.hurtDist2(x, y) < rr * rr;
   }
 
   /** Muzzle position: in front of Marcus at hand height, alternating hands. */

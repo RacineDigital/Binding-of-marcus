@@ -3,13 +3,13 @@ import { TILE, VIEW_W, VIEW_H, roomCols, roomRows } from '../core/constants';
 
 export type RoomType =
   | 'start' | 'normal' | 'boss' | 'treasure' | 'shop' | 'secret' | 'supersecret' | 'challenge' | 'sacrifice'
-  | 'arcade' | 'cursed' | 'library' | 'miniboss' | 'event' | 'deal' | 'blessing';
+  | 'arcade' | 'cursed' | 'library' | 'miniboss' | 'event' | 'deal' | 'blessing' | 'lostfound';
 
 export const ROOM_NAMES: Record<RoomType, string> = {
   start: 'Landing', normal: '', boss: 'Chapter\'s End', treasure: 'The Curio', shop: 'Mott\'s Wares',
   secret: 'Crawlspace', supersecret: 'Deep Crawlspace', challenge: 'Proving Room', sacrifice: 'The Pincushion',
   arcade: 'Button Parlor', cursed: 'Hexed Room', library: 'The Archive', miniboss: 'Lurker\'s Den', event: 'Odd Room',
-  deal: 'The Inkwell', blessing: 'Wax Chapel',
+  deal: 'The Inkwell', blessing: 'Wax Chapel', lostfound: 'Lost & Found',
 };
 
 export const enum Side { N = 0, E = 1, S = 2, W = 3 }
@@ -18,7 +18,7 @@ export const SIDE_DY = [-1, 0, 1, 0];
 export const opposite = (s: Side): Side => ((s + 2) % 4) as Side;
 
 export type DoorKind = 'normal' | 'treasure' | 'boss' | 'shop' | 'secret' | 'supersecret' | 'challenge' | 'sacrifice'
-  | 'arcade' | 'cursed' | 'library' | 'miniboss' | 'event' | 'deal' | 'blessing';
+  | 'arcade' | 'cursed' | 'library' | 'miniboss' | 'event' | 'deal' | 'blessing' | 'lostfound';
 
 export interface DoorDef {
   side: Side; slot: number; to: number; kind: DoorKind;

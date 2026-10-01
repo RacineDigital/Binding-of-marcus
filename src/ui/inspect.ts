@@ -52,7 +52,7 @@ function inspectRaw(w: World, p: Pickup): InspectInfo | null {
   if (p.kind === 'item' && p.data.id) {
     const it = getItem(p.data.id); if (!it) return null;
     if (blind) return { key: 'blind', icon: itemIconCanvas(it.id, true), title: '???', subtitle: 'Something hidden by the Blight', lines: [{ text: 'You cannot make out what it is.', color: 'plain' }], quality: -1, kindLabel: '' };
-    const kindLabel = it.kind === 'active' ? `ACTIVE ITEM  ·  ${K('active')} to use` : it.kind === 'familiar' ? 'FAMILIAR' : it.kind === 'trinket' ? 'CHARM' : 'PASSIVE ITEM';
+    const kindLabel = p.data.swap ? 'LOST & FOUND  ·  take one, leave one' : it.kind === 'active' ? `ACTIVE ITEM  ·  ${K('active')} to use` : it.kind === 'familiar' ? 'FAMILIAR' : it.kind === 'trinket' ? 'CHARM' : 'PASSIVE ITEM';
     return { key: it.id, icon: itemIconCanvas(it.id, false), title: it.name, subtitle: it.pickup, lines: describeItem(it), quality: it.quality, kindLabel, tags: it.tags, itemId: it.id };
   }
   if (p.kind === 'charm' && p.data.id) {

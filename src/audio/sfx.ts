@@ -156,6 +156,8 @@ export const STINGERS: Record<string, Recipe> = {
   bossDeath: { dur: 3.0, vol: 0.7, render: (c, o) => { const d = dist(c, 4, o); thump(c, d, 70, 20, 1.5, 1); [62, 66, 69, 74, 78].forEach((n, i) => formantVoice(c, o, mtof(n), mtof(n), 2.4, 0.25, [700, 1150], 0.4 + i * 0.05)); } },
   deal: { dur: 3.0, vol: 0.6, render: (c, o) => { const lp = filter(c, 'lowpass', 1100, 1, o); chord(c, lp, [37, 44, 49, 52, 56], 'sawtooth', 2.6, 0.9, 0.4); fm(c, mtof(73), 1.41, 2, 0.3, 2, o, 0.2); } },
   blessing: { dur: 3.0, vol: 0.55, render: (c, o) => { [66, 70, 73, 78, 82].forEach((n, i) => formantVoice(c, o, mtof(n), mtof(n), 2.5, 0.25, [750, 1200], 0.4 + i * 0.08)); hiss(c, o, 'highpass', 7000, 1, 2, 0.1, 1); } },
+  // a counter bell, then a music box turning over
+  lostfound: { dur: 3.0, vol: 0.55, render: (c, o) => { fm(c, mtof(88), 3.5, 2, 0, 1.2, o, 0.35); [76, 79, 83, 81, 76, 71].forEach((n, i) => fm(c, mtof(n), 4.01, 1.2, 0.35 + i * 0.22, 0.9, o, 0.18)); chord(c, filter(c, 'lowpass', 900, 1, o), [52, 59, 64], 'triangle', 2.4, 0.6, 0.4); } },
   challenge: { dur: 2.0, vol: 0.6, render: (c, o) => { fm(c, mtof(45), 1.41, 4, 0, 1.8, o, 0.5); thump(c, o, 80, 30, 0.6, 0.7); } },
   transform: { dur: 2.4, vol: 0.6, render: (c, o) => { [62, 69, 74, 78, 81, 86].forEach((n, i) => fm(c, mtof(n), 2.01, 1, i * 0.1, 1.4, o, 0.15)); chord(c, o, [50, 57, 62], 'triangle', 2, 0.5, 0.3); } },
   unlock: { dur: 1.8, vol: 0.5, render: (c, o) => { [72, 76, 79, 84, 88].forEach((n, i) => fm(c, mtof(n), 3.01, 0.8, i * 0.09, 1, o, 0.2)); } },

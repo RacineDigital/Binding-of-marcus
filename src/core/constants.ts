@@ -13,3 +13,6 @@ export const MAP_SIZE = 13;
 
 export function roomCols(cw: number): number { return cw === 1 ? ROOM_COLS : ROOM_COLS + BIG_EXTRA_COLS; }
 export function roomRows(ch: number): number { return ch === 1 ? ROOM_ROWS : ROOM_ROWS + BIG_EXTRA_ROWS; }
+
+/** Marcus's hurt capsule, measured against his sprite: spine from 17px up (chin) to 6px up (hips). */
+export const HURT_TOP = 17, HURT_BOT = 6, HURT_R = 4;

@@ -53,6 +53,8 @@ export class World {
   transition: Transition | null = null;
   lockdown = false;       // doors held shut (boss fight, challenge waves)
   hud: Hud;
+  /** Debug: draw hurtboxes (toggled from __bomDebug.hitboxes). */
+  showHitboxes = false;
   bossList: Enemy[] = [];
   deathT = -1;
   floorIntroT = 0;
@@ -497,9 +499,16 @@ export class World {
       this.fx.burst(x, y, 6, 2, this.theme.pal.rock, 30, 0.25);
     }
   }
+  /** Fires that are still lit, kegs, heaps and urns: things a shot can wear down. */
+  isBreakable(c: number, r: number): boolean {
+    if (!this.room.inGrid(c, r)) return false;
+    const k = this.room.at(c, r);
+    if (k === Ob.Fire) return this.room.ghp[this.room.idx(c, r)] > 0;
+    return k === Ob.Heap || k === Ob.Urn || k === Ob.Keg;
+  }
   damageObstacleAt(x: number, y: number, dmg: number): void {
     const [c, r] = this.room.cellAt(x, y);
-    if (this.room.inGrid(c, r)) { const k = this.room.at(c, r); if (k === Ob.Heap || k === Ob.Fire || k === Ob.Urn || k === Ob.Keg) this.hitObstacle(c, r, dmg, false, x, y); }
+    if (this.isBreakable(c, r)) this.hitObstacle(c, r, dmg, false, x, y);
   }
   destroyObstacle(c: number, r: number, violent: boolean): void {
     const room = this.room; const i = room.idx(c, r); const k = room.grid[i]; const v = room.gvar[i];

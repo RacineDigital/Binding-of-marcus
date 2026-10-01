@@ -8,7 +8,7 @@ export const ACTION_LABELS: Record<Action, string> = {
   moveUp: 'Move Up', moveDown: 'Move Down', moveLeft: 'Move Left', moveRight: 'Move Right',
   shootUp: 'Fire Up', shootDown: 'Fire Down', shootLeft: 'Fire Left', shootRight: 'Fire Right',
   active: 'Use Active Item / Interact', bomb: 'Cherry Bomb', consumable: 'Use Page / Sweet',
-  focus: 'Steady (slow, precise)', pause: 'Pause', map: 'Full Map', drop: 'Drop Charm', swap: 'Swap Consumable',
+  focus: 'Steady (slow, precise)', pause: 'Pause', map: 'Map & Item Info', drop: 'Drop Charm', swap: 'Swap Consumable',
 };
 export const ACTION_ORDER: Action[] = [
   'moveUp', 'moveDown', 'moveLeft', 'moveRight', 'shootUp', 'shootDown', 'shootLeft', 'shootRight',

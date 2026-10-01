@@ -839,7 +839,7 @@ export class MenuSystem {
           ['Move', g.input.usingPad ? ['L-stick'] : [b.moveUp, b.moveLeft, b.moveDown, b.moveRight].map((c) => keyLabel(c[0] ?? ''))],
           ['Fire', g.input.usingPad ? ['R-stick'] : [b.shootUp, b.shootLeft, b.shootDown, b.shootRight].map((c) => keyLabel(c[0] ?? ''))],
           ['Bomb', one('bomb')], ['Active item', one('active')], ['Page / sweet', one('consumable')],
-          ['Swap', one('swap')], ['Drop charm (hold)', one('drop')], ['Map (hold)', one('map')],
+          ['Swap', one('swap')], ['Drop charm (hold)', one('drop')], ['Map & item info (hold)', one('map')],
         ];
         rows.forEach(([label, caps], i) => {
           const col = i < 4 ? 0 : 1, row = i % 4;

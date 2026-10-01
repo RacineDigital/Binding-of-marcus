@@ -14,8 +14,11 @@ import { MAP_SIZE, VIEW_W, VIEW_H } from '../core/constants';
 import type { Enemy } from '../enemies/enemy';
 import { ease, fmt1, clamp } from '../core/math';
 import { CURSE_NAMES } from '../generation/floorgen';
-import { sweetName } from '../game/roomflow';
+import { sweetName, dealCost, dealCostText } from '../game/roomflow';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { drawHitboxes } from '../game/worldrender';
+import { ticketFor, doorOdds } from '../game/bargain';
+import { bindLabel, fmtKeys } from '../core/input';
 
 interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null }
 
@@ -38,8 +41,93 @@ function icons(): Record<string, HTMLCanvasElement> {
     event: mk((p) => { p.rect(3, 0, 1, 4, '#8ad0c0'); p.set(3, 6, '#8ad0c0'); }),
     deal: mk((p) => { p.ball(3.5, 4, 2.5, 2.6, ramp('#5a50c0')); p.set(3, 0, '#5a50c0'); p.set(3, 1, '#5a50c0'); }),
     blessing: mk((p) => { p.rect(2, 2, 3, 5, '#f0e8d0'); p.set(3, 0, '#ffc050'); p.set(3, 1, '#ffc050'); }),
+    lostfound: mk((p) => { p.rect(1, 2, 5, 4, '#efe2c0'); p.set(2, 3, '#8a3a2a'); p.rect(4, 3, 1, 1, '#5a4a32'); p.line(3, 0, 3, 1, '#c8b890'); }),
   };
   return mapIcons;
+}
+
+/** 8x8 stat icons drawn from character maps (palette letters below). */
+const STAT_ICON_MAPS: Record<string, string[]> = {
+  speed: [   // winged boot
+    '........',
+    '..bb....',
+    '..bbw.w.',
+    '..bbww..',
+    '..bbbw..',
+    '.bbbbb..',
+    'bbbbbbB.',
+    'BBBBBBB.'],
+  damage: [  // a nib, point down, dripping
+    '..rrrr..',
+    '..rRRr..',
+    '..rRRr..',
+    '...rr...',
+    '...rr...',
+    '...RR...',
+    '........',
+    '...R....'],
+  rate: [    // two ink drops
+    '...k....',
+    '..kk..k.',
+    '.kkKk.kk',
+    '.kKKkkKk',
+    '.kKKk.k.',
+    '..kk....',
+    '........',
+    '........'],
+  range: [   // a tape measure ribbon
+    'gggggggg',
+    'g.g.g.g.',
+    'GGGGGGGG',
+    '........',
+    '..cccc..',
+    '.cCCCCc.',
+    '.cCccCc.',
+    '..cccc..'],
+  shot: [    // an arrow with speed lines
+    '........',
+    '.....a..',
+    'w.....a.',
+    '.aaaaaaa',
+    'w.....a.',
+    '.....a..',
+    '........',
+    '........'],
+  luck: [    // four-leaf clover
+    '.ll.ll..',
+    'lLLlLLl.',
+    '.lLlLl..',
+    '..lll...',
+    '.lLlLl..',
+    'lLLlLLl.',
+    '.ll.ll..',
+    '...s....'],
+  door: [    // arched door, half ink, half wax
+    '..dddd..',
+    '.dpppPd.',
+    'dpppPPPd',
+    'dpppPPPd',
+    'dpp.PPPd',
+    'dpppPPPd',
+    'dpppPPPd',
+    'dddddddd'],
+};
+const STAT_ICON_PAL: Record<string, string> = {
+  b: '#8a5a3a', B: '#5a3824', w: '#e8e4f4', r: '#c8c0d8', R: '#d0283a', k: '#5a70d8', K: '#9ab0ff',
+  g: '#e8d8a8', G: '#a89060', c: '#c8a860', C: '#7a6038', a: '#e8e0d0', l: '#4aa84a', L: '#8ae07a', s: '#3a6a2a',
+  d: '#8a7560', p: '#3a2e7a', P: '#efe6d2',
+};
+let statIcons: Record<string, HTMLCanvasElement> | null = null;
+function statIcon(k: string): HTMLCanvasElement {
+  if (!statIcons) {
+    statIcons = {};
+    for (const [name, rows] of Object.entries(STAT_ICON_MAPS)) {
+      const p = new PixelArt(8, 8);
+      rows.forEach((row, y) => [...row].forEach((ch, x) => { if (STAT_ICON_PAL[ch]) p.set(x, y, STAT_ICON_PAL[ch]); }));
+      statIcons[name] = p.toCanvas();
+    }
+  }
+  return statIcons[k];
 }
 
 export class Hud {
@@ -79,6 +167,7 @@ export class Hud {
     this.roomNameT = Math.max(0, this.roomNameT - dt);
     this.bossIntroT = Math.max(0, this.bossIntroT - dt);
     this.activeFlash = Math.max(0, this.activeFlash - dt);
+    this.trackStats(dt);
     const near = this.w.nearInspect;
     const info = near ? inspectInfo(this.w, near) : null;
     if (near && info) { this.panelInfo = info; this.panelPickup = near; this.panelFade = Math.min(1, this.panelFade + dt * 8); }
@@ -100,6 +189,7 @@ export class Hud {
     const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.45, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.62);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    if (w.showHitboxes) drawHitboxes(w, ctx);
     this.drawPriceTags(ctx);
     if (w.deathT >= 0) return;
     this.drawActive(ctx);
@@ -108,7 +198,7 @@ export class Hud {
     const eid = w.game.save.data.settings.descStyle !== 'card';
     if (w.game.save.data.settings.showStats && !(eid && this.panelFade > 0.05)) this.drawStats(ctx);
     this.drawConsumables(ctx);
-    if (w.floor.curse !== 'lost') this.drawMinimap(ctx, this.fullMap);
+    if (w.floor.curse !== 'lost' && !this.fullMap) this.drawMinimap(ctx, false);
     else text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right');
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
@@ -119,6 +209,87 @@ export class Hud {
     this.drawRoomName(ctx);
     this.drawFloorCard(ctx);
     this.drawBossIntro(ctx);
+    if (this.fullMap) this.drawTabScreen(ctx);
+  }
+
+  /**
+   * Held map key: the full map on the right, and on the left what everything in your hands does
+   * (active item, charms, pocket pages and sweets) plus how the bargain door odds are made up.
+   */
+  private drawTabScreen(ctx: CanvasRenderingContext2D): void {
+    const w = this.w, pl = w.player;
+    ctx.save();
+    ctx.fillStyle = 'rgba(6,4,10,0.9)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    if (w.floor.curse !== 'lost') this.drawMinimap(ctx, true);
+    else text(ctx, CURSE_NAMES.lost, VIEW_W * 0.72, VIEW_H / 2, 9, COL.dim, 'center');
+    const X = 10, W = 196;
+    let y = 14;
+    const head = (s: string) => { text(ctx, s, X, y + 6, 6, COL.dim, 'left', FONT_BODY, 700); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(X + measure(ctx, s, 6, FONT_BODY, 700) + 4, y + 3.5, W - measure(ctx, s, 6, FONT_BODY, 700) - 4, 0.6); y += 10; };
+    const entry = (icon: CanvasImageSource | null, title: string, sub: string, lines: DescLine[]) => {
+      if (y > VIEW_H - 24) return;
+      ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(X, y, 16, 16);
+      if (icon) { ctx.imageSmoothingEnabled = false; ctx.drawImage(icon, X, y, 16, 16); }
+      text(ctx, title, X + 21, y + 7, 8, COL.text, 'left', FONT_BODY, 700);
+      if (sub) text(ctx, sub, X + 21, y + 15, 6, COL.dim, 'left', FONT_BODY, 600);
+      y += sub ? 19 : 13;
+      for (const l of lines) {
+        const c = l.color === 'up' ? COL.up : l.color === 'down' ? COL.down : l.color === 'note' ? COL.note : COL.text;
+        for (const s of wrap(ctx, fmtKeys(l.text), 6.5, W - 21)) { if (y > VIEW_H - 14) break; text(ctx, s, X + 21, y + 5, 6.5, c, 'left', FONT_BODY, 600); y += 8; }
+      }
+      y += 4;
+    };
+    const plain = (arr: string[]): DescLine[] => arr.map((t) => ({ text: t, color: 'plain' as const }));
+    // active item
+    if (pl.active) {
+      const it = getItem(pl.active);
+      if (it) {
+        head(`ACTIVE  ·  ${bindLabel('active')}`);
+        const ch = it.active ? `charge ${Math.min(pl.charge, it.active.charge)}/${it.active.charge}` : '';
+        entry(itemIconCanvas(it.id), it.name, [it.pickup, ch].filter(Boolean).join('  ·  '), describeItem(it));
+      }
+    }
+    // charms
+    if (pl.charms.length) {
+      head(`CHARM${pl.charms.length > 1 ? 'S' : ''}  ·  hold ${bindLabel('drop')} to drop`);
+      for (const id of pl.charms) {
+        const it = getItem(id), c = getConsumable(id) as any;
+        if (it) entry(itemIconCanvas(id), it.name, it.pickup, describeItem(it));
+        else if (c) entry(itemIconCanvas(id), c.name, c.desc ?? '', plain(c.effect ?? []));
+      }
+    }
+    // pocket: pages and sweets
+    if (pl.consumables.length) {
+      head(`POCKET  ·  ${bindLabel('consumable')} to use${pl.consumables.length > 1 ? `, ${bindLabel('swap')} to swap` : ''}`);
+      const S = pickupSprites();
+      for (const c of pl.consumables) {
+        if (c.kind === 'page') { const d = getConsumable(c.id); if (d) entry(S.page.canvas, d.name, d.desc, plain(d.effect)); }
+        else {
+          const col = Number(c.id), eff = SWEET_EFFECTS[w.run.sweetMap[col % 12]];
+          const known = !!eff && w.run.identified.has(eff.id);
+          entry(S.sweets[col % S.sweets.length].canvas, known ? eff.name : 'Unmarked Sweet', known ? 'Identified' : 'Who knows what it does', plain([known ? eff.desc : 'A random effect. Eat it to find out.']));
+        }
+      }
+    }
+    if (!pl.active && !pl.charms.length && !pl.consumables.length) { text(ctx, 'Nothing in your hands yet.', X, y + 8, 7, COL.dim, 'left'); y += 16; }
+    // bargain door odds
+    if (y < VIEW_H - 40) {
+      const odds = doorOdds(w);
+      head(`BARGAIN DOOR  ·  ${Math.round(odds.total * 100)}% after the boss`);
+      for (const part of odds.parts) {
+        text(ctx, part.label, X + 4, y + 5, 6.5, part.good ? COL.text : COL.dim, 'left', FONT_BODY, 600);
+        text(ctx, part.value, X + W, y + 5, 6.5, part.good ? COL.up : COL.down, 'right', FONT_BODY, 700);
+        y += 8;
+      }
+      const sp = odds.split;
+      const names: [keyof typeof sp, string, string][] = [['deal', 'Inkwell', '#8a80e0'], ['blessing', 'Wax Chapel', '#f0e0b0'], ['lostfound', 'Lost & Found', '#e0a860']];
+      let xx = X + 4;
+      for (const [k, n, c] of names) {
+        const s = `${n} ${Math.round(sp[k] * 100)}%`;
+        text(ctx, s, xx, y + 6, 6, sp[k] > 0 ? c : COL.dim, 'left', FONT_BODY, 600);
+        xx += measure(ctx, s, 6, FONT_BODY, 600) + 8;
+      }
+    }
+    ctx.restore();
   }
 
   private drawActive(ctx: CanvasRenderingContext2D): void {
@@ -191,19 +362,57 @@ export class Hud {
     line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, y0 + 26, pl.goldKey);
   }
 
-  private drawStats(ctx: CanvasRenderingContext2D): void {
+  /** Stat values as shown, keyed by icon. */
+  private statRows(): [string, string, number][] {
     const s = this.w.player.stats;
-    const y0 = 118;
-    const rows: [string, string][] = [
-      ['SPD', fmt1(s.speed)], ['DMG', fmt1(Math.round(s.damage * 100) / 100)], ['RATE', fmt1(Math.round(s.fireRate * 100) / 100)],
-      ['RNG', String(Math.round(s.range / 24 * 10) / 10)], ['SHOT', fmt1(Math.round(s.shotSpeed * 100) / 100)], ['LUCK', String(s.luck)],
+    const r2 = (v: number) => Math.round(v * 100) / 100;
+    return [
+      ['speed', fmt1(s.speed), s.speed], ['damage', fmt1(r2(s.damage)), r2(s.damage)], ['rate', fmt1(r2(s.fireRate)), r2(s.fireRate)],
+      ['range', String(Math.round(s.range / 24 * 10) / 10), Math.round(s.range / 24 * 10) / 10], ['shot', fmt1(r2(s.shotSpeed)), r2(s.shotSpeed)], ['luck', String(s.luck), s.luck],
     ];
-    ctx.globalAlpha = 0.8;
+  }
+  /** Recent stat changes, shown as +0.5 / -0.2 beside the value for a couple of seconds (like Isaac). */
+  private statPrev = new Map<string, number>();
+  private statDelta = new Map<string, { d: number; t: number }>();
+  private doorPrev = -1; private doorFlash = 0; private doorDrop = 0;
+  private trackStats(dt: number): void {
+    for (const [k, , v] of this.statRows()) {
+      const prev = this.statPrev.get(k);
+      if (prev !== undefined && Math.abs(v - prev) > 0.001) this.statDelta.set(k, { d: v - prev, t: 2.2 });
+      this.statPrev.set(k, v);
+    }
+    for (const [k, e] of this.statDelta) { e.t -= dt; if (e.t <= 0) this.statDelta.delete(k); }
+    // bargain door odds: flash when a hit knocks them down
+    const odds = doorOdds(this.w).total;
+    if (this.doorPrev >= 0 && odds < this.doorPrev - 0.001 && this.w.run.floorIndex > 0) { this.doorFlash = 1.6; this.doorDrop = odds - this.doorPrev; }
+    this.doorPrev = odds;
+    this.doorFlash = Math.max(0, this.doorFlash - dt);
+  }
+
+  private drawStats(ctx: CanvasRenderingContext2D): void {
+    const y0 = 112, x = 6;
+    const rows = this.statRows();
     rows.forEach(([k, v], i) => {
-      text(ctx, k, 6, y0 + i * 9, 6, COL.dim, 'left', FONT_BODY, 600);
-      text(ctx, v, 26, y0 + i * 9, 7, COL.text, 'left');
+      const y = y0 + i * 10;
+      ctx.globalAlpha = 0.9; ctx.drawImage(statIcon(k), x, y - 7); ctx.globalAlpha = 1;
+      text(ctx, v, x + 11, y, 7, COL.text, 'left');
+      const dl = this.statDelta.get(k);
+      if (dl) {
+        ctx.globalAlpha = Math.min(1, dl.t * 2);
+        text(ctx, `${dl.d > 0 ? '+' : ''}${k === 'luck' ? Math.round(dl.d) : fmt1(Math.round(dl.d * 100) / 100)}`, x + 13 + measure(ctx, v, 7), y, 6.5, dl.d > 0 ? COL.up : COL.down, 'left', FONT_BODY, 700);
+        ctx.globalAlpha = 1;
+      }
     });
-    ctx.globalAlpha = 1;
+    // bargain door chance, Isaac-style: drops when you get hit
+    const odds = doorOdds(this.w);
+    const y = y0 + rows.length * 10 + 2;
+    const ch1 = this.w.run.floorIndex === 0;
+    ctx.globalAlpha = ch1 ? 0.45 : 0.9; ctx.drawImage(statIcon('door'), x, y - 7); ctx.globalAlpha = 1;
+    const f = this.doorFlash;
+    const col = f > 0 && Math.floor(f * 8) % 2 === 0 ? COL.down : ch1 ? COL.dim : odds.total >= 0.5 ? COL.gold : COL.text;
+    const label = `${Math.round(odds.total * 100)}%`;
+    text(ctx, label, x + 11, y, 7, col, 'left');
+    if (f > 0) { ctx.globalAlpha = Math.min(1, f * 2); text(ctx, `${Math.round(this.doorDrop * 100)}%`, x + 13 + measure(ctx, label, 7), y, 6.5, COL.down, 'left', FONT_BODY, 700); ctx.globalAlpha = 1; }
   }
 
   /** Collected passive items and familiars as a compact icon grid under the minimap. */
@@ -245,9 +454,11 @@ export class Hud {
       const spr = c.kind === 'page' ? S.page : S.sweets[Number(c.id) % S.sweets.length];
       spr.draw(ctx, x + 8, y + 15);
       if (i === 0) {
+        // name and key sit left of the whole row so they never overlap a second pocket item
+        const lx = VIEW_W - 22 - (pl.consumables.length - 1) * 20 - 4;
         const name = c.kind === 'page' ? (getConsumable(c.id)?.name ?? 'Page') : sweetName(this.w, Number(c.id));
-        text(ctx, name, x - 4, y + 12, 7, COL.text, 'right');
-        text(ctx, this.w.input.bindingLabel('consumable'), x - 4, y + 3, 5.5, COL.dim, 'right');
+        text(ctx, name, lx, y + 12, 7, COL.text, 'right');
+        text(ctx, bindLabel('consumable'), lx, y + 3, 6, COL.dim, 'right', FONT_BODY, 700);
       }
     });
     pl.charms.forEach((id, i) => { ctx.drawImage(itemIconCanvas(id), 6 + i * 20, VIEW_H - 24); });
@@ -265,7 +476,7 @@ export class Hud {
     if (maxx < 0) return;
     const mw = (maxx - minx + 1) * (cw + gap), mh = (maxy - miny + 1) * (ch + gap);
     let ox: number, oy: number;
-    if (full) { ox = VIEW_W / 2 - mw / 2; oy = VIEW_H / 2 - mh / 2; panel(ctx, ox - 8, oy - 8, mw + 16, mh + 16, 0.95); }
+    if (full) { ox = Math.max(216, Math.min(VIEW_W - 14 - mw, VIEW_W * 0.71 - mw / 2)); oy = VIEW_H / 2 - mh / 2; panel(ctx, ox - 8, oy - 8, mw + 16, mh + 16, 0.95); }
     else {
       // centre on the current room within a fixed window
       const winW = 72, winH = 52;
@@ -336,7 +547,8 @@ export class Hud {
     }
     if (info.itemId && !w.game.save.data.itemsSeen.includes(info.itemId)) lines.push({ t: 'New to your collection!', c: COL.gold, size: 7, bullet: '★', bc: COL.gold });
     if (p && p.price > 0) lines.push({ t: `Costs ${p.price} buttons${w.player.buttons < p.price ? ` (you have ${w.player.buttons})` : ''}`, c: w.player.buttons >= p.price ? COL.gold : COL.down, size: 7, bullet: '¢', bc: COL.gold });
-    if (p && p.deal > 0) lines.push({ t: `Costs ${p.deal} heart container${p.deal > 1 ? 's' : ''}`, c: COL.down, size: 7, bullet: '♥', bc: COL.down });
+    if (p && p.data.swap && p.data.id) { const t = ticketFor(w, p); lines.push(t ? { t: `Leave behind: ${getItem(t)?.name ?? t}`, c: '#ffd8a0', size: 7, bullet: '⇄', bc: '#e0a860' } : { t: 'Free: you have nothing to leave', c: COL.up, size: 7, bullet: '⇄', bc: '#e0a860' }); }
+    if (p && p.deal > 0) { const dc = dealCost(w, p); lines.push({ t: `Costs ${dealCostText(dc)}${dc.ok ? '' : ' (not enough)'}`, c: COL.down, size: 7, bullet: '♥', bc: COL.down }); }
     let h = 11; for (const l of lines) h += l.size + 2.5;
     ctx.save(); ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x - 3, y0 - 3, maxW + 6, h + 4);
@@ -369,7 +581,11 @@ export class Hud {
       foot = ok ? `${p.price}   —   walk into it to buy` : `${p.price}   —   you have ${have}`;
       footCol = ok ? COL.gold : COL.down; footIcon = pickupSprites().hud.button.canvas;
     } else if (p && p.deal > 0) {
-      foot = `Costs ${p.deal} heart container${p.deal > 1 ? 's' : ''}`; footCol = COL.down; footIcon = pickupSprites().hud.red.canvas;
+      const dc = dealCost(this.w, p), S = pickupSprites().hud;
+      foot = `Costs ${dealCostText(dc)}`; footCol = COL.down; footIcon = (dc.red ? S.red : dc.extra[0] === 'ink' ? S.ink : S.wax).canvas;
+    } else if (p?.data.swap) {
+      const t = ticketFor(this.w, p);
+      foot = t ? `Leave ${getItem(t)?.name ?? t} in exchange` : 'Free (you have nothing to leave)'; footCol = '#ffd8a0'; footIcon = t ? itemIconCanvas(t) : null;
     } else if (p?.data.locked) { foot = 'Win the challenge to claim it'; }
     else foot = 'Walk into it to take it';
     const titleH = 28, lineH = 10.5;
@@ -422,7 +638,19 @@ export class Hud {
         ctx.drawImage(pickupSprites().hud.button.canvas, sx - tw / 2 + 2, sy + 5.5, 8, 8);
         text(ctx, label, sx + tw / 2 - 3, sy + 12.5, 8.5, afford ? COL.gold : COL.down, 'right', FONT_BODY, 700);
       } else if (p.deal > 0 && p.data.id) {
-        for (let i = 0; i < p.deal; i++) ctx.drawImage(pickupSprites().hud.red.canvas, sx - (p.deal * 12) / 2 + i * 12, sy + 4);
+        // the hearts it would really take: red containers, or your last wax/ink hearts once red runs out
+        const dc = dealCost(w, p), S = pickupSprites().hud;
+        const icons = dc.red ? Array(dc.red).fill(S.red) : dc.extra.map((k) => (k === 'ink' ? S.ink : S.wax));
+        if (!dc.ok) ctx.globalAlpha = 0.45;
+        icons.forEach((s, i) => ctx.drawImage(s.canvas, sx - (icons.length * 12) / 2 + i * 12, sy + 4));
+        ctx.globalAlpha = 1;
+      }
+      if (p.data.swap && p.data.id) {
+        // claim ticket: the item you'd leave behind
+        const t = ticketFor(w, p);
+        ctx.fillStyle = 'rgba(8,6,12,0.82)'; ctx.fillRect(Math.round(sx - 15), sy + 4, 30, 13);
+        if (t) { text(ctx, '⇄', sx - 7, sy + 13.5, 8, '#e0a860', 'center', FONT_BODY, 700); ctx.drawImage(itemIconCanvas(t), sx + 1, sy + 4.5, 12, 12); }
+        else text(ctx, 'FREE', sx, sy + 13, 7, COL.up, 'center', FONT_BODY, 700);
       }
       if (p.data.locked && p.pedestal) text(ctx, 'PROVE YOURSELF', sx, sy + 12, 6, COL.dim, 'center');
     }

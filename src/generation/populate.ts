@@ -328,6 +328,12 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       for (const [c, r] of [[3, 2], [11, 2]]) room.setOb(c, r, Ob.Fire, 12, 3);
       break;
     }
+    case 'lostfound': {
+      // three claim-ticket pedestals; stocked with what you left behind when the door opens
+      for (let i = 0; i < 3; i++) pk('item', cx + (i - 1) * 60, cy - 4, { id: null, style: 'lost', swap: true });
+      for (const [c, r] of [[1, 1], [13, 1], [1, 7], [13, 7]]) room.setOb(c, r, Ob.Urn, 3);
+      break;
+    }
     case 'blessing': {
       item(cx, cy, 'blessing', 'blessing');
       pk('wax', cx - 40, cy + 20);

@@ -13,7 +13,8 @@ import { RNG } from '../core/rng';
 import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
 import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../items/familiar_rt';
-import { generateFloor, addBargainRoom, pickTheme } from '../generation/floorgen';
+import { generateFloor, pickTheme } from '../generation/floorgen';
+import { rollBargain, onLeaveFloor, ticketFor } from './bargain';
 import { itemIconCanvas } from '../art/items';
 import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
@@ -94,6 +95,7 @@ export function nextFloor(w: World): void {
   const run = w.run;
   run.stats.floorsCleared++;
   if (run.floorIndex >= FINAL_FLOOR && run.mode !== 'endless') { w.game.onVictory(); return; }
+  onLeaveFloor(w);
   run.floorIndex++;
   w.game.save.stat('floorsCleared', 1);
   onChapterCleared(w);
@@ -202,6 +204,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
     if (room.type === 'supersecret') w.game.save.unlock('supersecret');
     if (room.type === 'deal') w.audio.stinger('deal');
     if (room.type === 'blessing') w.audio.stinger('blessing');
+    if (room.type === 'lostfound') w.audio.stinger('lostfound');
   }
   if (room.type === 'boss' && room.cleared && prevType !== 'boss') w.audio.setMusic(w.theme.music);
   w.itemHook('onRoomEnter');
@@ -494,19 +497,14 @@ export function onBossKilled(w: World, e: Enemy): void {
     w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
     room.flags.trap = { x: c.x, y: c.y + 26 };
     w.audio.play('trapdoor');
-    // a chance for a bargain door
-    const chance = w.run.flags.dealChance + (w.run.flags.hitThisFloor ? 0 : 0.35) + (fi === 0 ? -1 : 0);
-    const r2 = new RNG(w.run.seed + ':deal' + fi);
-    if (r2.next() < chance) {
-      const kind = (w.run.flags.dealsTaken > 0 || r2.next() < 0.5) && w.run.flags.blessingsTaken === 0 ? 'deal' : 'blessing';
-      const nr = addBargainRoom(w.run, w.floor, room, kind);
-      if (nr) {
-        const d = room.doors[room.doors.length - 1];
-        const p = room.doorPos(d.side, d.slot);
-        w.doors.push({ def: d, open: 0, x: p.x, y: p.y, revealed: true });
-        w.audio.stinger(kind);
-        w.hud.toast(kind === 'deal' ? 'An inky door has opened.' : 'A door of wax has opened.');
-      }
+    // a chance for a bargain door (the odds are on the HUD)
+    const door = rollBargain(w, room);
+    if (door) {
+      const d = room.doors[room.doors.length - 1];
+      const p = room.doorPos(d.side, d.slot);
+      w.doors.push({ def: d, open: 0, x: p.x, y: p.y, revealed: true });
+      w.audio.stinger(door.kind);
+      w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : 'A door with a claim ticket on it has opened.');
     }
   });
 }
@@ -709,6 +707,26 @@ function openChest(w: World, p: Pickup): void {
   w.after(2.5, () => { p.dead = true; });
 }
 
+/**
+ * What an Inkwell deal would actually take: heart containers, or, when Marcus can't spare enough red,
+ * his last three wax/ink hearts (the ones it removes). ok is false when he can't pay either way.
+ */
+export function dealCost(w: World, p: Pickup): { red: number; extra: ('wax' | 'ink')[]; ok: boolean } {
+  const h = w.player.health;
+  if (h.redMax >= p.deal * 2) return { red: p.deal, extra: [], ok: true };
+  if (h.extra.length >= 3) return { red: 0, extra: h.extra.slice(-3).map((e) => e.k), ok: true };
+  if (h.redMax > 0) return { red: p.deal, extra: [], ok: false };
+  const have = h.extra.map((e) => e.k);
+  while (have.length < 3) have.push('wax');
+  return { red: 0, extra: have, ok: false };
+}
+export function dealCostText(c: { red: number; extra: ('wax' | 'ink')[] }): string {
+  if (c.red) return `${c.red} heart container${c.red > 1 ? 's' : ''}`;
+  const n = (k: string) => c.extra.filter((x) => x === k).length;
+  const parts = (['ink', 'wax'] as const).filter((k) => n(k)).map((k) => `${n(k)} ${k} heart${n(k) > 1 ? 's' : ''}`);
+  return parts.join(' and ');
+}
+
 export function takeItem(w: World, p: Pickup): void {
   const pl = w.player;
   const id: string | null = p.data.id;
@@ -728,15 +746,35 @@ export function takeItem(w: World, p: Pickup): void {
     w.audio.play('dealPay');
   }
   if (w.room.type === 'blessing') w.run.flags.blessingsTaken++;
+  // Lost & Found: take one, leave one. What you leave sits on the pedestal, so you can swap back.
+  if (p.data.swap) {
+    const ticket = ticketFor(w, p);
+    const again = (w.run.flags.shelved ?? []).includes(id);
+    if (ticket) { removeItem(w, ticket); w.run.flags.shelved = [...(w.run.flags.shelved ?? []), ticket]; }
+    w.run.flags.swaps = (w.run.flags.swaps ?? 0) + 1;
+    p.data.id = ticket; p.data.ticket = ticket ? id : undefined; p.noCollect = 1.0;
+    w.audio.play('pageGet');
+    grantItem(w, id, false, undefined, again);
+    presentItem(w, id, it);
+    if (ticket) w.hud.toast(`You left ${getItem(ticket)?.name ?? 'something'} at the counter.`, 2);
+    return;
+  }
   // choice groups: taking one removes the rest
-  if (p.data.group !== undefined) for (const q of w.pickups) if (q !== p && q.pedestal && q.data.group === p.data.group && q.data.id) { q.data.id = null; w.fx.smoke(q.x, q.y - 16, 6); }
+  if (p.data.group !== undefined) for (const q of w.pickups) if (q !== p && q.pedestal && q.data.group === p.data.group && q.data.id) {
+    (w.run.flags.lostItems ??= []).push(q.data.id);
+    q.data.id = null; w.fx.smoke(q.x, q.y - 16, 6);
+  }
   const oldActive = it.kind === 'active' ? pl.active : null;
   const storedCharge: number | undefined = p.data.charge;
   p.data.id = oldActive; p.data.charge = oldActive ? pl.charge : undefined;
   p.price = 0; p.deal = 0; p.shop = false;
   if (oldActive) { p.noCollect = 1.0; }
   grantItem(w, id, false, storedCharge);
-  // present
+  presentItem(w, id, it);
+}
+
+function presentItem(w: World, id: string, it: NonNullable<ReturnType<typeof getItem>>): void {
+  const pl = w.player;
   pl.pickupT = 1.1; pl.pickupSprite = itemIconCanvas(id, w.blindItems());
   w.hud.banner(w.blindItems() ? '???' : it.name, w.blindItems() ? '' : it.pickup, itemIconCanvas(id, w.blindItems()));
   w.audio.play(it.quality >= 3 ? 'itemGetBig' : 'itemGet');
@@ -744,10 +782,24 @@ export function takeItem(w: World, p: Pickup): void {
   w.fx.ring(pl.x, pl.y - 20, 4, 26, '#fff0c0', 0.4);
 }
 
-/** Give an item to the player, applying every one-time grant. */
-export function grantItem(w: World, id: string, silentHealth = false, charge?: number): void {
+/** Take a passive item away (the Lost & Found keeps it). Health it gave stays, like a reroll. */
+export function removeItem(w: World, id: string): void {
+  const pl = w.player;
+  const n = (pl.items.get(id) ?? 0) - 1;
+  if (n > 0) pl.items.set(id, n);
+  else { pl.items.delete(id); pl.itemOrder = pl.itemOrder.filter((x) => x !== id); }
+  pl.recompute();
+  syncFamiliars(w);
+}
+
+/**
+ * Give an item to the player, applying every one-time grant. `again` is for an item coming back
+ * from the Lost & Found: its one-time health, pickups and pickup effects were already had.
+ */
+export function grantItem(w: World, id: string, silentHealth = false, charge?: number, again = false): void {
   const pl = w.player, it = getItem(id);
   if (!it) return;
+  if (again) silentHealth = true;
   w.run.pools.markTaken(id);
   if (it.kind === 'active') {
     pl.active = id; pl.charge = charge ?? it.active?.charge ?? 0;
@@ -767,7 +819,7 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
     if (g.gilded) h.addGilded(g.gilded);
     if (h.totalHalf() <= 0) h.addExtra('wax', 1);
   }
-  if (it.give) {
+  if (it.give && !again) {
     pl.buttons = Math.min(99, pl.buttons + (it.give.buttons ?? 0));
     pl.keys = Math.min(99, pl.keys + (it.give.keys ?? 0));
     pl.bombs = Math.min(99, pl.bombs + (it.give.bombs ?? 0));
@@ -775,9 +827,11 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
   }
   if (id === 'extra_pocket') pl.consumableSlots = 2;
   if (id === 'charm_bracelet') pl.charmSlots = 2;
-  it.hooks?.onPickup?.(w);
-  w.run.stats.items.push(id);
-  w.game.save.collectItem(id);
+  if (!again) {
+    it.hooks?.onPickup?.(w);
+    w.run.stats.items.push(id);
+    w.game.save.collectItem(id);
+  }
   pl.recompute();
   checkProgress(w);
   syncFamiliars(w);

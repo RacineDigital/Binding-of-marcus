@@ -24,6 +24,14 @@ export function attachDebug(g: Game): void {
     killAll() { const w = g.world; if (!w) return; for (const e of [...w.enemies]) if (!e.dead) w.killEnemy(e); },
     spawn(id: string, x?: number, y?: number) { const w = g.world; if (!w) return null; const c = w.room.center(); return w.spawnEnemy(id, x ?? c.x, y ?? c.y - 40, false); },
     bomb() { if (g.world) { g.world.player.bombs++; placeBomb(g.world); } },
+    /** Open a bargain room beside the current room and walk in. */
+    async bargain(kind: 'deal' | 'blessing' | 'lostfound') {
+      const w = g.world; if (!w) return null;
+      const { openBargain } = await import('./bargain');
+      const r = openBargain(w, w.room, kind); if (!r) return null;
+      this.goto(r.id); return r.id;
+    },
+    hitboxes(on = true) { if (g.world) g.world.showHitboxes = on; },
     god() { const w = g.world; if (w) w.player.iframes = 1e9; },
     /** Render a music track offline and report timing / levels (for tests). */
     async music(name: string) {

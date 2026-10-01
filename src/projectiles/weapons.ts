@@ -91,7 +91,7 @@ export function beamHits(w: World, b: Beam, half: number, onHit: (e: Enemy) => v
     if (e.dead || e.hidden || e.spawnT > 0 || e.friendly) continue;
     const rr = (half + e.r) * (half + e.r);
     for (let i = 0; i + 3 < pts.length; i += 2) {
-      if (pointSegDist2(e.x, e.y - e.hitY, pts[i], pts[i + 1], pts[i + 2], pts[i + 3]) < rr) { onHit(e); break; }
+      if (pointSegDist2(e.x, e.y - e.hitY - e.z, pts[i], pts[i + 1], pts[i + 2], pts[i + 3]) < rr) { onHit(e); break; }
     }
   }
 }
@@ -129,6 +129,7 @@ export function updateBeams(w: World, dt: number): void {
     if (b.laser) {
       if (b.t <= dt * 1.5) {
         beamHits(w, b, half, (e) => { if (!b.hitOnce.has(e.id)) { b.hitOnce.add(e.id); beamDamage(w, b, e, b.dmg); } });
+        beamObstacles(w, b, b.dmg);
         pathFx();
         const ex = b.pts[b.pts.length - 2], ey = b.pts[b.pts.length - 1];
         if (prof.creep) w.addCreep(ex, ey, 8, 'player', b.dmg * 0.35, 1.8);
@@ -139,7 +140,7 @@ export function updateBeams(w: World, dt: number): void {
         b.tick = 0.055;
         beamHits(w, b, half, (e) => beamDamage(w, b, e, b.dmg));
         // obstacles along the path take damage too
-        alongBeam(b.pts, 10, (x, y) => w.damageObstacleAt(x, y, b.dmg * 0.5));
+        beamObstacles(w, b, b.dmg * 0.5);
         pathFx();
         const ex = b.pts[b.pts.length - 2], ey = b.pts[b.pts.length - 1];
         if (prof.explode > 0 && Math.random() < 0.25) w.explode(ex, ey, prof.explode, Math.max(4, b.dmg * 2), { friendly: true, small: true });
@@ -149,6 +150,23 @@ export function updateBeams(w: World, dt: number): void {
     }
     if (b.t >= b.dur) w.beams.splice(i, 1);
   }
+}
+
+/**
+ * Fires, kegs, heaps and urns along a player beam take damage, once per cell per tick. The beam is
+ * drawn at chest height, so the cells are sampled a little lower, where the obstacles stand.
+ */
+function beamObstacles(w: World, b: Beam, dmg: number): void {
+  const seen = new Set<number>();
+  alongBeam(b.pts, 6, (x, y) => {
+    for (const oy of [4, 11]) {
+      const [c, r] = w.room.cellAt(x, y + oy);
+      if (!w.room.inGrid(c, r)) continue;
+      const i = w.room.idx(c, r);
+      if (seen.has(i)) continue;
+      seen.add(i); w.damageObstacleAt(x, y + oy, dmg);
+    }
+  });
 }
 
 const RAINBOW = ['burn', 'slow', 'poison', 'fear', 'confuse'];
@@ -184,9 +202,11 @@ function updateEnemyBeam(w: World, b: Beam, dt: number): void {
   if (b.warmup > 0 && b.t < b.warmup) { b.pts = traceBeam(w, b.x, b.y, b.ang, null, 900, true); return; }
   b.pts = traceBeam(w, b.x, b.y, b.ang, null, 900, true);
   const pl = w.player;
-  const half = b.width / 2 + pl.hitR;
-  for (let i = 0; i + 3 < b.pts.length; i += 2) {
-    if (pointSegDist2(pl.x, pl.y - 6, b.pts[i], b.pts[i + 1], b.pts[i + 2], b.pts[i + 3]) < half * half) { w.hurtPlayer(1, 'beam'); break; }
+  const c = pl.hurtCapsule(), half = b.width / 2 * 0.85 + c.r;
+  hit: for (let i = 0; i + 3 < b.pts.length; i += 2) {
+    for (let k = 0; k <= 4; k++) {
+      if (pointSegDist2(c.x, c.y0 + (c.y1 - c.y0) * k / 4, b.pts[i], b.pts[i + 1], b.pts[i + 2], b.pts[i + 3]) < half * half) { w.hurtPlayer(1, 'beam'); break hit; }
+    }
   }
   void dt;
 }
@@ -236,7 +256,7 @@ export function meleeSwing(w: World, prof: AttackProfile, st: FinalStats, x: num
   let shards = 0;
   for (const e of w.enemies) {
     if (e.dead || e.hidden || e.spawnT > 0 || e.friendly) continue;
-    const dx = e.x - x, dy = e.y - e.hitY - y;
+    const dx = e.x - x, dy = e.y - e.hitY - e.z - y;
     const d = Math.hypot(dx, dy);
     if (d > radius + e.r) continue;
     if (!inArc(Math.atan2(dy, dx))) continue;

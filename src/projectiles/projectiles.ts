@@ -21,7 +21,7 @@ export class Proj {
   homing = 0; target: Enemy | null = null; retarget = 0;
   bx = 0; by = 0; wig = 0; phase = 0;
   orbit = false; orbA = 0; orbR = 0; orbRT = 0;
-  back = false; falling = 0;
+  back = false; falling = 0; obCell = -1;
   curve = 0; accel = 0; delay = 0; lob = false; lobH = 0; creep = '';
   splitE = 0; splitSpd = 0;
   shape = 'ink'; tint: string | null = null;
@@ -47,7 +47,7 @@ export class Projectiles {
     const p = this.free.pop();
     if (!p) return null;
     resetInterp(p); p.active = true; p.hits.length = 0; p.t = 0; p.dist = 0; p.z = 0; p.target = null; p.retarget = 0; p.orbit = false; p.back = false;
-    p.falling = 0; p.curve = 0; p.accel = 0; p.delay = 0; p.lob = false; p.creep = ''; p.splitE = 0; p.wig = 0; p.phase = 0;
+    p.obCell = -1; p.falling = 0; p.curve = 0; p.accel = 0; p.delay = 0; p.lob = false; p.creep = ''; p.splitE = 0; p.wig = 0; p.phase = 0;
     p.homing = 0; p.pierce = 0; p.bounce = 0; p.prof = null; p.depth = 0; p.crit = false; p.fromFamiliar = false; p.spectral = false;
     p.knock = 1; p.tint = null; p.creepAcc = 0; p.drop = 0; p.statusFixed = null; p.aimAtPlayerAfterDelay = false; p.life = 0; p.noWall = false; p.gravityWell = false;
     return p;
@@ -142,7 +142,7 @@ export class Projectiles {
         if (p.target) {
           // aim at the same point collision tests against, and turn harder up close so shots
           // don't circle a nearby target forever
-          const tx = p.target.x, ty = p.target.y - p.target.hitY + p.z * 0.25;
+          const tx = p.target.x, ty = p.target.y - p.target.hitY - p.target.z + p.z;
           const cur = Math.atan2(p.vy, p.vx), want = Math.atan2(ty - p.y, tx - p.x);
           const near = Math.sqrt(dist2(p.x, p.y, tx, ty));
           const rate = p.homing * 5.5 * (1 + clamp((90 - near) / 25, 0, 4)) * dt;
@@ -191,6 +191,11 @@ export class Projectiles {
         if (!blocked && !p.spectral) {
           const c = Math.floor((p.x - room.ox) / TILE), r = Math.floor((p.y - room.oy) / TILE);
           if (w.obstacleBlocksShot(c, r)) { blocked = true; cellHit = [c, r]; }
+        } else if (!blocked && p.team === Team.Player) {
+          // ghost and arcing shots pass through obstacles but still knock fires, kegs, heaps and urns (once per cell)
+          const c = Math.floor((p.x - room.ox) / TILE), r = Math.floor((p.y - room.oy) / TILE);
+          const ci = room.inGrid(c, r) ? room.idx(c, r) : -1;
+          if (ci >= 0 && ci !== p.obCell && w.isBreakable(c, r)) { p.obCell = ci; w.hitObstacle(c, r, p.dmg, false, p.x, p.y); }
         }
         if (blocked && !(p.lob && !blockedWall)) {
           if (cellHit && p.team === Team.Player) w.hitObstacle(cellHit[0], cellHit[1], p.dmg, !!prof?.shatter, p.x, p.y);
@@ -234,8 +239,9 @@ export class Projectiles {
     if (p.team === Team.Enemy) {
       const pl = w.player;
       if ((p.lob || p.drop) && p.z > 16) return false;
-      const rr = p.r + pl.hitR;
-      if (dist2(p.x, p.y, pl.x, pl.y - 6) < rr * rr) {
+      // compared where the shot is drawn (its height above its shadow), against Marcus's body,
+      // as long as its shadow is near his feet (so shots flying past behind him don't count)
+      if (Math.abs(p.y - pl.y) < 22 + p.r && pl.hurtBy(p.x, p.y - p.z, p.r * 0.85)) {
         if (w.playerHitByShot(p)) { this.expire(w, p, false); return true; }
       }
       if (w.familiarBlocksShot(p)) { this.expire(w, p, false); return true; }
@@ -244,7 +250,8 @@ export class Projectiles {
     for (const e of w.enemies) {
       if (e.dead || e.hidden || e.spawnT > 0 || e.friendly) continue;
       const rr = p.r + e.r;
-      if (dist2(p.x, p.y - p.z * 0.25, e.x, e.y - e.hitY) > rr * rr) continue;
+      if (dist2(p.x, p.y - p.z, e.x, e.y - e.hitY - e.z) > rr * rr) continue;
+      if (Math.abs(p.y - e.y) > e.r + e.hitY + e.z + p.r + 10) continue;
       if (p.hits.includes(e.id)) continue;
       this.hitEnemy(w, p, e);
       if (!p.active) return true;
@@ -289,6 +296,8 @@ export class Projectiles {
     if (p.team === Team.Player) {
       w.fx.spray(p.x, p.y, Math.max(0, p.z), Math.atan2(-p.vy, -p.vx), wall ? 2.2 : TAU, Math.min(8, 3 + Math.floor(p.r * 0.6)), col, 50 + p.r * 6, 0.3, landed && Math.random() < 0.3 ? col : null);
       if ((landed || wall) && Math.random() < 0.35) w.decalSplat(p.x, p.y, col, Math.min(5, p.r * 0.7));
+      // arcing shots come down on whatever they were lobbed at
+      if (landed && p.lob) w.damageObstacleAt(p.x, p.y, p.dmg);
       w.audio.play('splat', { vol: 0.25, pitch: 1.2 - p.r * 0.02, x: p.x });
       if (prof) {
         if (prof.split > 0 && prof.splitOnExpire && p.depth === 0) this.split(w, p);

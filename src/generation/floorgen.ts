@@ -224,7 +224,7 @@ function bfs(adj: number[][], s: number): number[] {
 
 const SPECIAL_DOOR: Partial<Record<RoomType, DoorKind>> = {
   treasure: 'treasure', boss: 'boss', shop: 'shop', secret: 'secret', supersecret: 'supersecret', challenge: 'challenge',
-  sacrifice: 'sacrifice', arcade: 'arcade', cursed: 'cursed', library: 'library', miniboss: 'miniboss', event: 'event', deal: 'deal', blessing: 'blessing',
+  sacrifice: 'sacrifice', arcade: 'arcade', cursed: 'cursed', library: 'library', miniboss: 'miniboss', event: 'event', deal: 'deal', blessing: 'blessing', lostfound: 'lostfound',
 };
 
 function connectDoors(c: Ctx, fi: number): void {
@@ -252,8 +252,8 @@ function connectDoors(c: Ctx, fi: number): void {
   }
 }
 
-/** A deal/blessing room appended next to the boss room after the boss dies. */
-export function addBargainRoom(run: Run, floor: Floor, boss: RoomData, kind: 'deal' | 'blessing'): RoomData | null {
+/** A bargain room (Inkwell, Wax Chapel or Lost & Found) appended next to the boss room after the boss dies. */
+export function addBargainRoom(run: Run, floor: Floor, boss: RoomData, kind: 'deal' | 'blessing' | 'lostfound'): RoomData | null {
   const map = floor.map;
   for (const [dx, dy, side] of DIRS) {
     const x = boss.gx + dx, y = boss.gy + dy;

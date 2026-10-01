@@ -755,6 +755,22 @@ function specialFloor(c: Ctx): void {
       p.line(cx + Math.cos(a1) * 34, cy + Math.sin(a1) * 23, cx + Math.cos(a2) * 34, cy + Math.sin(a2) * 23, col);
     }
   }
+  if (room.type === 'lostfound') {
+    // a worn runner rug scattered with claim tickets
+    const rug = ramp('#2e4a48'), rw = 150, rh = 62;
+    const r = new RNG(room.seed + ':lf');
+    for (let y = -rh / 2; y < rh / 2; y++) for (let x = -rw / 2; x < rw / 2; x++) {
+      const e = Math.min(x + rw / 2, rw / 2 - 1 - x, y + rh / 2, rh / 2 - 1 - y);
+      let v = rug[2];
+      if (e < 1) v = rug[0]; else if (e < 3) v = hex('#a8804a'); else if (e < 4) v = rug[1];
+      else if ((x + 300) % 12 < 1 || (y + 300) % 12 < 1) v = rug[1];
+      p.set(cx + x, cy + y + 8, v);
+    }
+    for (let i = 0; i < 9; i++) {
+      const tx = Math.round(cx + (r.next() - 0.5) * (w - 60)), ty = Math.round(cy + (r.next() - 0.5) * (h - 50));
+      p.rect(tx, ty, 5, 3, hex('#d8caa8')); p.set(tx + 1, ty + 1, '#8a3a2a'); p.set(tx + 3, ty + 1, '#6a5a42');
+    }
+  }
   if (room.type === 'shop' || room.type === 'library' || room.type === 'arcade') {
     const rug = ramp(room.type === 'library' ? '#3a4a6a' : room.type === 'arcade' ? '#6a2a5a' : '#6a3a24');
     const rw = room.type === 'shop' ? 196 : 120, rh = 70;

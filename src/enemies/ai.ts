@@ -1,7 +1,7 @@
 // Reusable AI building blocks: flow-field pathing, steering, aiming and bullet patterns.
 import type { World } from '../game/world';
 import type { Enemy } from './enemy';
-import { TILE } from '../core/constants';
+import { TILE, HURT_TOP, HURT_BOT } from '../core/constants';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TAU, angleTo, dist, clamp } from '../core/math';
 
@@ -101,12 +101,14 @@ export function aimAngle(e: Enemy, w: World, lead = 0, spd = 150): number {
   const p = w.player;
   const d = dist(e.x, e.y, p.x, p.y);
   const t = lead > 0 ? (d / spd) * lead : 0;
-  return angleTo(e.x, e.y - e.hitY * 0.5, p.x + p.vx * t, p.y - 4 + p.vy * t);
+  // aim the shot's shadow so the shot, drawn at its height, crosses the middle of Marcus's body
+  const z = e.hitY * 0.8 + e.z;
+  return angleTo(e.x, e.y, p.x + p.vx * t, p.y - (HURT_TOP + HURT_BOT) / 2 + z + p.vy * t);
 }
 
 export function shoot(e: Enemy, w: World, ang: number, speed: number, o: Parameters<World['proj']['enemy']>[4] = {}): void {
-  const oy = e.y - e.hitY * 0.8 - e.z;
-  w.proj.enemy(e.x + Math.cos(ang) * e.r * 0.6, oy + Math.sin(ang) * e.r * 0.4 + e.hitY * 0.8, ang, speed, { z: e.hitY * 0.8 + e.z, ...o });
+  // the shadow starts under the enemy; the shot itself leaves from its body
+  w.proj.enemy(e.x + Math.cos(ang) * e.r * 0.6, e.y + Math.sin(ang) * e.r * 0.4, ang, speed, { z: e.hitY * 0.8 + e.z, ...o });
 }
 export function ringShot(e: Enemy, w: World, n: number, speed: number, off = 0, o: Parameters<World['proj']['enemy']>[4] = {}): void {
   for (let i = 0; i < n; i++) shoot(e, w, off + (i / n) * TAU, speed, o);

@@ -135,13 +135,14 @@ function chest(kind: 'tin' | 'locked' | 'crimson' | 'reliquary', open: boolean):
 }
 function pedestal(kind: string): PixelArt {
   const p = new PixelArt(22, 16);
-  const base = kind === 'shop' ? '#6a4a2a' : kind === 'deal' ? '#1a1830' : kind === 'blessing' ? '#d8d0c4' : kind === 'gold' ? '#b8903a' : '#7a7078';
+  const base = kind === 'shop' ? '#6a4a2a' : kind === 'deal' ? '#1a1830' : kind === 'blessing' ? '#d8d0c4' : kind === 'lost' ? '#6a5434' : kind === 'gold' ? '#b8903a' : '#7a7078';
   const c = ramp(base);
   p.rect(3, 4, 16, 3, c[3]); p.rect(3, 4, 16, 1, c[4]);
   p.rect(5, 7, 12, 6, c[2]); p.rect(5, 7, 1, 6, c[3]); p.rect(16, 7, 1, 6, c[1]);
   p.rect(2, 13, 18, 3, c[1]); p.rect(2, 13, 18, 1, c[2]);
   if (kind === 'gold' || kind === 'treasure') { p.set(11, 9, '#f0d070'); p.set(10, 10, '#f0d070'); p.set(12, 10, '#f0d070'); p.set(11, 11, '#f0d070'); }
   if (kind === 'deal') { p.rect(9, 8, 4, 3, hex('#4a44a0')); }
+  if (kind === 'lost') { p.rect(8, 8, 6, 4, hex('#efe2c0')); p.set(9, 9, '#8a3a2a'); p.set(11, 9, '#5a4a32'); p.set(12, 9, '#5a4a32'); p.rect(8, 11, 6, 1, hex('#c8b890')); }
   p.polish().outline(undefined, false, 0.8);
   return p;
 }
@@ -186,7 +187,7 @@ export function pickupSprites(): PickupSprites {
       tin: [s(chest('tin', false)), s(chest('tin', true))], locked: [s(chest('locked', false)), s(chest('locked', true))],
       crimson: [s(chest('crimson', false)), s(chest('crimson', true))], reliquary: [s(chest('reliquary', false)), s(chest('reliquary', true))],
     },
-    pedestal: { treasure: s(pedestal('gold')), normal: s(pedestal('normal')), shop: s(pedestal('shop')), deal: s(pedestal('deal')), blessing: s(pedestal('blessing')) },
+    pedestal: { treasure: s(pedestal('gold')), normal: s(pedestal('normal')), shop: s(pedestal('shop')), deal: s(pedestal('deal')), blessing: s(pedestal('blessing')), lost: s(pedestal('lost')) },
     trapdoor: [0, 0.33, 0.66, 1].map((o) => new Sprite(trapdoor(o), 15, 12)),
     hud: {
       red: new Sprite(heartIcon('red', 2), 0, 0), redHalf: new Sprite(heartIcon('red', 1), 0, 0), empty: new Sprite(heartIcon('empty', 0), 0, 0),

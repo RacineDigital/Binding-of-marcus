@@ -24,7 +24,7 @@ export function renderWorld(w: World): void {
   const shx = shakeAmt ? (Math.random() * 2 - 1) * shakeAmt : 0, shy = shakeAmt ? (Math.random() * 2 - 1) * shakeAmt : 0;
   const camX = Math.round(w.renderCamX + shx), camY = Math.round(w.renderCamY + shy);
   let darkness = theme.darkness * 0.85 + (w.floor.curse === 'dark' ? 0.25 : 0) + (w.run.challenge === 'darkness' ? 0.3 : 0);
-  if (room.type === 'treasure' || room.type === 'shop' || room.type === 'blessing') darkness *= 0.75;
+  if (room.type === 'treasure' || room.type === 'shop' || room.type === 'blessing' || room.type === 'lostfound') darkness *= 0.75;
   if (room.flags.variant === 'dark' && !room.cleared) darkness += 0.3;
   r.beginFrame(theme.ambient, Math.min(0.9, darkness));
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -114,6 +114,7 @@ export function renderWorld(w: World): void {
   const c = room.center();
   if (room.type === 'treasure') { r.addLight(c.x - camX, c.y - camY, 110, 0.7); r.addGlow(c.x - camX, c.y - 10 - camY, 70, '#ffd080', 0.12); }
   if (room.type === 'deal') { r.addLight(c.x - camX, c.y - camY, 90, 0.5); r.addGlow(c.x - camX, c.y - camY, 90, '#5a40d0', 0.2); }
+  if (room.type === 'lostfound') { r.addLight(c.x - camX, c.y - 30 - camY, 130, 0.8); r.addGlow(c.x - camX, c.y - camY, 100, '#ffb050', 0.14); }
   if (room.type === 'blessing') { r.addLight(c.x - camX, c.y - camY, 160, 0.9); r.addGlow(c.x - camX, c.y - camY, 110, '#fff0c0', 0.15); }
   if (room.type === 'shop' || room.type === 'library' || room.type === 'arcade') r.addLight(c.x - camX, c.y - camY, 150, 0.7);
   if (room.type === 'boss' && room.cleared) r.addLight(c.x - camX, c.y - camY, 170, 0.6);
@@ -290,6 +291,32 @@ function drawDoor(w: World, ctx: CanvasRenderingContext2D, d: import('./world').
 
 // ------------------------------------------------------------------ ambient particles
 let lastT = 0;
+/** Debug overlay: every hurtbox and shot as the collision code sees them (screen space). */
+export function drawHitboxes(w: World, ctx: CanvasRenderingContext2D): void {
+  const camX = w.renderCamX, camY = w.renderCamY;
+  ctx.save(); ctx.lineWidth = 0.6;
+  const c = w.player.hurtCapsule();
+  ctx.strokeStyle = '#40ff70';
+  ctx.beginPath();
+  ctx.arc(c.x - camX, c.y0 - camY, c.r, Math.PI, 0); ctx.lineTo(c.x + c.r - camX, c.y1 - camY);
+  ctx.arc(c.x - camX, c.y1 - camY, c.r, 0, Math.PI); ctx.closePath(); ctx.stroke();
+  ctx.strokeStyle = '#ffa040';
+  ctx.beginPath(); ctx.ellipse(w.player.x - camX, w.player.y - camY, w.player.hitR, w.player.hitR * 0.6, 0, 0, TAU); ctx.stroke();
+  for (const e of w.enemies) {
+    if (e.dead || e.hidden) continue;
+    ctx.strokeStyle = e.friendly ? '#80c0ff' : '#ff4060';
+    ctx.beginPath(); ctx.arc(e.x - camX, e.y - e.hitY - e.z - camY, e.r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,160,64,0.7)';
+    ctx.beginPath(); ctx.ellipse(e.x - camX, e.y - camY, e.r * 0.8, e.r * 0.48, 0, 0, TAU); ctx.stroke();
+  }
+  ctx.strokeStyle = '#ffff60';
+  for (const p of w.proj.list) {
+    if (!p.active) continue;
+    ctx.beginPath(); ctx.arc(p.x - camX, p.y - p.z - camY, p.r, 0, TAU); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function renderAmbient(w: World, ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
   const dt = Math.min(0.05, Math.max(0, w.time - lastT)); lastT = w.time;
   const kind = w.theme.ambience;
