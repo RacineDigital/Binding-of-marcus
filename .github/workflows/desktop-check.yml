@@ -1,0 +1,33 @@
+name: Windows build check
+
+# Builds and self-tests the Windows .exe on every push that touches the desktop app or the game,
+# and keeps the installer as a downloadable workflow artifact for testing between releases.
+on:
+  push:
+    branches: ['**']
+    paths: ['electron/**', 'src/**', 'package.json', 'package-lock.json', 'vite.config.ts', '.github/workflows/desktop-check.yml']
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist:win
+      - name: Self-test the packaged app
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "release-desktop/win-unpacked" -Filter "*.exe" | Select-Object -First 1
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Error "Packaged app self-test failed ($($p.ExitCode))"; exit 1 }
+          Write-Host "Packaged app self-test passed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binding-of-marcus-windows
+          path: release-desktop/*.exe
+          retention-days: 14
