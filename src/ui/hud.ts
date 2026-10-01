@@ -20,6 +20,7 @@ import { drawHitboxes } from '../game/worldrender';
 import { ticketFor, doorOdds } from '../game/bargain';
 import { diceFace } from '../items/data/dice';
 import { bindLabel, fmtKeys } from '../core/input';
+import { charById } from '../player/characters';
 
 interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null }
 
@@ -145,6 +146,9 @@ export class Hud {
   /** A note being read: a page held up at the bottom of the screen for a while. */
   note: { title: string; text: string; by: string; t: number; dur: number } | null = null;
   constructor(w: World) { this.w = w; }
+  /** A transformation: its name, big, in the middle of the screen. */
+  tcard: { name: string; desc: string; t: number } | null = null;
+  transformCard(name: string, desc: string): void { this.tcard = { name, desc, t: 0 }; }
   showNote(title: string, body: string, by: string): void { this.note = { title, text: body, by, t: 0, dur: 3.5 + body.length * 0.03 }; }
 
   /** Speedrun-style run clock under the map. */
@@ -167,6 +171,7 @@ export class Hud {
     for (const b of this.banners) b.t += dt;
     this.banners = this.banners.filter((b) => b.t < 3);
     if (this.note && (this.note.t += dt) > this.note.dur) this.note = null;
+    if (this.tcard && (this.tcard.t += dt) > 3) this.tcard = null;
     for (const t of this.toasts) t.t += dt;
     this.toasts = this.toasts.filter((t) => t.t < t.dur);
     this.floorCardT = Math.max(0, this.floorCardT - dt);
@@ -211,6 +216,7 @@ export class Hud {
     this.drawBossBar(ctx);
     if (eid) this.drawEID(ctx); else this.drawItemPanel(ctx);
     this.drawBanners(ctx);
+    this.drawTransformCard(ctx);
     this.drawNote(ctx);
     this.drawToasts(ctx);
     this.drawRoomName(ctx);
@@ -298,6 +304,20 @@ export class Hud {
       }
       y += 12;
     }
+    // transformations in progress: how many pieces of each you're carrying
+    const started = Object.keys(TRANSFORM_EFFECTS).filter((t) => pl.tagCount(t) > 0 || pl.transformations.has(t));
+    if (started.length && y < VIEW_H - 24) {
+      head('TRANSFORMATIONS');
+      for (const t of started) {
+        if (y > VIEW_H - 12) break;
+        const done = pl.transformations.has(t), n = done ? 3 : Math.min(3, pl.tagCount(t));
+        text(ctx, TRANSFORM_EFFECTS[t].name, X + 4, y + 5, 6.5, done ? '#d0a8ff' : COL.text, 'left', FONT_BODY, 600);
+        for (let k = 0; k < 3; k++) { ctx.fillStyle = k < n ? (done ? '#c890ff' : '#9a70e0') : 'rgba(255,255,255,0.12)'; ctx.fillRect(X + 110 + k * 18, y + 1, 15, 5); }
+        text(ctx, done ? 'done' : `${n}/3`, X + W, y + 5, 6.5, done ? '#d0a8ff' : COL.dim, 'right', FONT_BODY, 700);
+        y += 9;
+      }
+      y += 3;
+    }
     // up the back stair: how the letter is coming along
     if (w.run.flags.hospital && !w.run.flags.room4 && y < VIEW_H - 30) {
       head('ST. AGNES  ·  ROOM 4');
@@ -374,7 +394,7 @@ export class Hud {
       text(ctx, String(n).padStart(2, '0'), x + 15, y + 8, 9, special ? COL.gold : COL.text);
     };
     line(H.button.canvas, pl.buttons, y0);
-    line((pl.goldBomb ? H.goldBomb : H.bomb).canvas, pl.bombs, y0 + 13, pl.goldBomb);
+    line(H.bomb.canvas, pl.bombs, y0 + 13, false);
     line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, y0 + 26, pl.goldKey);
   }
 
@@ -558,8 +578,12 @@ export class Hud {
     // transformation progress, like EID's transformation hints
     for (const tag of info.tags ?? []) {
       const T = TRANSFORM_EFFECTS[tag]; if (!T) continue;
-      const have = w.player.tagCount(tag), done = w.player.transformations.has(tag);
-      lines.push({ t: done ? `${T.name} (complete)` : `${T.name} ${Math.min(3, have)}/3`, c: '#d0a8ff', size: 7, bullet: '◆', bc: '#b080ff' });
+      const have = Math.min(3, w.player.tagCount(tag)), done = w.player.transformations.has(tag);
+      // a pedestal you're looking at counts as the next piece
+      const owned = !!info.itemId && w.player.items.has(info.itemId);
+      const next = done || owned ? have : Math.min(3, have + 1);
+      const pips = '◆'.repeat(have) + (next > have ? '◈' : '') + '◇'.repeat(3 - next);
+      lines.push({ t: done ? `${T.name}  ◆◆◆  complete` : next >= 3 && next > have ? `${T.name}  ${pips}  this completes it!` : `${T.name}  ${pips}  ${have}/3${next > have ? ` (${next}/3 with this)` : ''}`, c: '#d0a8ff', size: 7, bullet: '✦', bc: '#b080ff' });
     }
     if (info.itemId && !w.game.save.data.itemsSeen.includes(info.itemId)) lines.push({ t: 'New to your collection!', c: COL.gold, size: 7, bullet: '★', bc: COL.gold });
     if (p && p.price > 0) lines.push({ t: `Costs ${p.price} buttons${w.player.buttons < p.price ? ` (you have ${w.player.buttons})` : ''}`, c: w.player.buttons >= p.price ? COL.gold : COL.down, size: 7, bullet: '¢', bc: COL.gold });
@@ -689,6 +713,24 @@ export class Hud {
       ctx.restore();
     }
   }
+  private drawTransformCard(ctx: CanvasRenderingContext2D): void {
+    const c = this.tcard; if (!c) return;
+    const a = clamp(Math.min(c.t * 4, (3 - c.t) * 2), 0, 1), k = ease.outBack(clamp(c.t / 0.35, 0, 1));
+    const cy = 96;
+    ctx.save(); ctx.globalAlpha = a;
+    const g = ctx.createLinearGradient(0, 0, VIEW_W, 0);
+    g.addColorStop(0, 'rgba(40,10,60,0)'); g.addColorStop(0.5, 'rgba(40,10,60,0.75)'); g.addColorStop(1, 'rgba(40,10,60,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, cy - 24, VIEW_W, 46);
+    text(ctx, 'TRANSFORMATION', VIEW_W / 2, cy - 12, 7, '#c8a8ff', 'center', FONT_BODY, 700);
+    ctx.translate(VIEW_W / 2, cy + 6); ctx.scale(k, k);
+    ctx.shadowColor = '#b070ff'; ctx.shadowBlur = 12;
+    text(ctx, c.name.toUpperCase(), 0, 0, 20, '#f4e8ff', 'center', FONT_TITLE, 400);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = a;
+    text(ctx, c.desc, VIEW_W / 2, cy + 18, 7.5, '#e0d0ff', 'center', FONT_BODY, 600);
+    ctx.restore();
+  }
   /** Grandfather's handwriting on a scrap of paper, held up until it has had time to be read. */
   private drawNote(ctx: CanvasRenderingContext2D): void {
     const n = this.note; if (!n) return;
@@ -735,18 +777,47 @@ export class Hud {
     if (this.floorCurse) text(ctx, CURSE_NAMES[this.floorCurse] ?? '', VIEW_W / 2, VIEW_H / 2 + 36, 8, '#c090ff', 'center', FONT_TITLE, 400);
     ctx.restore();
   }
+  /**
+   * The VS card, Isaac style: your reader on the left, the boss on the right, its name slammed
+   * across the middle. Ending bosses get a red band and a warning.
+   */
   private drawBossIntro(ctx: CanvasRenderingContext2D): void {
     if (this.bossIntroT <= 0) return;
-    const t = 2.3 - this.bossIntroT;
+    const w = this.w, t = 2.3 - this.bossIntroT;
     const a = clamp(Math.min(t * 4, this.bossIntroT * 3), 0, 1);
     const slide = ease.outCubic(clamp(t * 2.5, 0, 1));
+    const final = !!this.bossRef?.data?.hard;
+    const cy = VIEW_H / 2;
     ctx.save();
-    ctx.globalAlpha = a * 0.85; ctx.fillStyle = '#0a0406';
-    ctx.beginPath(); ctx.moveTo(0, VIEW_H / 2 - 34); ctx.lineTo(VIEW_W, VIEW_H / 2 - 44); ctx.lineTo(VIEW_W, VIEW_H / 2 + 30); ctx.lineTo(0, VIEW_H / 2 + 40); ctx.fill();
+    ctx.globalAlpha = a * 0.9; ctx.fillStyle = final ? '#1a0306' : '#0a0406';
+    ctx.beginPath(); ctx.moveTo(0, cy - 46); ctx.lineTo(VIEW_W, cy - 58); ctx.lineTo(VIEW_W, cy + 40); ctx.lineTo(0, cy + 52); ctx.fill();
     ctx.globalAlpha = a;
-    ctx.fillStyle = '#8a1a24'; ctx.fillRect(0, VIEW_H / 2 + 34 - 6, VIEW_W * slide, 1.5);
-    text(ctx, this.bossName.toUpperCase(), VIEW_W / 2 - 60 + slide * 60, VIEW_H / 2 + 6, 26, '#f0e0cc', 'center', FONT_TITLE, 400);
-    text(ctx, this.bossSub, VIEW_W / 2 + 60 - slide * 60, VIEW_H / 2 + 22, 8, '#c8a898', 'center', FONT_BODY, 600);
+    ctx.fillStyle = final ? '#c81e2e' : '#8a1a24'; ctx.fillRect(0, cy + 44, VIEW_W * slide, 1.5); ctx.fillRect(VIEW_W * (1 - slide), cy - 51, VIEW_W, 1.5);
+    // your reader, sliding in from the left
+    const sp = w.game.menus.sprites(charById(w.run.charId));
+    ctx.save(); ctx.translate(-60 + slide * 140, cy + 30); ctx.scale(3, 3);
+    sp.bodyIdle.down[0].draw(ctx, 0, 0); sp.head.down.normal.draw(ctx, 0, -10);
+    ctx.restore();
+    // the boss, sliding in from the right
+    const b = this.bossRef;
+    if (b && !b.dead) {
+      const set = b.sprites.idle ?? Object.values(b.sprites)[0];
+      const spr = set?.[Math.floor(t * 6) % set.length];
+      if (spr) {
+        const k = Math.min(1.6, 80 / Math.max(spr.h, 1));
+        ctx.save(); ctx.translate(VIEW_W + 60 - slide * 150, cy + 36); ctx.scale(k, k);
+        spr.draw(ctx, 0, 0, {});
+        ctx.restore();
+      }
+    }
+    // VS, stamped in the middle
+    const vk = 1 + Math.max(0, 0.4 - t) * 2.5;
+    ctx.save(); ctx.translate(VIEW_W / 2 - 66, cy - 18); ctx.scale(vk, vk);
+    text(ctx, 'VS', 0, 0, 14, final ? '#ff4a5a' : '#e0b070', 'center', FONT_TITLE, 400);
+    ctx.restore();
+    text(ctx, this.bossName.toUpperCase(), VIEW_W / 2 - 40 + slide * 40, cy + 8, 24, '#f0e0cc', 'center', FONT_TITLE, 400);
+    text(ctx, this.bossSub, VIEW_W / 2 + 40 - slide * 40, cy + 24, 7.5, '#c8a898', 'center', FONT_BODY, 600);
+    if (final) text(ctx, 'THIS IS HOW IT ENDS', VIEW_W / 2, cy + 36, 6.5, '#ff6070', 'center', FONT_BODY, 700);
     ctx.restore();
   }
 }

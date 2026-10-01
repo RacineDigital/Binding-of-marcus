@@ -16,6 +16,8 @@ export interface Settings {
   timer?: boolean;
   /** Show what you're playing in Discord (desktop). */
   discord?: boolean;
+  /** A voice reads out transformations, sweets and pages. */
+  announcer?: boolean;
 }
 export interface SaveData {
   version: number;
@@ -38,6 +40,8 @@ export interface SaveData {
   notes?: string[];
   /** Endings seen (ids from data/endings). */
   endings?: string[];
+  /** Completion marks per reader: ending ids, with ':hard' when won in Second Edition. */
+  marks?: Record<string, string[]>;
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 
@@ -153,6 +157,12 @@ export class SaveManager {
   /** Returns true the first time an ending is seen. */
   seeEnding(id: string): boolean { const l = (this.data.endings ??= []); if (l.includes(id)) return false; l.push(id); this.markDirty(); return true; }
   hasEnding(id: string): boolean { return !!this.data.endings?.includes(id); }
+  /** Mark an ending on a reader's card (hard counts as normal too). */
+  addMark(char: string, ending: string, hard: boolean): void {
+    const m = ((this.data.marks ??= {})[char] ??= []);
+    for (const k of hard ? [ending, ending + ':hard'] : [ending]) if (!m.includes(k)) { m.push(k); this.markDirty(); }
+  }
+  hasMark(char: string, key: string): boolean { return !!this.data.marks?.[char]?.includes(key); }
   markBoss(id: string): void { if (!this.data.bossesBeaten.includes(id)) { this.data.bossesBeaten.push(id); this.markDirty(); } this.stat('bossKills', 1); }
   reset(): void { this.data = defaultSave(); this.data.settings = this.settings; this.markDirty(); this.flush(); }
 }

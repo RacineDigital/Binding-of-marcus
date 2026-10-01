@@ -241,7 +241,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'miniboss': {
       stamp(room, BOSS_TEMPLATE, 0, 0, false, false, rng, floor, slots);
-      const prev = FLOORS.slice(0, Math.max(1, fi)).flatMap((f) => f.bosses).filter((b) => getEnemy(b) && b !== 'unbound');
+      const prev = FLOORS.slice(0, Math.max(1, fi)).flatMap((f) => f.bosses).filter((b) => getEnemy(b) && !['unbound', 'bookbinder', 'itremembers', 'unwritten', 'author', 'patient'].includes(b));
       room.bossId = rng.pick(prev.length ? prev : ['grubmother']);
       ensurePaths(room);
       break;

@@ -38,8 +38,21 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
     if (e.st > 1.0) { e.invuln = false; e.setState('idle'); d.idleT = 0.4; }
     return;
   }
+  // ending bosses: a last stand under a fifth of their health, with a bullet-hell layer under every attack
+  if (d.hard && !d.desperate && e.hpFrac() <= 0.2) {
+    d.desperate = true; w.whiteFlash = 0.5; w.shake(7); w.audio.play('bossRoar', { x: e.x, pitch: 0.6 });
+    w.hud.toast(`${e.def.name}: last stand.`, 1.6);
+  }
+  if (d.desperate && e.state !== 'phase') {
+    d.dsT = (d.dsT ?? 0.6) - dt;
+    if (d.dsT <= 0) {
+      d.dsT = 0.42; d.dsA = (d.dsA ?? 0) + 0.37;
+      for (let i = 0; i < 4; i++) { const a = d.dsA + (i / 4) * Math.PI * 2; w.proj.enemy(e.x, e.y - 6, a, 78, { r: 3.2, shape: 'dark' }); }
+    }
+  }
   if (e.state === 'idle') {
     brain.idle(e, w, dt);
+    if (d.hard) d.idleT = (d.idleT ?? 1) - dt * 0.6;
     d.idleT = (d.idleT ?? rand(brain.idleTime)) - dt;
     if (d.idleT <= 0) {
       const now = e.t;

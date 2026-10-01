@@ -26,6 +26,8 @@ export const LOOKS: Record<string, CharacterLook> = {
     sockL: '#e8e2d4', sockR: '#e8e2d4', shoe: '#4a2a1a', hairStyle: 'braid', extra: 'none' },
   bram: { skin: '#c88a60', hair: '#3a1e10', eye: '#1a1010', shirt: '#7a2a2a', trim: '#c8a060', shorts: '#2a2a30',
     sockL: '#2a2a30', sockR: '#2a2a30', shoe: '#1a1414', hairStyle: 'bald', extra: 'bandage' },
+  ada: { skin: '#e8d4c8', hair: '#c8c4cc', eye: '#2a2a3a', shirt: '#3a6a4a', trim: '#e8b0c0', shorts: '#4a3a4a',
+    sockL: '#d8c8b8', sockR: '#d8c8b8', shoe: '#4a2a2a', hairStyle: 'bob', extra: 'glasses', ghost: true },
   wick: { skin: '#dcd4c4', hair: '#8a7a64', eye: '#1a1410', shirt: '#8a7a5a', trim: '#e0d0a8', shorts: '#4a4030',
     sockL: '#8a7a5a', sockR: '#8a7a5a', shoe: '#3a3024', hairStyle: 'hood', extra: 'none' },
 };

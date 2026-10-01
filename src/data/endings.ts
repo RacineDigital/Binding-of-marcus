@@ -50,6 +50,7 @@ export const EPILOGUES: Record<string, string> = {
   ozzie: 'Ozzie rolled the die one last time, and put it away without looking at how it landed.',
   nell: 'Nell had visited every single day. She never told Marcus. She never needed to.',
   bram: 'Bram walked home the long way, past Harrow Lane, just to make sure the cellar door was shut.',
+  ada: 'Ada\'s rose came back through the greenhouse roof that spring. Nobody ever cut it again.',
   wick: 'Wick flew to the lamp in the window and stayed there, keeping it lit for whoever came next.',
 };
 

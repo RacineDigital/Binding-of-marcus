@@ -4,10 +4,12 @@ import { Sprite } from '../render/sprite';
 
 export const SHOT_COLORS: Record<string, string> = {
   ink: '#343a9a', needle: '#c8ccd8', fire: '#f07a28', bone: '#e0d6c0', wax: '#eadcb0', spark: '#6ad0ff', page: '#efe8d6',
-  blood: '#a01e2a', moth: '#a89a8a', star: '#f0d050', void: '#6a3ad0',
+  blood: '#a01e2a', moth: '#a89a8a', star: '#f0d050', void: '#6a3ad0', beer: '#8a5a20',
   // enemy palettes
   bile: '#d23a3a', spore: '#7ab83a', ember: '#f08a2a', dark: '#7a3ab0', water: '#3a9ad0', holy: '#f0e0a0', inkE: '#2a2448',
 };
+/** Sam's Beer: brown creep that fizzes away into white foam. */
+export const BEER = '#7a4a1a';
 const cache = new Map<string, Sprite>();
 export function shotSprite(shape: string, r: number, tint: string | null): Sprite {
   r = Math.max(1, Math.min(16, Math.round(r)));
@@ -27,6 +29,8 @@ export function shotSprite(shape: string, r: number, tint: string | null): Sprit
   if (shape === 'bone') { p.paint(c + 1, c + 1, rm[1]); p.paint(c - 1, c + 2, rm[1]); }
   if (shape === 'void' || shape === 'dark') p.paint(c, c, '#1a0a2a');
   if (shape === 'spore') { p.paint(c + 1, c, rm[4]); p.paint(c - 1, c + 1, rm[0]); }
+  // a head of foam on top of the brown
+  if (shape === 'beer' && r >= 2) for (let x = -r + 1; x < r; x++) { p.paint(c + x, c - r + 1, '#f4f0e4'); if ((x & 1) === 0) p.paint(c + x, c - r + 2, '#e8e0cc'); }
   p.outline(undefined, false, 0.75);
   s = new Sprite(p, Math.floor(d / 2), Math.floor(d / 2));
   cache.set(key, s);

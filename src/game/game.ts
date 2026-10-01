@@ -8,6 +8,7 @@ import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
 import { recordScore, checkProgress, RunMode } from './progress';
 import { endingFor } from '../data/endings';
+import { announce } from '../audio/announcer';
 import { updatePresence } from './presence';
 import { Run } from './run';
 import { Player } from '../player/player';
@@ -232,7 +233,7 @@ export class Game {
       run.stats = s.stats; run.flags = s.flags; run.identified = new Set(s.identified ?? []);
       const pl = new Player(charById(s.charId));
       pl.health = Health.from(s.health);
-      pl.buttons = s.buttons; pl.keys = s.keys; pl.bombs = s.bombs; pl.goldKey = s.goldKey; pl.goldBomb = s.goldBomb;
+      pl.buttons = s.buttons; pl.keys = s.keys; pl.bombs = s.bombs; pl.goldKey = s.goldKey; pl.goldBomb = false;
       pl.items = new Map(s.items); pl.itemOrder = s.order; pl.active = s.active; pl.charge = s.charge;
       pl.consumables = s.consumables; pl.charms = s.charms; pl.consumableSlots = s.consumableSlots; pl.charmSlots = s.charmSlots;
       pl.temp = s.temp ?? []; pl.transformations = new Set(s.transformations ?? []);
@@ -269,6 +270,7 @@ export class Game {
     w.run.flags.credited = true; w.run.won = true;
     if (!w.run.challenge) { this.save.stat('wins', 1); this.save.unlock('beat_final'); }
     if (w.run.charId !== 'marcus' && !w.run.challenge) this.save.unlock('win_' + w.run.charId);
+    if (!w.run.challenge) this.save.addMark(w.run.charId, 'morning', false);
   }
   onVictory(): void {
     const w = this.world; if (!w) return;
@@ -285,6 +287,8 @@ export class Game {
     const ending = endingFor(w.run);
     w.run.flags.ending = ending;
     w.run.flags.newEnding = this.save.seeEnding(ending);
+    if (!w.run.challenge) this.save.addMark(w.run.charId, ending, w.run.mode === 'hard');
+    if (ending === 'the_visit' && w.player.has('grandmothers_ring') && !w.run.challenge) this.save.unlock('unlock_ada');
     if (ending === 'goodnight') this.save.unlock('the_end');
     w.run.flags.score = recordScore(this.save, w.run, true);
     this.save.data.run = null; this.save.markDirty();
@@ -331,6 +335,8 @@ export class Game {
   }
   fullCharge(): void { if (this.world) flow.fullCharge(this.world); }
 
+  /** The announcer reads a name out (Options → Announcer voice). */
+  announce(name: string): void { if (name && this.save.data.settings.announcer !== false) announce(name, this.save.data.settings.sfx); }
   useConsumable(): void {
     const w = this.world; if (!w) return;
     const pl = w.player;
@@ -338,6 +344,7 @@ export class Game {
     if (c.kind === 'page') {
       const d = getConsumable(c.id);
       w.hud.banner(d?.name ?? 'Page', d?.effect[0] ?? '');
+      this.announce(d?.name ?? '');
       this.audio.play('pageUse');
       d?.use?.(w);
       this.save.stat('pagesUsed', 1);
@@ -345,6 +352,7 @@ export class Game {
       const eff = SWEET_EFFECTS[w.run.sweetMap[Number(c.id) % 12]];
       w.run.identified.add(eff.id);
       w.hud.banner(eff.name, eff.desc);
+      this.announce(eff.name);
       this.audio.play(eff.good ? 'sweetGood' : 'sweetBad');
       eff.use(w);
       pl.happyT = eff.good ? 0.8 : 0; if (!eff.good) pl.hurtT = 0.3;

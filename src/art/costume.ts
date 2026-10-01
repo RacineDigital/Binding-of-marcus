@@ -12,7 +12,7 @@ export type Acc =
   | 'breastplate' | 'apron' | 'skeletonKey' | 'keyRing'
   | 'wingsMoth' | 'wingsSoot' | 'wingsWax' | 'wingsIce' | 'wingsQueen' | 'wingsAngel'
   | 'capeVamp' | 'capeCobweb' | 'capeJacket'
-  | 'bikeHelmet' | 'nosePencil' | 'diaper';
+  | 'bikeHelmet' | 'nosePencil' | 'diaper' | 'fatLip';
 
 type Layer = 'back' | 'body' | 'hand' | 'head' | 'face';
 const LAYER: Record<Acc, Layer> = {
@@ -20,7 +20,7 @@ const LAYER: Record<Acc, Layer> = {
   glasses: 'face', monocle: 'face', paperMask: 'face', teeth: 'face', pipe: 'face', visor: 'face', hollowEyes: 'face',
   ring: 'hand', thimble: 'hand', bracelet: 'hand', lantern: 'hand',
   breastplate: 'body', apron: 'body', skeletonKey: 'body', keyRing: 'body', diaper: 'body',
-  bikeHelmet: 'head', nosePencil: 'face',
+  bikeHelmet: 'head', nosePencil: 'face', fatLip: 'face',
   wingsMoth: 'back', wingsSoot: 'back', wingsWax: 'back', wingsIce: 'back', wingsQueen: 'back', wingsAngel: 'back',
   capeVamp: 'back', capeCobweb: 'body', capeJacket: 'back',
 };
@@ -35,7 +35,7 @@ export const ITEM_ACC: Record<string, Acc[]> = {
   grandpas_pipe: ['pipe'], cold_visions: ['visor'], hollow_eyes: ['hollowEyes'],
   wax_crown: ['waxCrown'], ch_paper_crown: ['paperCrown'], wax_halo: ['halo'], angel_333: ['haloWhite'],
   magnolia: ['flower'], four_leaf: ['clover'],
-  big_boy_diaper: ['diaper'], nose_pencil: ['nosePencil'], bike_helmet: ['bikeHelmet'],
+  big_boy_diaper: ['diaper'], nose_pencil: ['nosePencil'], bike_helmet: ['bikeHelmet'], gavyns_pouch: ['fatLip'],
   brass_plate: ['breastplate'], blast_apron: ['apron'], skeleton_key: ['skeletonKey'], key_ring: ['keyRing'],
   moth_wings_rev: ['wingsMoth'], soot_wings: ['wingsSoot'], wax_wings: ['wingsWax'], drain_butterfly: ['wingsIce'],
   moth_queen_wings: ['wingsQueen'], cobweb_cloak: ['capeCobweb'], dust_jacket: ['capeJacket'],
@@ -196,6 +196,12 @@ const PAINT: Record<Acc, (f: Frame) => void> = {
     else if (f.hdir === 'side') p(8, 5, '#1a1a2a', 1, 9);
   },
   // ---------------------------------------------------------------- face
+  fatLip: (f) => {
+    // Gavyn's pouch: a big swollen top lip, pushed out over the mouth
+    if (f.hdir === 'up') return; const p = H(f), sk = '#e2b48e', hi = '#f2caa6', sh = '#b8846a';
+    if (f.hdir === 'down') { p(7, 15, sk, 6, 2); p(6, 16, sk, 8, 1); p(8, 15, hi, 3, 1); p(6, 17, sh, 8, 1); }
+    else { p(15, 15, sk, 4, 2); p(18, 16, sk, 1, 1); p(16, 15, hi, 2, 1); p(15, 17, sh, 4, 1); }
+  },
   nosePencil: (f) => {
     if (f.hdir === 'up') return; const p = H(f);
     if (f.hdir === 'down') { p(10, 15, '#e8b020', 1, 3); p(11, 15, '#c89010', 1, 3); p(10, 18, '#b8b8c0', 2, 1); p(10, 19, '#e88a9a', 2, 1); }

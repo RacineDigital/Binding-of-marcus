@@ -230,7 +230,7 @@ export const MARGINS_THEME: FloorTheme = {
   enemies: { pagewraith: 6, voideye: 5, mirrorshade: 5, blot: 4, hollowmaw: 3, penitent: 4, orderly: 3, censer: 3, ossspider: 4, marrowmaw: 3,
     skullorbit: 3, wheelwraith: 3, sheetghost: 3, stoker: 3, drowner: 3, gravedigger: 3 },
   bosses: ['grubmother', 'wardrobe', 'furnaceheart', 'oldstoker', 'ratking', 'bilgemaw', 'matron', 'sleepwalker', 'ossuaryknight',
-    'mothmother', 'bellringer', 'choirmaster', 'blottedman', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'bookbinder', 'ironlung'],
+    'mothmother', 'bellringer', 'choirmaster', 'blottedman', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'ironlung'],
   music: 'binding', hazards: { spikes: 0.35, pits: 0.4, fires: 0.35, kegs: 0.25, webs: 0.15 }, fireVariants: [1, 3, 3],
   hpMul: 2.5, budget: 2.5,
 };
@@ -252,7 +252,7 @@ export const DEDICATION_THEME: FloorTheme = {
     rock: '#b8ac94', accent: '#ffd870', stain: '#c8b47a', heap: '#fff4dc', heapKind: 'wax' },
   ambient: '#100c06', darkness: 0.22, playerLight: 110,
   enemies: { cherubmoth: 6, choirboy: 5, censer: 5, penitent: 5, sheetghost: 4, wheelwraith: 3, skullorbit: 3, mirrorshade: 3, pagewraith: 3, orderly: 3, ossspider: 3, candlewick: 3 },
-  bosses: ['bellringer', 'choirmaster', 'matron', 'rimebride', 'pendulum', 'thornwife', 'sleepwalker', 'ossuaryknight', 'mothmother', 'wardrobe', 'furnaceheart', 'typesetter', 'grubmother', 'bookbinder'],
+  bosses: ['bellringer', 'choirmaster', 'matron', 'rimebride', 'pendulum', 'thornwife', 'sleepwalker', 'ossuaryknight', 'mothmother', 'wardrobe', 'furnaceheart', 'typesetter', 'grubmother', 'ironlung'],
   music: 'chapel',
 };
 export const FOREWORD_THEME: FloorTheme = {

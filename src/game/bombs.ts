@@ -23,7 +23,7 @@ export function playerBombMods(w: World): BombMods {
 
 export function placeBomb(w: World): void {
   const pl = w.player;
-  const infinite = pl.goldBomb;
+  const infinite = false;
   if (pl.bombs <= 0 && !infinite) return;
   if (!infinite) pl.bombs--;
   const b = new Bomb(pl.x, pl.y + 2, playerBombMods(w));

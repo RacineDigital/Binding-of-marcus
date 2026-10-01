@@ -31,6 +31,7 @@ import * as flow from './roomflow';
 import { renderWorld } from './worldrender';
 import { Hud } from '../ui/hud';
 
+import { BEER } from '../projectiles/art';
 export interface Creep { x: number; y: number; r: number; team: 'player' | 'enemy'; dps: number; life: number; max: number; color: string; tick: number }
 export interface DoorRT { def: DoorDef; open: number; x: number; y: number; revealed: boolean }
 export interface Transition { snap: HTMLCanvasElement; dx: number; dy: number; t: number; dur: number; kind: 'slide' | 'fade' }
@@ -215,7 +216,7 @@ export class World {
     // spikes & fires & creep
     const [c, r] = this.room.cellAt(pl.x, pl.y);
     const k = this.room.at(c, r);
-    if (!pl.flight && (k === Ob.Spikes || (k === Ob.TimedSpikes && this.spikesUp(c, r)))) {
+    if (!pl.flight && !pl.has('ewens_bike') && (k === Ob.Spikes || (k === Ob.TimedSpikes && this.spikesUp(c, r)))) {
       if (this.hurtPlayer(1, 'Spikes', { redFirst: this.room.type === 'sacrifice' }) && this.room.type === 'sacrifice') flow.onPincushion(this);
     }
     for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -651,13 +652,14 @@ export class World {
     const pl = this.player;
     for (let i = this.creep.length - 1; i >= 0; i--) {
       const c = this.creep[i];
-      c.life -= dt; if (c.life <= 0) { this.creep.splice(i, 1); continue; }
+      c.life -= dt; if (c.life <= 0) { if (c.color === BEER) this.fx.burst(c.x, c.y - 2, 4, 3, '#f4f0e4', 20, 0.5, 1, 0); this.creep.splice(i, 1); continue; }
+      if (c.color === BEER && c.life < c.max * 0.6 && Math.random() < dt * 14) this.fx.burst(c.x + (Math.random() - 0.5) * c.r * 1.6, c.y + (Math.random() - 0.5) * c.r, 1, 2, '#f8f4ea', 12, 0.6, 1, 0);
       c.tick -= dt;
       if (c.tick > 0) continue;
       c.tick = 0.3;
       if (c.team === 'player') {
         for (const e of this.enemies) if (!e.dead && e.z < 4 && e.mode !== 'fly' && dist2(c.x, c.y, e.x, e.y) < (c.r + e.r * 0.5) ** 2) this.damageEnemy(e, c.dps * 0.3, { ang: 0, knock: 0, source: 'creep' });
-      } else if (!pl.flight && dist2(c.x, c.y, pl.x, pl.y) < (c.r * 0.85) ** 2) this.hurtPlayer(1, 'creep');
+      } else if (!pl.flight && !pl.has('ewens_bike') && dist2(c.x, c.y, pl.x, pl.y) < (c.r * 0.85) ** 2) this.hurtPlayer(1, 'creep');
     }
   }
 
@@ -682,7 +684,7 @@ export class World {
   private collectPickups(): void {
     const pl = this.player;
     this.nearPedestal = null; this.nearInspect = null;
-    let nd = 34 * 34, ni = 30 * 30;
+    let nd = 42 * 42, ni = 44 * 44;
     for (const p of this.pickups) {
       if (p.dead || p.collectT >= 0) continue;
       const d2 = dist2(p.x, p.y, pl.x, pl.y);

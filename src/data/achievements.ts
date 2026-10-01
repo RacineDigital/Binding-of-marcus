@@ -60,6 +60,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'unlock_ozzie', name: 'Loaded Dice', desc: 'Defeat It Remembers while holding a die.', unlocks: 'Unlocks Ozzie, the Gambler.' },
   { id: 'unlock_bram', name: 'Not a Scratch on Me', desc: 'Defeat three chapter bosses in one run without any of them hitting you.', unlocks: 'Unlocks Bram, the Bruiser.' },
   { id: 'unlock_wick', name: 'Drawn to the Light', desc: 'Finish the story while you are Mothkin.', unlocks: 'Unlocks Wick, the Moth Child.' },
+  { id: 'unlock_ada', name: 'Her Ring', desc: 'Finish The Visit while carrying Grandmother\'s Ring.', unlocks: 'Unlocks Ada, the Gardener.', hidden: true },
+  { id: 'win_ada', name: 'Pruned', desc: 'Finish the story as Ada.', unlocks: 'A gold star on Ada\'s card.' },
   { id: 'win_ozzie', name: 'House Edge', desc: 'Finish the story as Ozzie.', unlocks: 'A gold star on Ozzie\'s card.' },
   { id: 'win_nell', name: 'Lights On', desc: 'Finish the story as Nell.', unlocks: 'A gold star on Nell\'s card.' },
   { id: 'win_bram', name: 'Heavy Hitter', desc: 'Finish the story as Bram.', unlocks: 'A gold star on Bram\'s card.' },

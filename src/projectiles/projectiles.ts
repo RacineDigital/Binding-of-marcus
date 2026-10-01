@@ -5,7 +5,7 @@ import { TAU, angleDiff, clamp, dist2 } from '../core/math';
 import { AttackProfile, luckChance } from './profile';
 import { pointBlocked } from '../rooms/collide';
 import { TILE } from '../core/constants';
-import { shotSprite, GLOW_SHAPES, SHOT_COLORS } from './art';
+import { shotSprite, GLOW_SHAPES, SHOT_COLORS, BEER } from './art';
 import type { World } from '../game/world';
 import type { Enemy } from '../enemies/enemy';
 
@@ -134,7 +134,12 @@ export class Projectiles {
         this.collideActors(w, p);
         continue;
       }
-      if (p.homing > 0) {
+      if (p.homing > 0 && p.team === Team.Enemy) {
+        // enemy seekers curve gently toward Marcus (never toward other enemies)
+        const cur = Math.atan2(p.vy, p.vx), want = Math.atan2(pl.y - 8 - p.y, pl.x - p.x);
+        const na = cur + clamp(angleDiff(cur, want), -p.homing * 1.6 * dt, p.homing * 1.6 * dt);
+        p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd;
+      } else if (p.homing > 0) {
         p.retarget -= dt;
         if (p.retarget <= 0 || (p.target && (p.target.dead || p.target.hidden))) {
           p.target = w.nearestEnemy(p.x, p.y, 220, p.hits); p.retarget = 0.12;
@@ -179,7 +184,7 @@ export class Projectiles {
       if (p.lob) p.z = 6 + Math.sin(Math.min(1, p.dist / p.range) * Math.PI) * p.lobH;
       if (p.creep || prof?.creep) {
         p.creepAcc += Math.sqrt(mx * mx + my * my);
-        if (p.creepAcc > 22) { p.creepAcc = 0; if (p.team === Team.Player) w.addCreep(p.x, p.y, 8, 'player', p.dmg * 0.35, 1.8); }
+        if (p.creepAcc > 22) { p.creepAcc = 0; if (p.team === Team.Player) w.addCreep(p.x, p.y, 8, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), 1.8, p.shape === 'beer' ? BEER : undefined); }
       }
       if (prof?.magnet) w.cancelEnemyShotsNear(p.x, p.y, p.r + 6);
       if (p.team === Team.Player && prof && (prof.pull)) w.pullPickups(p.x, p.y, 40);
@@ -299,7 +304,7 @@ export class Projectiles {
       // arcing shots come down on whatever they were lobbed at
       if (landed && p.lob) w.damageObstacleAt(p.x, p.y, p.dmg);
       // creep shots leave a puddle where they end, even point-blank
-      if ((p.creep || prof?.creep) && !wall) w.addCreep(p.x, p.y, 9, 'player', p.dmg * 0.35, 1.8);
+      if ((p.creep || prof?.creep) && !wall) w.addCreep(p.x, p.y, p.shape === 'beer' ? 12 : 9, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), p.shape === 'beer' ? 2.4 : 1.8, p.shape === 'beer' ? BEER : undefined);
       w.audio.play('splat', { vol: 0.25, pitch: 1.2 - p.r * 0.02, x: p.x });
       if (prof) {
         if (prof.split > 0 && prof.splitOnExpire && p.depth === 0) this.split(w, p);

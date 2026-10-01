@@ -340,6 +340,7 @@ export class MenuSystem {
         sp.head.down[(self.time % 4) < 0.15 ? 'blink' : 'normal'].draw(ctx, 0, -10);
         ctx.restore();
         if (!forceChar) { text(ctx, '◀', 62, 112, 12, INK2, 'center', FONT_BODY, 600, false); text(ctx, '▶', 158, 112, 12, INK2, 'center', FONT_BODY, 600, false); }
+        if (un) drawMarks(ctx, g, c.id, 110, 172);
         // info
         const x0 = 190;
         text(ctx, un ? c.name : '???', x0, 70, 20, INK, 'left', FONT_TITLE, 400, false);
@@ -376,7 +377,7 @@ export class MenuSystem {
           text(ctx, opts[r - 1], 300, y, on ? 9 : 8, r === 1 && !hardOpen ? 'rgba(90,70,54,0.5)' : on ? (r === 1 && modes[mi] !== 'normal' ? '#8a1a1a' : INK) : INK2, 'center', FONT_TITLE, 400, false);
         });
         if (row === 1 && MODE_DESC[modes[mi]]) text(ctx, MODE_DESC[modes[mi]]!, 300, 233, 6.5, '#8a2a2a', 'center', FONT_BODY, 600, false);
-        if (row === 0) text(ctx, '— character —', 110, 186, 7, INK2, 'center', FONT_BODY, 600, false);
+        if (row === 0) text(ctx, '— character —', 110, 192, 7, INK2, 'center', FONT_BODY, 600, false);
         hint(ctx, editing ? 'Type an 8-character seed · Enter to confirm' : '←/→ character · ↑/↓ options · Enter to begin · Esc back');
       },
     };
@@ -460,9 +461,9 @@ export class MenuSystem {
     const seen = new Set(g.save.data.itemsSeen);
     // What you've found comes first, gathered into sets (a transformation's items, then actives,
     // familiars and the rest); everything still missing waits at the end as silhouettes.
-    const SET_TAGS = ['vamp', 'drain', 'jeffy', 'dice', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
+    const SET_TAGS = ['crew', 'vamp', 'drain', 'jeffy', 'dice', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
     const setOf = (it: typeof all[number]) => SET_TAGS.find((t) => it.tags?.includes(t)) ?? (it.kind === 'active' ? 'active' : it.kind === 'familiar' ? 'familiar' : 'curio');
-    const SET_NAME = (k: string) => k === 'dice' ? 'The Dice' : k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
+    const SET_NAME = (k: string) => k === 'dice' ? 'The Dice' : k === 'crew' ? 'The Crew' : k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
     const itemGroups: GridGroup[] = [];
     for (const k of [...SET_TAGS, 'active', 'familiar', 'curio']) {
       const inSet = all.filter((it) => setOf(it) === k);
@@ -666,6 +667,7 @@ export class MenuSystem {
       { label: 'Fullscreen', value: () => (document.fullscreenElement ? 'On' : 'Off'), ok: () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); } },
       { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
       ...((window as any).bomDesktop?.setPresence ? [{ label: 'Discord status', value: () => (st().discord !== false ? 'On' : 'Off'), ok: () => { st().discord = st().discord === false; g.save.markDirty(); } }] : []),
+      { label: 'Announcer voice', value: () => (st().announcer !== false ? 'On' : 'Off'), ok: () => { st().announcer = st().announcer === false; g.save.markDirty(); if (st().announcer) g.announce('Announcer'); } },
       { label: 'Run timer', value: () => (st().timer ? 'On' : 'Off'), ok: () => { st().timer = !st().timer; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },
@@ -1090,6 +1092,31 @@ export class MenuSystem {
   }
 }
 void CONSUMABLES; void getItem; void measure;
+
+/**
+ * Completion marks, like Isaac's: one symbol per ending, filled once this reader has reached it
+ * (cream on Normal, red on Second Edition).
+ */
+const MARK_ICONS: Record<string, (c: CanvasRenderingContext2D, x: number, y: number) => void> = {
+  morning: (c, x, y) => { c.beginPath(); c.arc(x, y, 2.6, 0, TAU); c.fill(); for (let k = 0; k < 8; k++) { const a = (k / 8) * TAU; c.fillRect(x + Math.cos(a) * 4.3 - 0.5, y + Math.sin(a) * 4.3 - 0.5, 1, 1); } },
+  own_hand: (c, x, y) => { c.beginPath(); c.arc(x, y + 1.2, 3, 0, TAU); c.fill(); c.beginPath(); c.moveTo(x - 2.4, y); c.lineTo(x, y - 4.6); c.lineTo(x + 2.4, y); c.fill(); },
+  for_marcus: (c, x, y) => { c.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + (k / 10) * TAU, r = k % 2 ? 1.9 : 4.4; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.fill(); },
+  the_visit: (c, x, y) => { c.beginPath(); c.arc(x - 1.6, y - 1, 2, Math.PI, 0); c.arc(x + 1.6, y - 1, 2, Math.PI, 0); c.lineTo(x, y + 3.6); c.closePath(); c.fill(); },
+  goodnight: (c, x, y) => { c.beginPath(); c.arc(x, y, 4, 0.6, TAU - 0.6 + Math.PI * 0.0, false); c.arc(x + 2, y - 0.8, 3, TAU - 0.9, 0.9, true); c.fill(); },
+};
+function drawMarks(ctx: CanvasRenderingContext2D, g: Game, char: string, cx: number, y: number): void {
+  const won = (char === 'marcus' ? g.save.isUnlocked('beat_final') : g.save.isUnlocked('win_' + char));
+  text(ctx, 'MARKS', cx, y - 9, 5.5, INK2, 'center', FONT_BODY, 700, false);
+  ENDINGS.forEach((e, i) => {
+    const x = cx + (i - 2) * 15;
+    const hard = g.save.hasMark(char, e.id + ':hard');
+    const done = hard || g.save.hasMark(char, e.id) || (e.id === 'morning' && won);
+    ctx.fillStyle = done ? 'rgba(60,40,30,0.85)' : 'rgba(60,40,30,0.12)';
+    ctx.beginPath(); ctx.roundRect(x - 6.5, y - 6.5, 13, 13, 2.5); ctx.fill();
+    ctx.fillStyle = hard ? '#ff5060' : done ? '#f4ead2' : 'rgba(90,60,40,0.3)';
+    MARK_ICONS[e.id]?.(ctx, x, y);
+  });
+}
 
 /** Draw an enemy's first idle frame fitted into a square (black silhouette if unknown). */
 /** A group of cells in a GridView, drawn under its own heading. */

@@ -28,6 +28,15 @@ import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 
 // ------------------------------------------------------------------ floors
+/** Bosses that rewrite themselves (the Delirium-like ones): their health is set in their own definition. */
+const FINAL_FORMS = new Set(['unwritten', 'author']);
+/** A floor whose boss can end the story: the Binding, the Last Page, the Foreword and Room 4. */
+export function isEndingFloor(run: Run): boolean {
+  const fi = run.floorIndex;
+  if (run.flags.margins && fi === LASTPAGE_FLOOR) return true;
+  if (run.flags.room4 && fi === ROOM4_FLOOR) return true;
+  return fi === FINAL_FLOOR && run.mode !== 'endless';
+}
 /** The Binding and the Last Page get the final boss theme; the Margins' many bosses the late one. */
 function bossMusic(run: Run): string {
   const fi = run.floorIndex;
@@ -270,10 +279,14 @@ function startBoss(w: World, room: RoomData): void {
   const raw = room.bossId ?? 'grubmother';
   const ids = raw.split('+').flatMap((id) => (BOSS_ALIASES[id] ?? id).split('+'));
   const introDef = getEnemy(raw.split('+')[0]);
+  const ending = room.type === 'boss' && isEndingFloor(w.run);
   ids.forEach((id, i) => {
     const e = spawnEnemy(w, id, c.x + (ids.length > 1 ? (i - 0.5) * 80 : 0), c.y - 20, false);
     if (e) {
       e.isBoss = true;
+      // the bosses you can end the story on fight at full strength: tougher, faster, and a
+      // bullet-hell last stand (the Unwritten and the Author carry their own huge health)
+      if (ending) { e.data.hard = true; if (!FINAL_FORMS.has(id)) { e.hp *= 1.7; e.maxHp *= 1.7; } }
       if (room.type === 'miniboss') { e.hp *= 0.6; e.maxHp *= 0.6; }
       e.spawnT = room.type === 'boss' ? 2.4 : 0.9;
       w.bossList.push(e);
@@ -497,6 +510,8 @@ export function onBossKilled(w: World, e: Enemy): void {
   for (const x of w.enemies) if (!x.dead && !x.isBoss) w.killEnemy(x);
   w.proj.clear();
   if (room.type === 'miniboss') { w.lockdown = false; return; }
+  // the fight is over: the boss theme gives way to the chapter's own music
+  w.after(1.8, () => { if (w.room === room && w.game.scene === 'run') { w.audio.setMusic(w.theme.music); w.audio.setIntensity(0); } }, true);
   const fi = w.run.floorIndex;
   // finished the story before? then the Binding offers a way out and a way further in
   const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless';
@@ -767,7 +782,7 @@ export function touchPickup(w: World, p: Pickup): void {
       collect('key'); break;
     case 'bomb': case 'bomb2': case 'goldBomb':
       payShop();
-      if (p.kind === 'goldBomb') pl.goldBomb = true; else pl.bombs = Math.min(99, pl.bombs + (p.kind === 'bomb2' ? 2 : 1));
+      pl.bombs = Math.min(99, pl.bombs + (p.kind === 'bomb2' ? 2 : p.kind === 'goldBomb' ? 5 : 1));
       collect('bombPickup'); break;
     case 'heart': case 'heartHalf': {
       if (h.noRed || h.red >= h.redMax) return;
@@ -988,7 +1003,11 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
     if (pl.tagCount(t) >= 3) {
       pl.transformations.add(t); pl.recompute();
       const T = TRANSFORM_EFFECTS[t];
-      w.after(1.3, () => { w.hud.banner(T.name.toUpperCase(), T.desc); w.audio.stinger('transform'); w.whiteFlash = 0.6; }, true);
+      w.after(0.9, () => {
+        w.hud.transformCard(T.name, T.desc); w.audio.stinger('transform'); w.audio.play('choir', { vol: 0.6 });
+        w.whiteFlash = 0.6; w.shake(3); w.fx.ring(pl.x, pl.y - 10, 6, 70, '#c890ff', 0.6);
+        w.game.announce(T.name);
+      }, true);
       w.game.save.unlock('transform_' + t);
     }
   }

@@ -24,6 +24,21 @@ const PAINT: Record<string, Painter> = {
   tin_soldier: (p, f) => { const r = ramp('#b03030'), b = ramp('#2a3a6a'); p.rect(6, 3, 4, 3, b[2]); p.rect(6, 2, 4, 1, b[3]); p.ball(8, 7, 2.2, 2, ramp('#e8c8a0')); p.rect(6, 9, 4, 4, r[2]); p.rect(6, 13, 1, 2 + f, b[1]); p.rect(9, 13, 1, 3 - f, b[1]); p.line(11, 5, 11, 12, hex('#8a8a92')); eyes(p, 7, 7, 2); },
   moth_friend: (p, f) => { const w = ramp('#c8b48a'); p.ball(4, 8, 3.5, f ? 4.5 : 3, w); p.ball(12, 8, 3.5, f ? 4.5 : 3, w); p.ball(8, 8, 2, 4, ramp('#8a6a4a')); p.set(3, 7, '#6a4a8a'); p.set(13, 7, '#6a4a8a'); p.line(7, 4, 5, 1, w[1]); p.line(9, 4, 11, 1, w[1]); },
   ghost_cat: (p, f) => { const c = ramp('#c8d8e8'); p.ball(8, 10, 5, 4.5, c); p.poly([4, 7, 5, 2, 7, 6], c[3]); p.poly([12, 7, 11, 2, 9, 6], c[3]); p.line(12, 12, 15, 9 - f, c[2]); eyes(p, 6, 9, 3, '#3a6a8a'); p.set(7, 11, '#8a6a8a'); },
+  toffee: (p, f) => {
+    // a brown tabby kitten: stripes on the back, head and tail, green eyes, pink nose
+    const fur = ramp('#a8743a'), dk = '#5a3414', belly = '#ecc89a';
+    p.ball(9, 11, 5.2, 3.6, fur, { dither: 0.3 });
+    p.rect(6, 13, 6, 1, hex(belly));
+    for (const x of [8, 10, 12]) { p.set(x, 8, dk); p.set(x, 9, dk); p.set(x + (f ? 0 : 1), 10, dk); }
+    p.line(13, 11, 15, 8 - f, fur[2]); p.set(15, 7 - f, fur[2]); p.set(14, 9 - f, dk); p.set(15, 8 - f, dk);
+    p.rect(5, 13, 1, 3 - f, fur[1]); p.rect(8, 13, 1, 2 + f, fur[1]); p.rect(11, 13, 1, 3 - f, fur[1]); p.rect(13, 13, 1, 2 + f, fur[1]);
+    p.ball(5, 7, 3.8, 3.4, fur, { dither: 0.3 });
+    p.poly([2, 5, 2, 1, 5, 4], fur[3]); p.poly([6, 4, 8, 1, 8, 5], fur[3]); p.set(3, 3, '#e89aa0'); p.set(7, 3, '#e89aa0');
+    p.set(4, 4, dk); p.set(5, 4, dk); p.set(6, 4, dk); p.set(5, 5, dk);
+    p.set(3, 7, '#7ad040'); p.set(6, 7, '#7ad040'); p.set(3, 6, '#ffffff');
+    p.set(4, 8, '#e86a7a'); p.set(5, 9, belly); p.set(4, 9, belly);
+    p.set(1, 8, '#e8e0d0'); p.set(8, 8, '#e8e0d0');
+  },
   thimble: (p) => { const c = ramp('#b8b8c0'); p.ball(8, 9, 4.5, 5, c); for (let y = 6; y < 13; y += 2) for (let x = 5; x < 12; x += 2) p.paint(x, y, c[1]); p.rect(3, 13, 10, 2, c[3]); },
   bookworm: (p, f) => { const c = ramp('#8ab05a'); for (let i = 0; i < 4; i++) p.ball(3 + i * 3, 10 + (i % 2 === f ? 1 : 0), 2.4, 2.4, c); p.ball(14, 9, 2.6, 2.6, c); p.set(15, 8, '#1a1020'); p.rect(12, 11, 3, 1, hex('#e8dcc0')); },
   button_jar: (p) => { const g = ramp('#9ab8c8'); p.rect(4, 5, 9, 10, g[1]); p.rect(5, 6, 7, 8, g[2]); p.rect(4, 3, 9, 2, hex('#8a6a4a')); p.set(6, 11, '#b87a44'); p.set(9, 9, '#c8c8d8'); p.set(8, 12, '#b87a44'); p.set(10, 12, '#e8c040'); p.set(5, 7, '#ffffff'); },

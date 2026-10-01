@@ -127,7 +127,13 @@ export function updateFamiliars(w: World, dt: number): void {
         const a = angleTo(f.x, f.y, tx, ty);
         f.ang += clamp(((a - f.ang + Math.PI * 3) % TAU) - Math.PI, -7 * dt, 7 * dt);
         const dd = Math.sqrt(dist2(f.x, f.y, tx, ty));
-        const sp = f.target ? spd : Math.min(spd, dd * 4);
+        let sp = f.target ? spd : Math.min(spd, dd * 4);
+        // Toffee stalks, then pounces: a fast leap with a hop when she gets close
+        if (s.special === 'tabby') {
+          f.data.pcd = (f.data.pcd ?? 0) - dt;
+          if (f.target && dd < 56 && f.data.pcd <= 0 && !(f.data.leap > 0)) { f.data.leap = 0.32; f.data.pcd = 1.4; f.ang = a; w.audio.play('hop', { x: f.x, pitch: 1.6, vol: 0.4 }); }
+          if (f.data.leap > 0) { f.data.leap -= dt; sp = spd * 3.2; f.data.z = Math.sin((1 - f.data.leap / 0.32) * Math.PI) * 8; } else { f.data.z = 0; if (f.target && dd < 90) sp *= 0.55; }
+        }
         f.x += Math.cos(f.ang) * sp * dt; f.y += Math.sin(f.ang) * sp * dt;
         f.flip = Math.cos(f.ang) < 0;
         if (f.temp) { f.life -= dt; if (f.life <= 0) f.dead = true; }
@@ -186,7 +192,7 @@ export function renderFamiliar(w: World, ctx: CanvasRenderingContext2D, f: Famil
   const air = f.spec.kind === 'orbital' || f.spec.kind === 'hover' || f.temp || f.spec.sprite === 'belfry_bat' || f.spec.sprite === 'paper_bird';
   ctx.fillStyle = 'rgba(0,0,0,0.28)';
   ctx.beginPath(); ctx.ellipse(sx, sy + (air ? 8 : 0), 4, 1.5, 0, 0, TAU); ctx.fill();
-  fr.draw(ctx, sx, sy + (air ? -2 : 1), { flip: f.flip, flash: f.data.flash > 0 ? 0.8 : 0 });
+  fr.draw(ctx, sx, sy + (air ? -2 : 1) - (f.data.z ?? 0), { flip: f.flip, flash: f.data.flash > 0 ? 0.8 : 0 });
   if (f.spec.sprite === 'lantern_wisp' || f.spec.sprite === 'little_wick') { w.r.addGlow(sx, sy - 8, 16, '#ffa040', 0.35); w.r.addLight(sx, sy - 8, 40, 0.5); }
   if (f.spec.sprite === 'wax_angel' || f.spec.sprite === 'choir_mote') w.r.addGlow(sx, sy - 8, 14, '#fff0c0', 0.3);
 }

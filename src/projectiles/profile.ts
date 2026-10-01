@@ -1,7 +1,7 @@
 // The AttackProfile is the composable description of how Marcus attacks. Items contribute partial
 // profiles which are merged here; projectiles, beams, melee swings and familiars all read from it.
 export type AttackMode = 'shot' | 'charge' | 'burst' | 'beam' | 'laser' | 'melee';
-export type ShotShape = 'ink' | 'needle' | 'fire' | 'bone' | 'wax' | 'spark' | 'page' | 'blood' | 'moth' | 'star' | 'void';
+export type ShotShape = 'ink' | 'needle' | 'fire' | 'bone' | 'wax' | 'spark' | 'page' | 'blood' | 'moth' | 'star' | 'void' | 'beer';
 
 export interface AttackProfile {
   modes: Set<AttackMode>;

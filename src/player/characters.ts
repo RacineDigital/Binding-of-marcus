@@ -79,5 +79,13 @@ export const CHARACTERS: CharacterDef[] = [
     profile: { shape: 'moth' }, flight: true,
     unlock: 'unlock_wick', unlockHint: 'Finish the story while you are Mothkin.', passive: 'Flies. Starts with the Lampmoth and a Jar of Moths.',
   },
+  {
+    id: 'ada', name: 'Ada', title: 'The Gardener', look: 'ada',
+    desc: 'Grandmother, who went at four minutes past four. Her rose still grows through the greenhouse roof, and she has come to see to it, and to him.',
+    base: { damage: 3.2, tears: 2.8, range: 250, shotSpeed: 1, speed: 0.95, luck: 2 },
+    health: { red: 2, wax: 4 }, items: ['grandmothers_ring', 'four_leaf'], buttons: 3, keys: 1, bombs: 1,
+    profile: { shape: 'needle', tint: '#4a9a3a', slow: 0.35 },
+    unlock: 'unlock_ada', unlockHint: 'Finish The Visit while carrying Grandmother\'s Ring.', passive: 'Thorn shots slow what they hit. Starts with Grandmother\'s Ring and the Pressed Clover.',
+  },
 ];
 export const charById = (id: string) => CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];

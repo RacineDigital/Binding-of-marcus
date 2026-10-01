@@ -9,7 +9,8 @@ image or audio asset files.
 
 ## Download and play
 
-Open the repository's **Releases** page and download one of these:
+Open the repository's **Releases** page and download one of these (every version's changes are in
+[CHANGELOG.md](CHANGELOG.md)):
 
 - **Windows:** `Lost-Marcus-Setup-X.Y.Z.exe` (installer with shortcuts) or
   `Lost-Marcus-X.Y.Z-portable.exe` (no install). Progress is saved to
@@ -110,7 +111,7 @@ Menus also work with the mouse: hover, click and scroll.
 
   `npm run test:synergy` checks every item with every attack mode and every pair of modes, checks
   that each shot modifier's effect really shows up in every mode, and runs hundreds of random builds.
-- **195 items:** 133 passives, 41 actives and 21 familiars. Each one is a data definition with stat
+- **201 items:** 138 passives, 41 actives and 22 familiars. Each one is a data definition with stat
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
@@ -156,6 +157,12 @@ Menus also work with the mouse: hover, click and scroll.
   and the light. After your first finished story the Binding's boss is always **It Remembers**,
   the Unbound awake and angrier (like Mom's Heart becoming It Lives), so you know you're in the
   end game.
+- **Final bosses.** Only the bosses you can end the story on are hard: they hit harder, attack
+  faster and have a bullet-hell last stand. The Unwritten and the Author are the Delirium fight:
+  ten times the health, eight phases, layered bullet patterns and constant shape changes into any
+  boss you've beaten. Every boss opens with an Isaac-style VS screen.
+- **Announcer.** Transformations get a title card, a sound and a voice reading the name out; the
+  voice also reads sweets and pages (Options → Announcer voice).
 - **The story, and the paths it hides.** Everything in the book belonged to someone: Grandfather
   Elias, who was writing it for Marcus; Grandmother Ada, whose clock stopped at 4:04; Aunt Edda,
   Nell, Wren and the rest. Their things carry a line of history in the Collection, the characters
@@ -206,7 +213,7 @@ Menus also work with the mouse: hover, click and scroll.
 - **Resources and pickups.** Buttons (currency), keys, cherry bombs, spark jars (active-item
   charge), tin, locked, crimson and reliquary boxes, slot machines, a fortune owl, beggars, a
   wishing well, the seamstress and the grandfather clock.
-- **Progression.** 66 achievements unlock items, characters, challenges and more modes, so the item
+- **Progression.** 68 achievements unlock items, characters, challenges and more modes, so the item
   pool grows as you play. The save also holds the Collection (every curio, plus a Bestiary of every
   creature with kill counts), Run History (your last 30 runs, any of which you can replay by seed),
   statistics, best scores and settings.
@@ -216,10 +223,13 @@ Menus also work with the mouse: hover, click and scroll.
 - **Modes.** Normal; Second Edition (Hard) and Endless (the story keeps going after The Binding,
   harder each chapter), both unlocked by finishing the story; and a Daily Run with the same seed and
   reader for everyone that day. Every run ends with a score and a personal best.
-- **Nine characters:** Marcus, Wren, Edda, Elias, The Blot, and four hard-won readers who start with
+- **Ten characters:** Marcus, Wren, Edda, Elias, The Blot, Ada (Grandmother, with slowing thorn shots;
+  finish The Visit carrying her ring), and four hard-won readers who start with
   items: Ozzie (the D6; beat It Remembers holding a die), Nell (the Burning Glass and a lantern;
   beat the Unwritten), Bram (a bone folder and a tin heart; beat three bosses in one run without
-  any of them hitting you) and Wick (flies, with two moths; finish the story as Mothkin). **Five challenge runs.**
+  any of them hitting you) and Wick (flies, with two moths; finish the story as Mothkin). Each
+  reader's card shows completion marks for the five endings (cream on Normal, red on Second
+  Edition). **Five challenge runs.**
 - **Audio.** Around 80 layered sound effects are rendered offline at startup with variants, pitch
   jitter, stereo panning, voice limiting and a shared reverb. The soundtrack is rendered offline in
   the background: synthesized distorted guitars (double-tracked, palm-muted chugs and power chords),

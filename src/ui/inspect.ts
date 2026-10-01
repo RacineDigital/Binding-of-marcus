@@ -33,7 +33,7 @@ const PICKUP_TEXT: Record<string, [string, string, string]> = {
   goldKey: ['Golden Key', 'Opens everything', 'Every lock on this floor opens for free.'],
   bomb: ['Cherry Bomb', 'Handle with care', 'Place with {bomb}. Breaks rocks, opens hidden walls and hurts everything nearby.'],
   bomb2: ['Two Cherry Bombs', 'Handle with care', '+2 cherry bombs.'],
-  goldBomb: ['Golden Bomb', 'Infinite fuse', 'Cherry bombs are free for the rest of the floor.'],
+  goldBomb: ['Golden Bomb', '+5 bombs', 'A heavy, gilded cherry bomb: five bombs at once.'],
   spark: ['Spark Jar', 'A little lightning', 'Charges your active item by 1.'],
   sparkBig: ['Big Spark Jar', 'A lot of lightning', 'Fully charges your active item.'],
   button: ['Button', 'Currency', '+1 button.'],
