@@ -45,6 +45,8 @@ export class World {
   fx = new FX(); flow = new FlowField();
   props!: PropSet;
   doors: DoorRT[] = [];
+  /** Set when the player takes a hit in the current room (flawless-clear bonus). */
+  roomHit = false;
   time = 0; roomTime = 0; hitstopT = 0; trauma = 0; camX = 0; camY = 0; camTX = 0; camTY = 0;
   icamX = 0; icamY = 0; renderCamX = 0; renderCamY = 0;
   obstacleLayer: HTMLCanvasElement | null = null; obstacleDirty = true;
@@ -360,6 +362,7 @@ export class World {
     if (res.gildedBroke > 0) for (let i = 0; i < 3 * res.gildedBroke; i++) spawnDrop(this, 'button', pl.x, pl.y);
     this.run.stats.damageTaken += res.taken;
     this.run.flags.hitThisFloor = true;
+    this.roomHit = true;
     if (this.room.type === 'boss') this.run.flags.bossHit = true;
     if (!o.redFirst) this.itemHook('onHurt');
     if (res.dead) this.onPlayerDied(source);

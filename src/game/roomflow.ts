@@ -8,6 +8,7 @@ import { Enemy } from '../enemies/enemy';
 import { getEnemy } from '../enemies/registry';
 import { Pickup, popPickup } from './pickups';
 import { spawnDrop, rollDropKind } from './drops';
+import { luckChance } from '../projectiles/profile';
 import { RNG } from '../core/rng';
 import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
@@ -124,7 +125,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.pendingKegs = []; w.lockdown = false; w.labels = [];
   w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
   w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: 'down' } : null;
-  w.roomTime = 0; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
+  w.roomTime = 0; w.roomHit = false; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
   w.proj.enemySpeedMul = [0.8, 0.86, 0.92, 0.96, 1, 1.02, 1.05, 1.08][Math.min(7, w.run.floorIndex)] * (w.run.mode === 'hard' ? 1.12 : 1);
@@ -382,12 +383,52 @@ function onClear(w: World, reward: boolean): void {
       const p = freeSpotNear(w, room.center().x, room.center().y);
       spawnDrop(w, kind, p.x, p.y, true, rng);
     }
+    clearBonuses(w, rng);
   }
   chargeActive(w, room.cw * room.ch >= 4 ? 2 : 1);
   checkProgress(w);
   familiarsOnRoomClear(w);
   w.itemHook('onRoomClear');
   w.player.clearTemp((t) => !!t.room);
+}
+
+/**
+ * Extra rewards on top of the normal clear drop: big rooms roll twice, a flawless clear (no hits)
+ * builds a streak that pays out in pickups and chests, a fast clear tosses a button, and every so
+ * often a room pays out a jackpot.
+ */
+function clearBonuses(w: World, rng: RNG): void {
+  const room = w.room, luck = w.player.stats.luck;
+  const c = room.center();
+  const drop = (kind: string, dx = 0, dy = 0) => { const p = freeSpotNear(w, c.x + dx, c.y + dy); spawnDrop(w, kind, p.x, p.y, true, rng); };
+  const say = (text: string, color: string, dy = 0) => w.fx.text(c.x, c.y - 34 + dy, text, color);
+  const cells = room.cw * room.ch;
+  let line = 0;
+  // big rooms: one more roll from the room table
+  if (cells >= 2) { const k = rollDropKind(rng, luck, 'room'); if (k) drop(k, -28, 10); }
+  // flawless streak
+  const fl = w.run.flags;
+  if (!w.roomHit) {
+    fl.cleanStreak = (fl.cleanStreak ?? 0) + 1;
+    const n = fl.cleanStreak as number;
+    fl.bestStreak = Math.max(fl.bestStreak ?? 0, n);
+    if (n % 5 === 0) { drop(n % 10 === 0 ? 'chest:locked' : 'chest', 30, 10); say(`FLAWLESS x${n}!`, '#ffd060', line); line -= 10; w.audio.play('coinBig'); }
+    else if (n >= 2 && rng.chance(Math.min(0.6, 0.18 + n * 0.06 + luck * 0.02))) {
+      drop(rng.pick(['button', 'button', 'key', 'bomb', 'heart', 'sweet', 'page']), 30, -8);
+      say(n >= 3 ? `FLAWLESS x${n}` : 'FLAWLESS', '#a8e8ff', line); line -= 10;
+    }
+  } else if ((fl.cleanStreak ?? 0) > 0) fl.cleanStreak = 0;
+  // swift clear
+  if (w.roomTime < 7 + cells * 4 && rng.chance(0.5)) { drop('button', -20, -14); say('SWIFT', '#c8f0a0', line); line -= 10; }
+  // rare jackpot: a spray of buttons, or something special
+  if (rng.chance(luckChance(0.025, luck))) {
+    const r = rng.next();
+    if (r < 0.5) { for (let i = 0; i < rng.int(4, 6); i++) drop(rng.chance(0.15) ? 'button5' : 'button', rng.float(-30, 30), rng.float(-18, 18)); }
+    else if (r < 0.75) drop('charm', 0, 20);
+    else if (r < 0.92) drop('chest:crimson', 0, 20);
+    else drop('sparkBig', 0, 20);
+    say('JACKPOT!', '#ffe070', line); w.audio.play('coinBig');
+  }
 }
 
 export function freeSpotNear(w: World, x: number, y: number): { x: number; y: number } {
