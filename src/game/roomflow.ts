@@ -45,9 +45,10 @@ export function isEndingFloor(run: Run): boolean {
   if (run.flags.room4 && fi === ROOM4_FLOOR) return true;
   return fi === FINAL_FLOOR && run.mode !== 'endless';
 }
-/** The Binding and the Last Page get the final boss theme; the Margins' many bosses the late one. */
+/** The Binding gets Last Rites; the Last Page and Room 4 the older final theme; the rest the boss themes. */
 function bossMusic(run: Run): string {
   const fi = run.floorIndex;
+  if (fi === FINAL_FLOOR && !run.flags.margins) return 'finalBinding';
   if (fi === FINAL_FLOOR || (run.flags.margins && fi === LASTPAGE_FLOOR) || (run.flags.room4 && fi === ROOM4_FLOOR)) return 'bossFinal';
   return fi >= 4 ? 'boss2' : 'boss';
 }

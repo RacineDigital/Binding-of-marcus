@@ -579,7 +579,7 @@ const unboundBrain: BossBrain = {
     e.anim = 'open';
     w.hud.toast(ph === 1 ? 'The book falls open.' : 'The binding snaps. The last page is all that remains.');
     w.whiteFlash = 0.5;
-    if (ph === 2) w.audio.setMusic('bossFinal');
+    if (ph === 2) w.audio.setMusic('finalBinding');
   },
 };
 const unbound: EnemyDef = {
@@ -605,7 +605,7 @@ const remembersBrain: BossBrain = {
     e.anim = 'open';
     w.hud.toast(ph === 1 ? 'It remembers how you did it last time.' : 'It will not let the book close again.');
     w.whiteFlash = 0.5;
-    if (ph === 2) w.audio.setMusic('bossFinal');
+    if (ph === 2) w.audio.setMusic('finalBinding');
   },
 };
 const itremembers: EnemyDef = {

@@ -44,7 +44,7 @@ export interface BassPart extends PartBase {
 }
 /** Arpeggio over the current chord: indices into chord tones (0 root, 1 third, 2 fifth, 3 octave...). */
 export interface ArpPart extends PartBase {
-  kind: 'arp'; sound: 'pluck' | 'saw' | 'bell' | 'clean' | 'harp'; octave: number; rate: 1 | 2 | 4; seq: number[]; len?: number; cut?: number; echo?: boolean;
+  kind: 'arp'; sound: 'pluck' | 'saw' | 'bell' | 'clean' | 'harp' | 'chip'; octave: number; rate: 1 | 2 | 4; seq: number[]; len?: number; cut?: number; echo?: boolean;
 }
 /** Sustained chord per bar (repeated chords are merged). */
 export interface PadPart extends PartBase {
@@ -52,7 +52,7 @@ export interface PadPart extends PartBase {
 }
 /** Melody from tokens "deg:len" (scale degree relative to key root at `octave`), "r:len" rests; '+'/'-' suffix = sharp/flat. */
 export interface LeadPart extends PartBase {
-  kind: 'lead'; sound: 'saw' | 'square' | 'guitar' | 'choir' | 'bell' | 'strings' | 'organ' | 'clean'; octave: number; melody: string; glide?: boolean;
+  kind: 'lead'; sound: 'saw' | 'square' | 'guitar' | 'choir' | 'bell' | 'strings' | 'organ' | 'clean' | 'chip'; octave: number; melody: string; glide?: boolean;
 }
 /** Short string stabs / ostinato: chars are chord-tone indices, '.' rest. */
 export interface StaccPart extends PartBase {
@@ -67,6 +67,8 @@ export type Part = DrumPart | GuitarPart | BassPart | ArpPart | PadPart | LeadPa
 export interface Song {
   title: string; genre: string;
   bpm: number; key: number; scale: ScaleName; bars: number;
+  /** Optional tempo map: bpm for each bar (cycles), so a song can rush, drag and rush again. */
+  tempo?: number[];
   /** Chord root as scale degree per bar (cycles). */
   chords: number[];
   swing?: number;

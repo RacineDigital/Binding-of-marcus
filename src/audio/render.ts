@@ -11,7 +11,9 @@ const yieldFrame = () => new Promise<void>((r) => setTimeout(r, 0));
 export interface Stems { calm: AudioBuffer; combat: AudioBuffer; loop: number }
 
 interface Ctx {
-  oc: OfflineAudioContext; song: Song; spb: number; // seconds per 16th
+  oc: OfflineAudioContext; song: Song; spb: number; // seconds per 16th (at the song's base tempo)
+  /** Start time of every bar (bars + 1 entries) and each bar's seconds per 16th, from the tempo map. */
+  barT: number[]; barSpb: number[];
   buses: { gtrL: AudioNode; gtrR: AudioNode; drums: AudioNode; synth: AudioNode; bass: AudioNode; rev: AudioNode };
   bufs: Map<Float32Array, AudioBuffer>;
 }
@@ -72,8 +74,21 @@ function active(p: Part, layer: 'calm' | 'combat'): boolean {
 function keyBase(song: Song, octave: number): number { return (song.key % 12) + (octave + 1) * 12; }
 function barActive(p: Part, bar: number): boolean { return (p.from === undefined || bar >= p.from) && (p.to === undefined || bar < p.to); }
 function stepTime(c: Ctx, step: number): number {
-  const sw = c.song.swing && step % 2 === 1 ? c.spb * c.song.swing : 0;
-  return step * c.spb + sw;
+  const bar = Math.max(0, Math.min(c.barSpb.length - 1, Math.floor(step / 16)));
+  const spb = c.barSpb[bar];
+  const sw = c.song.swing && step % 2 === 1 ? spb * c.song.swing : 0;
+  return c.barT[bar] + (step - bar * 16) * spb + sw;
+}
+/** Seconds per 16th at a step (for note lengths). */
+function spbAt(c: Ctx, step: number): number { return c.barSpb[Math.max(0, Math.min(c.barSpb.length - 1, Math.floor(step / 16)))]; }
+/** Bar start times and lengths from a song's tempo map. */
+function tempoMap(song: Song): { barT: number[]; barSpb: number[] } {
+  const barT = [0], barSpb: number[] = [];
+  for (let b = 0; b < song.bars; b++) {
+    const bpm = song.tempo ? song.tempo[b % song.tempo.length] : song.bpm;
+    barSpb.push(60 / bpm / 4); barT.push(barT[b] + 16 * barSpb[b]);
+  }
+  return { barT, barSpb };
 }
 
 // --------------------------------------------------------------------------- guitars
@@ -116,7 +131,7 @@ async function renderGuitar(c: Ctx, p: GuitarPart): Promise<number[]> {
   let n = 0;
   for (const e of evs) {
     const t = stepTime(c, e.step);
-    const dur = e.mute ? Math.min(e.len * c.spb + 0.05, 0.3) : e.len * c.spb + 0.04;
+    const dur = e.mute ? Math.min(e.len * spbAt(c, e.step) + 0.05, 0.3) : e.len * spbAt(c, e.step) + 0.04;
     for (const take of [0, 1]) {
       const d = I.guitar(e.midi, { mute: e.mute, dur: e.mute ? 0.26 : Math.min(2.4, Math.max(0.2, dur + 0.1)), take, voicing: e.mute ? 'root' : p.voicing ?? 'power', gain: p.gain });
       play(c, d, t + take * 0.004, p.vol * (e.mute ? 0.95 : 0.8), take ? c.buses.gtrR : c.buses.gtrL, { dur });
@@ -149,6 +164,7 @@ function voiceLead(c: Ctx, sound: string, m: number, t: number, dur: number, vol
     return;
   }
   if (sound === 'clean') { play(c, I.cleanPluck(m, Math.max(0.5, dur + 0.6), 0.7), t, vol * 0.8, out); return; }
+  if (sound === 'chip') { play(c, SV.chip(m, dur, glide ? prev : null), t, vol * 0.6, out); return; }
   if (sound === 'bell') { play(c, SV.bell(m, dur * 1.5), t, vol * 0.7, out); return; }
   if (sound === 'choir' || sound === 'strings' || sound === 'organ') { play(c, SV.pad(sound, [m], dur, undefined, 3), t, vol * 0.9, out); return; }
   play(c, SV.lead(m, dur, sound === 'square' ? 'square' : 'saw', glide ? prev : null), t, vol * 0.55, out);
@@ -161,6 +177,7 @@ function voiceSynthBass(c: Ctx, m: number, t: number, dur: number, vol: number, 
 function voicePluck(c: Ctx, sound: string, m: number, t: number, dur: number, vol: number, out: AudioNode, cut: number): void {
   if (sound === 'clean' || sound === 'harp') { play(c, I.cleanPluck(m, Math.max(0.6, dur + (sound === 'harp' ? 1.2 : 0.4)), sound === 'harp' ? 0.85 : 0.6), t, vol, out); return; }
   if (sound === 'bell') { play(c, SV.bell(m, Math.max(0.8, dur * 2)), t, vol * 0.7, out); return; }
+  if (sound === 'chip') { play(c, SV.chipBlip(m, dur), t, vol * 0.55, out); return; }
   play(c, SV.pluck(m, dur, cut, sound === 'saw' ? 'saw' : 'square'), t, vol * 0.6, out);
 }
 
@@ -184,7 +201,8 @@ function parseMelody(song: Song, src: string, base: number): { step: number; mid
 async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): Promise<AudioBuffer> {
   const tStart = performance.now();
   const spb = 60 / song.bpm / 4;
-  const loop = song.bars * 16 * spb;
+  const tm = tempoMap(song);
+  const loop = tm.barT[song.bars];
   const oc = new OfflineAudioContext(2, Math.ceil((loop + tail) * SR), SR);
   // master chain: glue compressor -> limiter
   const master = oc.createGain(); master.gain.value = 0.9;
@@ -215,7 +233,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
   drums.connect(dcomp); dcomp.connect(master);
   const synth = oc.createGain(); synth.connect(master);
   const bass = oc.createGain(); const bhp = oc.createBiquadFilter(); bhp.type = 'highpass'; bhp.frequency.value = 32; bass.connect(bhp); bhp.connect(master);
-  const c: Ctx = { oc, song, spb, buses: { gtrL: cab(-0.75), gtrR: cab(0.75), drums, synth, bass, rev: rvIn }, bufs: new Map() };
+  const c: Ctx = { oc, song, spb, barT: tm.barT, barSpb: tm.barSpb, buses: { gtrL: cab(-0.75), gtrR: cab(0.75), drums, synth, bass, rev: rvIn }, bufs: new Map() };
 
   const total = song.bars * 16;
   const parts = song.parts.filter((p) => active(p, layer));
@@ -281,7 +299,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
           }
         }
         for (const e of evs) {
-          const t = stepTime(c, e.step), dur = e.len * spb;
+          const t = stepTime(c, e.step), dur = e.len * spbAt(c, e.step);
           if (p.kind === 'bass') play(c, I.bassNote(e.midi, Math.min(2, dur + 0.05), p.grit ?? 0.5), t, vol, out, { dur: dur + 0.02 });
           else voiceSynthBass(c, e.midi, t, dur, vol, out, p.cut ?? 600, p.grit ?? 0.3);
         }
@@ -302,7 +320,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
           const tones = chordTones(song, bar, keyBase(song, p.octave));
           const idx = p.seq[k % p.seq.length]; k++;
           if (idx < 0) continue;
-          voicePluck(c, p.sound, tones[idx], stepTime(c, s), len * spb, vol, echo, p.cut ?? 1400);
+          voicePluck(c, p.sound, tones[idx], stepTime(c, s), len * spbAt(c, s), vol, echo, p.cut ?? 1400);
         }
         break;
       }
@@ -314,7 +332,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
           const d = song.chords[bar % song.chords.length];
           let n = 1; while (bar + n < song.bars && song.chords[(bar + n) % song.chords.length] === d && barActive(p, bar + n) && n < 4) n++;
           const tones = chordTones(song, bar, keyBase(song, p.octave), p.seventh).slice(0, p.seventh ? 4 : 3);
-          voicePad(c, p.sound, tones, bar * 16 * spb, n * 16 * spb - 0.05, vol, out, p.cut);
+          voicePad(c, p.sound, tones, c.barT[bar], c.barT[bar + n] - c.barT[bar] - 0.05, vol, out, p.cut);
           bar += n;
           if (bar % 4 === 0) await yieldFrame();
         }
@@ -329,7 +347,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
           for (const e of mel) {
             const s = s0 + e.step; if (s >= total) break;
             if (!barActive(p, Math.floor(s / 16)) || e.midi === null) { prev = null; continue; }
-            voiceLead(c, p.sound, e.midi, stepTime(c, s), e.len * spb, vol, out, prev, !!p.glide);
+            voiceLead(c, p.sound, e.midi, stepTime(c, s), e.len * spbAt(c, s), vol, out, prev, !!p.glide);
             prev = e.midi;
           }
           await yieldFrame();
@@ -346,8 +364,8 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
           const m = tones[Number(ch)] ?? tones[0];
           const t = stepTime(c, s);
           if (p.sound === 'pluck') play(c, I.cleanPluck(m, 0.5, 0.9), t, vol, out);
-          else if (p.sound === 'organ') voicePad(c, 'organ', [m], t, spb * 0.8, vol, out);
-          else play(c, SV.stab(m, spb * 0.9), t, vol * 0.6, out);
+          else if (p.sound === 'organ') voicePad(c, 'organ', [m], t, spbAt(c, s) * 0.8, vol, out);
+          else play(c, SV.stab(m, spbAt(c, s) * 0.9), t, vol * 0.6, out);
         }
         break;
       }
@@ -356,7 +374,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
         for (let s = 0; s < total; s++) {
           const bar = Math.floor(s / 16); if (!barActive(p, bar)) continue;
           if (p.pat[bar % p.pat.length][s % 16] !== 'x') continue;
-          const d = p.sound === 'riser' ? I.riser(spb * 16) : I.clang(p.sound, p.midi);
+          const d = p.sound === 'riser' ? I.riser(spbAt(c, s) * 16) : I.clang(p.sound, p.midi);
           play(c, d, stepTime(c, s), vol, out);
         }
         break;

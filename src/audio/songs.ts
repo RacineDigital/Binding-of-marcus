@@ -6,6 +6,7 @@
 //   Hollow - industrial darksynth    Binding - symphonic gothic metal
 // Melody tokens are "degree:sixteenths" ("r" = rest, "|" = bar line for readability).
 import type { Song } from './score';
+import { FINAL_SONGS } from './finalsongs';
 
 const FILL_SYNTH = '....x...x..xx.xx';
 const ROCK_FILL_TOMS = '........11223333';
@@ -323,3 +324,6 @@ export const SONGS: Record<string, Song> = {
     ],
   },
 };
+
+// the final boss themes live in their own file
+Object.assign(SONGS, FINAL_SONGS);

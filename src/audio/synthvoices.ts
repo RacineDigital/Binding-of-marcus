@@ -106,6 +106,49 @@ export function lead(midi: number, dur: number, wave: 'saw' | 'square', from: nu
     return normalize(d, 0.75);
   });
 }
+/**
+ * The chip lead: an NES-style 25% pulse, but clean. Band-limited (no aliasing fizz), two voices a
+ * hair apart for width, a gentle low-pass to take the edge off, and a vibrato that comes in late on
+ * long notes, so it sings like an 8-bit melody without sounding crunchy.
+ */
+function pulseInto(out: Float32Array, freqAt: (i: number) => number, duty: number, gain: number, phase0 = 0): void {
+  let ph = phase0;
+  for (let i = 0; i < out.length; i++) {
+    const dt = freqAt(i) / SR;
+    let v = ph < duty ? 1 : -1;
+    v += blep(ph, dt); v -= blep((ph + 1 - duty) % 1, dt);
+    out[i] += (v + (1 - 2 * duty)) * gain;
+    ph += dt; if (ph >= 1) ph -= 1;
+  }
+}
+export function chip(midi: number, dur: number, from: number | null, duty = 0.25): Float32Array {
+  dur = q3(dur);
+  return cached(`ch:${midi}:${dur}:${from}:${duty}`, () => {
+    const d = len(dur + 0.1), f = mtof(midi), f0 = from !== null ? mtof(from) : f;
+    const glide = 0.035 * SR, vibOn = 0.18 * SR, vibFull = 0.45 * SR;
+    const fa = (det: number) => (i: number) => {
+      const base = i < glide && from !== null ? f0 * Math.pow(f / f0, i / glide) : f;
+      const k = i < vibOn ? 0 : Math.min(1, (i - vibOn) / vibFull);
+      return base * (1 + k * 0.012 * Math.sin((2 * Math.PI * 6.2 * i) / SR)) * det;
+    };
+    pulseInto(d, fa(0.9985), duty, 0.5, 0.1); pulseInto(d, fa(1.0015), duty, 0.42, 0.55);
+    oscInto(d, 'tri', fa(0.5), 0.18);   // a little body an octave down
+    svf(d, 'lp', () => 6200, 0.7);
+    adsr(d, 0.004, 0.12, 0.82, dur, 0.07);
+    return normalize(d, 0.7);
+  });
+}
+/** Short chip arpeggio blip (50% square, fast decay). */
+export function chipBlip(midi: number, dur: number): Float32Array {
+  dur = q3(dur);
+  return cached(`cb:${midi}:${dur}`, () => {
+    const d = len(dur + 0.05), f = mtof(midi);
+    pulseInto(d, () => f, 0.5, 0.6);
+    svf(d, 'lp', () => 5200, 0.7);
+    adsr(d, 0.002, Math.max(0.05, dur * 0.8), 0.25, dur, 0.04);
+    return normalize(d, 0.6);
+  });
+}
 /** FM bell. */
 export function bell(midi: number, dur: number): Float32Array {
   dur = q3(Math.max(0.8, dur));
