@@ -7,6 +7,18 @@ type Painter = (p: PixelArt, f: number) => void;
 const eyes = (p: PixelArt, x: number, y: number, gap: number, c = '#1a1020') => { p.set(x, y, c); p.set(x + gap, y, c); };
 
 const PAINT: Record<string, Painter> = {
+  narcissist: (p, f) => {
+    const g = ramp('#c8b070'), m = ramp('#a8c0d8');
+    p.ball(8, 7, 5, 5.5, g); p.ball(8, 7, 3.8, 4.3, m); p.rect(7, 12, 2, 4, g[2]); p.rect(6, 15, 4, 1, g[1]);
+    p.set(6, 5, '#ffffff'); p.set(7, 4, '#ffffff');
+    p.rect(6, 6 + f, 1, 2, '#2a2034'); p.rect(9, 6 + f, 1, 2, '#2a2034'); p.set(8, 9, '#c83a4a');
+  },
+  pocket_pet: (p, f) => {
+    const s = ramp('#f0a0c0');
+    p.ball(8, 9, 5.5, 6.5, s); p.rect(5, 6, 6, 5, hex('#a8c890')); p.rect(5, 6, 6, 1, hex('#88a870'));
+    p.set(7, 8, '#2a3a20'); p.set(9, 8, '#2a3a20'); p.set(8, 9 + f, '#2a3a20');
+    p.ball(6, 13, 0.9, 0.9, ramp('#e8e0f0')); p.ball(8, 14, 0.9, 0.9, ramp('#e8e0f0')); p.ball(10, 13, 0.9, 0.9, ramp('#e8e0f0'));
+  },
   inkling: (p, f) => { const c = ramp('#2a2e70'); p.ball(8, 9 - f, 4.5, 4, c); p.set(5, 13, c[1]); p.set(11, 13 - f, c[1]); p.set(8, 13, c[1]); p.rect(6, 8 - f, 1, 2, '#ffffff'); p.rect(9, 8 - f, 1, 2, '#ffffff'); },
   paper_bird: (p, f) => { const c = ramp('#e8e0cc'); p.poly([2, 9, 8, 6, 14, 9, 8, 11], c[3]); p.poly([8, 7, 5, f ? 1 : 4, 10, 7], c[2]); p.poly([8, 7, 12, f ? 2 : 5, 10, 8], c[1]); p.poly([14, 9, 16, 7, 15, 10], c[2]); p.set(13, 8, '#2a2020'); },
   tin_soldier: (p, f) => { const r = ramp('#b03030'), b = ramp('#2a3a6a'); p.rect(6, 3, 4, 3, b[2]); p.rect(6, 2, 4, 1, b[3]); p.ball(8, 7, 2.2, 2, ramp('#e8c8a0')); p.rect(6, 9, 4, 4, r[2]); p.rect(6, 13, 1, 2 + f, b[1]); p.rect(9, 13, 1, 3 - f, b[1]); p.line(11, 5, 11, 12, hex('#8a8a92')); eyes(p, 7, 7, 2); },

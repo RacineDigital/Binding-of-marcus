@@ -671,7 +671,7 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
   pl.recompute();
   syncFamiliars(w);
   // transformations
-  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
+  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp'];
   for (const t of tags) {
     if (pl.transformations.has(t)) continue;
     if (pl.tagCount(t) >= 3) {

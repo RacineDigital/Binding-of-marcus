@@ -4,9 +4,10 @@ import { PASSIVES_A } from './data/passives_a';
 import { PASSIVES_B } from './data/passives_b';
 import { ACTIVES } from './data/actives';
 import { FAMILIARS } from './data/familiars';
+import { REFERENCES } from './data/references';
 import { PAGES, SWEETS, CHARMS } from './data/consumables';
 
-export const ALL_ITEMS: ItemDef[] = [...PASSIVES_A, ...PASSIVES_B, ...ACTIVES, ...FAMILIARS];
+export const ALL_ITEMS: ItemDef[] = [...PASSIVES_A, ...PASSIVES_B, ...ACTIVES, ...FAMILIARS, ...REFERENCES];
 const byId = new Map<string, ItemDef>();
 for (const it of ALL_ITEMS) {
   if (byId.has(it.id)) console.warn('duplicate item id', it.id);

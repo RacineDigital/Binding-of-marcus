@@ -34,8 +34,8 @@ export function artSheets(which: string): Sheet[] {
       const set = getSprites(d);
       for (const [anim, fr] of Object.entries(set)) fr.slice(0, 4).forEach((s, i) => out.push({ label: `${d.id}:${anim}${i}`, canvas: s.canvas }));
     }
-  } else if (which === 'items') {
-    for (const it of ALL_ITEMS) out.push({ label: it.id.slice(0, 10), canvas: itemIconCanvas(it.id) });
+  } else if (which === 'items' || which === 'refs') {
+    for (const it of which === 'refs' ? ALL_ITEMS.slice(-29) : ALL_ITEMS) out.push({ label: it.id.slice(0, 10), canvas: itemIconCanvas(it.id) });
   } else if (which.startsWith('props')) {
     const f = FLOORS[Number(which.slice(5) || 0)];
     const P = propsFor(f);
