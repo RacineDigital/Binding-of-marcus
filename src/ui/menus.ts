@@ -21,8 +21,13 @@ import { getSprites } from '../enemies/enemy';
 import { getEnemy } from '../enemies/registry';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
+import { renderMenuScene, mainMenuScreen } from './mainmenu';
 
-interface Screen { update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean }
+export interface Screen {
+  update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
+  /** Optional mouse support: hover / click / wheel in virtual coordinates. */
+  pointer?(x: number, y: number, click: boolean, moved: boolean, wheel: number): void;
+}
 
 const INK = '#2a1e18', INK2 = '#5a4636', PAPER = '#e6dabd';
 
@@ -88,63 +93,14 @@ export class MenuSystem {
     if (this.pauseGuard > 0) { this.pauseGuard -= dt; keys = []; }
     const s = this.top() ?? (this.g.paused ? this.pauseScreen ?? undefined : undefined); if (!s) return;
     s.t += dt;
+    const m = this.g.input.takeMouse();
+    if (s.pointer && (m.moved || m.clicked || m.wheel) && this.pauseGuard <= 0) s.pointer(m.x, m.y, m.clicked, m.moved, m.wheel);
+    if (this.top() !== s && this.top()) return; // a click opened another screen
     s.update(keys, dt);
   }
 
   // ------------------------------------------------------------ background scene
-  renderBackground(dt: number): void {
-    const r = this.g.r, ctx = r.ctx;
-    if (!this.bgCanvas) {
-      this.bgRoom = new RoomData(-1, 0, 0, 1, 1, 'start', 'menu-scene');
-      this.bgCanvas = paintRoomBackground(this.bgRoom, FLOORS[0]);
-    }
-    const t = this.time;
-    const fl = 0.9 + Math.sin(t * 11) * 0.05 + Math.sin(t * 7.1) * 0.05;
-    r.beginFrame('#06030a', 0.86);
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
-    const sway = Math.sin(t * 0.3) * 3;
-    ctx.drawImage(this.bgCanvas, -BG_MARGIN + sway, -BG_MARGIN);
-    // the scene sits in the right half so the menu reads on the left
-    const cx = 330, cy = 172;
-    // open book on the floor with a turning page
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(cx - 30, cy + 10, 34, 7, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#5a2a22'; ctx.fillRect(cx - 62, cy - 2, 64, 12);
-    ctx.fillStyle = '#e2d4b4'; ctx.fillRect(cx - 60, cy - 6, 29, 12); ctx.fillRect(cx - 29, cy - 6, 29, 12);
-    ctx.fillStyle = '#c8b894'; ctx.fillRect(cx - 31, cy - 6, 2, 12);
-    for (let i = 0; i < 4; i++) { ctx.fillStyle = 'rgba(60,40,30,0.5)'; ctx.fillRect(cx - 56, cy - 3 + i * 2.5, 22, 0.8); ctx.fillRect(cx - 25, cy - 3 + i * 2.5, 22, 0.8); }
-    const flip = (t % 6) / 6;
-    if (flip < 0.25) { const k = flip / 0.25; const w = Math.cos(k * Math.PI) * 29; ctx.fillStyle = '#efe4c8'; ctx.fillRect(cx - 30 + Math.min(0, w), cy - 6 - Math.sin(k * Math.PI) * 6, Math.abs(w), 12); }
-    // candle
-    const kx = cx + 22, ky = cy - 2;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(kx, ky + 12, 7, 2, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#e8dcc0'; ctx.fillRect(kx - 3, ky - 4, 6, 16); ctx.fillStyle = '#fff4dc'; ctx.fillRect(kx - 3, ky - 4, 6, 1);
-    ctx.fillStyle = '#c8b898'; ctx.fillRect(kx + 2, ky - 3, 1, 15);
-    ctx.fillStyle = '#ffd070'; ctx.beginPath(); ctx.ellipse(kx, ky - 8 + Math.sin(t * 9) * 0.5, 2 * fl, 4 * fl, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#fff8e0'; ctx.fillRect(kx - 0.5, ky - 8, 1, 2);
-    r.addLight(kx, ky - 8, 150 * fl, 1); r.addLight(kx, ky - 8, 60 * fl, 1);
-    r.addGlow(kx, ky - 8, 40 * fl, '#ff9a30', 0.45);
-    // Marcus sits by the light, reading
-    const ms = this.sprites(CHARACTERS[0]);
-    const mx = cx - 30, my = cy - 12;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(mx, my + 3, 8, 2.5, 0, 0, TAU); ctx.fill();
-    ms.bodyIdle.down[Math.floor(t * 1.2) % 2].draw(ctx, mx, my + 2);
-    ms.head.down[(t % 5) < 0.15 ? 'blink' : 'normal'].draw(ctx, mx, my - 8 + (Math.floor(t * 1.2) % 2) * 0.5);
-    // moths circling the flame
-    const moth = getEnemy('moth');
-    if (moth) {
-      const fr = getSprites(moth).idle;
-      for (const m of this.moths) {
-        m.a += dt * m.s;
-        const x = kx + Math.cos(m.a) * m.r, y = ky - 26 + Math.sin(m.a * 1.7 + m.r) * m.r * 0.7 - m.y * 2;
-        fr[Math.floor(t * 12 + m.r) % fr.length].draw(ctx, x, y, { flip: Math.cos(m.a + Math.PI / 2) < 0 });
-      }
-    }
-    // dust in the light
-    for (let i = 0; i < 26; i++) {
-      const px = (i * 97 + t * (4 + (i % 5))) % 480, py = (i * 53 + Math.sin(t * 0.5 + i) * 12 + t * 2) % 270;
-      ctx.fillStyle = `rgba(230,210,180,${(0.25 + 0.2 * Math.sin(t + i)).toFixed(2)})`; ctx.fillRect(px | 0, py | 0, 1, 1);
-    }
-  }
+  renderBackground(dt: number): void { renderMenuScene(this, dt); }
 
   render(ctx: CanvasRenderingContext2D): void {
     const s = this.top();
@@ -158,7 +114,7 @@ export class MenuSystem {
   openMain(): void {
     this.stack = [];
     if (!this.g.save.data.introSeen) { this.push(this.introScreen()); return; }
-    this.push(this.mainScreen());
+    this.push(mainMenuScreen(this));
     this.g.audio.setMusic('menu');
     this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
@@ -171,14 +127,14 @@ export class MenuSystem {
   openEnding(w: World): void { this.stack = [this.endingScreen(w)]; }
 
   // ------------------------------------------------------------ intro
-  private introScreen(): Screen {
+  introScreen(): Screen {
     const self = this;
     return {
       t: 0,
       update(keys) {
         if (keys.includes('confirm') || keys.includes('back') || this.t > INTRO_STORY.length * 3.2 + 2) {
           self.g.save.data.introSeen = true; self.g.save.markDirty();
-          self.stack = []; self.push(self.mainScreen()); self.g.audio.setMusic('menu');
+          self.stack = []; self.push(mainMenuScreen(self)); self.g.audio.setMusic('menu');
         }
       },
       render(ctx) {
@@ -195,7 +151,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ main
-  private mainScreen(): Screen {
+  mainScreen(): Screen {
     const self = this, g = this.g;
     const items = ['CONTINUE', 'NEW RUN', 'DAILY RUN', 'CHALLENGES', 'CHARACTERS', 'COLLECTION', 'STATISTICS', 'OPTIONS', 'CREDITS'];
     let sel = g.save.data.run ? 0 : 1;
@@ -252,7 +208,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ daily run
-  private dailyScreen(): Screen {
+  dailyScreen(): Screen {
     const self = this, g = this.g;
     const seed = dailySeed(), day = todayKey();
     const pool = CHARACTERS.filter((c) => !c.unlock || g.save.isUnlocked(c.unlock));
@@ -287,11 +243,11 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ new run
-  private newRunScreen(challenge: string | null = null, forceChar?: string): Screen {
+  newRunScreen(challenge: string | null = null, forceChar?: string, presetSeed?: string): Screen {
     const self = this, g = this.g;
     let ci = forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0;
     let row = 0; // 0 = character, 1 = mode, 2 = seed, 3 = start
-    let seed = ''; let editing = false;
+    let seed = presetSeed ?? ''; let editing = false;
     const hardOpen = g.save.isUnlocked('beat_final') && !challenge;
     let hard = false;
     const unlocked = (c: CharacterDef) => !c.unlock || g.save.isUnlocked(c.unlock);
@@ -376,7 +332,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ challenges
-  private challengesScreen(): Screen {
+  challengesScreen(): Screen {
     const self = this, g = this.g;
     let sel = 0;
     return {
@@ -410,7 +366,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ characters gallery
-  private charactersScreen(): Screen {
+  charactersScreen(): Screen {
     const self = this, g = this.g;
     let sel = 0;
     return {
@@ -446,7 +402,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ collection
-  private collectionScreen(): Screen {
+  collectionScreen(): Screen {
     const self = this, g = this.g;
     const all = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev');
     let sel = 0; const cols = 16;
@@ -504,7 +460,49 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ statistics & achievements
-  private statsScreen(): Screen {
+  historyScreen(): Screen {
+    const self = this, g = this.g;
+    let sel = 0, scroll = 0;
+    const list = () => g.save.data.history ?? [];
+    return {
+      t: 0,
+      update(keys) {
+        const n = list().length;
+        for (const k of keys) {
+          if (k === 'back') { self.pop(); return; }
+          if (k === 'up') sel = Math.max(0, sel - 1);
+          if (k === 'down') sel = Math.min(Math.max(0, n - 1), sel + 1);
+          if (k === 'confirm' && list()[sel]) { const r = list()[sel]; self.push(self.newRunScreen(null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed)); return; }
+        }
+        if (sel < scroll) scroll = sel; if (sel >= scroll + 9) scroll = sel - 8;
+      },
+      pointer(_x, y, click, _m, wheel) {
+        if (wheel) { sel = clamp(sel + wheel, 0, Math.max(0, list().length - 1)); return; }
+        const i = Math.floor((y - 58) / 19) + scroll;
+        if (i >= 0 && i < list().length && y >= 50) { sel = i; if (click) { const r = list()[sel]; self.push(self.newRunScreen(null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed)); } }
+      },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        page(ctx, 20, 14, 440, 244, 1, 21);
+        text(ctx, 'Run History', 40, 38, 16, INK, 'left', FONT_TITLE, 400, false);
+        const L = list();
+        if (!L.length) text(ctx, 'No finished runs yet. Every story you finish or lose is written down here.', 240, 120, 8, INK2, 'center', FONT_BODY, 600, false);
+        L.slice(scroll, scroll + 9).forEach((r, k) => {
+          const i = k + scroll, y = 58 + k * 19, on = i === sel;
+          if (on) inkBlot(ctx, 240, y + 3, 410, 17, self.time, 'rgba(40,30,60,0.15)');
+          const ch = CHARACTERS.find((c) => c.id === r.char);
+          text(ctx, r.won ? 'Won' : 'Lost', 40, y + 6, 9, r.won ? '#3a6a2a' : '#8a2a2a', 'left', FONT_TITLE, 400, false);
+          text(ctx, `${ch?.name ?? r.char} · ${r.mode === 'hard' ? 'Hard' : r.mode === 'daily' ? 'Daily' : r.mode === 'endless' ? 'Endless' : 'Normal'} · Chapter ${r.floor + 1}`, 78, y + 2, 7.5, INK, 'left', FONT_BODY, 600, false);
+          text(ctx, `${new Date(r.date).toLocaleDateString()} · ${fmtTime(r.time)} · Seed ${formatSeed(r.seed)}${r.cause && !r.won ? ' · ' + r.cause : ''}`, 78, y + 10, 6, INK2, 'left', FONT_BODY, 600, false);
+          r.items.slice(0, 8).forEach((id, j) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), 300 + j * 13, y - 4, 12, 12); });
+          text(ctx, String(r.score), 444, y + 6, 9, INK, 'right', FONT_TITLE, 400, false);
+        });
+        hint(ctx, '↑/↓ browse · Enter to replay that seed · Esc back');
+      },
+    };
+  }
+
+  statsScreen(): Screen {
     const self = this, g = this.g;
     let scroll = 0;
     return {
@@ -537,7 +535,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ options
-  private optionsScreen(overlay = false): Screen {
+  optionsScreen(overlay = false): Screen {
     const self = this, g = this.g;
     const st = () => g.save.data.settings;
     type Opt = { label: string; value: () => string; left?: () => void; right?: () => void; ok?: () => void };
@@ -587,7 +585,7 @@ export class MenuSystem {
       },
     };
   }
-  private controlsScreen(overlay: boolean): Screen {
+  controlsScreen(overlay: boolean): Screen {
     const self = this, g = this.g;
     let sel = 0, waiting = false;
     const n = ACTION_ORDER.length + 1;
@@ -634,7 +632,7 @@ export class MenuSystem {
       },
     };
   }
-  private confirmScreen(q: string, yes: () => void): Screen {
+  confirmScreen(q: string, yes: () => void): Screen {
     const self = this; let sel = 1;
     return {
       t: 0, overlay: true,
@@ -655,7 +653,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ credits
-  private creditsScreen(): Screen {
+  creditsScreen(): Screen {
     const self = this;
     const lines = [
       ['Binding of Marcus', 'title'], ['', ''],
@@ -729,7 +727,7 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ death & ending
-  private deathScreen(w: World): Screen {
+  deathScreen(w: World): Screen {
     const self = this, g = this.g;
     let sel = 0; const items = ['Begin again', 'Return to the menu'];
     return {
@@ -771,7 +769,7 @@ export class MenuSystem {
       },
     };
   }
-  private endingScreen(w: World): Screen {
+  endingScreen(w: World): Screen {
     const self = this, g = this.g;
     return {
       t: 0,

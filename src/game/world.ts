@@ -478,8 +478,8 @@ export class World {
     const room = this.room; const k = room.at(c, r);
     const i = room.idx(c, r);
     if (k === Ob.Heap || k === Ob.Fire || k === Ob.Urn || k === Ob.Keg) {
-      if (k === Ob.Fire && room.gvar[i] === 3) { this.fx.sparks(x, y, 2, '#9a7ae0', 40); return; } // ink fire only yields to bombs
-      room.ghp[i] -= Math.max(1, dmg);
+      // ink fire (purple) is twice as stubborn as a normal flame
+      room.ghp[i] -= Math.max(1, dmg) * (k === Ob.Fire && room.gvar[i] === 3 ? 0.5 : 1);
       this.obstacleDirty = true;
       const col = k === Ob.Fire ? '#ffb040' : this.theme.pal.heap;
       this.fx.burst(x, y, 6, 3, col, 40, 0.3);

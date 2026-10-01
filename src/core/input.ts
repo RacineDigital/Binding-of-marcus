@@ -61,6 +61,10 @@ export class Input {
   private padRepeat = 0;
   private padMenuDir: MenuKey | null = null;
   anyKeyPressed = false;
+  /** Mouse in virtual (480x270) coordinates; `clicked` is set for one menu update. */
+  mouse = { x: -1, y: -1, moved: false, clicked: false, down: false, wheel: 0, active: false };
+  /** Converts client pixels to virtual coordinates (set by the game, which knows the scaling). */
+  toView: ((cx: number, cy: number) => [number, number]) | null = null;
 
   constructor(target: HTMLElement) {
     window.addEventListener('keydown', (e) => {
@@ -85,6 +89,12 @@ export class Input {
     window.addEventListener('keyup', (e) => { this.down.delete(e.code); });
     window.addEventListener('blur', () => { this.down.clear(); this.shootOrder = []; });
     target.addEventListener('mousedown', () => target.focus());
+    const pos = (e: PointerEvent | MouseEvent) => { if (this.toView) { const [x, y] = this.toView(e.clientX, e.clientY); this.mouse.x = x; this.mouse.y = y; } };
+    target.addEventListener('pointermove', (e) => { pos(e); this.mouse.moved = true; this.mouse.active = true; });
+    target.addEventListener('pointerdown', (e) => { pos(e); if (e.button === 0) { this.mouse.down = true; this.mouse.clicked = true; this.mouse.active = true; } });
+    window.addEventListener('pointerup', () => { this.mouse.down = false; });
+    target.addEventListener('wheel', (e) => { this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
+    target.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   private codeToMenu(code: string): MenuKey | null {
@@ -149,6 +159,8 @@ export class Input {
   endStep(): void { this.pressed.clear(); this.padPressed.clear(); }
   /** Menu navigation keys pressed since last call. */
   takeMenu(): MenuKey[] { const q = this.menuQueue; this.menuQueue = []; return q; }
+  /** Mouse state for this menu update; resets the one-shot flags. */
+  takeMouse(): { x: number; y: number; moved: boolean; clicked: boolean; wheel: number } { const m = { ...this.mouse }; this.mouse.moved = false; this.mouse.clicked = false; this.mouse.wheel = 0; return m; }
   clearMenu(): void { this.menuQueue = []; }
 
   moveVector(): { x: number; y: number } {

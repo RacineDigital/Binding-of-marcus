@@ -32,6 +32,11 @@ export function recordScore(save: SaveManager, run: Run, won: boolean): { score:
   const key = run.mode === 'daily' ? 'best_daily_' + todayKey() : 'best_' + run.mode;
   const best = save.data.stats[key] ?? 0;
   if (total > best) { save.data.stats[key] = total; save.markDirty(); }
+  // run history (newest first, last 30)
+  const h = save.data.history ?? (save.data.history = []);
+  h.unshift({ date: Date.now(), char: run.charId, mode: run.challenge ? 'challenge' : run.mode, seed: run.seed, floor: run.floorIndex, won, score: total, time: run.stats.time, cause: run.stats.deathCause, items: run.stats.items.slice(-16) });
+  if (h.length > 30) h.length = 30;
+  save.markDirty();
   return { score: total, best, isBest: total > best };
 }
 

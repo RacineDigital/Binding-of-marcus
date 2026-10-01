@@ -38,6 +38,7 @@ export class Game {
   constructor(cv: HTMLCanvasElement) {
     this.r = new Renderer(cv);
     this.input = new Input(cv);
+    this.input.toView = (cx, cy) => { const r = this.r, dpr = Math.min(window.devicePixelRatio || 1, 2); return [(cx * dpr - r.offX) / r.scale, (cy * dpr - r.offY) / r.scale]; };
     this.audio = createAudio();
     this.save = new SaveManager();
     this.applySettings();

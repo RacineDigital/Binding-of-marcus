@@ -10,6 +10,8 @@ export function solidCell(room: RoomData, c: number, r: number, mode: MoveMode):
   if (!room.inGrid(c, r)) return false;
   const k = room.grid[r * room.cols + c];
   if (k === Ob.None) return false;
+  // a put-out fire is just ash: walk and shoot straight over it
+  if (k === Ob.Fire && room.ghp[r * room.cols + c] <= 0) return false;
   switch (mode) {
     case 'walk': return OB_SOLID_WALK.has(k);
     case 'fly': return OB_SOLID_FLY.has(k);
