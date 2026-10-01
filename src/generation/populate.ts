@@ -220,7 +220,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'boss': {
-      if (floor.theme.id === 'lastpage' || floor.theme.id === 'foreword') {
+      if (floor.theme.id === 'lastpage' || floor.theme.id === 'foreword' || floor.theme.id === 'room4') {
         // a huge bare arena with four pillars to hide behind
         room.bossId = floor.theme.bosses[0];
         for (const [c, r] of [[7, 5], [room.cols - 8, 5], [7, room.rows - 6], [room.cols - 8, room.rows - 6]]) room.setOb(c, r, Ob.Pillar);
@@ -283,6 +283,8 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'supersecret': {
+      // on the hospital path, the bottom half of Grandfather's letter is hidden down here
+      if (HOSPITAL_THEMES.includes(floor.theme.id)) { pk('item', cx, cy, { id: 'letter_bottom', style: 'normal' }); pk('heart', cx - 30, cy + 10); break; }
       if (rng.chance(0.7)) item(cx, cy, rng.chance(0.5) ? 'secret' : 'deal', 'normal');
       else for (let i = 0; i < 4; i++) pk(rng.pick(['heart', 'wax', 'ink']), cx + (i - 1.5) * 20, cy);
       break;
@@ -356,6 +358,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
 }
 
 import { getItem } from '../items/registry';
+import { HOSPITAL_THEMES } from '../data/notes';
 import { PAGES } from '../items/data/consumables';
 function pageIdFor(rng: RNG): string { return rng.pick(PAGES).id; }
 export function priceFor(id: string): number {

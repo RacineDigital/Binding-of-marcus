@@ -110,7 +110,7 @@ Menus also work with the mouse: hover, click and scroll.
 
   `npm run test:synergy` checks every item with every attack mode and every pair of modes, checks
   that each shot modifier's effect really shows up in every mode, and runs hundreds of random builds.
-- **189 items:** 127 passives, 41 actives and 21 familiars. Each one is a data definition with stat
+- **195 items:** 133 passives, 41 actives and 21 familiars. Each one is a data definition with stat
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
@@ -139,7 +139,7 @@ Menus also work with the mouse: hover, click and scroll.
 
   Every chapter has its own floor and wall painter, palette, ambient particles, lighting, enemy
   pool, boss pool and music.
-- **45 enemy types and 22 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
+- **45 enemy types and 24 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
   card, several attack patterns, phase changes and a death sequence. Every chapter has at least two
   bosses that fit it: the Thornwife in the Greenhouse, the Rime Bride in the Frozen Cistern, the
   Pendulum in the Clocktower, the Typesetter in the Print Shop and the Bookbinder in the Binding
@@ -156,6 +156,26 @@ Menus also work with the mouse: hover, click and scroll.
   and the light. After your first finished story the Binding's boss is always **It Remembers**,
   the Unbound awake and angrier (like Mom's Heart becoming It Lives), so you know you're in the
   end game.
+- **The story, and the paths it hides.** Everything in the book belonged to someone: Grandfather
+  Elias, who was writing it for Marcus; Grandmother Ada, whose clock stopped at 4:04; Aunt Edda,
+  Nell, Wren and the rest. Their things carry a line of history in the Collection, the characters
+  and bosses tie back to them, and 25 of **Grandfather's Notes** lie around the chapters (on the
+  hospital path and after the endings too), readable again from the Journal. Read in order, they
+  tell what really happened, and point at the paths that are hidden:
+  - **The back stair (St. Agnes).** Once the story is finished, the Chapter II boss room has a
+    boarded stair. Bomb it open and the run goes up into the hospital instead of Chapters III–V:
+    **The Waiting Room**, **The Night Ward** and **Intensive Care** (where **the Iron Lung**
+    breathes). Grandfather tore his letter in two: one half waits at the hospital's lost property
+    (always the Lost & Found here, so don't get hit), the other is in a Deep Crawlspace (there's
+    always one). With the whole letter, **Room 4** opens after Intensive Care, and **The Patient**
+    is waiting in the bed. Without it, the run goes back down to the usual chapters.
+  - **Five endings**, numbered and kept in the Journal with a clue for each one you haven't seen:
+    Morning (the Binding), In His Own Hand (the Last Page), For Marcus (the Foreword), The Visit
+    (Room 4) and **Goodnight**: see the other four, then visit Room 4 again, and the morning comes
+    in through the window. Each ending closes with a line for whichever reader got there, and the
+    title screen changes once the book is finished.
+  - New keepsakes to earn: Get Well Soon (put the letter together), Grandad's Cardigan (the visit)
+    and The Last Word (Goodnight).
 - **Seeded floors.** Floors are built on a hidden 13×13 grid with 1×1, 2×1, 1×2 and 2×2 rooms.
   Each floor places:
   - a boss room at the furthest dead end;
@@ -186,7 +206,7 @@ Menus also work with the mouse: hover, click and scroll.
 - **Resources and pickups.** Buttons (currency), keys, cherry bombs, spark jars (active-item
   charge), tin, locked, crimson and reliquary boxes, slot machines, a fortune owl, beggars, a
   wishing well, the seamstress and the grandfather clock.
-- **Progression.** 49 achievements unlock items, characters, challenges and more modes, so the item
+- **Progression.** 66 achievements unlock items, characters, challenges and more modes, so the item
   pool grows as you play. The save also holds the Collection (every curio, plus a Bestiary of every
   creature with kill counts), Run History (your last 30 runs, any of which you can replay by seed),
   statistics, best scores and settings.

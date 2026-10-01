@@ -98,6 +98,45 @@ function clock(f: number): PixelArt {
   return p;
 }
 
+/** One of Grandfather's notes, pinned to a little reading stand. */
+function note(f: number): PixelArt {
+  const p = new PixelArt(16, 22);
+  const wd = ramp('#5a3a24'), pg = ramp('#efe6d0');
+  p.line(8, 12, 8, 21, wd[2]); p.line(4, 21, 12, 21, wd[1]); p.set(5, 20, wd[2]); p.set(11, 20, wd[2]);
+  p.poly([2, 4, 14, 3, 13, 13, 3, 14], pg[3]); p.poly([2, 4, 5, 4, 5, 14, 3, 14], pg[2]);
+  for (let y = 6; y < 13; y += 2) p.rect(5, y, 7 - ((y * 5) % 3), 1, hex('#4a4a7a'));
+  p.set(8, 3 - (f % 2), '#c83a3a');
+  p.polish().outline(undefined, false, 0.85);
+  return p;
+}
+/** Grandfather's book, finished, open on a lectern in the morning light. */
+function book(f: number): PixelArt {
+  const p = new PixelArt(28, 34);
+  const wd = ramp('#6a4a30'), pg = ramp('#f4ecd8'), cov = ramp('#5a1e24');
+  p.poly([10, 33, 18, 33, 16, 18, 12, 18], wd[2]); p.rect(7, 32, 14, 2, wd[1]);
+  p.poly([2, 16, 26, 16, 24, 20, 4, 20], wd[3]);
+  p.poly([3, 15, 14, 12, 14, 18, 4, 19], cov[2]); p.poly([25, 15, 14, 12, 14, 18, 24, 19], cov[1]);
+  p.poly([4, 14, 14, 11, 14, 17, 5, 18], pg[3]); p.poly([24, 14, 14, 11, 14, 17, 23, 18], pg[2]);
+  for (let i = 0; i < 3; i++) { p.line(6, 14 + i * 1.3, 12, 12.5 + i * 1.3, hex('#5a5a8a')); p.line(16, 12.5 + i * 1.3, 22, 14 + i * 1.3, hex('#5a5a8a')); }
+  p.line(14, 11, 14, 18, cov[0]);
+  p.line(14, 18, 14, 24 + (f % 2), hex('#c83a3a'));
+  p.polish().outline(undefined, false, 0.85);
+  return p;
+}
+/** His armchair, with the brown cardigan over the back. Nobody in it. */
+function armchair(): PixelArt {
+  const p = new PixelArt(30, 32);
+  const fab = ramp('#6a3a2a'), card = ramp('#8a6a4a');
+  p.rect(5, 4, 20, 18, fab[2]); p.shadeV(5, 4, 20, 18, fab, 0.5);
+  p.rect(2, 12, 6, 16, fab[3]); p.rect(22, 12, 6, 16, fab[1]);
+  p.rect(7, 18, 16, 8, fab[3]); p.rect(7, 18, 16, 1, fab[4]);
+  p.rect(4, 28, 2, 3, hex('#2a1a10')); p.rect(24, 28, 2, 3, hex('#2a1a10'));
+  p.poly([6, 3, 24, 3, 22, 11, 8, 11], card[2]); p.rect(14, 3, 2, 8, card[0]);
+  for (let y = 5; y < 11; y += 2) p.set(13, y, '#e0c890');
+  p.polish().outline(undefined, false, 0.85);
+  return p;
+}
+
 export interface NpcSprites { [k: string]: Sprite[] }
 let cache: NpcSprites | null = null;
 export function npcSprites(): NpcSprites {
@@ -106,6 +145,7 @@ export function npcSprites(): NpcSprites {
   cache = {
     mott: mk(mott, 2), slot: mk(slot, 4), fortune: mk(fortune, 2), beggar: mk(beggar, 2), well: mk(() => well(), 1),
     seamstress: mk(seamstress, 2), clock: mk(clock, 4),
+    note: mk(note, 2), book: mk(book, 2), armchair: mk(() => armchair(), 1),
   };
   return cache;
 }

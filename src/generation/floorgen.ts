@@ -3,9 +3,12 @@
 import { RNG } from '../core/rng';
 import { MAP_SIZE } from '../core/constants';
 import { RoomData, RoomType, Side, DoorKind, opposite } from '../rooms/room';
-import { MARGINS_THEME, LASTPAGE_THEME, DEDICATION_THEME, FOREWORD_THEME, MARGINS_FLOOR, LASTPAGE_FLOOR, FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel } from '../data/floors';
+import { MARGINS_THEME, LASTPAGE_THEME, DEDICATION_THEME, FOREWORD_THEME, MARGINS_FLOOR, LASTPAGE_FLOOR, FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel,
+  HOSPITAL_FLOORS, ROOM4_THEME, HOME_THEME, HOSPITAL_FIRST, ROOM4_FLOOR, HOME_FLOOR } from '../data/floors';
 import type { Run, Floor } from '../game/run';
 import { populateRoom } from './populate';
+import { notesFor } from '../data/notes';
+import { Ob } from '../rooms/room';
 import type { SaveManager } from '../save/save';
 
 const DIRS: [number, number, Side][] = [[0, -1, Side.N], [1, 0, Side.E], [0, 1, Side.S], [-1, 0, Side.W]];
@@ -63,23 +66,42 @@ export function themeAt(seed: string, fi: number): FloorTheme {
 export function pickTheme(run: Run, fi: number): FloorTheme {
   if (run.flags.margins && fi === MARGINS_FLOOR) return run.flags.light ? DEDICATION_THEME : MARGINS_THEME;
   if (run.flags.margins && fi === LASTPAGE_FLOOR) return run.flags.light ? FOREWORD_THEME : LASTPAGE_THEME;
+  if (run.flags.hospital) {
+    // up the back stair: the hospital replaces the middle chapters, then Room 4, then home
+    if (fi >= HOSPITAL_FIRST && fi < ROOM4_FLOOR) return HOSPITAL_FLOORS[fi - HOSPITAL_FIRST];
+    if (run.flags.room4 && fi === ROOM4_FLOOR) return ROOM4_THEME;
+    if (run.flags.home && fi === HOME_FLOOR) return HOME_THEME;
+    return afterHospital(run.seed, fi);
+  }
   return themeAt(run.seed, fi);
+}
+/** Back on the main path after the hospital: no second ward, so that family is swapped for another. */
+function afterHospital(seed: string, fi: number): FloorTheme {
+  const t = themeAt(seed, fi);
+  if (fi >= FINAL_FLOOR || familyOf(t) !== 'ward') return t;
+  const order = chapterOrder(seed);
+  const used = new Set(order.map(familyOf));
+  const spare = CHAPTER_POOL.filter((c) => !used.has(familyOf(c)) && familyOf(c) !== 'ward' && (c.tier ?? 0) <= fi + 1);
+  return spare.length ? new RNG(seed + ':afterward' + fi).pick(spare) : t;
 }
 
 export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const theme = pickTheme(run, fi);
   const base = new RNG(`${run.seed}:floor${fi}`);
   const isFinal = fi === FINAL_FLOOR;
-  const special = theme === MARGINS_THEME || theme === DEDICATION_THEME ? 'margins' : theme === LASTPAGE_THEME || theme === FOREWORD_THEME ? 'lastpage' : null;
+  const special = theme === MARGINS_THEME || theme === DEDICATION_THEME ? 'margins'
+    : theme === LASTPAGE_THEME || theme === FOREWORD_THEME || theme === ROOM4_THEME ? 'lastpage' : theme === HOME_THEME ? 'home' : null;
+  const hospital = HOSPITAL_FLOORS.includes(theme);
   const target = isFinal ? 7 : special === 'margins' ? 24 + base.int(0, 2) : Math.min(19, 7 + Math.floor(fi * 1.5) + base.int(0, 2));
   let c: Ctx | null = null;
   for (let attempt = 0; attempt < 400; attempt++) {
     const rng = new RNG(`${run.seed}:floor${fi}:a${attempt}`);
     const ctx: Ctx = { rng, map: new Int16Array(MAP_SIZE * MAP_SIZE).fill(-1), rooms: [], seed: run.seed, fi };
     if (special === 'lastpage') { buildLastPage(ctx); c = ctx; break; }
+    if (special === 'home') { place(ctx, 6, 6, 1, 1, 'start'); ctx.rooms[0].distance = 0; connectDoors(ctx, fi); c = ctx; break; }
     // the Margins wants five boss rooms; settle for fewer if the map won't have it
     const bosses = special === 'margins' ? Math.max(3, 5 - Math.floor(attempt / 150)) : 1;
-    if (tryBuild(ctx, target, fi, isFinal, bosses)) { c = ctx; break; }
+    if (tryBuild(ctx, target, fi, isFinal, bosses, hospital)) { c = ctx; break; }
   }
   if (!c) throw new Error('floor generation failed');
   const rng = c.rng;
@@ -99,7 +121,40 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   sprinkleMarkedRocks(floor, rng);
   // only one of the Margins' boss rooms leads on, and nothing about its door says which
   if (special === 'margins') rng.pick(c.rooms.filter((r) => r.type === 'boss')).flags.trueBoss = true;
+  if (special === 'home') {
+    // the cellar in the morning: the finished book on its lectern, and his chair
+    const r = c.rooms[0], ctr = r.center();
+    r.npcs.push({ kind: 'book', x: ctr.x, y: ctr.y - 6 }, { kind: 'armchair', x: ctr.x + 120, y: ctr.y - 50 });
+  }
+  if (save && !special) placeNote(floor, run, save);
   return floor;
+}
+
+/**
+ * One of Grandfather's notes, left lying in a room: always one still unread on the hospital path,
+ * often one elsewhere, and now and then an old one again once they have all been read.
+ */
+function placeNote(floor: Floor, run: Run, save: SaveManager): void {
+  if (run.challenge) return;
+  const rng = new RNG(`${run.seed}:note${floor.index}`);
+  const avail = notesFor(floor.theme.id, (id) => save.isUnlocked(id));
+  const unread = avail.filter((n) => !save.hasNote(n.id));
+  const hospital = HOSPITAL_FLOORS.includes(floor.theme);
+  if (!avail.length || !rng.chance(unread.length ? (hospital ? 1 : 0.45) : 0.12)) return;
+  // mostly the next few unread in story order, so they read as a story across runs
+  const note = rng.pick(unread.length ? unread.slice(0, 3) : avail);
+  const rooms = floor.rooms.filter((r) => r.type === 'library' || r.type === 'secret' || (r.type === 'normal' && r.distance >= 1));
+  if (!rooms.length) return;
+  const room = rng.pick(rooms);
+  // a free floor cell near the middle of the room
+  const free: [number, number][] = [];
+  for (let r = 1; r < room.rows - 1; r++) for (let cc = 1; cc < room.cols - 1; cc++) if (room.at(cc, r) === Ob.None) free.push([cc, r]);
+  if (!free.length) return;
+  const mid = { c: room.cols / 2, r: room.rows / 2 };
+  free.sort((a, b) => Math.hypot(a[0] - mid.c, a[1] - mid.r) - Math.hypot(b[0] - mid.c, b[1] - mid.r));
+  const [fc, fr] = free[Math.min(free.length - 1, rng.int(2, 8))];
+  const p = room.cellCenter(fc, fr);
+  room.npcs.push({ kind: 'note', x: p.x, y: p.y + 4, data: { id: note.id } });
 }
 
 /** The Last Page: a landing and, through one door, a huge arena. */
@@ -110,7 +165,7 @@ function buildLastPage(c: Ctx): void {
   connectDoors(c, c.fi);
 }
 
-function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean, bosses = 1): boolean {
+function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean, bosses = 1, deep = false): boolean {
   const rng = c.rng;
   const cx = 6, cy = 6;
   place(c, cx, cy, 1, 1, 'start');
@@ -228,7 +283,9 @@ function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean, bosses =
       }
       if (!bad && n === 1) cands2.push({ x, y });
     }
-    if (cands2.length && rng.chance(0.75)) { const s = rng.pick(cands2); place(c, s.x, s.y, 1, 1, 'supersecret'); }
+    // the hospital always hides a deep crawlspace (half of Grandfather's letter is down one)
+    if (cands2.length && (deep || rng.chance(0.75))) { const s = rng.pick(cands2); place(c, s.x, s.y, 1, 1, 'supersecret'); }
+    else if (deep) return false;
   }
   connectDoors(c, fi);
   return true;

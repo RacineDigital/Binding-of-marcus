@@ -247,7 +247,7 @@ const pendBrain: BossBrain = {
   onPhase(e, w) { w.hud.toast('The Pendulum strikes the hour.'); w.audio.play('bell', { x: e.x, pitch: 0.5 }); },
 };
 const pendulum: EnemyDef = {
-  id: 'pendulum', name: 'The Pendulum', desc: 'The tower clock, still keeping the time of the night it all went wrong.', boss: true,
+  id: 'pendulum', name: 'The Pendulum', desc: 'The tower clock, stopped at four minutes past four: the morning Grandmother went.', boss: true,
   hp: 380, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 34, mass: 30, noKnock: true, gore: '#4a2a1a', goreDecal: '#2a1a10', light: [60, '#ffd890'],
   sprites: () => ({ idle: frames(72, 84, 6, (p, f) => paintPendulum(p, f, (f / 6) * TAU)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
@@ -407,6 +407,7 @@ const FORMS: Record<string, Move[]> = {
   ossuaryknight: ['charge', 'rings'], mothmother: ['summon', 'spiral'], bellringer: ['rings', 'rain'], choirmaster: ['beams', 'spiral'],
   blottedman: ['tendrils', 'rain'], unbound: ['beams', 'pages'], thornwife: ['tendrils', 'spray'], rimebride: ['drops', 'rings'],
   pendulum: ['beams', 'rings'], typesetter: ['rain', 'charge'], bookbinder: ['tendrils', 'beams'],
+  ironlung: ['charge', 'rings'], patient: ['drops', 'rings'],
 };
 const BASE_MOVES: Move[] = ['tendrils', 'pages', 'rain', 'spiral'];
 const LAST_MOVES: Move[] = ['beams', 'spiral', 'tendrils', 'rain', 'drops'];

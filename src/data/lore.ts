@@ -17,6 +17,16 @@ export const FORTUNES = [
   'The clock downstairs runs backwards on Thursdays.',
   'When the choir stops singing, look up.',
   'Your aunt could mend anything with the right needle.',
+  'Boards nailed over a stair are only waiting for a loud noise.',
+  'Half a ticket gets you nowhere. Two halves get you in.',
+  'Lost property keeps more than umbrellas.',
+  'Dig deep enough and you will find what was hidden for you.',
+  'Room 4 has a lock, and the key is made of paper.',
+  'He waited at four minutes past four. He is still waiting.',
+  'Your sister visited every day. Ask her what he said.',
+  'Every ending is a door. The last one opens from the inside.',
+  'The night nurse is not a nurse.',
+  'Read the notes in the margins, and the margins will read you.',
 ];
 export const INTRO_STORY = [
   'Grandfather Elias bound books in the cellar of the old house on Harrow Lane.',

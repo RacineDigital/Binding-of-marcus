@@ -142,7 +142,10 @@ export class Hud {
   activeFlash = 0;
   fullMap = false;
   panelFade = 0; panelInfo: InspectInfo | null = null; panelPickup: Pickup | null = null;
+  /** A note being read: a page held up at the bottom of the screen for a while. */
+  note: { title: string; text: string; by: string; t: number; dur: number } | null = null;
   constructor(w: World) { this.w = w; }
+  showNote(title: string, body: string, by: string): void { this.note = { title, text: body, by, t: 0, dur: 3.5 + body.length * 0.03 }; }
 
   /** Speedrun-style run clock under the map. */
   private drawTimer(ctx: CanvasRenderingContext2D): void {
@@ -163,6 +166,7 @@ export class Hud {
   update(dt: number): void {
     for (const b of this.banners) b.t += dt;
     this.banners = this.banners.filter((b) => b.t < 3);
+    if (this.note && (this.note.t += dt) > this.note.dur) this.note = null;
     for (const t of this.toasts) t.t += dt;
     this.toasts = this.toasts.filter((t) => t.t < t.dur);
     this.floorCardT = Math.max(0, this.floorCardT - dt);
@@ -207,6 +211,7 @@ export class Hud {
     this.drawBossBar(ctx);
     if (eid) this.drawEID(ctx); else this.drawItemPanel(ctx);
     this.drawBanners(ctx);
+    this.drawNote(ctx);
     this.drawToasts(ctx);
     this.drawRoomName(ctx);
     this.drawFloorCard(ctx);
@@ -291,6 +296,14 @@ export class Hud {
         text(ctx, s, xx, y + 6, 6, sp[k] > 0 ? c : COL.dim, 'left', FONT_BODY, 600);
         xx += measure(ctx, s, 6, FONT_BODY, 600) + 8;
       }
+      y += 12;
+    }
+    // up the back stair: how the letter is coming along
+    if (w.run.flags.hospital && !w.run.flags.room4 && y < VIEW_H - 30) {
+      head('ST. AGNES  ·  ROOM 4');
+      const whole = pl.has('grandfathers_letter');
+      const rows: [string, boolean][] = whole ? [['Grandfather\'s letter, whole', true]] : [['Top half (lost property)', pl.has('letter_top')], ['Bottom half (somewhere deep)', pl.has('letter_bottom')]];
+      for (const [label, got] of rows) { text(ctx, (got ? '◆ ' : '◇ ') + label, X + 4, y + 5, 6.5, got ? COL.up : COL.dim, 'left', FONT_BODY, 600); y += 8; }
     }
     ctx.restore();
   }
@@ -675,6 +688,21 @@ export class Hud {
       text(ctx, b.sub, tx, y + 26, 8, '#5a4636', 'left', FONT_BODY, 600, false);
       ctx.restore();
     }
+  }
+  /** Grandfather's handwriting on a scrap of paper, held up until it has had time to be read. */
+  private drawNote(ctx: CanvasRenderingContext2D): void {
+    const n = this.note; if (!n) return;
+    const a = clamp(Math.min(n.t * 4, (n.dur - n.t) * 2), 0, 1);
+    const W = 300, lines = wrap(ctx, n.text, 7.5, W - 28);
+    const H = 30 + lines.length * 9.5 + (n.by ? 10 : 0), x = VIEW_W / 2 - W / 2, y = VIEW_H - 52 - H + (1 - a) * 8;
+    ctx.save();
+    paperStrip(ctx, x, y, W, H, a, n.title.length + 7);
+    ctx.globalAlpha = a;
+    text(ctx, n.title, x + 14, y + 15, 11, '#2a1a14', 'left', FONT_TITLE, 400, false);
+    ctx.fillStyle = 'rgba(90,60,40,0.35)'; ctx.fillRect(x + 14, y + 19, W - 28, 0.6);
+    lines.forEach((l, i) => text(ctx, l, x + 14, y + 30 + i * 9.5, 7.5, '#3a2a40', 'left', FONT_BODY, 600, false));
+    if (n.by) text(ctx, '— ' + n.by, x + W - 14, y + H - 7, 7, '#6a4a3a', 'right', FONT_BODY, 600, false);
+    ctx.restore();
   }
   private drawToasts(ctx: CanvasRenderingContext2D): void {
     this.toasts.forEach((t, i) => {

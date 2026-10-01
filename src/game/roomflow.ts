@@ -21,7 +21,8 @@ import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
-import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, enemyHpMul } from '../data/floors';
+import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, ROOM4_FLOOR, HOSPITAL_FIRST, enemyHpMul } from '../data/floors';
+import { HOSPITAL_THEMES } from '../data/notes';
 import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
@@ -30,7 +31,7 @@ import { CHALLENGES } from '../data/achievements';
 /** The Binding and the Last Page get the final boss theme; the Margins' many bosses the late one. */
 function bossMusic(run: Run): string {
   const fi = run.floorIndex;
-  if (fi === FINAL_FLOOR || (run.flags.margins && fi === LASTPAGE_FLOOR)) return 'bossFinal';
+  if (fi === FINAL_FLOOR || (run.flags.margins && fi === LASTPAGE_FLOOR) || (run.flags.room4 && fi === ROOM4_FLOOR)) return 'bossFinal';
   return fi >= 4 ? 'boss2' : 'boss';
 }
 export function startFloor(w: World): void {
@@ -134,10 +135,12 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.obstacleDirty = true;
   w.enemies = []; w.proj.clear(); w.beams = []; w.bombs = []; w.creep = []; w.fx.clear(); w.bossList = [];
   w.pendingKegs = []; w.lockdown = false; w.labels = [];
+  if (from !== null) w.hud.note = null;
   w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
   w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: room.flags.trap.kind ?? 'down' } : null;
-  w.exitDoor = room.flags.exit ? { x: room.flags.exit.x, y: room.flags.exit.y, t: 2 } : null;
-  w.lightBeam = room.flags.beam ? { x: room.flags.beam.x, y: room.flags.beam.y, t: 2 } : null;
+  w.exitDoor = room.flags.exit ? { x: room.flags.exit.x, y: room.flags.exit.y, t: 2, kind: room.flags.exit.kind } : null;
+  w.lightBeam = room.flags.beam ? { x: room.flags.beam.x, y: room.flags.beam.y, t: 2, kind: room.flags.beam.kind } : null;
+  w.backStair = room.flags.stair ? { x: room.flags.stair.x, y: room.flags.stair.y, t: 2, boarded: room.flags.stair.boarded } : null;
   w.roomTime = 0; w.roomHit = false; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
@@ -151,6 +154,9 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
     p.noCollect = 0.3;
     return p;
   });
+  // half a letter Marcus already carries (or has made whole) is not waiting here twice
+  const pl0 = w.player;
+  for (const p of w.pickups) if (p.kind === 'item' && (p.data.id === 'letter_top' || p.data.id === 'letter_bottom') && (pl0.has(p.data.id) || pl0.has('grandfathers_letter'))) p.data.id = w.run.pools.roll('secret');
   w.npcs = room.npcs.map((n) => { const npc = makeNpc(w, n.kind, n.x, n.y); npc.data = n.data ?? {}; return npc; });
   // player placement
   const pl = w.player;
@@ -511,6 +517,20 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();
+    if (w.run.flags.room4 && fi === ROOM4_FLOOR) {
+      // Room 4: it was only ever Grandad. With every other ending already seen, the morning comes
+      // in through the window, and he points at it.
+      const sv = w.game.save;
+      if (!w.run.challenge && ['morning', 'own_hand', 'for_marcus', 'the_visit'].every((id) => sv.hasEnding(id))) {
+        w.lightBeam = { x: c.x + 60, y: c.y + 30, t: 0, kind: 'home' }; room.flags.beam = { x: c.x + 60, y: c.y + 30, kind: 'home' };
+        w.exitDoor = { x: c.x - 60, y: c.y + 30, t: 0, kind: 'exit' }; room.flags.exit = { x: c.x - 60, y: c.y + 30, kind: 'exit' };
+        w.audio.stinger('blessing');
+        w.hud.banner('Morning', 'Grandad points at the window. Or you could stay a little longer.');
+        return;
+      }
+      w.hud.toast('It was only Grandad. It was only ever Grandad.', 3);
+      w.after(1.6, () => w.game.onVictory()); return;
+    }
     if (w.run.flags.margins && fi === LASTPAGE_FLOOR) {
       if (w.run.flags.light) w.game.save.unlock('beat_author');
       else { w.game.save.unlock('beat_unwritten'); w.game.save.stat('unwrittenWins', 1); }
@@ -559,6 +579,16 @@ export function onBossKilled(w: World, e: Enemy): void {
     w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
     room.flags.trap = { x: c.x, y: c.y + 26 };
     w.audio.play('trapdoor');
+    // once the story is finished: a boarded back stair behind Chapter II's boss, up to St. Agnes
+    if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && !w.run.flags.hospital) {
+      const sx = c.x + 76, sy = c.y + 22;
+      w.backStair = { x: sx, y: sy, t: 0, boarded: true }; room.flags.stair = { x: sx, y: sy, boarded: true };
+    }
+    // the end of the hospital: Room 4, which opens for Grandfather's letter
+    if (w.run.flags.hospital && fi === ROOM4_FLOOR - 1) {
+      w.exitDoor = { x: c.x - 76, y: c.y + 30, t: 0, kind: 'room4' }; room.flags.exit = { x: c.x - 76, y: c.y + 30, kind: 'room4' };
+      w.after(1.5, () => w.hud.toast(w.player.has('grandfathers_letter') ? 'At the end of the ward: Room 4. The door is open a crack.' : 'At the end of the ward: Room 4. It is locked.', 3));
+    }
     // a chance for a bargain door (the odds are on the HUD)
     const door = rollBargain(w, room);
     if (door) {
@@ -614,9 +644,27 @@ export function updateSpecial(w: World, dt: number): void {
       }
     }
   }
+  if (w.backStair) {
+    const st = w.backStair as typeof w.backStair & { cd?: number }; st.t += dt; st.cd = (st.cd ?? 0) - dt;
+    const near = Math.abs(pl.x - st.x) < 12 && Math.abs(pl.y - st.y) < 9;
+    if (near && st.boarded && st.cd <= 0) { st.cd = 4; w.hud.toast('A stair, boarded over. It would take something loud.', 2.4); }
+    if (near && !st.boarded && st.t > 0.6 && !w.transition && w.deathT < 0 && !w.game.fading) {
+      // up the back stair: the hospital
+      pl.controlLock = 1.5; pl.vx = pl.vy = 0;
+      w.run.flags.hospital = true; w.game.save.unlock('back_stair');
+      w.audio.play('door'); w.backStair = null;
+      w.game.fadeTo(() => nextFloor(w), 1.0);
+    }
+  }
   if (w.lightBeam) {
     const b = w.lightBeam; b.t += dt;
-    if (b.t > 1 && Math.abs(pl.x - b.x) < 9 && Math.abs(pl.y - b.y) < 8 && !w.transition && w.deathT < 0 && !w.game.fading) {
+    if (b.t > 1 && b.kind === 'home' && Math.abs(pl.x - b.x) < 9 && Math.abs(pl.y - b.y) < 8 && !w.transition && w.deathT < 0 && !w.game.fading) {
+      // out of the window, into the morning: home
+      pl.controlLock = 2; pl.vx = pl.vy = 0;
+      w.run.flags.home = true;
+      w.audio.stinger('blessing'); w.whiteFlash = 1;
+      w.game.fadeTo(() => nextFloor(w), 1.6);
+    } else if (b.t > 1 && Math.abs(pl.x - b.x) < 9 && Math.abs(pl.y - b.y) < 8 && !w.transition && w.deathT < 0 && !w.game.fading) {
       // up into the light: the Dedication, then the Foreword
       pl.controlLock = 2; pl.vx = pl.vy = 0;
       w.run.flags.margins = true; w.run.flags.light = true;
@@ -626,10 +674,21 @@ export function updateSpecial(w: World, dt: number): void {
   }
   if (w.exitDoor) {
     const x = w.exitDoor; x.t += dt;
+    x.cd = (x.cd ?? 0) - dt;
     if (x.t > 0.8 && Math.abs(pl.x - x.x) < 10 && pl.y - x.y < 6 && pl.y - x.y > -10 && !w.transition && w.deathT < 0 && !w.game.fading) {
-      pl.controlLock = 2; pl.vx = pl.vy = 0;
-      w.audio.play('door'); w.exitDoor = null;
-      w.game.onVictory();
+      if (x.kind === 'room4') {
+        if (!pl.has('grandfathers_letter')) {
+          if (x.cd <= 0) { x.cd = 4; w.audio.play('deny'); w.hud.toast('Locked. A card on the door says: VISITORS, PLEASE BRING YOUR LETTER.', 3); }
+        } else {
+          pl.controlLock = 2; pl.vx = pl.vy = 0;
+          w.run.flags.room4 = true; w.audio.play('door'); w.exitDoor = null;
+          w.game.fadeTo(() => nextFloor(w), 1.2);
+        }
+      } else {
+        pl.controlLock = 2; pl.vx = pl.vy = 0;
+        w.audio.play('door'); w.exitDoor = null;
+        w.game.onVictory();
+      }
     }
   }
   // challenge room: pressure button starts waves

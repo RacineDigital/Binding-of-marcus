@@ -64,7 +64,9 @@ export function renderWorld(w: World): void {
     S.trapdoor[f].draw(ctx, t.x - camX, t.y - camY);
     if (f === 3) r.addLight(t.x - camX, t.y - camY, 26, 0.3);
   }
-  if (w.exitDoor) drawExitDoor(w, ctx, w.exitDoor.x - camX, w.exitDoor.y - camY, w.exitDoor.t);
+  if (w.exitDoor?.kind === 'room4') drawRoom4Door(w, ctx, w.exitDoor.x - camX, w.exitDoor.y - camY, w.exitDoor.t);
+  else if (w.exitDoor) drawExitDoor(w, ctx, w.exitDoor.x - camX, w.exitDoor.y - camY, w.exitDoor.t);
+  if (w.backStair) drawBackStair(w, ctx, w.backStair.x - camX, w.backStair.y - camY, w.backStair.t, w.backStair.boarded);
   if (w.lightBeam) drawLightBeam(w, ctx, w.lightBeam.x - camX, w.lightBeam.y - camY, w.lightBeam.t);
   // --------------------------------------------------------------- y-sorted entities
   drawables.length = 0;
@@ -377,6 +379,55 @@ function drawExitDoor(w: World, ctx: CanvasRenderingContext2D, x: number, y: num
   ctx.restore();
   w.r.addGlow(x, sy + 4, 26, '#3aff7a', 0.45 * k);
   w.r.addLight(x, by - 10, 46, 0.5 * k);
+}
+
+/** A hospital door with a little wired window and a 4 on it. It glows when the letter will open it. */
+function drawRoom4Door(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  const k = Math.min(1, t / 0.6), rise = Math.round((1 - k) * 34);
+  const open = w.player.has('grandfathers_letter');
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x - 20, y - 64, 40, 64); ctx.clip();
+  const by = y + rise;
+  ctx.fillStyle = '#20302c'; ctx.fillRect(x - 13, by - 36, 26, 36);
+  ctx.fillStyle = '#7a9a8a'; ctx.fillRect(x - 11, by - 34, 22, 34);
+  ctx.fillStyle = '#8aaa9a'; ctx.fillRect(x - 11, by - 34, 22, 2);
+  // wired glass window, lit from inside
+  ctx.fillStyle = open ? '#fff0c0' : '#2a3a40'; ctx.fillRect(x - 6, by - 30, 12, 9);
+  ctx.fillStyle = 'rgba(40,60,60,0.6)'; for (let i = 0; i < 3; i++) { ctx.fillRect(x - 6 + i * 4, by - 30, 0.6, 9); ctx.fillRect(x - 6, by - 30 + i * 3, 12, 0.6); }
+  ctx.fillStyle = '#c8c8b8'; ctx.fillRect(x + 6, by - 17, 3, 1.5);
+  ctx.fillStyle = 'rgba(30,40,40,0.5)'; ctx.fillRect(x - 11, by - 4, 22, 4);
+  if (!open) { ctx.fillStyle = '#c8a04a'; ctx.fillRect(x + 4, by - 15, 4, 3); ctx.strokeStyle = '#c8a04a'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(x + 6, by - 15, 1.6, Math.PI, 0); ctx.stroke(); }
+  if (open) { ctx.fillStyle = 'rgba(255,240,200,0.8)'; ctx.fillRect(x - 10, by - 1, 20, 1); }
+  // the number plate
+  const sy = by - 46;
+  ctx.fillStyle = '#e8e4d8'; ctx.fillRect(x - 7, sy, 14, 9); ctx.fillStyle = '#2a3a40'; ctx.fillRect(x - 7, sy + 8, 14, 1);
+  ctx.fillStyle = '#2a2a3a'; ctx.font = '700 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText('4', x, sy + 7.5);
+  ctx.restore();
+  if (open) { w.r.addGlow(x, by - 26, 24, '#fff0c0', 0.35 * k); w.r.addLight(x, by - 12, 50, 0.5 * k); }
+}
+
+/** A narrow stairwell going up out of the boss room, planked over until something blows it open. */
+function drawBackStair(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number, boarded: boolean): void {
+  const k = Math.min(1, t / 0.5);
+  ctx.save(); ctx.globalAlpha = k;
+  // the opening, with steps climbing away into the light
+  ctx.fillStyle = '#100c10'; ctx.fillRect(x - 11, y - 9, 22, 16);
+  for (let i = 0; i < 5; i++) { const g = 30 + i * 22; ctx.fillStyle = `rgb(${g},${g + 8},${g + 6})`; ctx.fillRect(x - 10 + i, y + 5 - i * 3, 20 - i * 2, 2); }
+  if (!boarded) { const gl = ctx.createLinearGradient(0, y - 9, 0, y + 7); gl.addColorStop(0, 'rgba(220,240,230,0.55)'); gl.addColorStop(1, 'rgba(220,240,230,0)'); ctx.fillStyle = gl; ctx.fillRect(x - 10, y - 9, 20, 14); }
+  ctx.strokeStyle = '#3a2a20'; ctx.lineWidth = 1.2; ctx.strokeRect(x - 11.5, y - 9.5, 23, 17);
+  if (boarded) {
+    for (const [dy, a] of [[-5, -0.12], [0, 0.08], [5, -0.05]] as [number, number][]) {
+      ctx.save(); ctx.translate(x, y + dy); ctx.rotate(a);
+      ctx.fillStyle = '#6a4a2e'; ctx.fillRect(-14, -2, 28, 4); ctx.fillStyle = '#8a6a44'; ctx.fillRect(-14, -2, 28, 1);
+      ctx.fillStyle = '#c8c0b0'; ctx.fillRect(-12, -0.5, 1, 1); ctx.fillRect(11, -0.5, 1, 1);
+      ctx.restore();
+    }
+  }
+  // a small enamel sign
+  ctx.fillStyle = '#e8e4d8'; ctx.fillRect(x - 13, y - 19, 26, 7);
+  ctx.fillStyle = '#2a4a8a'; ctx.font = '700 5px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText('ST.AGNES', x, y - 13.8);
+  ctx.restore();
+  if (!boarded) w.r.addLight(x, y - 2, 40, 0.5 * k);
 }
 
 /** Debug overlay: every hurtbox and shot as the collision code sees them (screen space). */

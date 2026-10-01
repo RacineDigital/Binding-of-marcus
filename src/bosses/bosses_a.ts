@@ -95,7 +95,7 @@ function paintGrub(p: any, f: number, rear: number, mouth: number): void {
   sprinkle(p, '#c89a88', 20, 7);
 }
 const grubmother: EnemyDef = {
-  id: 'grubmother', name: 'The Grubmother', desc: 'She has been eating the foundations for years.', boss: true,
+  id: 'grubmother', name: 'The Grubmother', desc: 'She has been eating the foundations for years. The surveyor said it was damp.', boss: true,
   hp: 210, r: 16, speed: 30, role: 'boss', cost: 0, hitY: 14, mass: 8, gore: '#c8a080', goreDecal: '#6a4a38', noKnock: true, noSeparate: false,
   sprites: () => ({
     idle: frames(62, 44, 4, (p, f) => paintGrub(p, f, 0, 0.2)),
@@ -201,7 +201,7 @@ function paintWardrobe(p: any, open: number, tilt: number, bob: number): void {
   void tilt;
 }
 const wardrobe: EnemyDef = {
-  id: 'wardrobe', name: 'The Wardrobe', desc: 'Every child knows what lives inside.', boss: true,
+  id: 'wardrobe', name: 'The Wardrobe', desc: 'Grandmother hid the presents in it. Marcus was sure there was a man inside. There was.', boss: true,
   hp: 225, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 10, gore: '#6a4028', goreDecal: '#3a2418', noKnock: true,
   sprites: () => ({
     closed: frames(50, 60, 1, (p) => paintWardrobe(p, 0, 0, 0)),

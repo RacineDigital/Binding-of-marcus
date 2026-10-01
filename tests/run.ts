@@ -186,5 +186,43 @@ console.log('content:', JSON.stringify(counts));
   }
   console.log(`margins: ${(bossTotal / 60).toFixed(1)} boss rooms on average, ${fives}/60 with five`);
 }
+// the back stair: St. Agnes, Room 4 and home
+{
+  const { HOSPITAL_FIRST, ROOM4_FLOOR, HOME_FLOOR } = await import('../src/data/floors');
+  const { getEnemy } = await import('../src/enemies/registry');
+  const { NOTES } = await import('../src/data/notes');
+  const { ENDINGS, endingFor } = await import('../src/data/endings');
+  const fakeSave: any = { isUnlocked: () => true, hasNote: () => false };
+  for (let i = 0; i < 40; i++) {
+    const run = new Run('stair' + i, 'marcus', () => true);
+    run.flags.hospital = true;
+    ['waiting', 'nightward', 'icu'].forEach((id, k) => {
+      const fl = generateFloor(run, HOSPITAL_FIRST + k, fakeSave);
+      ok(fl.theme.id === id, `hospital chapter ${k} is ${id} (${fl.theme.id})`);
+      const deep = fl.rooms.find((r) => r.type === 'supersecret');
+      ok(!!deep && deep.pickups.some((p) => p.data?.id === 'letter_bottom'), 'a deep crawlspace holds the bottom half');
+      const boss = fl.rooms.find((r) => r.type === 'boss');
+      ok(!!boss && !!getEnemy(boss.bossId!), `hospital boss exists (${boss?.bossId})`);
+      ok(fl.rooms.some((r) => r.npcs.some((n) => n.kind === 'note')), 'a note lies somewhere in the hospital');
+    });
+    for (const fi of [ROOM4_FLOOR, HOME_FLOOR]) ok(!['ward', 'waiting', 'nightward', 'icu'].includes(generateFloor(run, fi).theme.id), 'no second ward after the hospital');
+    run.flags.room4 = true;
+    const r4 = generateFloor(run, ROOM4_FLOOR);
+    ok(r4.theme.id === 'room4' && r4.rooms.find((r) => r.type === 'boss')?.bossId === 'patient', 'room 4 arena holds the Patient');
+    run.flags.home = true;
+    const home = generateFloor(run, HOME_FLOOR);
+    ok(home.theme.id === 'home' && home.rooms.length === 1 && home.rooms[0].npcs.some((n) => n.kind === 'book'), 'home: one room and the book');
+    ok(endingFor(run) === 'goodnight', 'goodnight ending');
+  }
+  const r = new Run('e', 'marcus', () => true);
+  ok(endingFor(r) === 'morning', 'morning ending');
+  r.flags.room4 = true; ok(endingFor(r) === 'the_visit', 'the visit ending');
+  const ach = new Set(ACHIEVEMENTS.map((a) => a.id));
+  ok(NOTES.every((n) => !n.req || ach.has(n.req)), 'every note requirement is an achievement');
+  ok(new Set(NOTES.map((n) => n.id)).size === NOTES.length, 'note ids unique');
+  ok(ALL_ITEMS.every((it) => !it.unlock || ach.has(it.unlock)), 'every item unlock is an achievement');
+  ok(ENDINGS.length === 5 && ENDINGS.every((e, k) => e.num === k + 1), 'five endings in order');
+  ok(['letter_top', 'letter_bottom', 'grandfathers_letter'].every((id) => ALL_ITEMS.find((x) => x.id === id && Object.keys(x.pools).length === 0)), 'the letter never rolls from a pool');
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

@@ -9,6 +9,7 @@ import { getItem } from '../items/registry';
 import { RNG } from '../core/rng';
 import { addBargainRoom } from '../generation/floorgen';
 import { FINAL_FLOOR } from '../data/floors';
+import { HOSPITAL_THEMES } from '../data/notes';
 
 export type BargainKind = 'deal' | 'blessing' | 'lostfound';
 export const BARGAIN_NAMES: Record<BargainKind, string> = { deal: 'The Inkwell', blessing: 'Wax Chapel', lostfound: 'Lost & Found' };
@@ -51,6 +52,8 @@ export function doorOdds(w: World): DoorOdds {
  */
 export function doorSplit(w: World): Record<BargainKind, number> {
   const f = w.run.flags;
+  // the hospital's lost property desk is holding half of Grandfather's letter
+  if (letterAtDesk(w)) return { deal: 0, blessing: 0, lostfound: 1 };
   const left = lostItemsFor(w).length;
   const lost = left > 0 ? Math.min(0.5, 0.15 + 0.06 * left) : 0.08;
   const rest = 1 - lost;
@@ -96,7 +99,7 @@ export function onLeaveFloor(w: World): void {
 // ------------------------------------------------------------------ Lost & Found
 
 /** Never asked for at the counter: losing these would undo something you can't get back. */
-const NO_TRADE = new Set(['extra_pocket', 'charm_bracelet', 'moth_wings_rev']);
+const NO_TRADE = new Set(['extra_pocket', 'charm_bracelet', 'moth_wings_rev', 'letter_top', 'letter_bottom', 'grandfathers_letter']);
 
 function owns(w: World, id: string): boolean { return (w.player.items.get(id) ?? 0) > 0 || w.player.active === id; }
 
@@ -119,11 +122,18 @@ export function noteLeftBehind(w: World, skipCurrent: boolean): void {
   if (list.length > 40) list.splice(0, list.length - 40);
 }
 
+/** On the hospital path, until Marcus has it, the top half of the letter waits at the lost property desk. */
+export function letterAtDesk(w: World): boolean {
+  const pl = w.player;
+  return HOSPITAL_THEMES.includes(w.theme.id) && !pl.has('letter_top') && !pl.has('grandfathers_letter');
+}
+
 /** Fill the counter with things you left behind (they vanish from where you left them), topped up from the pools. */
 function stockLostFound(w: World, room: RoomData): void {
   const lost = lostItemsFor(w);
   const rng = new RNG(room.seed + ':stock');
   rng.shuffle(lost);
+  if (letterAtDesk(w)) lost.unshift('letter_top');
   const peds = room.pickups.filter((p) => p.kind === 'item' && p.data?.swap);
   for (const p of peds) {
     const id = lost.shift();

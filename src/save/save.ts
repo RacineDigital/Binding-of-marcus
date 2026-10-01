@@ -34,6 +34,10 @@ export interface SaveData {
   history?: RunRecord[];
   /** Enemy kill counts by id (bestiary). */
   kills?: Record<string, number>;
+  /** Grandfather's notes read (ids from data/notes). */
+  notes?: string[];
+  /** Endings seen (ids from data/endings). */
+  endings?: string[];
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 
@@ -143,6 +147,12 @@ export class SaveManager {
     return v;
   }
   collectItem(id: string): void { if (!this.data.itemsSeen.includes(id)) { this.data.itemsSeen.push(id); this.markDirty(); } this.stat('itemsCollected', 1); }
+  /** Returns true the first time a note is read. */
+  readNote(id: string): boolean { const l = (this.data.notes ??= []); if (l.includes(id)) return false; l.push(id); this.markDirty(); return true; }
+  hasNote(id: string): boolean { return !!this.data.notes?.includes(id); }
+  /** Returns true the first time an ending is seen. */
+  seeEnding(id: string): boolean { const l = (this.data.endings ??= []); if (l.includes(id)) return false; l.push(id); this.markDirty(); return true; }
+  hasEnding(id: string): boolean { return !!this.data.endings?.includes(id); }
   markBoss(id: string): void { if (!this.data.bossesBeaten.includes(id)) { this.data.bossesBeaten.push(id); this.markDirty(); } this.stat('bossKills', 1); }
   reset(): void { this.data = defaultSave(); this.data.settings = this.settings; this.markDirty(); this.flush(); }
 }

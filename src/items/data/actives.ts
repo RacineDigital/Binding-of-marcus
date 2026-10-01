@@ -22,7 +22,7 @@ export function poolForRoom(t: RoomType): PoolId {
 export function reroll(w: World): boolean {
   let n = 0;
   for (const p of w.pickups) {
-    if (!p.pedestal || !p.data.id) continue;
+    if (!p.pedestal || !p.data.id || getItem(p.data.id)?.tags?.includes('quest')) continue;
     const id = w.run.pools.roll(poolForRoom(w.room.type));
     p.data.id = id; n++;
     if (p.price > 0) p.price = priceFor(id);

@@ -5,6 +5,7 @@ import { dist2, TAU } from '../core/math';
 import { spawnDrop } from './drops';
 import { RNG } from '../core/rng';
 import { FORTUNES } from '../data/lore';
+import { NOTE_BY_ID, NOTES } from '../data/notes';
 import * as flow from './roomflow';
 import { moveBody } from '../rooms/collide';
 
@@ -21,6 +22,9 @@ export function makeNpc(w: World, kind: string, x: number, y: number): Npc {
   n.onBomb = (ww) => npcBombed(ww, n);
   if (kind === 'clock') n.r = 10;
   if (kind === 'well') n.r = 13;
+  if (kind === 'note') n.r = 6;
+  if (kind === 'book') n.r = 10;
+  if (kind === 'armchair') n.r = 13;
   return n;
 }
 
@@ -108,6 +112,36 @@ function touch(w: World, n: Npc): void {
       n.data.done = true; w.audio.play('stitch');
       w.hud.toast('"There. Stitched from what you gave me."', 3);
       flow.spawnPedestal(w, n.x, n.y + 26, w.run.pools.roll(rng.next() < 0.5 ? 'shop' : 'treasure'), 'normal');
+      break;
+    }
+    case 'note': {
+      // one of Grandfather's notes: read it (it goes in the Journal)
+      const note = NOTE_BY_ID[n.data.id];
+      if (!note) return;
+      n.cd = 4;
+      const fresh = w.game.save.readNote(note.id);
+      w.hud.showNote(note.title, note.text, note.by ?? 'Grandfather');
+      w.audio.play('pageGet', { x: n.x });
+      if (fresh) {
+        w.audio.play('secret', { x: n.x, vol: 0.4 }); w.after(0.6, () => w.hud.toast('A new note in the Journal.', 2));
+        if (NOTES.every((x) => w.game.save.hasNote(x.id))) w.game.save.unlock('notes_all');
+      }
+      break;
+    }
+    case 'book': {
+      // the finished book: the very end
+      if (n.data.done) return;
+      n.data.done = true; n.cd = 99;
+      w.player.controlLock = 3; w.player.vx = w.player.vy = 0;
+      w.audio.stinger('blessing'); w.whiteFlash = 0.8;
+      w.hud.showNote('The Last Page', 'There is one line left, and the pen is right there.', '');
+      w.after(2.2, () => w.game.onVictory(), true);
+      break;
+    }
+    case 'armchair': {
+      if (n.data.done) return;
+      n.data.done = true; n.cd = 99;
+      w.hud.toast('His cardigan is still over the back. It smells of pipe smoke.', 3.5);
       break;
     }
     case 'clock': {

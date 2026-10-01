@@ -13,6 +13,8 @@ import { priceFor } from '../../generation/populate';
 import { grantItem, removeItem, spawnEnemy } from '../../game/roomflow';
 
 const rng = () => new RNG(Math.random() * 1e9);
+/** Grandfather's letter can't be rolled away. */
+const isQuest = (id: string) => !!getItem(id)?.tags?.includes('quest');
 
 /** A die icon: a rounded cube with the number of sides printed on it. */
 function dieIcon(label: string, body: string, ink = '#1a1010'): (p: P) => void {
@@ -36,7 +38,7 @@ const fxPoof = (w: World, x: number, y: number) => { w.audio.play('reroll', { vo
 /** Every passive you carry turns into a random other item (health they gave stays). */
 function d4(w: World): boolean {
   const pl = w.player;
-  const ids = pl.itemOrder.filter((id) => (pl.items.get(id) ?? 0) > 0 && getItem(id)?.kind !== 'active' && id !== 'moth_wings_rev');
+  const ids = pl.itemOrder.filter((id) => (pl.items.get(id) ?? 0) > 0 && getItem(id)?.kind !== 'active' && id !== 'moth_wings_rev' && !getItem(id)?.tags?.includes('quest'));
   if (!ids.length) return false;
   for (const id of ids) {
     const n = pl.items.get(id) ?? 0;
@@ -61,8 +63,8 @@ function d20(w: World): boolean {
 function spindown(w: World): boolean {
   let n = 0;
   for (const p of w.pickups) {
-    if (!p.pedestal || !p.data.id) continue;
-    const list = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev');
+    if (!p.pedestal || !p.data.id || isQuest(p.data.id)) continue;
+    const list = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev' && !i.tags?.includes('quest'));
     const k = list.findIndex((i) => i.id === p.data.id);
     p.data.id = list[(k - 1 + list.length) % list.length].id;
     if (p.price > 0) p.price = priceFor(p.data.id);
@@ -139,7 +141,7 @@ function d9(w: World): boolean {
 function eternal(w: World): boolean {
   let n = 0;
   for (const p of w.pickups) {
-    if (!p.pedestal || !p.data.id) continue;
+    if (!p.pedestal || !p.data.id || isQuest(p.data.id)) continue;
     if (Math.random() < 0.25) { p.data.id = null; fxPoof(w, p.x, p.y); n++; continue; }
     p.data.id = w.run.pools.roll(poolForRoom(w.room.type));
     if (p.price > 0) p.price = priceFor(p.data.id);

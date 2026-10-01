@@ -21,14 +21,14 @@ export const CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'wren', name: 'Wren', title: 'The Cousin', look: 'wren',
-    desc: 'Quick, reckless, and never without her slingshot. Her pebbles ricochet once off walls and rocks.',
+    desc: 'Marcus\'s cousin. Quick, reckless, and never without her slingshot; she once drew Grandad wearing a crown. Her pebbles ricochet off walls.',
     base: { damage: 3.0, tears: 3.1, range: 210, shotSpeed: 1.15, speed: 1.2, luck: 0 },
     health: { red: 2, wax: 2 }, items: ['slingshot'], buttons: 5, keys: 0, bombs: 0,
     unlock: 'beat_ch2', unlockHint: 'Defeat the Chapter II boss.', passive: 'Starts with Wren\'s Slingshot. Fast but fragile.',
   },
   {
     id: 'edda', name: 'Edda', title: 'The Seamstress', look: 'edda',
-    desc: 'Marcus\'s aunt, who mended everything in the house but herself. Throws needles that pass through the first thing they hit.',
+    desc: 'Marcus\'s aunt, who mended everything but herself, and sewed Grandad\'s name into his hospital coat. Her needles pass through the first thing they hit.',
     base: { damage: 2.6, tears: 3.7, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 },
     health: { red: 2, brass: 2 }, items: ['thimble'], buttons: 0, keys: 1, bombs: 1,
     profile: { shape: 'needle', pierce: 1 },
@@ -36,7 +36,7 @@ export const CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'elias', name: 'Elias', title: 'The Binder', look: 'elias',
-    desc: 'What remains of the grandfather. He cannot hold red hearts, drifts over pits, and his shots pass through stone.',
+    desc: 'What remains of the grandfather, still looking for the last page. He cannot hold red hearts, drifts over pits, and his shots pass through stone.',
     base: { damage: 3.1, tears: 2.6, range: 260, shotSpeed: 0.95, speed: 0.95, luck: 0 },
     health: { red: 0, wax: 6, noRed: true }, items: ['binders_awl'], buttons: 0, keys: 0, bombs: 2,
     profile: { spectral: true, tint: '#9ad0f0', shape: 'wax' }, flight: true,
@@ -44,7 +44,7 @@ export const CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'blot', name: 'The Blot', title: 'The Unwritten', look: 'blot',
-    desc: 'A stain that learned to walk. Hits hard, bleeds ink, and every heart it holds wants to burst.',
+    desc: 'The ink Grandfather spilled across Chapter Seven, which learned to walk. Hits hard, bleeds ink, and every heart it holds wants to burst.',
     base: { damage: 4.4, tears: 2.3, range: 200, shotSpeed: 0.9, speed: 0.9, luck: -1 },
     health: { red: 0, ink: 6, noRed: true }, items: [], buttons: 0, keys: 0, bombs: 0,
     profile: { creep: true, shape: 'void' },
@@ -59,7 +59,7 @@ export const CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'nell', name: 'Nell', title: 'The Lamplighter', look: 'nell',
-    desc: 'Marcus\'s older sister. She came down after him with Grandmother\'s magnifying glass and a lamp, and she is furious about it.',
+    desc: 'Marcus\'s older sister, who visited Grandad every day. She came down after Marcus with Grandmother\'s magnifying glass and a lamp, and she is furious about it.',
     base: { damage: 3.3, tears: 2.5, range: 220, shotSpeed: 1, speed: 1, luck: 0 },
     health: { red: 3 }, items: ['burning_glass', 'pocket_lantern'], buttons: 0, keys: 1, bombs: 1,
     unlock: 'beat_unwritten', unlockHint: 'Go through the tear after the Binding and defeat what waits on the Last Page.', passive: 'Starts with the Burning Glass (a beam) and the Pocket Lantern.',

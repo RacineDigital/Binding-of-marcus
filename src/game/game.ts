@@ -7,6 +7,7 @@ import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
 import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
 import { recordScore, checkProgress, RunMode } from './progress';
+import { endingFor } from '../data/endings';
 import { updatePresence } from './presence';
 import { Run } from './run';
 import { Player } from '../player/player';
@@ -280,6 +281,11 @@ export class Game {
     if (!this.save.data.bestTime || t < this.save.data.bestTime) this.save.data.bestTime = t;
     if (t < 25 * 60) this.save.unlock('speedrun');
     if (w.run.mode === 'hard' && !w.run.challenge) this.save.unlock('win_hard');
+    // which ending this was; the first time each is seen is remembered
+    const ending = endingFor(w.run);
+    w.run.flags.ending = ending;
+    w.run.flags.newEnding = this.save.seeEnding(ending);
+    if (ending === 'goodnight') this.save.unlock('the_end');
     w.run.flags.score = recordScore(this.save, w.run, true);
     this.save.data.run = null; this.save.markDirty();
     this.fadeTo(() => { this.scene = 'ending'; this.menus.openEnding(w); this.audio.setMusic('ending'); }, 1.2);

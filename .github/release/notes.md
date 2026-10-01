@@ -1,3 +1,27 @@
+## What's new in 2.8 (beta): the story
+
+- **Grandfather's Notes.** 25 notes in Grandfather's handwriting turn up lying in rooms, on stands.
+  Read one and it goes in the Journal (Journal → Notes). In order, they tell what really happened
+  in the house on Harrow Lane, and they point at the hidden paths.
+- **The back stair to St. Agnes.** Once you've finished the story, the Chapter II boss room has a
+  boarded-up stair. Bomb it and the run climbs into the hospital instead of Chapters III–V: the
+  Waiting Room, the Night Ward and Intensive Care, with its new boss, **the Iron Lung**.
+- **Grandfather's letter, torn in two.** One half is at the hospital's lost property (the bargain
+  door there is always the Lost & Found, so stay unhurt), the other is hidden in a Deep Crawlspace.
+  Hold Tab to see which halves you have. With the whole letter, **Room 4** opens after Intensive
+  Care, and **The Patient** is in the bed: a new three-phase final boss with a heart monitor that
+  beeps rings of shots, IV tubes, pills, a breath that drags you in, and a flatline.
+- **Five numbered endings:** Morning, In His Own Hand, For Marcus, The Visit and **Goodnight**, the
+  last one. See the first four, visit Room 4 again, and the morning comes in through the window.
+  Endings are listed in the Journal with a clue for each one you haven't found, and every ending
+  closes with a line for the reader who got there. The title screen changes once the book is done.
+- **Everything ties together.** Items that belonged to the family show where they came from in the
+  Collection; characters and bosses point back at each other (Edda sewed Grandad's name into his
+  hospital coat, the Pendulum stopped at 4:04, the Matron's book doesn't have your name in it).
+  New fortunes hint at the hidden paths.
+- **New keepsakes:** Get Well Soon (put the letter together), Grandad's Cardigan (finish The Visit;
+  15% of hits just don't land) and The Last Word (see Goodnight; your shots finish things).
+
 ## What's new in 2.7 (beta)
 
 **2.7.2:** the strongest dice have to be earned. D4: have two transformations at once. D8: reach

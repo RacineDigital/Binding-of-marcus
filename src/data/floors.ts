@@ -230,7 +230,7 @@ export const MARGINS_THEME: FloorTheme = {
   enemies: { pagewraith: 6, voideye: 5, mirrorshade: 5, blot: 4, hollowmaw: 3, penitent: 4, orderly: 3, censer: 3, ossspider: 4, marrowmaw: 3,
     skullorbit: 3, wheelwraith: 3, sheetghost: 3, stoker: 3, drowner: 3, gravedigger: 3 },
   bosses: ['grubmother', 'wardrobe', 'furnaceheart', 'oldstoker', 'ratking', 'bilgemaw', 'matron', 'sleepwalker', 'ossuaryknight',
-    'mothmother', 'bellringer', 'choirmaster', 'blottedman', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'bookbinder'],
+    'mothmother', 'bellringer', 'choirmaster', 'blottedman', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'bookbinder', 'ironlung'],
   music: 'binding', hazards: { spikes: 0.35, pits: 0.4, fires: 0.35, kegs: 0.25, webs: 0.15 }, fireVariants: [1, 3, 3],
   hpMul: 2.5, budget: 2.5,
 };
@@ -260,6 +260,66 @@ export const FOREWORD_THEME: FloorTheme = {
   floor: 'pages', pal: { ...DEDICATION_THEME.pal, floor: '#f4ecd8', floor2: '#ece2c8', grout: '#c8b890' },
   darkness: 0.15, enemies: { cherubmoth: 1 }, bosses: ['author'], hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
 };
+// ---------------------------------------------------------------------------- the back stair
+/**
+ * St. Agnes: the hospital Grandfather never came home from. Reached by the boarded back stair in
+ * the Chapter II boss room (once the story has been finished); it replaces Chapters III to V. With
+ * both halves of his letter, the door to Room 4 opens after Intensive Care.
+ */
+export const HOSPITAL_FLOORS: FloorTheme[] = [
+  {
+    id: 'waiting', name: 'The Waiting Room', subtitle: 'Visiting hours are nine till eight', chapter: '', tier: 2,
+    floor: 'tile', wall: 'ward', ambience: 'motes',
+    pal: { floor: '#8a9a88', floor2: '#7a8a78', grout: '#3a4440', wall: '#6a8278', wall2: '#506a60', mortar: '#202a28',
+      rock: '#9a9a8e', accent: '#e8e0a0', stain: '#6a5a3a', heap: '#d8d4c4', heapKind: 'linen' },
+    ambient: '#06080a', darkness: 0.38, playerLight: 92,
+    enemies: { orderly: 6, nursedoll: 6, sheetghost: 5, wheelwraith: 4, mimic: 3, dripsentinel: 4, moth: 4, spool: 3 },
+    bosses: ['matron', 'pendulum', 'sleepwalker'],
+    music: 'ward', hazards: { spikes: 0.2, pits: 0.2, fires: 0.2, kegs: 0.1 }, fireVariants: [1, 1, 0],
+    hpMul: 1.3, budget: 1.3,
+  },
+  {
+    id: 'nightward', name: 'The Night Ward', subtitle: 'The lights hum, and nobody comes', chapter: '', tier: 3,
+    floor: 'tile', wall: 'ward', ambience: 'dust',
+    pal: { floor: '#4a5a5a', floor2: '#3e4c4c', grout: '#1a2222', wall: '#34484a', wall2: '#263638', mortar: '#101818',
+      rock: '#6a7a78', accent: '#a0d8c8', stain: '#3a2a3a', heap: '#b8c0c0', heapKind: 'linen' },
+    ambient: '#020608', darkness: 0.6, playerLight: 84,
+    enemies: { sheetghost: 7, orderly: 5, wheelwraith: 5, nursedoll: 5, dripsentinel: 5, mirrorshade: 3, leech: 3, moth: 3 },
+    bosses: ['sleepwalker', 'matron', 'mothmother'],
+    music: 'ward', hazards: { spikes: 0.3, pits: 0.3, fires: 0.2, kegs: 0.1 }, fireVariants: [1, 1, 3],
+    hpMul: 1.5, budget: 1.5,
+  },
+  {
+    id: 'icu', name: 'Intensive Care', subtitle: 'The machines breathe for him now', chapter: '', tier: 4,
+    floor: 'tile', wall: 'iron', ambience: 'glass',
+    pal: { floor: '#9aa8b0', floor2: '#8a98a2', grout: '#4a5660', wall: '#5a6a78', wall2: '#44525e', mortar: '#1c2228',
+      rock: '#a8b0b8', accent: '#60ff90', stain: '#3a5a6a', heap: '#dce4ea', heapKind: 'linen' },
+    ambient: '#04060a', darkness: 0.42, playerLight: 88,
+    enemies: { dripsentinel: 6, orderly: 5, wheelwraith: 5, valvehead: 4, nursedoll: 4, sheetghost: 4, voideye: 3, bloater: 3 },
+    bosses: ['ironlung', 'matron'],
+    music: 'ward', hazards: { spikes: 0.3, pits: 0.25, fires: 0.15, kegs: 0.2 }, fireVariants: [1, 1, 3],
+    hpMul: 1.7, budget: 1.7,
+  },
+];
+/** Room 4: the room at the end of the ward. What is in the bed is what Marcus was afraid of. */
+export const ROOM4_THEME: FloorTheme = {
+  ...HOSPITAL_FLOORS[1], id: 'room4', name: 'Room 4', subtitle: 'At the very end of the ward, by the window', chapter: 'Visiting Hours', tier: 7,
+  pal: { ...HOSPITAL_FLOORS[1].pal, floor: '#5e6a68', floor2: '#56625f', wall: '#2c3c40', wall2: '#203034' },
+  darkness: 0.5, enemies: { nursedoll: 1 }, bosses: ['patient'], hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
+};
+/** Home: the cellar in the morning. Nothing down here any more but the book. */
+export const HOME_THEME: FloorTheme = {
+  id: 'home', name: 'Home', subtitle: 'It is morning, and it is real', chapter: 'Afterword', tier: 0,
+  floor: 'planks', wall: 'stone', ambience: 'motes',
+  pal: { floor: '#8a6a48', floor2: '#7a5c3e', grout: '#3a2a1a', wall: '#8a7a68', wall2: '#6e604e', mortar: '#3a3024',
+    rock: '#a89880', accent: '#ffe0a0', stain: '#6a5a40', heap: '#efe4c8', heapKind: 'pages' },
+  ambient: '#1a140c', darkness: 0.08, playerLight: 130,
+  enemies: { moth: 1 }, bosses: [], music: 'ending', hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 }, fireVariants: [0],
+  hpMul: 1, budget: 1,
+};
+/** Where the hospital path sits: its first chapter, Room 4 after its last, and Home after that. */
+export const HOSPITAL_FIRST = 2, ROOM4_FLOOR = HOSPITAL_FIRST + HOSPITAL_FLOORS.length, HOME_FLOOR = ROOM4_FLOOR + 1;
+
 /** Chapter indices beyond the Binding when a run goes through the portal. */
 export const MARGINS_FLOOR = FINAL_FLOOR + 1, LASTPAGE_FLOOR = FINAL_FLOOR + 2;
 

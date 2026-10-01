@@ -70,9 +70,11 @@ export class World {
   nearInspect: Pickup | null = null;
   trapdoor: { x: number; y: number; t: number; kind: 'down' | 'light' | 'portal'; armed?: boolean } | null = null;
   /** After the Binding (once the story is finished): the door that ends the run as a win. */
-  exitDoor: { x: number; y: number; t: number } | null = null;
-  /** After the Binding: a beam of light up to the Dedication. */
-  lightBeam: { x: number; y: number; t: number } | null = null;
+  exitDoor: { x: number; y: number; t: number; kind?: 'exit' | 'room4'; cd?: number } | null = null;
+  /** After the Binding: a beam of light up to the Dedication (or, in Room 4, up into the morning). */
+  lightBeam: { x: number; y: number; t: number; kind?: 'light' | 'home' } | null = null;
+  /** The back stair to St. Agnes, boarded over until something blows the boards off. */
+  backStair: { x: number; y: number; t: number; boarded: boolean } | null = null;
   ambient: { x: number; y: number; vx: number; vy: number; life: number; kind: number }[] = [];
   telegraphs: { x: number; y: number; r: number; t: number; dur: number; color: string }[] = [];
   corpses: { e: Enemy; t: number; dur: number }[] = [];
@@ -354,6 +356,10 @@ export class World {
     if (pl.dead || this.deathT >= 0) return false;
     if (pl.iframes > 0 && !o.ignoreIframes) return false;
     if (this.transition) return false;
+    if (!o.redFirst && pl.count('cardigan') > 0 && this.roomRng.next() < 0.15) {
+      pl.iframes = 0.8; this.audio.play('brass', { x: pl.x, pitch: 0.7 }); this.fx.ring(pl.x, pl.y - 10, 4, 20, '#c8a070', 0.3);
+      this.hud.toast('Grandad\'s cardigan. It doesn\'t even hurt.', 1.2); return false;
+    }
     if (!o.redFirst && this.run.flags.jacket && pl.count('dust_jacket') > 0) {
       this.run.flags.jacket = false; pl.iframes = 1; this.audio.play('brass', { x: pl.x }); this.fx.ring(pl.x, pl.y - 10, 4, 24, '#8ab0d0', 0.3);
       this.hud.toast('The jacket takes the blow.', 1.2); return false;
@@ -455,6 +461,12 @@ export class World {
     for (const e of this.enemies) {
       if (e.dead || e.spawnT > 0 || e.hidden) continue;
       if (dist2(x, y, e.x, e.y - e.hitY * 0.5) < (r + e.r) * (r + e.r)) this.damageEnemy(e, dmg, { ang: Math.atan2(e.y - y, e.x - x), knock: small ? 1 : 3, source: 'explosion' });
+    }
+    const st = this.backStair;
+    if (st?.boarded && dist2(x, y, st.x, st.y) < (r + 16) * (r + 16)) {
+      st.boarded = false; if (this.room.flags.stair) this.room.flags.stair.boarded = false;
+      this.fx.shards(st.x, st.y - 4, 18, '#7a5a3a', 140); this.audio.play('secret', { x: st.x });
+      this.hud.toast('The boards give way. The stair goes up, and it smells of disinfectant.', 3);
     }
     const pl = this.player;
     if (!o.friendly && !o.noPlayer && dist2(x, y, pl.x, pl.y) < (r + 4) * (r + 4) && !this.player.has('blast_apron') && !(o.bomb && this.player.has('bike_helmet'))) this.hurtPlayer(2, 'an explosion');

@@ -13,8 +13,11 @@ import { describeItem } from '../items/describe';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
 import { formatSeed, normalizeSeed, RNG } from '../core/rng';
 import { dailySeed, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
-import { INTRO_STORY, ENDING_STORY, TRUE_ENDING_STORY, LIGHT_ENDING_STORY } from '../data/lore';
-import { FINAL_FLOOR } from '../data/floors';
+import { INTRO_STORY } from '../data/lore';
+import { ENDINGS, ENDING_BY_ID, EPILOGUES, EndingId } from '../data/endings';
+import { NOTES, NoteDef } from '../data/notes';
+import { ITEM_LORE } from '../data/itemlore';
+import { roman } from '../data/floors';
 import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
@@ -523,6 +526,9 @@ export class MenuSystem {
         let y = dy + 62 + (wrap(ctx, it.name, 11, 110, FONT_TITLE).length - 1) * 11;
         text(ctx, `"${it.pickup}"`, dx, y, 7, '#8a3a2a', 'left', FONT_BODY, 600, false); y += 11;
         for (const l of describeItem(it)) for (const s of wrap(ctx, l.text, 7, 108)) { text(ctx, s, dx, y, 7, l.color === 'up' ? '#2a6a2a' : l.color === 'down' ? '#8a2a2a' : INK2, 'left', FONT_BODY, 600, false); y += 8.5; }
+        // where it came from, if anyone remembers
+        const lore = it.lore ?? ITEM_LORE[it.id];
+        if (lore) { y += 3; for (const s of wrap(ctx, lore, 6.5, 108)) { if (y > 228) break; text(ctx, s, dx, y, 6.5, '#7a5a3a', 'left', FONT_BODY, 500, false); y += 8; } }
         text(ctx, `${SET_NAME(setOf(it))}  ·  ${it.kind}`, dx, 236, 6.5, INK2, 'left', FONT_BODY, 600, false);
       } else {
         text(ctx, '???', dx, dy + 46, 14, INK2, 'left', FONT_TITLE, 400, false);
@@ -934,25 +940,151 @@ export class MenuSystem {
     };
   }
   endingScreen(w: World): Screen {
-    const self = this, g = this.g;
+    const g = this.g;
+    const end = ENDING_BY_ID[(w.run.flags.ending as EndingId) ?? 'morning'] ?? ENDING_BY_ID.morning;
+    const epilogue = EPILOGUES[w.run.charId] ?? '';
+    const fresh = !!w.run.flags.newEnding;
+    const found = g.save.data.endings?.length ?? 0;
+    // lay the story out once: wrapped lines, each fading in after the last
+    let laid: { s: string; y: number; at: number; big: boolean; dim?: boolean }[] | null = null;
+    let doneAt = 0;
+    const layout = (ctx: CanvasRenderingContext2D) => {
+      laid = []; let y = 74, at = 0.8;
+      end.lines.forEach((l, i) => {
+        const big = i === end.key;
+        const ls = wrap(ctx, l, big ? 12 : 9.5, 380, big ? FONT_TITLE : FONT_BODY);
+        for (const s2 of ls) { laid!.push({ s: s2, y, at, big }); y += big ? 15 : 12.5; }
+        y += 5; at += 2.1;
+      });
+      if (epilogue) for (const s2 of wrap(ctx, epilogue, 8, 360)) { laid.push({ s: s2, y: y + 2, at, big: false, dim: true }); y += 10.5; }
+      doneAt = at + 1.2;
+    };
     return {
       t: 0,
       update(keys) { if (this.t > 4 && keys.includes('confirm')) g.fadeTo(() => g.quitToMenu(), 0.8); },
       render(ctx) {
-        ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        (w.run.flags.margins && w.run.floorIndex > FINAL_FLOOR ? (w.run.flags.light ? LIGHT_ENDING_STORY : TRUE_ENDING_STORY) : ENDING_STORY).forEach((l, i) => { ctx.globalAlpha = clamp((this.t - i * 2.2) * 1, 0, 1); text(ctx, l, VIEW_W / 2, 60 + i * 22, 11, '#efe2c8', 'center', i === 2 ? FONT_TITLE : FONT_BODY, i === 2 ? 400 : 600); });
-        ctx.globalAlpha = clamp(this.t - 9, 0, 1);
-        text(ctx, 'THE END', VIEW_W / 2, 170, 24, '#c8a878', 'center', FONT_TITLE, 400);
-        text(ctx, `${fmtTime(w.run.stats.time)} · ${w.run.stats.kills} enemies · Seed ${formatSeed(w.run.seed)}`, VIEW_W / 2, 186, 8, COL.dim, 'center');
+        ctx.fillStyle = 'rgba(4,2,6,0.84)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        if (!laid) layout(ctx);
+        ctx.globalAlpha = clamp(this.t * 1.5, 0, 1);
+        text(ctx, `Ending ${end.num}`, VIEW_W / 2, 34, 7.5, COL.gold, 'center', FONT_BODY, 700);
+        text(ctx, end.name, VIEW_W / 2, 52, 17, '#efe2c8', 'center', FONT_TITLE, 400);
+        for (const l of laid!) {
+          ctx.globalAlpha = clamp((this.t - l.at) * 0.9, 0, 1);
+          text(ctx, l.s, VIEW_W / 2, l.y, l.big ? 12 : l.dim ? 8 : 9.5, l.dim ? 'rgba(200,185,165,0.75)' : l.big ? '#f4dca8' : '#e6d6bc', 'center', l.big ? FONT_TITLE : FONT_BODY, l.big ? 400 : 600);
+        }
+        ctx.globalAlpha = clamp(this.t - doneAt, 0, 1);
+        const ey = Math.max(170, (laid!.length ? laid![laid!.length - 1].y : 150) + 22);
+        text(ctx, 'THE END', VIEW_W / 2, ey, 18, '#c8a878', 'center', FONT_TITLE, 400);
+        text(ctx, fresh ? `A new ending. ${found} of ${ENDINGS.length} found.` : `${found} of ${ENDINGS.length} endings found.`, VIEW_W / 2, ey + 12, 7, fresh ? COL.gold : COL.dim, 'center');
+        text(ctx, `${fmtTime(w.run.stats.time)} · ${w.run.stats.kills} enemies · Seed ${formatSeed(w.run.seed)}`, VIEW_W / 2, ey + 22, 7, COL.dim, 'center');
         const sc = w.run.flags.score as { score: number; best: number; isBest: boolean } | undefined;
-        if (sc) {
-          text(ctx, `Score ${sc.score}`, VIEW_W / 2, 206, 12, '#efe2c8', 'center', FONT_TITLE, 400);
-          text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, VIEW_W / 2, 216, 7, sc.isBest ? COL.gold : COL.dim, 'center');
-          runScore(w.run, true).parts.forEach(([k, v], i) => text(ctx, `${k} ${v >= 0 ? '+' : ''}${v}`, VIEW_W / 2 - 150 + (i % 5) * 75, 232 + Math.floor(i / 5) * 9, 6, COL.dim, 'center'));
+        if (sc && ey + 40 < VIEW_H - 16) {
+          text(ctx, `Score ${sc.score}`, VIEW_W / 2, ey + 36, 10, '#efe2c8', 'center', FONT_TITLE, 400);
+          text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, VIEW_W / 2, ey + 45, 6.5, sc.isBest ? COL.gold : COL.dim, 'center');
         }
         ctx.globalAlpha = 1;
         if (this.t > 4) hint(ctx, 'Press Enter');
-        void self;
+      },
+    };
+  }
+
+  /** Every ending: the ones you've seen, and a nudge toward the rest. */
+  endingsScreen(): Screen {
+    const self = this, g = this.g;
+    let sel = 0;
+    return {
+      t: 0,
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back' || k === 'confirm') { self.pop(); return; }
+          if (k === 'up' || k === 'left') { sel = (sel + ENDINGS.length - 1) % ENDINGS.length; self.sfxMove(); }
+          if (k === 'down' || k === 'right') { sel = (sel + 1) % ENDINGS.length; self.sfxMove(); }
+        }
+      },
+      pointer(x, y, click, _m, wheel) {
+        if (wheel) { sel = clamp(sel + wheel, 0, ENDINGS.length - 1); return; }
+        const i = Math.floor((y - 48) / 34);
+        if (x > 30 && x < 200 && i >= 0 && i < ENDINGS.length && i !== sel) { sel = i; self.sfxMove(); }
+        if (click && x > 30 && x < 200 && i >= 0 && i < ENDINGS.length) sel = i;
+      },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        page(ctx, 20, 14, 440, 244, 1, 21);
+        heading(ctx, 'Endings', 40, 38, 12, INK, 'left');
+        const seen = (id: string) => g.save.hasEnding(id);
+        text(ctx, `${ENDINGS.filter((e) => seen(e.id)).length} / ${ENDINGS.length}`, 190, 38, 8, INK2, 'right', FONT_BODY, 600, false);
+        ENDINGS.forEach((e, i) => {
+          const y = 56 + i * 34, on = i === sel, got = seen(e.id);
+          if (on) inkBlot(ctx, 115, y + 6, 178, 30, self.time, 'rgba(40,30,60,0.14)');
+          text(ctx, roman(e.num), 44, y + 9, 12, got ? '#8a2a2a' : '#a89a8a', 'left', FONT_TITLE, 400, false);
+          text(ctx, got ? e.name : '? ? ?', 64, y + 6, 10, got ? INK : '#8a7a6a', 'left', FONT_TITLE, 400, false);
+          text(ctx, got ? 'Seen' : 'Not yet', 64, y + 15, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        });
+        const e = ENDINGS[sel], got = seen(e.id);
+        const X = 226, Wd = 214;
+        text(ctx, `Ending ${e.num}`, X, 46, 7, INK2, 'left', FONT_BODY, 700, false);
+        text(ctx, got ? e.name : '? ? ?', X, 62, 13, INK, 'left', FONT_TITLE, 400, false);
+        let y = 80;
+        if (got) {
+          for (const l of e.lines) { for (const s2 of wrap(ctx, l, 7.5, Wd)) { text(ctx, s2, X, y, 7.5, INK, 'left', FONT_BODY, 600, false); y += 9.5; } y += 3; }
+        } else {
+          for (const s2 of wrap(ctx, e.clue, 8, Wd)) { text(ctx, s2, X, y, 8, '#6a3a2a', 'left', FONT_BODY, 600, false); y += 10.5; }
+        }
+        hint(ctx, '↑/↓ browse · Esc back');
+      },
+    };
+  }
+
+  /** Grandfather's notes, in the order they were written. Unread ones are blank with a hint where to look. */
+  notesScreen(): Screen {
+    const self = this, g = this.g;
+    let sel = 0, scroll = 0;
+    const VIS = 15;
+    const follow = () => { if (sel < scroll) scroll = sel; if (sel >= scroll + VIS) scroll = sel - VIS + 1; };
+    const where = (n: NoteDef) => n.where?.includes('hospital') ? 'Found only up the back stair.' : n.req ? 'Turns up later in the story.' : 'Found lying around in the book.';
+    return {
+      t: 0,
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back' || k === 'confirm') { self.pop(); return; }
+          if (k === 'up') { sel = Math.max(0, sel - 1); self.sfxMove(); }
+          if (k === 'down') { sel = Math.min(NOTES.length - 1, sel + 1); self.sfxMove(); }
+        }
+        follow();
+      },
+      pointer(x, y, click, _m, wheel) {
+        if (wheel) { scroll = clamp(scroll + wheel, 0, Math.max(0, NOTES.length - VIS)); sel = clamp(sel, scroll, scroll + VIS - 1); return; }
+        const i = Math.floor((y - 50) / 12.5) + scroll;
+        if (x > 30 && x < 196 && i >= scroll && i < Math.min(NOTES.length, scroll + VIS)) { if (i !== sel) { sel = i; self.sfxMove(); } }
+        void click;
+      },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        page(ctx, 20, 14, 440, 244, 1, 23);
+        heading(ctx, 'Notes', 40, 38, 12, INK, 'left');
+        text(ctx, 'in Grandfather\'s hand', 41, 47, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        const read = (n: NoteDef) => g.save.hasNote(n.id);
+        text(ctx, `${NOTES.filter(read).length} / ${NOTES.length}`, 196, 38, 8, INK2, 'right', FONT_BODY, 600, false);
+        if (g.save.isUnlocked('notes_all')) { ctx.fillStyle = '#c89a2a'; ctx.fillRect(28, 14, 5, 22); }
+        NOTES.slice(scroll, scroll + VIS).forEach((n, k) => {
+          const i = k + scroll, y = 56 + k * 12.5, on = i === sel;
+          if (on) inkBlot(ctx, 112, y - 3, 170, 12, self.time, 'rgba(40,30,60,0.14)');
+          text(ctx, `${i + 1}.`, 44, y, 7, INK2, 'left', FONT_BODY, 600, false);
+          text(ctx, read(n) ? n.title : '· · ·', 58, y, 8, read(n) ? INK : '#9a8a7a', 'left', FONT_TITLE, 400, false);
+        });
+        if (scroll > 0) text(ctx, '▲', 112, 47, 6, INK2, 'center', FONT_BODY, 600, false);
+        if (scroll + VIS < NOTES.length) text(ctx, '▼ more', 112, 250, 6, INK2, 'center', FONT_BODY, 600, false);
+        const n = NOTES[sel], X = 216, Wd = 224;
+        if (read(n)) {
+          text(ctx, n.title, X, 56, 12, INK, 'left', FONT_TITLE, 400, false);
+          let y = 74;
+          for (const s2 of wrap(ctx, n.text, 8, Wd)) { text(ctx, s2, X, y, 8, '#3a2a40', 'left', FONT_BODY, 600, false); y += 10.5; }
+          text(ctx, '— ' + (n.by ?? 'Grandfather'), X + Wd, y + 8, 7.5, INK2, 'right', FONT_BODY, 600, false);
+        } else {
+          text(ctx, 'Not yet read', X, 56, 12, '#8a7a6a', 'left', FONT_TITLE, 400, false);
+          text(ctx, where(n), X, 74, 8, '#6a3a2a', 'left', FONT_BODY, 600, false);
+        }
+        hint(ctx, '↑/↓ or wheel to browse · Esc back');
       },
     };
   }

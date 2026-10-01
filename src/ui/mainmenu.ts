@@ -5,13 +5,15 @@ import type { MenuSystem, Screen } from './menus';
 import { text, COL, FONT_TITLE, FONT_BODY, measure, heading, FONT_LOGO } from './draw';
 import { VIEW_W, VIEW_H } from '../core/constants';
 import { CHARACTERS } from '../player/characters';
-import { themeAt } from '../generation/floorgen';
+import { pickTheme } from '../generation/floorgen';
 import { formatSeed, RNG } from '../core/rng';
 import { clamp, ease, TAU } from '../core/math';
 import { getEnemy } from '../enemies/registry';
 import { getSprites } from '../enemies/enemy';
 import { SLOTS, store } from '../save/save';
 import { CHALLENGES } from '../data/achievements';
+import { NOTES } from '../data/notes';
+import { ENDINGS } from '../data/endings';
 
 // ---------------------------------------------------------------------------- scene painting
 interface SceneLayers { far: HTMLCanvasElement; mid: HTMLCanvasElement; near: HTMLCanvasElement; pages: { x: number; y: number; w: number; h: number; c: string }[] }
@@ -213,7 +215,7 @@ function trackedWidth(ctx: CanvasRenderingContext2D, word: string, track: number
  * spaced between two rules; MARCUS is lit from below like candlelight, and its last letter keeps
  * fading, as if it is slipping away.
  */
-function drawLogo(ctx: CanvasRenderingContext2D, t: number, a: number): void {
+function drawLogo(ctx: CanvasRenderingContext2D, t: number, a: number, finished = false): void {
   ctx.save(); ctx.globalAlpha = a;
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   const x = 34, y = 58;
@@ -236,7 +238,7 @@ function drawLogo(ctx: CanvasRenderingContext2D, t: number, a: number): void {
   ctx.fillRect(cx + lw / 2 + 8, ly - 4, x + W - (cx + lw / 2 + 8), 0.8);
   // MARCUS: shadow, then a candlelit fill
   ctx.font = `700 34px ${FONT_LOGO}`;
-  const fade = (i: number) => (i === 5 ? 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.9)) : 1);
+  const fade = (i: number) => (i === 5 && !finished ? 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 0.9)) : 1);
   ctx.fillStyle = 'rgba(20,8,6,0.85)';
   tracked(ctx, 'MARCUS', x + 1.5, y + 1.5, 2.5, fade);
   const grad = ctx.createLinearGradient(0, y - 26, 0, y + 2);
@@ -249,7 +251,7 @@ function drawLogo(ctx: CanvasRenderingContext2D, t: number, a: number): void {
   ctx.fillRect(x, ry, W / 2 - 6, 0.8); ctx.fillRect(cx + 6, ry, W / 2 - 6, 0.8);
   ctx.fillStyle = '#c9a46a';
   ctx.beginPath(); ctx.moveTo(cx, ry - 2.6); ctx.lineTo(cx + 2.6, ry + 0.4); ctx.lineTo(cx, ry + 3.4); ctx.lineTo(cx - 2.6, ry + 0.4); ctx.fill();
-  text(ctx, 'some stories should stay shut', cx, y + 22, 6.5, 'rgba(200,180,160,0.6)', 'center', FONT_BODY, 500, false);
+  text(ctx, finished ? 'some stories just need finishing' : 'some stories should stay shut', cx, y + 22, 6.5, finished ? 'rgba(240,210,150,0.7)' : 'rgba(200,180,160,0.6)', 'center', FONT_BODY, 500, false);
   ctx.restore();
 }
 
@@ -278,7 +280,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
   const entries: Entry[] = [];
   // only what you can use right now: Continue appears with a story in progress, Challenges once one is open
   if (run) entries.push({ id: 'continue', label: 'Continue', icon: I.play,
-    desc: () => `${CHARACTERS.find((c) => c.id === run.charId)?.name ?? ''} · ${themeAt(run.seed, run.floor).name} · Seed ${formatSeed(run.seed)}${run.mode === 'hard' ? ' · Hard' : run.mode === 'endless' ? ' · Endless' : ''}`,
+    desc: () => `${CHARACTERS.find((c) => c.id === run.charId)?.name ?? ''} · ${pickTheme({ seed: run.seed, flags: run.flags ?? {} } as any, run.floor).name} · Seed ${formatSeed(run.seed)}${run.mode === 'hard' ? ' · Hard' : run.mode === 'endless' ? ' · Endless' : ''}`,
     act: () => g.fadeTo(() => { if (!g.continueRun()) ms.openMain(); }, 0.4) });
   entries.push(
     { id: 'new', label: 'New Run', icon: I.plus, desc: () => 'Pick a reader, a mode and (optionally) a seed.', act: () => ms.push(ms.newRunScreen()) },
@@ -286,7 +288,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
   );
   if (CHALLENGES.some((c) => !c.unlock || g.save.isUnlocked(c.unlock))) entries.push({ id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) });
   entries.push(
-    { id: 'journal', label: 'Journal', icon: I.book, desc: () => 'Readers, collection, bestiary, past runs and statistics.', act: () => ms.push(journalScreen(ms)) },
+    { id: 'journal', label: 'Journal', icon: I.book, desc: () => 'Readers, collection, past runs, statistics, notes and endings.', act: () => ms.push(journalScreen(ms)) },
     { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls, save slots and credits.', act: () => ms.push(ms.optionsScreen()) },
   );
   if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Close the book for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
@@ -301,6 +303,8 @@ export function journalScreen(ms: MenuSystem): Screen {
     { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press Enter inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
     { id: 'history', label: 'Run History', icon: I.history, desc: () => `Your last ${Math.min(30, g.save.data.history?.length ?? 0)} stories, good and bad.`, act: () => ms.push(ms.historyScreen()) },
     { id: 'stats', label: 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements.', act: () => ms.push(ms.statsScreen()) },
+    { id: 'notes', label: 'Notes', icon: I.scroll, desc: () => `Grandfather's notes found: ${g.save.data.notes?.length ?? 0} of ${NOTES.length}.`, act: () => ms.push(ms.notesScreen()) },
+    { id: 'endings', label: 'Endings', icon: I.bookmark, desc: () => `Endings found: ${g.save.data.endings?.length ?? 0} of ${ENDINGS.length}.`, act: () => ms.push(ms.endingsScreen()) },
   ];
   return entryList(ms, entries, { title: 'Journal', back: true });
 }
@@ -332,7 +336,7 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
     },
     render(ctx) {
       const a = ease.outCubic(clamp(this.t * 1.4, 0, 1));
-      if (o.logo) drawLogo(ctx, ms.time, a);
+      if (o.logo) drawLogo(ctx, ms.time, a, g.save.isUnlocked('the_end'));
       ctx.save(); ctx.globalAlpha = a;
       if (o.title) {
         // a soft shade so the submenu reads over the scene
@@ -362,7 +366,7 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
       if (o.logo) {
         const info = g.save.slotInfo(g.save.slot);
         text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'right');
-        text(ctx, 'v2.7 beta  ·  Papermoth Games', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
+        text(ctx, 'v2.8 beta  ·  Papermoth Games', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
       }
     },
   };
