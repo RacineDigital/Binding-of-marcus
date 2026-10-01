@@ -210,6 +210,13 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       room.spawns = castEnemies(room, floor, rng, slots, 1, run.mode === 'hard');
       freeSpawns(room, room.spawns);
       if (room.spawns.length === 0) room.cleared = true;
+      // occasional room variants so familiar layouts play differently
+      else if (room.distance >= 2 && rng.chance(0.14 + fi * 0.015)) {
+        const v = rng.weighted([['ambush', 3], ['champions', fi >= 1 ? 2 : 0.5], ['dark', 1.5], ['gilded', 1.5]] as [string, number][], (x) => x[1])![0];
+        room.flags.variant = v;
+        if (v === 'champions') for (const sp of room.spawns) sp.champion = true;
+        if (v === 'ambush' && room.spawns.length >= 3) { const k = Math.ceil(room.spawns.length / 2); room.flags.ambush = room.spawns.slice(k); room.spawns = room.spawns.slice(0, k); }
+      }
       break;
     }
     case 'boss': {

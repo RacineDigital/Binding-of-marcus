@@ -335,6 +335,7 @@ export class World {
       if (k) spawnDrop(this, k, e.x, e.y);
     }
     if (e.champion) spawnDrop(this, Math.random() < 0.5 ? 'heart' : 'button', e.x, e.y);
+    else if (this.room.flags.variant === 'gilded' && !e.friendly && Math.random() < 0.45) spawnDrop(this, Math.random() < 0.15 ? 'button5' : 'button', e.x, e.y);
     if (e.isBoss) flow.onBossKilled(this, e);
   }
 

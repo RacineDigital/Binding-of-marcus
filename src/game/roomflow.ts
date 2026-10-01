@@ -1,6 +1,6 @@
 // Room lifecycle: entering, doors, clearing, rewards, special rooms and floor progression.
 import type { World, DoorRT } from './world';
-import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef } from '../rooms/room';
+import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef, SpawnDef } from '../rooms/room';
 import { TILE, VIEW_W, VIEW_H } from '../core/constants';
 import { paintRoomBackground } from '../art/roombg';
 import { propsFor } from '../art/props';
@@ -150,6 +150,10 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   const hasEnemies = w.enemies.length > 0;
   w.audio.setIntensity(hasEnemies ? 1 : 0);
   if (from !== null) w.audio.play(hasEnemies ? 'doorSlam' : 'door', { vol: 0.6 });
+  if (room.flags.variant && !room.cleared && !room.flags.announced) {
+    room.flags.announced = true;
+    w.hud.roomName(VARIANT_NAMES[room.flags.variant] ?? '');
+  }
   if (room.type !== 'normal' && room.type !== 'start' && room.type !== 'boss' && !room.flags.announced) {
     room.flags.announced = true;
     w.hud.roomName(ROOM_NAMES[room.type]);
@@ -297,9 +301,19 @@ export function checkExit(w: World): void {
 }
 
 // ------------------------------------------------------------------ clearing & rewards
+const VARIANT_NAMES: Record<string, string> = { ambush: 'Ambush!', champions: 'Champion Den', dark: 'Lights Out', gilded: 'Gilded Room' };
+
 export function checkRoomClear(w: World): void {
   const room = w.room;
   if (room.cleared || w.aliveEnemies() > 0) return;
+  // ambush rooms send a second wave once the first falls
+  const wave = room.flags.ambush as SpawnDef[] | undefined;
+  if (wave && wave.length) {
+    room.flags.ambush = null;
+    for (const s of wave) { const c = room.cellCenter(s.c, s.r); const e = spawnEnemy(w, s.id, c.x, c.y, false); if (e) e.spawnT = 0.6 + Math.random() * 0.3; }
+    w.hud.roomName('Here they come!'); w.audio.play('bossRoar', { vol: 0.35 }); w.shake(2);
+    return;
+  }
   if (room.type === 'challenge') return; // handled by waves
   if (w.lockdown && w.bossList.some((b) => !b.dead)) return;
   onClear(w, true);
@@ -322,6 +336,8 @@ function onClear(w: World, reward: boolean): void {
     else if (w.player.keys === 0 && rng.chance(0.3)) kind = 'key';
     else if (w.player.bombs === 0 && rng.chance(0.3)) kind = 'bomb';
     else if (w.run.mode === 'hard' && rng.chance(0.12)) kind = null;
+    if (room.flags.variant === 'champions' || room.flags.variant === 'ambush') kind = rng.chance(0.5) ? 'chest' : kind ?? 'heart';
+    if (room.flags.variant === 'dark') { const p2 = freeSpotNear(w, room.center().x + 24, room.center().y); spawnDrop(w, rng.pick(['page', 'sweet', 'key']), p2.x, p2.y, true, rng); }
     if (kind) {
       const p = freeSpotNear(w, room.center().x, room.center().y);
       spawnDrop(w, kind, p.x, p.y, true, rng);
