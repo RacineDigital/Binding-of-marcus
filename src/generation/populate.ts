@@ -2,6 +2,7 @@
 import { RNG } from '../core/rng';
 import { RoomData, Ob, SpawnDef, Side } from '../rooms/room';
 import { TEMPLATES, BOSS_TEMPLATE, Template } from '../rooms/templates';
+import { generateLayout } from './roomgen';
 import type { Floor, Run } from '../game/run';
 import { getEnemy, ENEMY_DEFS } from '../enemies/registry';
 import type { Role } from '../enemies/enemy';
@@ -201,7 +202,8 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       const subs: [number, number][] = [];
       if (room.cw === 1 && room.ch === 1) subs.push([0, 0]);
       else for (let j = 0; j < room.ch; j++) for (let i = 0; i < room.cw; i++) subs.push([i * 20, j * 11]);
-      for (const [oc, orr] of subs) stamp(room, pickTemplate(rng, fi).rows, oc, orr, rng.chance(0.5), rng.chance(0.5), rng, floor, slots);
+      // a little over half of all rooms are procedurally generated; the rest are handmade templates
+      for (const [oc, orr] of subs) stamp(room, rng.chance(0.55) ? generateLayout(rng, floor.theme, fi) : pickTemplate(rng, fi).rows, oc, orr, rng.chance(0.5), rng.chance(0.5), rng, floor, slots);
       // big rooms: decorate the seams with pillars
       if (room.cw === 2) for (const r of [1, room.rows - 2]) if (rng.chance(0.5)) room.setOb(17, r, Ob.Pillar);
       ensurePaths(room);

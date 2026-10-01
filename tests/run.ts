@@ -6,6 +6,8 @@ import { ENEMY_DEFS, getEnemy } from '../src/enemies/registry';
 import { BOSSES } from '../src/bosses/registry';
 import { FLOORS, ALT_FLOORS } from '../src/data/floors';
 import { TEMPLATES } from '../src/rooms/templates';
+import { generateLayout } from '../src/generation/roomgen';
+import { RNG } from '../src/core/rng';
 import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
 import { ACHIEVEMENTS } from '../src/data/achievements';
@@ -100,6 +102,15 @@ for (const f of [...FLOORS, ...Object.values(ALT_FLOORS)]) {
   for (const id of f.bosses) ok(!!getEnemy(id), `floor ${f.id} boss ${id} exists`);
 }
 for (const t of TEMPLATES) { ok(t.rows.length === 9 && t.rows.every((r) => r.length === 15), `template ${t.name} is 15x9`); }
+{
+  const rng = new RNG('layouts');
+  const valid = new Set('.#@bo^~fpkuIwMFSWHTA');
+  for (let i = 0; i < 2000; i++) {
+    const L = generateLayout(rng, FLOORS[i % FLOORS.length], i % 8);
+    ok(L.length === 9 && L.every((r) => r.length === 15 && [...r].every((ch) => valid.has(ch))), `generated layout ${i} is a valid 15x9 grid`);
+    ok(L.join('').replace(/[^MFSWHTA]/g, '').length >= 2, `generated layout ${i} has enemy slots`);
+  }
+}
 for (const c of CHARACTERS) for (const id of c.items) ok(ids.has(id), `character ${c.id} start item ${id} exists`);
 const counts = {
   items: ALL_ITEMS.length, passives: ALL_ITEMS.filter((i) => i.kind === 'passive').length, actives: ALL_ITEMS.filter((i) => i.kind === 'active').length,
