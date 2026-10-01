@@ -1,0 +1,28 @@
+BINDING OF MARCUS
+=================
+
+HOW TO PLAY
+-----------
+Double-click "Binding of Marcus.html". It opens in your web browser and runs
+offline. You don't need to install anything. Chrome, Edge or Firefox work best.
+
+Click the window once so the browser allows sound. Press F11 for fullscreen.
+
+CONTROLS (you can change them in Options > Controls; controllers work too)
+--------
+  Move ............................ W A S D
+  Shoot ........................... Arrow keys
+  Use active item / interact ...... E
+  Bomb ............................ Space
+  Use card or pill ................ Q
+  Switch card or pill ............. F
+  Move slowly and precisely ....... Shift (hold)
+  Drop charm ...................... R (hold)
+  Full map ........................ Tab (hold)
+  Pause ........................... Esc
+
+SAVE DATA
+---------
+Unlocks, statistics, settings and your current run are saved in the browser.
+If you move the file to another folder or open it in a different browser, it
+may start with a fresh save.

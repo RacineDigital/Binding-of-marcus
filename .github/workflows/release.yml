@@ -1,13 +1,13 @@
 name: Release
 
 # Publishes a GitHub Release with the downloadable game whenever:
-#   - a commit changes the version in package.json (the release is tagged v<version>), or
+#   - a commit changes package.json or the release packaging (the release is tagged v<version>), or
 #   - a tag like v1.2.0 is pushed.
 # Nothing is published if a release for that version already exists.
 on:
   push:
     branches: ['**']
-    paths: ['package.json']
+    paths: ['package.json', 'scripts/package-release.sh', '.github/release/**', '.github/workflows/release.yml']
     tags: ['v*']
 
 permissions:
