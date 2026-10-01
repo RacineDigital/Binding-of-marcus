@@ -101,6 +101,117 @@ export function guitar(midi: number, o: GuitarOpts = {}): Float32Array {
   });
 }
 
+// ------------------------------------------------------------------ the "real" guitar
+/**
+ * Karplus-Strong with a fractional, modulatable delay: the string can be bent, slid and vibrato'd,
+ * and is tuned exactly (no integer-delay detuning).
+ */
+function ksReal(freqAt: (i: number) => number, dur: number, loss: number, bright: number, seed: number, pickPos = 0.16, amp = 1): Float32Array {
+  const n = Math.floor(SR * dur);
+  const out = new Float32Array(n);
+  const f0 = freqAt(0), MAX = Math.ceil(SR / 40) + 4;
+  const buf = new Float32Array(MAX);
+  const r = rng(seed);
+  // excitation: a pick-shaped burst one period long
+  const N0 = SR / f0;
+  let lp = 0;
+  for (let i = 0; i < N0; i++) { lp += (r() - lp) * (0.2 + bright * 0.8); buf[i] = lp * amp; }
+  const pk = Math.max(1, Math.floor(N0 * pickPos));
+  for (let i = Math.floor(N0) - 1; i >= pk; i--) buf[i] -= buf[i - pk] * 0.85;
+  let w = Math.floor(N0) % MAX, y1 = 0;
+  const g = Math.min(0.9995, loss);
+  for (let i = 0; i < n; i++) {
+    const P = SR / freqAt(i);
+    let rp = w - P; while (rp < 0) rp += MAX;
+    const i0 = Math.floor(rp), fr = rp - i0, a = buf[i0 % MAX], b = buf[(i0 + 1) % MAX];
+    const v = a + (b - a) * fr;
+    // loop filter: a gentle low-pass that dulls the string as it rings
+    const y = g * (v * (0.5 + bright * 0.25) + y1 * (0.5 - bright * 0.25));
+    y1 = y;
+    buf[w] = y; w = (w + 1) % MAX;
+    out[i] = v;
+  }
+  return out;
+}
+/** Oversampled, asymmetric (tube-ish) overdrive: smoother and less fizzy than a plain tanh. */
+function tubeDrive(d: Float32Array, gain: number): void {
+  let prev = 0;
+  for (let i = 0; i < d.length; i++) {
+    const x = d[i];
+    let acc = 0;
+    for (const t of [0.25, 0.75]) {     // 2x oversampling by interpolation
+      const s = (prev + (x - prev) * t) * gain;
+      acc += s > 0 ? Math.tanh(s) : Math.tanh(s * 0.82) / 0.9;
+    }
+    prev = x; d[i] = acc * 0.5;
+  }
+}
+export interface RealOpts { mute?: boolean; dur?: number; take?: number; rr?: number; vel?: number; voicing?: 'power' | 'root' | 'oct' | 'fifth' | 'single' | 'dyad3'; gain?: number }
+/** A played rhythm-guitar hit: strummed strings, a pick click, a tube amp. `rr` picks one of several performances. */
+export function realGuitar(midi: number, o: RealOpts = {}): Float32Array {
+  const mute = !!o.mute, take = o.take ?? 0, rr = o.rr ?? 0, vel = o.vel ?? 1, voicing = o.voicing ?? (mute ? 'root' : 'power');
+  const dur = o.dur ?? (mute ? 0.22 : 1.2);
+  const key = `rg:${midi}:${mute}:${dur.toFixed(3)}:${take}:${rr}:${vel}:${voicing}:${o.gain ?? 1}`;
+  return cached(key, () => {
+    const n = Math.floor(SR * (dur + 0.06));
+    const sum = new Float32Array(n);
+    const r = rng(midi * 97 + rr * 1013 + take * 7919 + (mute ? 3 : 0));
+    const ints = voicing === 'power' ? [0, 7, 12] : voicing === 'oct' ? [0, 12] : voicing === 'fifth' ? [0, 7] : voicing === 'dyad3' ? [0, 3, 7] : [0];
+    ints.forEach((iv, k) => {
+      // a downstroke: strings a few ms apart, each a few cents off
+      const off = Math.floor(SR * (0.0025 * k * (0.7 + 0.6 * Math.abs(r())) + Math.abs(r()) * 0.002));
+      const cents = r() * 4 + (take ? 2 : -2);
+      const f = mtof(midi + iv) * Math.pow(2, cents / 1200);
+      const s = ksReal(() => f, dur + 0.06, mute ? 0.986 : 0.9985, (mute ? 0.35 : 0.65) * (0.8 + vel * 0.2), midi * 31 + k * 7 + take * 101 + rr * 389, 0.13 + Math.abs(r()) * 0.08, vel);
+      for (let i = 0; i + off < n; i++) sum[i + off] += s[i] * (k === 0 ? 1 : 0.75);
+    });
+    // the pick's click
+    const pr = rng(rr * 17 + midi + take * 3);
+    for (let i = 0; i < Math.floor(SR * 0.004); i++) sum[i] += pr() * 0.25 * vel * (1 - i / (SR * 0.004));
+    highpass(sum, mute ? 130 : 95);
+    tubeDrive(sum, (mute ? 18 : 12) * (o.gain ?? 1) * (0.85 + vel * 0.15));
+    highpass(sum, 70);
+    tubeDrive(sum, 2.4);
+    lowpass(sum, mute ? 4200 : 6500);
+    if (mute) for (let i = 0; i < n; i++) { const t = i / SR; sum[i] *= Math.exp(-t * 8) * 0.85 + 0.15 * Math.exp(-t * 26); }
+    const rel = Math.floor(SR * 0.035);
+    for (let i = 0; i < rel && i < n; i++) sum[n - 1 - i] *= i / rel;
+    return normalize(sum, 0.8 * (0.85 + vel * 0.15));
+  });
+}
+/**
+ * A sung lead-guitar note: slides in from the previous note (or bends up into long ones), with a
+ * finger vibrato that comes in after a moment, through a smooth high-gain amp.
+ */
+export function realLead(midi: number, dur: number, from: number | null, rr = 0): Float32Array {
+  const q = Math.round(dur * 1000) / 1000;
+  return cached(`rl:${midi}:${q}:${from}:${rr}`, () => {
+    const f = mtof(midi), f0 = from !== null ? mtof(from) : f;
+    const slide = from !== null && Math.abs(from - midi) <= 5 ? 0.045 * SR : 0;
+    const bend = from === null && q > 0.3 ? 0.06 * SR : 0;   // bend up a semitone into long notes
+    const vibOn = Math.min(0.22, q * 0.4) * SR, vibRise = 0.25 * SR;
+    const vibRate = 5.2 + (rr % 3) * 0.35;
+    const fa = (i: number) => {
+      let base = f;
+      if (slide && i < slide) base = f0 * Math.pow(f / f0, i / slide);
+      else if (bend && i < bend) base = f * Math.pow(2, (-1 + i / bend) / 12);
+      const k = i < vibOn ? 0 : Math.min(1, (i - vibOn) / vibRise);
+      return base * Math.pow(2, (k * 0.32 * Math.sin((2 * Math.PI * vibRate * i) / SR)) / 12);
+    };
+    const s = ksReal(fa, q + 0.25, 0.9993, 0.6, midi * 53 + rr * 211, 0.12, 1);
+    const pr = rng(midi + rr * 5);
+    for (let i = 0; i < Math.floor(SR * 0.003); i++) s[i] += pr() * 0.2;
+    highpass(s, 140);
+    tubeDrive(s, 26);
+    highpass(s, 90);
+    tubeDrive(s, 2);
+    lowpass(s, 5600);
+    const n = s.length, rel = Math.floor(SR * 0.06);
+    for (let i = 0; i < rel && i < n; i++) s[n - 1 - i] *= i / rel;
+    return normalize(s, 0.75);
+  });
+}
+
 /** Clean picked note (arpeggiated clean guitar / chamber pluck), slightly chorused. */
 export function cleanPluck(midi: number, dur = 1.6, bright = 0.6): Float32Array {
   return cached(`pluck:${midi}:${dur}:${bright}`, () => {

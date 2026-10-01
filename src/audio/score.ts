@@ -52,7 +52,7 @@ export interface PadPart extends PartBase {
 }
 /** Melody from tokens "deg:len" (scale degree relative to key root at `octave`), "r:len" rests; '+'/'-' suffix = sharp/flat. */
 export interface LeadPart extends PartBase {
-  kind: 'lead'; sound: 'saw' | 'square' | 'guitar' | 'choir' | 'bell' | 'strings' | 'organ' | 'clean' | 'chip'; octave: number; melody: string; glide?: boolean;
+  kind: 'lead'; sound: 'saw' | 'square' | 'guitar' | 'choir' | 'bell' | 'strings' | 'organ' | 'clean' | 'chip' | 'realguitar'; octave: number; melody: string; glide?: boolean;
 }
 /** Short string stabs / ostinato: chars are chord-tone indices, '.' rest. */
 export interface StaccPart extends PartBase {
@@ -69,6 +69,8 @@ export interface Song {
   bpm: number; key: number; scale: ScaleName; bars: number;
   /** Optional tempo map: bpm for each bar (cycles), so a song can rush, drag and rush again. */
   tempo?: number[];
+  /** Played guitars (humanised string model, tube amp), a warmer master and more room on the guitars. */
+  real?: boolean;
   /** Chord root as scale degree per bar (cycles). */
   chords: number[];
   swing?: number;

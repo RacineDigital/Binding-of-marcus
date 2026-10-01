@@ -14,7 +14,7 @@ interface Ctx {
   oc: OfflineAudioContext; song: Song; spb: number; // seconds per 16th (at the song's base tempo)
   /** Start time of every bar (bars + 1 entries) and each bar's seconds per 16th, from the tempo map. */
   barT: number[]; barSpb: number[];
-  buses: { gtrL: AudioNode; gtrR: AudioNode; drums: AudioNode; synth: AudioNode; bass: AudioNode; rev: AudioNode };
+  buses: { gtrL: AudioNode; gtrR: AudioNode; leadL: AudioNode; leadR: AudioNode; drums: AudioNode; synth: AudioNode; bass: AudioNode; rev: AudioNode };
   bufs: Map<Float32Array, AudioBuffer>;
 }
 
@@ -133,6 +133,15 @@ async function renderGuitar(c: Ctx, p: GuitarPart): Promise<number[]> {
     const t = stepTime(c, e.step);
     const dur = e.mute ? Math.min(e.len * spbAt(c, e.step) + 0.05, 0.3) : e.len * spbAt(c, e.step) + 0.04;
     for (const take of [0, 1]) {
+      if (c.song.real) {
+        // a person playing: never the same stroke twice, a little early or late, harder on the beat
+        const h = hash(e.step * 2 + take, e.midi);
+        const rr = Math.floor(h * 4), vel = e.step % 4 === 0 ? 1 : h > 0.5 ? 0.92 : 0.84;
+        const jit = (hash(e.step, take + 7) - 0.5) * 0.008;
+        const d = I.realGuitar(e.midi, { mute: e.mute, dur: e.mute ? 0.26 : Math.min(2.4, Math.max(0.2, dur + 0.1)), take, rr, vel, voicing: e.mute ? 'root' : p.voicing ?? 'power', gain: p.gain });
+        play(c, d, Math.max(0, t + take * 0.006 + jit), p.vol * (e.mute ? 0.95 : 0.8) * (0.9 + vel * 0.1), take ? c.buses.gtrR : c.buses.gtrL, { dur });
+        continue;
+      }
       const d = I.guitar(e.midi, { mute: e.mute, dur: e.mute ? 0.26 : Math.min(2.4, Math.max(0.2, dur + 0.1)), take, voicing: e.mute ? 'root' : p.voicing ?? 'power', gain: p.gain });
       play(c, d, t + take * 0.004, p.vol * (e.mute ? 0.95 : 0.8), take ? c.buses.gtrR : c.buses.gtrL, { dur });
     }
@@ -157,7 +166,13 @@ function voicePad(c: Ctx, sound: string, notes: number[], t: number, dur: number
   play(c, SV.pad(sound, notes, dur, cut, 2), t, vol * k, out, { pan: 0.45 });
 }
 
+const hash = (a: number, b: number) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
 function voiceLead(c: Ctx, sound: string, m: number, t: number, dur: number, vol: number, out: AudioNode, prev: number | null, glide: boolean): void {
+  if (sound === 'realguitar') {
+    const rr = Math.floor(hash(t * 100, m) * 3);
+    play(c, I.realLead(m, Math.min(3, dur + 0.05), prev !== null && Math.abs(prev - m) <= 5 ? prev : null, rr), Math.max(0, t + (hash(m, t) - 0.5) * 0.006), vol * 0.8, out, { dur: dur + 0.12 });
+    return;
+  }
   if (sound === 'guitar') {
     const d = I.guitar(m, { dur: Math.min(2.5, dur + 0.25), voicing: 'single', gain: 1.6, take: 0 });
     play(c, d, t, vol * 0.75, out, { dur: dur + 0.08 });
@@ -206,6 +221,16 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
   const oc = new OfflineAudioContext(2, Math.ceil((loop + tail) * SR), SR);
   // master chain: glue compressor -> limiter
   const master = oc.createGain(); master.gain.value = 0.9;
+  // a warmer master for the 'real' songs: soft tape-style saturation and the very top rolled off
+  let masterIn: AudioNode = master;
+  if (song.real) {
+    const sat = oc.createWaveShaper(); const curve = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) { const x = (i / 1023) * 2 - 1; curve[i] = Math.tanh(x * 1.6) / Math.tanh(1.6); }
+    sat.curve = curve; sat.oversample = '4x';
+    const air = oc.createBiquadFilter(); air.type = 'lowpass'; air.frequency.value = 14500; air.Q.value = 0.5;
+    const pre = oc.createGain(); pre.gain.value = 0.9;
+    pre.connect(sat); sat.connect(air); air.connect(master); masterIn = pre;
+  }
   const comp = oc.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3.5; comp.attack.value = 0.008; comp.release.value = 0.18; comp.knee.value = 8;
   const lim = oc.createDynamicsCompressor(); lim.threshold.value = -3; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.08; lim.knee.value = 0;
   master.connect(comp); comp.connect(lim); lim.connect(oc.destination);
@@ -216,24 +241,34 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
   const rvIn = oc.createGain(); rvIn.gain.value = 1;
   const rvHp = oc.createBiquadFilter(); rvHp.type = 'highpass'; rvHp.frequency.value = 220;
   const rvOut = oc.createGain(); rvOut.gain.value = song.reverb.mix;
-  rvIn.connect(rvHp); rvHp.connect(rv); rv.connect(rvOut); rvOut.connect(master);
+  rvIn.connect(rvHp); rvHp.connect(rv); rv.connect(rvOut); rvOut.connect(masterIn);
   // guitar cabinet: tighten lows, scoop low mids, presence bump, roll off fizz
-  const cab = (pan: number): AudioNode => {
+  const cab = (pan: number, send = song.real ? 0.2 : 0.08): AudioNode => {
     const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 85; hp.Q.value = 0.7;
     const scoop = oc.createBiquadFilter(); scoop.type = 'peaking'; scoop.frequency.value = 420; scoop.Q.value = 1.1; scoop.gain.value = -4;
     const pres = oc.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2300; pres.Q.value = 0.9; pres.gain.value = 3.5;
     const fz = oc.createBiquadFilter(); fz.type = 'lowpass'; fz.frequency.value = 6200; fz.Q.value = 0.6;
     const p = oc.createStereoPanner(); p.pan.value = pan;
-    hp.connect(scoop); scoop.connect(pres); pres.connect(fz); fz.connect(p); p.connect(master);
-    const s = oc.createGain(); s.gain.value = 0.08; p.connect(s); s.connect(rvIn);
+    let last: AudioNode = fz;
+    hp.connect(scoop); scoop.connect(pres); pres.connect(fz);
+    if (song.real) {
+      // a miked 4x12: a little thump, a second steep roll-off above 5k so nothing fizzes
+      const thump = oc.createBiquadFilter(); thump.type = 'peaking'; thump.frequency.value = 115; thump.Q.value = 1; thump.gain.value = 2;
+      const fz2 = oc.createBiquadFilter(); fz2.type = 'lowpass'; fz2.frequency.value = 5400; fz2.Q.value = 0.8;
+      fz.connect(thump); thump.connect(fz2); last = fz2;
+    }
+    last.connect(p); p.connect(masterIn);
+    const s = oc.createGain(); s.gain.value = send; p.connect(s); s.connect(rvIn);
     return hp;
   };
   const drums = oc.createGain(); drums.gain.value = 1;
   const dcomp = oc.createDynamicsCompressor(); dcomp.threshold.value = -12; dcomp.ratio.value = 3; dcomp.attack.value = 0.003; dcomp.release.value = 0.12;
-  drums.connect(dcomp); dcomp.connect(master);
-  const synth = oc.createGain(); synth.connect(master);
-  const bass = oc.createGain(); const bhp = oc.createBiquadFilter(); bhp.type = 'highpass'; bhp.frequency.value = 32; bass.connect(bhp); bhp.connect(master);
-  const c: Ctx = { oc, song, spb, barT: tm.barT, barSpb: tm.barSpb, buses: { gtrL: cab(-0.75), gtrR: cab(0.75), drums, synth, bass, rev: rvIn }, bufs: new Map() };
+  drums.connect(dcomp); dcomp.connect(masterIn);
+  // the 'real' songs put the kit in a room
+  if (song.real) { const ds = oc.createGain(); ds.gain.value = 0.12; dcomp.connect(ds); ds.connect(rvIn); }
+  const synth = oc.createGain(); synth.connect(masterIn);
+  const bass = oc.createGain(); const bhp = oc.createBiquadFilter(); bhp.type = 'highpass'; bhp.frequency.value = 32; bass.connect(bhp); bhp.connect(masterIn);
+  const c: Ctx = { oc, song, spb, barT: tm.barT, barSpb: tm.barSpb, buses: { gtrL: cab(-0.75), gtrR: cab(0.75), leadL: cab(-0.25, 0.32), leadR: cab(0.25, 0.32), drums, synth, bass, rev: rvIn }, bufs: new Map() };
 
   const total = song.bars * 16;
   const parts = song.parts.filter((p) => active(p, layer));
@@ -339,7 +374,7 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
         break;
       }
       case 'lead': {
-        const out = p.sound === 'guitar' ? (pan <= 0 ? c.buses.gtrL : c.buses.gtrR) : panned(c, synth, pan, rev);
+        const out = p.sound === 'guitar' ? (pan <= 0 ? c.buses.gtrL : c.buses.gtrR) : p.sound === 'realguitar' ? (pan <= 0 ? c.buses.leadL : c.buses.leadR) : panned(c, synth, pan, rev);
         const mel = parseMelody(song, p.melody, keyBase(song, p.octave));
         const cyc = mel.reduce((a, e) => a + e.len, 0) || 16;
         let prev: number | null = null;

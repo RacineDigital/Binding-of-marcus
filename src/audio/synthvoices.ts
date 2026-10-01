@@ -133,8 +133,8 @@ export function chip(midi: number, dur: number, from: number | null, duty = 0.25
     };
     pulseInto(d, fa(0.9985), duty, 0.5, 0.1); pulseInto(d, fa(1.0015), duty, 0.42, 0.55);
     oscInto(d, 'tri', fa(0.5), 0.18);   // a little body an octave down
-    svf(d, 'lp', () => 6200, 0.7);
-    adsr(d, 0.004, 0.12, 0.82, dur, 0.07);
+    svf(d, 'lp', () => 4800, 0.7);
+    adsr(d, 0.006, 0.12, 0.8, dur, 0.09);
     return normalize(d, 0.7);
   });
 }
