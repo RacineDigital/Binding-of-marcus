@@ -59,6 +59,8 @@ export class World {
   timeScale = 1; slowT = 0;
   labels: { x: number; y: number; text: string; color: string }[] = [];
   nearPedestal: Pickup | null = null;
+  /** Closest pedestal or shop pickup, for the inspect card. */
+  nearInspect: Pickup | null = null;
   trapdoor: { x: number; y: number; t: number; kind: 'down' | 'light' } | null = null;
   ambient: { x: number; y: number; vx: number; vy: number; life: number; kind: number }[] = [];
   telegraphs: { x: number; y: number; r: number; t: number; dur: number; color: string }[] = [];
@@ -638,12 +640,13 @@ export class World {
   }
   private collectPickups(): void {
     const pl = this.player;
-    this.nearPedestal = null;
-    let nd = 34 * 34;
+    this.nearPedestal = null; this.nearInspect = null;
+    let nd = 34 * 34, ni = 30 * 30;
     for (const p of this.pickups) {
       if (p.dead || p.collectT >= 0) continue;
       const d2 = dist2(p.x, p.y, pl.x, pl.y);
       if (p.pedestal && p.data.id && d2 < nd) { nd = d2; this.nearPedestal = p; }
+      if ((p.pedestal ? !!p.data.id : p.price > 0 || p.deal > 0) && d2 < ni) { ni = d2; this.nearInspect = p; }
       if (p.noCollect > 0 || p.z > 8) continue;
       const rr = p.r + pl.r;
       if (d2 < rr * rr) flow.touchPickup(this, p);

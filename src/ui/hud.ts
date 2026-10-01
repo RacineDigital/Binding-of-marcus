@@ -1,4 +1,6 @@
 // In-run heads-up display, drawn crisp at display resolution in virtual coordinates.
+import { inspectInfo, InspectInfo } from './inspect';
+import type { Pickup } from '../game/pickups';
 import type { World } from '../game/world';
 import { pickupSprites } from '../art/pickups';
 import { itemIconCanvas } from '../art/items';
@@ -49,7 +51,7 @@ export class Hud {
   bossTrail = 1;
   activeFlash = 0;
   fullMap = false;
-  panelFade = 0; panelItem: string | null = null;
+  panelFade = 0; panelInfo: InspectInfo | null = null; panelPickup: Pickup | null = null;
   constructor(w: World) { this.w = w; }
 
   banner(title: string, sub: string, icon: HTMLCanvasElement | null = null): void { this.banners = [{ title, sub, t: 0, icon }]; }
@@ -68,8 +70,9 @@ export class Hud {
     this.roomNameT = Math.max(0, this.roomNameT - dt);
     this.bossIntroT = Math.max(0, this.bossIntroT - dt);
     this.activeFlash = Math.max(0, this.activeFlash - dt);
-    const near = this.w.nearPedestal?.data.id ?? null;
-    if (near) { this.panelItem = near; this.panelFade = Math.min(1, this.panelFade + dt * 8); }
+    const near = this.w.nearInspect;
+    const info = near ? inspectInfo(this.w, near) : null;
+    if (near && info) { this.panelInfo = info; this.panelPickup = near; this.panelFade = Math.min(1, this.panelFade + dt * 8); }
     else this.panelFade = Math.max(0, this.panelFade - dt * 8);
     const boss = this.w.bossList[0];
     if (boss) { const f = this.bossHpFrac(); this.bossTrail = f < this.bossTrail ? Math.max(f, this.bossTrail - dt * 0.35) : f; }
@@ -269,34 +272,60 @@ export class Hud {
   }
 
   private drawItemPanel(ctx: CanvasRenderingContext2D): void {
-    if (this.panelFade <= 0 || !this.panelItem) return;
-    const it = getItem(this.panelItem); if (!it) return;
-    const blind = this.w.blindItems();
-    const lines: DescLine[] = blind ? [{ text: 'You cannot make out what it is.', color: 'plain' }] : describeItem(it);
-    const maxW = 170;
-    const wrapped: { t: string; c: string; size: number }[] = [];
-    for (const l of lines) {
+    if (this.panelFade <= 0 || !this.panelInfo) return;
+    const info = this.panelInfo, p = this.panelPickup;
+    const W = 236, pad = 8, bodyW = W - pad * 2;
+    // wrap effect lines at a comfortable reading size
+    const body: { t: string; c: string }[] = [];
+    for (const l of info.lines) {
       const col = l.color === 'up' ? COL.up : l.color === 'down' ? COL.down : l.color === 'note' ? COL.note : COL.text;
-      for (const s of wrap(ctx, l.text, 7, maxW)) wrapped.push({ t: s, c: col, size: 7 });
+      for (const s of wrap(ctx, l.text, 8.5, bodyW)) body.push({ t: s, c: col });
     }
-    const title = blind ? '???' : it.name.toUpperCase();
-    const tw = Math.max(measure(ctx, title, 10, FONT_TITLE, 400) + 30, ...wrapped.map((x) => measure(ctx, x.t, 7) + 16), 110);
-    const pw = Math.min(200, tw), ph = 22 + wrapped.length * 8.5;
-    const p = this.w.nearPedestal;
-    let px = VIEW_W / 2 - pw / 2, py = VIEW_H - ph - 26;
-    if (p) {
-      const sx = p.x - this.w.camX, sy = p.y - this.w.camY;
-      px = clamp(sx - pw / 2, 6, VIEW_W - pw - 6);
-      py = sy + 12 + ph < VIEW_H - 4 ? sy + 12 : sy - 44 - ph;
-    }
+    // footer: price / cost / how to take it
+    let foot = '', footCol = COL.dim, footIcon: CanvasImageSource | null = null;
+    if (p && p.price > 0) {
+      const have = this.w.player.buttons, ok = have >= p.price;
+      foot = ok ? `${p.price}   —   walk into it to buy` : `${p.price}   —   you have ${have}`;
+      footCol = ok ? COL.gold : COL.down; footIcon = pickupSprites().hud.button.canvas;
+    } else if (p && p.deal > 0) {
+      foot = `Costs ${p.deal} heart container${p.deal > 1 ? 's' : ''}`; footCol = COL.down; footIcon = pickupSprites().hud.red.canvas;
+    } else if (p?.data.locked) { foot = 'Win the challenge to claim it'; }
+    else foot = 'Walk into it to take it';
+    const titleH = 28, lineH = 10.5;
+    const H = titleH + 4 + body.length * lineH + 18;
+    // keep clear of the item and Marcus: bottom of the screen unless the item is low, then the top
+    const sy = p ? p.y - this.w.renderCamY : 0;
     const a = ease.outCubic(this.panelFade);
+    const x = Math.round(VIEW_W / 2 - W / 2);
+    const y = Math.round((sy > VIEW_H * 0.6 ? 34 : VIEW_H - H - 8) + (1 - a) * 6);
+    const gold = info.quality >= 3;
     ctx.save(); ctx.globalAlpha = a;
-    panel(ctx, px, py + (1 - a) * 4, pw, ph);
-    const q = it.quality;
-    ctx.drawImage(itemIconCanvas(it.id, blind), px + 3, py + 2 + (1 - a) * 4, 14, 14);
-    text(ctx, title, px + 20, py + 13 + (1 - a) * 4, 10, q >= 3 ? COL.gold : COL.text, 'left', FONT_TITLE, 400);
-    if (!blind) { for (let i = 0; i < 4; i++) { ctx.fillStyle = i < q ? '#f0c860' : 'rgba(255,255,255,0.15)'; ctx.fillRect(px + pw - 7 - i * 4, py + 5 + (1 - a) * 4, 2.5, 2.5); } }
-    wrapped.forEach((l, i) => text(ctx, l.t, px + 6, py + 25 + i * 8.5 + (1 - a) * 4, l.size, l.c, 'left', FONT_BODY, 600, false));
+    // card
+    ctx.fillStyle = 'rgba(8,6,12,0.96)'; ctx.fillRect(x, y, W, H);
+    ctx.fillStyle = gold ? 'rgba(240,200,96,0.08)' : 'rgba(255,255,255,0.03)'; ctx.fillRect(x, y, W, titleH);
+    ctx.strokeStyle = gold ? '#e0b860' : '#8a7560'; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, W - 1, H - 1);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.strokeRect(x + 2.5, y + 2.5, W - 5, H - 5);
+    // icon
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x + 5, y + 4, 20, 20);
+    if (info.icon) {
+      const iw = (info.icon as HTMLCanvasElement).width || 16, ih = (info.icon as HTMLCanvasElement).height || 16;
+      const k = Math.min(18 / iw, 18 / ih, 1.5);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(info.icon, x + 15 - (iw * k) / 2, y + 14 - (ih * k) / 2, iw * k, ih * k);
+    }
+    text(ctx, info.title.toUpperCase(), x + 31, y + 14, 12, gold ? COL.gold : COL.text, 'left', FONT_TITLE, 400);
+    text(ctx, info.subtitle, x + 31, y + 24, 7.5, COL.dim, 'left', FONT_BODY, 500, false);
+    if (info.quality >= 0) for (let i = 0; i < 4; i++) { ctx.fillStyle = i < info.quality ? '#f0c860' : 'rgba(255,255,255,0.18)'; ctx.fillRect(x + W - 10 - i * 5, y + 6, 3, 3); }
+    // divider + body
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x + pad, y + titleH + 1, W - pad * 2, 0.6);
+    body.forEach((l, i) => text(ctx, l.t, x + pad, y + titleH + 12 + i * lineH, 8.5, l.c, 'left', FONT_BODY, 600, false));
+    // footer
+    const fy = y + H - 6;
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x + pad, fy - 10, W - pad * 2, 0.6);
+    text(ctx, info.kindLabel, x + pad, fy, 6.5, COL.dim, 'left', FONT_BODY, 600, false);
+    const fw = measure(ctx, foot, 7.5);
+    text(ctx, foot, x + W - pad, fy, 7.5, footCol, 'right', FONT_BODY, 600, false);
+    if (footIcon) ctx.drawImage(footIcon, x + W - pad - fw - 11, fy - 7.5, 8, 8);
     ctx.restore();
   }
 
@@ -304,11 +333,13 @@ export class Hud {
     const w = this.w;
     for (const p of w.pickups) {
       if (p.dead) continue;
-      const sx = p.x - w.camX, sy = p.y - w.camY;
+      const sx = p.x - w.renderCamX, sy = p.y - w.renderCamY;
       if (p.price > 0) {
         const afford = w.player.buttons >= p.price;
-        text(ctx, String(p.price), sx + 2, sy + 12, 8, afford ? COL.text : COL.down, 'center', FONT_BODY, 600);
-        ctx.drawImage(pickupSprites().hud.button.canvas, sx - 12, sy + 3, 8, 8);
+        const label = String(p.price), tw = measure(ctx, label, 8.5) + 14;
+        ctx.fillStyle = 'rgba(8,6,12,0.82)'; ctx.fillRect(Math.round(sx - tw / 2), sy + 4, tw, 11);
+        ctx.drawImage(pickupSprites().hud.button.canvas, sx - tw / 2 + 2, sy + 5.5, 8, 8);
+        text(ctx, label, sx + tw / 2 - 3, sy + 12.5, 8.5, afford ? COL.gold : COL.down, 'right', FONT_BODY, 700);
       } else if (p.deal > 0 && p.data.id) {
         for (let i = 0; i < p.deal; i++) ctx.drawImage(pickupSprites().hud.red.canvas, sx - (p.deal * 12) / 2 + i * 12, sy + 4);
       }
