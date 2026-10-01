@@ -44,7 +44,7 @@ export function volley(w: World, prof: AttackProfile, st: FinalStats, x: number,
 export class Beam {
   active = true; t = 0; dur = 0.5; ang = 0; width = 7; dmg = 1; tick = 0; prof: AttackProfile; offset = 0;
   pts: number[] = []; followPlayer = true; x = 0; y = 0; laser = false; hitOnce = new Set<number>(); color = '#6a58ff';
-  enemyBeam = false; warmup = 0;
+  enemyBeam = false; warmup = 0; rot = 0;
   constructor(prof: AttackProfile) { this.prof = prof; }
 }
 
@@ -96,6 +96,13 @@ export function beamHits(w: World, b: Beam, half: number, onHit: (e: Enemy) => v
   }
 }
 
+export function enemyBeam(w: World, x: number, y: number, ang: number, dur: number, warmup = 0.6, width = 8, rot = 0): Beam {
+  const b = new Beam(null as unknown as AttackProfile);
+  b.enemyBeam = true; b.x = x; b.y = y; b.ang = ang; b.dur = dur + warmup; b.warmup = warmup; b.width = width; b.rot = rot; b.followPlayer = false;
+  w.beams.push(b);
+  return b;
+}
+
 export function updateBeams(w: World, dt: number): void {
   for (let i = w.beams.length - 1; i >= 0; i--) {
     const b = w.beams[i];
@@ -134,6 +141,7 @@ function beamDamage(w: World, b: Beam, e: Enemy, dmg: number): void {
 }
 
 function updateEnemyBeam(w: World, b: Beam, dt: number): void {
+  b.ang += b.rot * dt;
   if (b.warmup > 0 && b.t < b.warmup) { b.pts = traceBeam(w, b.x, b.y, b.ang, null, 900, true); return; }
   b.pts = traceBeam(w, b.x, b.y, b.ang, null, 900, true);
   const pl = w.player;

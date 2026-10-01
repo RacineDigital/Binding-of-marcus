@@ -129,7 +129,7 @@ function paintHead(L: CharacterLook, dir: HeadDir, st: HeadState): PixelArt {
       p.rect(bx, fy + 1, 3, 2, '#efe3c8'); p.set(bx + 1, fy + 1, '#d8c7a0');
     }
   }
-  p.outline(undefined, false, 0.86);
+  p.outline('#1e1018');
   return p;
 }
 
@@ -201,7 +201,7 @@ function paintBody(L: CharacterLook, dir: 'down' | 'up' | 'side', frame: number,
     }
   }
   if (L.ghost) p.map((c, x, y) => (y > 10 ? ((x + y) % 2 ? 0 : c) : c));
-  p.outline(undefined, false, 0.86);
+  p.outline('#1e1018');
   return p;
 }
 
@@ -249,7 +249,7 @@ export function buildPlayerSprites(L: CharacterLook): PlayerSprites {
   const shirt = ramp(L.shirt);
   pk.tube(4, 8, 2, 2, 1.7, shirt); pk.tube(14, 8, 16, 2, 1.7, shirt);
   pk.rect(1, 0, 2, 2, L.skin); pk.rect(15, 0, 2, 2, L.skin);
-  pk.outline(undefined, false, 0.86);
+  pk.outline('#1e1018');
   const pickup = new Sprite(pk, BW / 2, BH + 6);
   // portrait (large head for menus)
   const portrait = new Sprite(paintHead(L, 'down', 'normal'), HW / 2, HH);

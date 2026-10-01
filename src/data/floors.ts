@@ -38,7 +38,7 @@ export const FLOORS: FloorTheme[] = [
       rock: '#5e5552', accent: '#d9772c', stain: '#1a1614', heap: '#2d2a2c', heapKind: 'coal' },
     ambient: '#140604', darkness: 0.36, playerLight: 90,
     enemies: { sootsprite: 8, valvehead: 6, stoker: 7, rustcrab: 5, cinderhopper: 6, pipeworm: 4, mite: 4, gasper: 4, moth: 3 },
-    bosses: ['furnaceheart', 'hissclank', 'grubmother'],
+    bosses: ['furnaceheart', 'oldstoker', 'grubmother'],
     music: 'boiler', hazards: { spikes: 0.25, pits: 0.2, fires: 0.6, kegs: 0.35 }, fireVariants: [0, 0, 1, 2],
     hpMul: 1.25, budget: 1.3,
   },

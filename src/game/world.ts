@@ -74,7 +74,7 @@ export class World {
 
   update(dtReal: number): void {
     this.hud.update(dtReal);
-    this.audio.update(dtReal);
+    (this.audio as any).listenerX = this.camX + 240;
     if (this.transition) {
       this.transition.t += dtReal;
       if (this.transition.t >= this.transition.dur) this.transition = null;

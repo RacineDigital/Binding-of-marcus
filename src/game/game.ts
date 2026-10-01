@@ -76,6 +76,7 @@ export class Game {
   }
 
   private step(dt: number): void {
+    this.audio.update(dt);
     for (const u of this.unlockQueue) u.t += dt;
     this.unlockQueue = this.unlockQueue.filter((u) => u.t < 3.5);
     if (this.fading) {
@@ -85,8 +86,7 @@ export class Game {
       this.fadeA = this.fadeT < half ? this.fadeT / half : Math.max(0, 1 - (this.fadeT - half) / half);
       if (this.fadeT >= half * 2) { this.fading = false; this.fadeA = 0; }
     }
-    if (this.scene === 'menu' || this.scene === 'dead' || this.scene === 'ending') { this.menus.update(dt); if (this.scene !== 'menu' || !this.world) return; }
-    if (this.scene !== 'run' || !this.world) return;
+    if (this.scene !== 'run' || !this.world) { this.menus.update(dt); return; }
     const w = this.world;
     if (this.paused) { this.menus.update(dt); return; }
     const inp = this.input;

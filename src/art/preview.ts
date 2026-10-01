@@ -21,9 +21,9 @@ export function artSheets(which: string): Sheet[] {
       for (const d of ['down', 'side', 'up'] as const) out.push({ label: d, canvas: s.head[d].normal.canvas });
       for (let i = 1; i <= 6; i++) out.push({ label: 'w' + i, canvas: s.body.side[i].canvas });
     }
-  } else if (which.startsWith('enemies') || which === 'bosses') {
-    const defs = ALL_ENEMY_DEFS().filter((d) => (which === 'bosses') === !!d.boss);
-    const page = Number(which.slice(7) || 0);
+  } else if (which.startsWith('enemies') || which.startsWith('bosses')) {
+    const defs = ALL_ENEMY_DEFS().filter((d) => which.startsWith('bosses') === !!d.boss);
+    const page = Number(which.replace(/\D/g, '') || 0);
     for (const d of defs.slice(page * 12, page * 12 + 12)) {
       const set = getSprites(d);
       for (const [anim, fr] of Object.entries(set)) fr.slice(0, 4).forEach((s, i) => out.push({ label: `${d.id}:${anim}${i}`, canvas: s.canvas }));

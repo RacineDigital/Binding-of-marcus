@@ -26,7 +26,7 @@ export class Proj {
   shape = 'ink'; tint: string | null = null;
   knock = 1; crit = false; fromFamiliar = false; spectral = false;
   creepAcc = 0; statusFixed: string | null = null; gravityWell = false;
-  aimAtPlayerAfterDelay = false; ownerId = 0; noWall = false;
+  aimAtPlayerAfterDelay = false; ownerId = 0; noWall = false; drop = 0;
 }
 
 const MAX_PROJ = 1400;
@@ -44,7 +44,7 @@ export class Projectiles {
     p.active = true; p.hits.length = 0; p.t = 0; p.dist = 0; p.z = 0; p.target = null; p.retarget = 0; p.orbit = false; p.back = false;
     p.falling = 0; p.curve = 0; p.accel = 0; p.delay = 0; p.lob = false; p.creep = ''; p.splitE = 0; p.wig = 0; p.phase = 0;
     p.homing = 0; p.pierce = 0; p.bounce = 0; p.prof = null; p.depth = 0; p.crit = false; p.fromFamiliar = false; p.spectral = false;
-    p.knock = 1; p.tint = null; p.creepAcc = 0; p.statusFixed = null; p.aimAtPlayerAfterDelay = false; p.life = 0; p.noWall = false; p.gravityWell = false;
+    p.knock = 1; p.tint = null; p.creepAcc = 0; p.drop = 0; p.statusFixed = null; p.aimAtPlayerAfterDelay = false; p.life = 0; p.noWall = false; p.gravityWell = false;
     return p;
   }
   kill(p: Proj): void { if (!p.active) return; p.active = false; this.free.push(p); }
@@ -73,7 +73,7 @@ export class Projectiles {
   }
 
   /** Spawn an enemy projectile. */
-  enemy(x: number, y: number, ang: number, spd: number, o: Partial<{ r: number; dmg: number; range: number; shape: string; curve: number; accel: number; delay: number; lob: boolean; lobH: number; creep: string; homing: number; bounce: number; wig: number; split: number; splitSpd: number; z: number; spectral: boolean; aimAfterDelay: boolean; life: number }> = {}): Proj | null {
+  enemy(x: number, y: number, ang: number, spd: number, o: Partial<{ drop: number; r: number; dmg: number; range: number; shape: string; curve: number; accel: number; delay: number; lob: boolean; lobH: number; creep: string; homing: number; bounce: number; wig: number; split: number; splitSpd: number; z: number; spectral: boolean; aimAfterDelay: boolean; life: number }> = {}): Proj | null {
     const p = this.alloc(); if (!p) return null;
     p.team = Team.Enemy;
     p.x = x; p.y = y; p.bx = x; p.by = y; p.z = o.z ?? 8;
@@ -81,7 +81,7 @@ export class Projectiles {
     p.r = p.baseR = o.r ?? 3.5; p.dmg = o.dmg ?? 1; p.range = o.range ?? 420; p.shape = o.shape ?? 'bile';
     p.curve = o.curve ?? 0; p.accel = o.accel ?? 0; p.delay = o.delay ?? 0; p.lob = !!o.lob; p.lobH = o.lobH ?? 36;
     p.creep = o.creep ?? ''; p.homing = o.homing ?? 0; p.bounce = o.bounce ?? 0; p.wig = o.wig ?? 0; p.splitE = o.split ?? 0;
-    p.splitSpd = o.splitSpd ?? 110; p.spectral = !!o.spectral || p.lob; p.aimAtPlayerAfterDelay = !!o.aimAfterDelay; p.life = o.life ?? 0;
+    p.splitSpd = o.splitSpd ?? 110; p.spectral = !!o.spectral || p.lob; if (o.drop) { p.drop = o.drop; p.z = o.drop; } p.aimAtPlayerAfterDelay = !!o.aimAfterDelay; p.life = o.life ?? 0;
     return p;
   }
 
@@ -97,6 +97,11 @@ export class Projectiles {
         if (p.delay <= 0 && p.aimAtPlayerAfterDelay) {
           const a = Math.atan2(pl.y - p.y, pl.x - p.x); p.vx = Math.cos(a) * p.spd; p.vy = Math.sin(a) * p.spd;
         }
+        continue;
+      }
+      if (p.drop > 0) {
+        p.z -= 240 * dt;
+        if (p.z <= 0) { p.z = 0; p.lob = true; p.r = Math.max(p.r, 7); this.collideActors(w, p); if (p.active) this.expire(w, p, true); }
         continue;
       }
       // ------------------------------------------------ falling at end of range
@@ -216,7 +221,7 @@ export class Projectiles {
   private collideActors(w: World, p: Proj): boolean {
     if (p.team === Team.Enemy) {
       const pl = w.player;
-      if (p.lob && p.z > 16) return false;
+      if ((p.lob || p.drop) && p.z > 16) return false;
       const rr = p.r + pl.hitR;
       if (dist2(p.x, p.y, pl.x, pl.y - 6) < rr * rr) {
         if (w.playerHitByShot(p)) { this.expire(w, p, false); return true; }
