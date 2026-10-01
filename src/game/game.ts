@@ -98,9 +98,14 @@ export class Game {
     }
     if (this.scene !== 'run' || !this.world) { this.menus.update(dt); return; }
     const w = this.world;
-    if (this.paused) { this.menus.update(dt); return; }
+    if (this.paused) {
+      // the pause key (Esc / P / Start) resumes from the top-level pause menu; inside Options it just goes back
+      if (this.input.wasPressed('pause') && !this.menus.inSubmenu() && !this.menus.pauseGuarded()) { this.paused = false; this.input.clearMenu(); this.audio.duck(1, 0.01); return; }
+      this.menus.update(dt); return;
+    }
     const inp = this.input;
-    if (inp.wasPressed('pause')) { this.paused = true; this.menus.openPause(); this.audio.duck(0.4, 0.2); return; }
+    // the key that opened the pause menu must not also count as 'back' inside it
+    if (inp.wasPressed('pause')) { this.paused = true; inp.clearMenu(); this.menus.openPause(); this.audio.duck(0.4, 0.2); return; }
     w.hud.fullMap = inp.isDown('map');
     if (!w.inputLocked() && !w.player.dead) {
       if (inp.wasPressed('bomb')) placeBomb(w);

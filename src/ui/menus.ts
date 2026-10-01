@@ -84,7 +84,8 @@ export class MenuSystem {
 
   update(dt: number): void {
     this.time += dt;
-    const keys = this.g.input.takeMenu();
+    let keys = this.g.input.takeMenu();
+    if (this.pauseGuard > 0) { this.pauseGuard -= dt; keys = []; }
     const s = this.top() ?? (this.g.paused ? this.pauseScreen ?? undefined : undefined); if (!s) return;
     s.t += dt;
     s.update(keys, dt);
@@ -161,7 +162,10 @@ export class MenuSystem {
     this.g.audio.setMusic('menu');
     this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
-  openPause(): void { this.pauseScreen = this.pauseMenu(); }
+  openPause(): void { this.pauseScreen = this.pauseMenu(); this.pauseGuard = 0.2; }
+  private pauseGuard = 0;
+  inSubmenu(): boolean { return this.stack.length > 0; }
+  pauseGuarded(): boolean { return this.pauseGuard > 0; }
   renderPause(ctx: CanvasRenderingContext2D): void { this.pauseScreen?.render(ctx); if (this.stack.length) this.top()!.render(ctx); }
   openDeath(w: World): void { this.stack = [this.deathScreen(w)]; }
   openEnding(w: World): void { this.stack = [this.endingScreen(w)]; }
