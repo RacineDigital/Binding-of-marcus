@@ -8,6 +8,7 @@ import { enemyBeam, Beam } from '../projectiles/weapons';
 import type { World } from '../game/world';
 import { moveBody } from '../rooms/collide';
 import { TILE } from '../core/constants';
+import { charById } from '../player/characters';
 
 function drawBoss(e: Enemy, ctx: CanvasRenderingContext2D, sx: number, sy: number, extra: Partial<{ alpha: number; yoff: number }> = {}): void {
   const set = e.sprites[e.anim] ?? e.sprites.idle; const spr = set[e.frame % set.length];
@@ -277,5 +278,64 @@ const patient: EnemyDef = {
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { yoff: 6 }); w.r.addGlow(sx, sy - e.z - 46, 50, e.data.phase >= 2 ? '#ff4050' : '#60ff90', 0.14); },
 };
 
-export const BOSSES_E: EnemyDef[] = [ironlung, patient];
+// ================================================================== Echoes
+// Your last death, come back: a ghost of the reader you died as, on the chapter where it happened.
+// It fights the way you did (strafing, dashing, firing your shots), harder the more you carried,
+// and when it fades it leaves one of the things it had.
+const echo: EnemyDef = {
+  id: 'echo', name: 'Your Echo', desc: 'It died here last time. It remembers how.', boss: true,
+  hp: 230, r: 7, speed: 0, role: 'boss', cost: 0, hitY: 12, mass: 4, gore: '#a8c8f0', goreDecal: '#2a3a5a', light: [50, '#a8d0ff'],
+  // (in play it wears your reader's look; this is how the Bestiary remembers it)
+  sprites: () => ({ idle: frames(22, 30, 2, (p, f) => {
+    const c = ramp('#a8c8f0');
+    p.ball(11, 9, 7, 7, c, { dither: 0.4 }); p.poly([4, 12, 18, 12, 20, 28 - f, 15, 26, 11, 29, 7, 26, 2, 28 - f], c[2]);
+    p.ball(11, 10, 4.5, 4.5, ramp('#1a2a44')); p.set(9, 10, '#e8f4ff'); p.set(13, 10, '#e8f4ff');
+    for (let y = 16; y < 26; y += 3) p.set(11, y, c[4]);
+  }) }),
+  init(e) { e.data.idleT = 1; e.data.dir = 'down'; },
+  update(e, w, dt) {
+    const d = e.data, pl = w.player;
+    const power = Math.min(3, (d.items?.length ?? 0) / 6);
+    d.t2 = (d.t2 ?? 0) + dt;
+    // strafe around Marcus at a fighting distance, like a player would
+    const dd = dist(e.x, e.y, pl.x, pl.y), a = angleTo(e.x, e.y, pl.x, pl.y);
+    d.side ??= 1; if (Math.random() < dt * 0.5) d.side *= -1;
+    const want = dd > 130 ? 1 : dd < 80 ? -1 : 0;
+    const mx = Math.cos(a) * want + Math.cos(a + Math.PI / 2 * d.side) * 0.8, my = Math.sin(a) * want + Math.sin(a + Math.PI / 2 * d.side) * 0.8;
+    const sp = (d.dash > 0 ? 220 : 62 + power * 10);
+    e.move(w, mx * sp * dt, my * sp * dt);
+    d.dash = (d.dash ?? 0) - dt;
+    d.dcd = (d.dcd ?? 2.5) - dt;
+    if (d.dcd <= 0) { d.dcd = 2.2 + Math.random() * 1.5; d.dash = 0.22; d.side *= -1; w.fx.smoke(e.x, e.y, 4, 'rgba(160,190,230,', 4, 0.4); }
+    d.dir = Math.abs(pl.x - e.x) > Math.abs(pl.y - e.y) ? 'side' : pl.y > e.y ? 'down' : 'up';
+    e.flip = pl.x < e.x;
+    // tears, in bursts, the way it used to shoot
+    d.fcd = (d.fcd ?? 1) - dt;
+    if (d.fcd <= 0) {
+      d.fcd = Math.max(0.28, 0.55 - power * 0.08);
+      const n = 1 + Math.floor(power), aim = aimAngle(e, w, 0.4, 150);
+      for (let i = 0; i < n; i++) shoot(e, w, aim + (i - (n - 1) / 2) * 0.16, 150 + power * 12, { shape: 'water', r: 3.5, z: 10 });
+      w.audio.play('shoot', { x: e.x, pitch: 0.7, vol: 0.4 });
+    }
+    // and now and then everything it had at once
+    d.bcd = (d.bcd ?? 4) - dt;
+    if (d.bcd <= 0) { d.bcd = 4.5 - power * 0.5; ringShot(e, w, 10 + Math.floor(power * 3), 105, Math.random(), { shape: 'water', r: 3.5, z: 10 }); w.audio.play('bossSpit', { x: e.x, pitch: 1.3 }); }
+    if (Math.random() < dt * 10) w.fx.burst(e.x + (Math.random() - 0.5) * 10, e.y - 6, 4, 2, '#c8e0ff', 16, 0.6);
+  },
+  draw(e, ctx, w, sx, sy) {
+    const sp = w.game.menus.sprites(charById(e.data.char ?? 'marcus'));
+    const dir = (e.data.dir ?? 'down') as 'down' | 'up' | 'side';
+    const moving = true, f = Math.floor(e.t * 10) % 6 + 1;
+    ctx.save();
+    ctx.globalAlpha = 0.55 + 0.25 * Math.sin(e.t * 7) * Math.sin(e.t * 2.3);
+    ctx.filter = 'grayscale(1) brightness(1.3) sepia(0.4) hue-rotate(170deg) saturate(2.2)';
+    const body = moving ? sp.body[dir][f] ?? sp.body[dir][0] : sp.bodyIdle[dir][0];
+    body.draw(ctx, sx, sy + 1, { flip: dir === 'side' && e.flip, flash: e.flash > 0 ? 0.6 : 0 });
+    sp.head[dir].normal.draw(ctx, sx, sy - 9, { flip: dir === 'side' && e.flip, flash: e.flash > 0 ? 0.6 : 0 });
+    ctx.restore();
+    w.r.addGlow(sx, sy - 10, 22, '#a8d0ff', 0.25);
+  },
+};
+
+export const BOSSES_E: EnemyDef[] = [ironlung, patient, echo];
 void hex;

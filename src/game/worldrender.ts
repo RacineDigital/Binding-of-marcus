@@ -13,6 +13,7 @@ import { renderBeams } from '../projectiles/weapons';
 import { Enemy } from '../enemies/enemy';
 import { hex, darken, toCss, ramp } from '../render/color';
 import { pickupSprites } from '../art/pickups';
+import { CHAMPIONS, ChampKind } from './roomflow';
 
 type Drawable = { y: number; kind: number; ref: any };
 const drawables: Drawable[] = [];
@@ -206,6 +207,8 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
       ctx.save(); ctx.translate(sx, sy); ctx.scale(1 - b * 0.5, 1 + b); ctx.translate(-sx, -sy);
     }
   }
+  const champ = boss ? e.data.champ as ChampKind | undefined : undefined;
+  if (champ) { ctx.save(); ctx.filter = CHAMPIONS[champ].filter; w.r.addGlow(sx, sy - e.z - e.hitY, e.r * 3.6, CHAMPIONS[champ].glow, 0.22); }
   if (e.def.draw) { e.def.draw(e, ctx, w, sx, sy); }
   else {
     const set = e.sprites[e.anim] ?? e.sprites.idle;
@@ -222,6 +225,7 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
       spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
     }
   }
+  if (champ) ctx.restore();
   if (breathe) ctx.restore();
   if (e.fear > 0 || e.confuse > 0) {
     ctx.fillStyle = e.fear > 0 ? '#c060ff' : '#ffe060';

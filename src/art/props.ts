@@ -308,6 +308,7 @@ function frameColors(kind: DoorKind, theme: FloorTheme): { main: string; trim: s
     case 'deal': return { main: '#141224', trim: '#4a44a0' };
     case 'blessing': return { main: '#c8c0b0', trim: '#fff8e0' };
     case 'lostfound': return { main: '#5a4a32', trim: '#d8b46a' };
+    case 'echo': return { main: '#3a4a62', trim: '#a8d0ff' };
     default: return { main: theme.pal.wall, trim: lighten(hex(theme.pal.wall), 0.3) ? '#8a8088' : '#888' };
   }
 }
@@ -370,6 +371,10 @@ function doorFrame(kind: DoorKind, theme: FloorTheme): PixelArt {
     p.line(cx, 9, cx + 3, 13, hex('#c8b890'));
     p.rect(cx + 1, 13, 6, 4, hex('#efe2c0')); p.rect(cx + 1, 13, 6, 1, hex('#fff4d8')); p.set(cx + 2, 15, '#8a3a2a'); p.set(cx + 4, 15, '#5a4a32'); p.set(cx + 5, 15, '#5a4a32');
     for (const lx of [cx - 17, cx + 15]) { p.rect(lx, 14, 3, 4, hex('#3a2e20')); p.rect(lx + 1, 15, 1, 2, hex('#ffd070')); }
+  } else if (kind === 'echo') {
+    // a pale handprint on the keystone, and frost creeping down the jambs
+    p.rect(cx - 2, 3, 4, 4, hex('#dce8ff')); for (const fx of [-2, -1, 0, 1]) p.set(cx + fx, 2, '#dce8ff'); p.set(cx + 2, 5, '#dce8ff');
+    for (let y = 18; y < DH; y += 3) { p.set(cx - 15, y, '#c8e0ff'); p.set(cx + 14, y + 1, '#c8e0ff'); }
   } else if (kind === 'library') {
     for (let x = 6; x < DW - 6; x += 3) p.rect(x, 11, 2, 5, hex(['#6a2a2a', '#2a4a3a', '#3a2e5a', '#6a5a22'][x % 4]));
   } else if (kind === 'arcade') {
@@ -394,7 +399,7 @@ function doorLeaves(kind: DoorKind, open: number): PixelArt {
     for (const y of [18, 28]) if (y < DH - lift) p.rect(cx - 11, y, 22, 2, bars[2]);
     return p;
   }
-  const wood = kind === 'deal' ? ramp('#1a1830') : kind === 'blessing' ? ramp('#e8e0d0') : kind === 'lostfound' ? ramp('#6a5434') : kind === 'treasure' ? ramp('#7a5a2a') : ramp('#5e3c28');
+  const wood = kind === 'echo' ? ramp('#5a6a84') : kind === 'deal' ? ramp('#1a1830') : kind === 'blessing' ? ramp('#e8e0d0') : kind === 'lostfound' ? ramp('#6a5434') : kind === 'treasure' ? ramp('#7a5a2a') : ramp('#5e3c28');
   const w = Math.round(11 * (1 - open));
   if (w <= 0) return p;
   for (let s = -1; s <= 1; s += 2) {

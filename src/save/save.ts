@@ -42,6 +42,8 @@ export interface SaveData {
   endings?: string[];
   /** Completion marks per reader: ending ids, with ':hard' when won in Second Edition. */
   marks?: Record<string, string[]>;
+  /** Where the last run died: its echo waits there next time. */
+  echo?: { char: string; floor: number; items: string[]; cause: string; chapter: string } | null;
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 

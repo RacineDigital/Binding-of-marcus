@@ -17,6 +17,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'beat_patient', name: 'The Visit', desc: 'Open Room 4 and stay until the end.', unlocks: 'Unlocks Grandad\'s Cardigan.', hidden: true },
   { id: 'the_end', name: 'Goodnight', desc: 'See the very last ending.', unlocks: 'Unlocks The Last Word. The cellar door stays shut.', hidden: true },
   { id: 'notes_all', name: 'Collected Works', desc: 'Read every one of Grandfather\'s notes.', unlocks: 'A gold ribbon on the Journal.', hidden: true },
+  { id: 'echo_rest', name: 'Laid to Rest', desc: 'Defeat your own echo, where you fell last time.', unlocks: 'Unlocks the Rewind Tape.' },
   { id: 'flawless_boss', name: 'Untouched', desc: 'Defeat a boss without taking damage.', unlocks: 'Unlocks the Glass Heart.' },
   { id: 'secrets_10', name: 'Hollow Walls', desc: 'Find 10 secrets.', unlocks: 'Unlocks the Chalk Line.' },
   { id: 'transform_moth', name: 'Mothkin', desc: 'Become Mothkin.', unlocks: 'Unlocks the Moth Cocoon.', hidden: true },
@@ -68,6 +69,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'win_wick', name: 'Into the Lamp', desc: 'Finish the story as Wick.', unlocks: 'A gold star on Wick\'s card.' },
   { id: 'win_hard', name: 'Second Edition', desc: 'Finish the story in Second Edition (Hard).', unlocks: 'Unlocks the Narcissist.' },
   { id: 'transform_drain', name: 'Drainer', desc: 'Become the Drainer.', unlocks: 'Unlocks the Drain Butterfly.', hidden: true },
+  { id: 'transform_crew', name: 'The Crew', desc: 'Become The Crew.', unlocks: 'Unlocks Grandad\'s Radio.', hidden: true },
   { id: 'transform_jeffy', name: 'Jeffy', desc: 'Become Jeffy.', unlocks: 'A pencil, permanently, in your heart.', hidden: true },
   { id: 'transform_vamp', name: 'King Vamp', desc: 'Become King Vamp.', unlocks: 'Unlocks Whole Lotta Red.', hidden: true },
 ];

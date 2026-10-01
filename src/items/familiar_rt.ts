@@ -25,6 +25,17 @@ export function spawnInkling(w: World, x: number, y: number): void {
   w.familiars.push(f);
 }
 
+/** The Crew: one of your mates turns up for a fight and helps out until the room is done. */
+const MATE: FamiliarSpec = { kind: 'hover', sprite: 'mate', shoot: { dmg: 0.6, rate: 2.2, inherit: true, range: 220 } };
+export const MATES = ['Crug', 'Ewen', 'Gavyn', 'Sam'];
+export function spawnMate(w: World): string {
+  w.familiars = w.familiars.filter((f) => f.id !== 'mate');
+  const f = new Familiar('mate', MATE, w.player.x, w.player.y - 20); f.temp = true; f.life = 999; f.idx = 2;
+  const name = MATES[Math.floor(Math.random() * MATES.length)];
+  f.data.name = name; w.familiars.push(f);
+  return name;
+}
+
 export function syncFamiliars(w: World): void {
   const want: string[] = [];
   const pl = w.player;
@@ -54,10 +65,14 @@ export function syncFamiliars(w: World): void {
 
 export function familiarsOnRoomEnter(w: World): void {
   trail.length = 0;
+  w.familiars = w.familiars.filter((f) => f.id !== 'mate');
   for (const f of w.familiars) { f.x = w.player.x + (Math.random() - 0.5) * 10; f.y = w.player.y + (Math.random() - 0.5) * 10; f.target = null; }
 }
 
 export function familiarsOnRoomClear(w: World): void {
+  // the mate heads off once the fight's done
+  for (const f of w.familiars) if (f.id === 'mate') { f.dead = true; w.fx.smoke(f.x, f.y, 5, 'rgba(200,190,180,', 4, 0.5); }
+  w.familiars = w.familiars.filter((f) => !f.dead);
   for (const f of w.familiars) {
     if (f.temp) continue;
     const s = f.spec;

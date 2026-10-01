@@ -111,7 +111,7 @@ Menus also work with the mouse: hover, click and scroll.
 
   `npm run test:synergy` checks every item with every attack mode and every pair of modes, checks
   that each shot modifier's effect really shows up in every mode, and runs hundreds of random builds.
-- **201 items:** 138 passives, 41 actives and 22 familiars. Each one is a data definition with stat
+- **204 items:** 139 passives, 43 actives and 22 familiars. Each one is a data definition with stat
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
@@ -123,8 +123,8 @@ Menus also work with the mouse: hover, click and scroll.
   Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
   charms. The strongest ones are earned: the D4 (two transformations at once), D8 (15 damage),
   Spindown Dice (three challenges), D100 (beat the Author) and D Infinity (roll every other die).
-- **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
-  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look. Jeffy
+- **Eleven transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
+  thread, bone, void, drain, vamp, jeffy, crew) triggers one, and each one changes how you look. Jeffy
   throws a tantrum of pencils whenever he gets hit.
 - **Twenty chapters in a different order every run.** A run is seven chapters drawn from twenty
   (never two from the same family), then The Binding. The first chapter is always a gentle one,
@@ -140,7 +140,7 @@ Menus also work with the mouse: hover, click and scroll.
 
   Every chapter has its own floor and wall painter, palette, ambient particles, lighting, enemy
   pool, boss pool and music.
-- **45 enemy types and 24 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
+- **45 enemy types and 25 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
   card, several attack patterns, phase changes and a death sequence. Every chapter has at least two
   bosses that fit it: the Thornwife in the Greenhouse, the Rime Bride in the Frozen Cistern, the
   Pendulum in the Clocktower, the Typesetter in the Print Shop and the Bookbinder in the Binding
@@ -163,6 +163,9 @@ Menus also work with the mouse: hover, click and scroll.
   boss you've beaten. Every boss opens with an Isaac-style VS screen.
 - **Announcer.** Transformations get a title card, a sound and a voice reading the name out; the
   voice also reads sweets and pages (Options → Announcer voice).
+- **Echoes.** Where your last run died, your echo waits next time: a ghost of the reader you
+  died as, in a room of its own, fighting the way you did. Lay it to rest and it leaves one of the
+  items it carried. Chapter bosses are sometimes **champions** (Crimson, Gilded or Inked).
 - **The story, and the paths it hides.** Everything in the book belonged to someone: Grandfather
   Elias, who was writing it for Marcus; Grandmother Ada, whose clock stopped at 4:04; Aunt Edda,
   Nell, Wren and the rest. Their things carry a line of history in the Collection, the characters
@@ -213,7 +216,7 @@ Menus also work with the mouse: hover, click and scroll.
 - **Resources and pickups.** Buttons (currency), keys, cherry bombs, spark jars (active-item
   charge), tin, locked, crimson and reliquary boxes, slot machines, a fortune owl, beggars, a
   wishing well, the seamstress and the grandfather clock.
-- **Progression.** 68 achievements unlock items, characters, challenges and more modes, so the item
+- **Progression.** 70 achievements unlock items, characters, challenges and more modes, so the item
   pool grows as you play. The save also holds the Collection (every curio, plus a Bestiary of every
   creature with kill counts), Run History (your last 30 runs, any of which you can replay by seed),
   statistics, best scores and settings.

@@ -1,28 +1,21 @@
-## What's new in 2.9
+## What's new in 3.0: Echoes
 
-- **The final bosses are final.** Only the bosses you can end the story on are hard (the Binding's,
-  the Unwritten, the Author and the Patient); they hit harder, attack faster and have a bullet-hell
-  last stand under 20% health. Ending bosses never show up anywhere else.
-- **The Unwritten and the Author are the Delirium fight now:** ten times the health, eight phases,
-  new bullet patterns (flowers, sweeping walls, seekers, rotating crosses), layered spirals that
-  build up through the fight, and they change shape constantly, into any boss you've beaten
-  (including the Iron Lung, the Patient and It Remembers).
-- **VS screen** before every boss: your reader on one side, the boss on the other.
-- **Transformations announce themselves:** a big title in the middle of the screen, a sound, and
-  an announcer voice says the name (it also reads out sweets and pages; turn it off in Options).
-  Item descriptions show transformation progress filling up (◆◆◇ 2/3, "this completes it!"), and
-  holding Tab shows every transformation you've started.
-- **New items:** Crug's Pen (flaming shots), Ewen's Bike (spikes and creep can't hurt you), Gavyn's
-  Pouch (fire rate up, fat top lip), Sam's Beer (brown creep shots that fizz into foam, damage up)
-  and **Toffee**, a brown tabby kitten who stalks and pounces, hisses enemies away when you're hurt
-  and brings you presents. **The Cherry Orchard**: an ultra-rare item that sets your bombs to 99.
-- **A new reader: Ada, the Gardener.** Grandmother, with thorn shots that slow, her ring and her
-  pressed clover. Unlock: finish The Visit while carrying Grandmother's Ring.
-- **Completion marks**, like Isaac's: every reader's card shows which of the five endings they've
-  reached (cream on Normal, red on Second Edition).
-- The boss music stops when the boss dies. Fewer black (ink) hearts. The golden bomb no longer gives
-  infinite bombs (it's +5 now). Item descriptions show up from a bit further away. Enemy homing
-  shots now home in on you (they were chasing other enemies).
+- **Echoes.** Where you died last time, your echo is waiting. Next run, the chapter you fell in
+  has a room behind a pale, frosted door with a handprint on it: inside is a ghost of the reader you
+  died as, fighting the way you did (strafing, dashing, firing your shots), and the more you
+  were carrying, the harder it is. Lay it to rest and it leaves behind one of the things it had.
+  (Not in challenges or the Daily Run, and the rest of the seed's floor is never changed.)
+- **Champion bosses.** Now and then a chapter boss turns up as a champion: **Crimson** (faster,
+  bleeds creep as it moves), **Gilded** (tougher, pays out buttons and a locked chest) or **Inked**
+  (leaks rings of ink). Each one is recoloured and pays better.
+- **A new transformation: The Crew.** Carry three of the crew's things (Crug's Pen, Ewen's Bike,
+  Gavyn's Pouch, Sam's Beer, Toffee) and one of your mates turns up for every fight and helps out.
+- **New items:** the **Snow Globe** (shake it and the whole room stops, enemies and shots hanging
+  in the air), the **Rewind Tape** (go back three seconds, healing what you took; earned by laying
+  an echo to rest) and **Grandad's Radio** (every so often it crackles and confuses every enemy in
+  the room; earned by becoming The Crew).
+- **Fixed:** the Readers screen ran off the page with ten readers. They're in a grid now, with
+  mouse support and each reader's completion marks underneath.
 
 ## Download and play
 

@@ -50,8 +50,15 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
       for (let i = 0; i < 4; i++) { const a = d.dsA + (i / 4) * Math.PI * 2; w.proj.enemy(e.x, e.y - 6, a, 78, { r: 3.2, shape: 'dark' }); }
     }
   }
+  // champions: crimson ones bleed creep and act sooner, inked ones leak rings of ink
+  if (d.champ === 'crimson' && Math.random() < dt * 5) w.addCreep(e.x, e.y, 9, 'enemy', 1, 3, '#7a0a14');
+  if (d.champ === 'inked' && e.state !== 'phase') {
+    d.inkT = (d.inkT ?? 2) - dt;
+    if (d.inkT <= 0) { d.inkT = 2.8; const off = Math.random(); for (let i = 0; i < 10; i++) w.proj.enemy(e.x, e.y - 6, off + (i / 10) * Math.PI * 2, 70, { r: 3.5, shape: 'inkE' }); }
+  }
   if (e.state === 'idle') {
     brain.idle(e, w, dt);
+    if (d.champ === 'crimson') d.idleT = (d.idleT ?? 1) - dt * 0.4;
     if (d.hard) d.idleT = (d.idleT ?? 1) - dt * 0.6;
     d.idleT = (d.idleT ?? rand(brain.idleTime)) - dt;
     if (d.idleT <= 0) {

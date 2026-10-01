@@ -224,5 +224,29 @@ console.log('content:', JSON.stringify(counts));
   ok(ENDINGS.length === 5 && ENDINGS.every((e, k) => e.num === k + 1), 'five endings in order');
   ok(['letter_top', 'letter_bottom', 'grandfathers_letter'].every((id) => ALL_ITEMS.find((x) => x.id === id && Object.keys(x.pools).length === 0)), 'the letter never rolls from a pool');
 }
+// echoes: where you died last time, a room with your echo in it (never in the Daily Run)
+{
+  const { getEnemy } = await import('../src/enemies/registry');
+  const echoSave: any = { isUnlocked: () => false, hasNote: () => true, data: { echo: { char: 'wren', floor: 3, items: ['inkpot'], cause: 'a rat', chapter: 'The Underworks' } } };
+  let found = 0;
+  for (let i = 0; i < 40; i++) {
+    const run = new Run('echo' + i, 'marcus', () => true);
+    const plain = generateFloor(run, 3);
+    const fl = generateFloor(run, 3, echoSave);
+    const er = fl.rooms.filter((r) => r.type === 'echo');
+    if (er.length) found++;
+    ok(er.length <= 1, 'at most one echo room');
+    for (const r of er) {
+      ok(r.bossId === 'echo' && !!getEnemy('echo'), 'echo room holds the echo');
+      ok(r.doors.length === 1 && fl.rooms[r.doors[0].to].doors.some((d) => d.to === r.id && d.kind === 'echo'), 'echo room has one door, both sides');
+    }
+    // everything else on the floor is exactly as the seed made it
+    ok(plain.rooms.length + er.length === fl.rooms.length && plain.rooms.every((r, k) => r.type === fl.rooms[k].type && r.gx === fl.rooms[k].gx), 'echo leaves the rest of the floor alone');
+    ok(generateFloor(run, 2, echoSave).rooms.every((r) => r.type !== 'echo'), 'only on the chapter you died in');
+    const daily = new Run('echo' + i, 'marcus', () => true); daily.mode = 'daily';
+    ok(generateFloor(daily, 3, echoSave).rooms.every((r) => r.type !== 'echo'), 'no echoes in the Daily Run');
+  }
+  ok(found >= 36, `echo rooms placed (${found}/40)`);
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

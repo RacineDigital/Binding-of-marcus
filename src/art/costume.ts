@@ -58,6 +58,8 @@ export const ITEM_OUTFIT: Record<string, Outfit> = {
 /** Every transformation is a new look (they win over item outfits). */
 export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
   // Jeffy: no shirt, just the diaper, the helmet and the pencil
+  crew: { id: 'crew', name: 'The Crew', pal: {
+    c: '#4a1010', C: '#7a1a1a', D: '#a82626', E: '#c83a3a', R: '#e05a4a', q: '#6a1414' } },
   jeffy: { id: 'jeffy', name: 'Jeffy', acc: ['bikeHelmet', 'nosePencil', 'diaper'], pal: {
     c: '#b8876a', C: '#d8a684', D: '#e8b896', E: '#f1c7a1', R: '#f1c7a1', q: '#c8987a',
     j: '#dcdcd6', J: '#f4f4f0' } },

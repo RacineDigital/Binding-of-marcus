@@ -468,5 +468,6 @@ export const TRANSFORM_EFFECTS: Record<string, { name: string; desc: string; sta
   void: { name: 'Hollowed', desc: 'Spectral homing shots.', attack: { spectral: true, homing: 0.4 } },
   drain: { name: 'Drainer', desc: 'Flight. Speed up. Every shot can chill.', stats: { speed: 0.2, tears: 0.3 }, attack: { slow: 0.25, tint: '#a8dcff' }, flight: true },
   vamp: { name: 'King Vamp', desc: 'Damage up. Your shots drink blood.', stats: { damage: 1.5 }, attack: { lifesteal: 0.35, tint: '#d01828', shape: 'blood' } },
+  crew: { name: 'The Crew', desc: 'Damage and fire rate up. One of your mates turns up for every fight.', stats: { damage: 0.7, tears: 0.4 } },
   jeffy: { name: 'Jeffy', desc: 'Speed and damage up. Getting hit throws a tantrum of pencils.', stats: { damage: 1, speed: 0.2 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' } },
 };

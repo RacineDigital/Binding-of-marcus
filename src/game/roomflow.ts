@@ -13,7 +13,7 @@ import { luckChance } from '../projectiles/profile';
 import { RNG } from '../core/rng';
 import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
-import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../items/familiar_rt';
+import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars, spawnMate } from '../items/familiar_rt';
 import { generateFloor, pickTheme } from '../generation/floorgen';
 import { rollBargain, onLeaveFloor, ticketFor } from './bargain';
 import { itemIconCanvas } from '../art/items';
@@ -26,8 +26,16 @@ import { HOSPITAL_THEMES } from '../data/notes';
 import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
+import { charById } from '../player/characters';
 
 // ------------------------------------------------------------------ floors
+/** Champion bosses: a colour, a twist, and a better payout. */
+export type ChampKind = 'crimson' | 'gilded' | 'inked';
+export const CHAMPIONS: Record<ChampKind, { name: string; desc: string; hp: number; filter: string; glow: string }> = {
+  crimson: { name: 'Crimson', desc: 'Faster and angrier. It bleeds as it moves.', hp: 1.3, filter: 'sepia(0.7) saturate(4) hue-rotate(-35deg) brightness(0.95)', glow: '#ff2030' },
+  gilded: { name: 'Gilded', desc: 'Tougher, and worth a fortune.', hp: 1.55, filter: 'sepia(1) saturate(2.6) brightness(1.18)', glow: '#ffd040' },
+  inked: { name: 'Inked', desc: 'It leaks ink in rings as it fights.', hp: 1.3, filter: 'grayscale(0.6) brightness(0.55) sepia(0.5) hue-rotate(200deg) saturate(2.5)', glow: '#7a5aff' },
+};
 /** Bosses that rewrite themselves (the Delirium-like ones): their health is set in their own definition. */
 const FINAL_FORMS = new Set(['unwritten', 'author']);
 /** A floor whose boss can end the story: the Binding, the Last Page, the Foreword and Room 4. */
@@ -195,7 +203,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   // enemies
   const spawnDelay = 0.55;
   if (!room.cleared) {
-    if (room.type === 'boss' || room.type === 'miniboss') startBoss(w, room);
+    if (room.type === 'boss' || room.type === 'miniboss' || room.type === 'echo') startBoss(w, room);
     else for (const s of room.spawns) {
       const c = room.cellCenter(s.c, s.r);
       const e = spawnEnemy(w, s.id, c.x + (s.c % 1) * 0, c.y, false);
@@ -208,6 +216,8 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   if (room.cleared) for (const d of w.doors) d.open = d.def.locked || (d.def.hidden && !d.revealed) ? 0 : 1;
   // bonus decorations for special rooms
   familiarsOnRoomEnter(w);
+  // the Crew: a mate turns up whenever there's a fight
+  if (w.player.transformations.has('crew') && w.enemies.length && !room.cleared) { const who = spawnMate(w); w.after(0.6, () => w.hud.toast(`${who} turned up.`, 1.4)); }
   w.flow.build(w);
   w.snapCamera();
   if (snap && from !== null) {
@@ -280,6 +290,9 @@ function startBoss(w: World, room: RoomData): void {
   const ids = raw.split('+').flatMap((id) => (BOSS_ALIASES[id] ?? id).split('+'));
   const introDef = getEnemy(raw.split('+')[0]);
   const ending = room.type === 'boss' && isEndingFloor(w.run);
+  // now and then a chapter boss turns up as a champion: tougher, stranger, and it pays better
+  const crng = new RNG(room.seed + ':champ');
+  const champ: ChampKind | null = room.type === 'boss' && !ending && w.run.floorIndex >= 1 && !room.flags.trueBoss && crng.chance(w.run.mode === 'hard' ? 0.25 : 0.15) ? crng.pick(['crimson', 'gilded', 'inked'] as ChampKind[]) : null;
   ids.forEach((id, i) => {
     const e = spawnEnemy(w, id, c.x + (ids.length > 1 ? (i - 0.5) * 80 : 0), c.y - 20, false);
     if (e) {
@@ -288,14 +301,28 @@ function startBoss(w: World, room: RoomData): void {
       // bullet-hell last stand (the Unwritten and the Author carry their own huge health)
       if (ending) { e.data.hard = true; if (!FINAL_FORMS.has(id)) { e.hp *= 1.7; e.maxHp *= 1.7; } }
       if (room.type === 'miniboss') { e.hp *= 0.6; e.maxHp *= 0.6; }
+      if (champ) { e.data.champ = champ; const m = CHAMPIONS[champ].hp; e.hp *= m; e.maxHp *= m; }
       e.spawnT = room.type === 'boss' ? 2.4 : 0.9;
       w.bossList.push(e);
     }
   });
   w.lockdown = true;
+  if (room.type === 'echo') {
+    // your last death, come back for you
+    const ec = w.game.save.data.echo, e = w.bossList[0];
+    if (e && ec) {
+      e.data.char = ec.char; e.data.items = ec.items;
+      const extra = 1 + Math.min(1.5, ec.items.length * 0.06);
+      e.hp *= extra; e.maxHp *= extra; e.spawnT = 2.2;
+      const name = charById(ec.char).name;
+      w.hud.bossIntro(`Echo of ${name}`, `You fell in ${ec.chapter} last time, to ${ec.cause}. It remembers how.`, e);
+      w.audio.stinger('bossIntro'); w.audio.setMusic(bossMusic(w.run));
+    }
+    return;
+  }
   if (room.type === 'boss') {
     const def = introDef ?? w.bossList[0]?.def;
-    w.hud.bossIntro(def?.name ?? 'Boss', def?.desc ?? '', w.bossList[0]);
+    w.hud.bossIntro((champ ? CHAMPIONS[champ].name + ' ' : '') + (def?.name ?? 'Boss'), champ ? CHAMPIONS[champ].desc : def?.desc ?? '', w.bossList[0]);
     w.audio.stinger('bossIntro');
     w.audio.setMusic(bossMusic(w.run));
   } else {
@@ -510,6 +537,23 @@ export function onBossKilled(w: World, e: Enemy): void {
   for (const x of w.enemies) if (!x.dead && !x.isBoss) w.killEnemy(x);
   w.proj.clear();
   if (room.type === 'miniboss') { w.lockdown = false; return; }
+  if (room.type === 'echo') {
+    // laid to rest: it leaves one of the things it was carrying, and the echo is spent
+    w.lockdown = false;
+    const ec = w.game.save.data.echo;
+    const left = (ec?.items ?? []).filter((id) => getItem(id) && !w.player.has(id));
+    const c = room.center();
+    w.after(1.2, () => {
+      if (w.room !== room) return;
+      const id = left.length ? left[Math.floor(Math.random() * left.length)] : w.run.pools.roll('treasure');
+      spawnPedestal(w, c.x, c.y - 10, id, 'treasure');
+      w.hud.toast('The echo fades. It left something behind.', 3);
+      w.audio.setMusic(w.theme.music);
+    }, true);
+    w.game.save.data.echo = null; w.game.save.markDirty();
+    w.game.save.unlock('echo_rest');
+    return;
+  }
   // the fight is over: the boss theme gives way to the chapter's own music
   w.after(1.8, () => { if (w.room === room && w.game.scene === 'run') { w.audio.setMusic(w.theme.music); w.audio.setIntensity(0); } }, true);
   const fi = w.run.floorIndex;
@@ -591,6 +635,11 @@ export function onBossKilled(w: World, e: Enemy): void {
     spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
     const rng = new RNG(room.seed + ':bossdrop');
     spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
+    // champions pay better
+    const champ = e.data.champ as ChampKind | undefined;
+    if (champ === 'gilded') { for (let i = 0; i < 3; i++) spawnDrop(w, 'button10', c.x + 30, c.y); spawnDrop(w, 'chest:locked', c.x + 44, c.y + 4); }
+    if (champ === 'crimson') { spawnDrop(w, 'heart', c.x + 30, c.y); spawnDrop(w, 'brass', c.x + 40, c.y); }
+    if (champ === 'inked') { spawnDrop(w, 'page', c.x + 30, c.y); spawnDrop(w, 'charm', c.x + 40, c.y); }
     w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
     room.flags.trap = { x: c.x, y: c.y + 26 };
     w.audio.play('trapdoor');
@@ -997,7 +1046,7 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
   checkProgress(w);
   syncFamiliars(w);
   // transformations
-  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp', 'jeffy'];
+  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp', 'jeffy', 'crew'];
   for (const t of tags) {
     if (pl.transformations.has(t)) continue;
     if (pl.tagCount(t) >= 3) {

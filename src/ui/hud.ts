@@ -43,6 +43,7 @@ function icons(): Record<string, HTMLCanvasElement> {
     event: mk((p) => { p.rect(3, 0, 1, 4, '#8ad0c0'); p.set(3, 6, '#8ad0c0'); }),
     deal: mk((p) => { p.ball(3.5, 4, 2.5, 2.6, ramp('#5a50c0')); p.set(3, 0, '#5a50c0'); p.set(3, 1, '#5a50c0'); }),
     blessing: mk((p) => { p.rect(2, 2, 3, 5, '#f0e8d0'); p.set(3, 0, '#ffc050'); p.set(3, 1, '#ffc050'); }),
+    echo: mk((p) => { p.ball(3.5, 3, 2.5, 2.5, ramp('#c8e0ff')); p.rect(1, 3, 5, 3, '#c8e0ff'); p.set(1, 6, '#c8e0ff'); p.set(3, 6, '#c8e0ff'); p.set(5, 6, '#c8e0ff'); p.set(2, 3, '#1a2a3a'); p.set(4, 3, '#1a2a3a'); }),
     lostfound: mk((p) => { p.rect(1, 2, 5, 4, '#efe2c0'); p.set(2, 3, '#8a3a2a'); p.rect(4, 3, 1, 1, '#5a4a32'); p.line(3, 0, 3, 1, '#c8b890'); }),
   };
   return mapIcons;
@@ -547,7 +548,7 @@ export class Hud {
   private drawBossBar(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
     if (!w.bossList.length || w.bossList.every((b) => b.dead) || this.bossIntroT > 1.4) return;
-    if (w.room.type !== 'boss' && w.room.type !== 'miniboss') return;
+    if (w.room.type !== 'boss' && w.room.type !== 'miniboss' && w.room.type !== 'echo') return;
     const f = this.bossHpFrac();
     const bw = 160, bx = VIEW_W / 2 - bw / 2, by = VIEW_H - 16;
     const alpha = clamp((w.roomTime - 1.2) * 3, 0, 1);
@@ -557,7 +558,7 @@ export class Hud {
     ctx.fillStyle = '#c8283a'; ctx.fillRect(bx, by, bw * f, 4);
     ctx.fillStyle = 'rgba(255,200,200,0.35)'; ctx.fillRect(bx, by, bw * f, 1);
     ctx.strokeStyle = '#8a7560'; ctx.lineWidth = 0.6; ctx.strokeRect(bx - 2, by - 2, bw + 4, 8);
-    text(ctx, w.room.type === 'boss' && this.bossName ? this.bossName : w.bossList[0].def.name, VIEW_W / 2, by - 4, 8, COL.text, 'center', FONT_TITLE, 400);
+    text(ctx, (w.room.type === 'boss' || w.room.type === 'echo') && this.bossName ? this.bossName : w.bossList[0].def.name, VIEW_W / 2, by - 4, 8, COL.text, 'center', FONT_TITLE, 400);
     ctx.restore();
   }
 

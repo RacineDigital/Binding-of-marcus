@@ -366,7 +366,7 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
       if (o.logo) {
         const info = g.save.slotInfo(g.save.slot);
         text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'right');
-        text(ctx, 'v2.9 beta  ·  Papermoth Games', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
+        text(ctx, 'v3.0  ·  Papermoth Games', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
       }
     },
   };

@@ -257,6 +257,12 @@ export class Game {
     if (this.scene !== 'run' || !this.world) return;
     this.save.stat('deaths', 1);
     this.save.data.run = null; this.save.markDirty();
+    // leave an echo where you fell (not in challenges or the Daily Run; the Binding's echo waits a chapter earlier)
+    const wr = this.world.run, wp = this.world.player;
+    if (!wr.challenge && wr.mode !== 'daily' && wr.floorIndex >= 1) {
+      const items = wp.itemOrder.filter((id) => (wp.items.get(id) ?? 0) > 0 && !getItem(id)?.tags?.includes('quest') && getItem(id)?.kind !== 'active');
+      this.save.data.echo = { char: wr.charId, floor: Math.min(wr.floorIndex, 6), items, cause: wr.stats.deathCause ?? 'something in the dark', chapter: this.world.floor.theme.name };
+    }
     if ((this.save.data.stats.deaths ?? 0) >= 1) this.save.unlock('first_death');
     this.world.run.flags.score = recordScore(this.save, this.world.run, false);
     checkProgress(this.world);

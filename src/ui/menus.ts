@@ -422,34 +422,47 @@ export class MenuSystem {
   charactersScreen(): Screen {
     const self = this, g = this.g;
     let sel = 0;
+    // a grid, five to a row, so every reader fits however many there are
+    const COLS = 5, n = CHARACTERS.length, rows = Math.ceil(n / COLS);
+    const pos = (i: number) => { const r = Math.floor(i / COLS), inRow = Math.min(COLS, n - r * COLS), c = i % COLS; return { x: 240 + (c - (inRow - 1) / 2) * 74, y: 90 + r * 60 }; };
+    const choose = (i: number) => { const c = CHARACTERS[i]; if (!c.unlock || g.save.isUnlocked(c.unlock)) self.push(self.newRunScreen(null, c.id)); else g.audio.play('deny'); };
     return {
       t: 0,
       update(keys) {
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
-          if (k === 'left' || k === 'right' || k === 'up' || k === 'down') { sel = (sel + (k === 'left' || k === 'up' ? -1 : 1) + CHARACTERS.length) % CHARACTERS.length; self.sfxMove(); }
-          if (k === 'confirm') { const c = CHARACTERS[sel]; if (!c.unlock || g.save.isUnlocked(c.unlock)) self.push(self.newRunScreen(null, c.id)); else g.audio.play('deny'); }
+          if (k === 'left' || k === 'right') { sel = (sel + (k === 'left' ? -1 : 1) + n) % n; self.sfxMove(); }
+          if (k === 'up' || k === 'down') { const t = sel + (k === 'up' ? -COLS : COLS); if (t >= 0 && t < n) { sel = t; self.sfxMove(); } else if (k === 'down' && Math.floor(sel / COLS) < rows - 1) { sel = n - 1; self.sfxMove(); } }
+          if (k === 'confirm') choose(sel);
+        }
+      },
+      pointer(x, y, click) {
+        for (let i = 0; i < n; i++) {
+          const p = pos(i);
+          if (Math.abs(x - p.x) < 32 && y > p.y - 40 && y < p.y + 18) { if (i !== sel) { sel = i; self.sfxMove(); } if (click) choose(i); return; }
         }
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        page(ctx, 30, 20, 420, 228, 1, 11);
-        heading(ctx, 'The Readers', 240, 44, 13, INK);
+        page(ctx, 30, 14, 420, 240, 1, 11);
+        heading(ctx, 'The Readers', 240, 36, 13, INK);
         CHARACTERS.forEach((c, i) => {
-          const x = 70 + i * 85, y = 120;
+          const { x, y } = pos(i);
           const un = !c.unlock || g.save.isUnlocked(c.unlock);
           const sp = self.sprites(c);
-          if (i === sel) inkBlot(ctx, x, y - 16, 60, 60, self.time, 'rgba(40,30,60,0.15)');
-          ctx.save(); ctx.translate(x, y); ctx.scale(2, 2);
+          if (i === sel) inkBlot(ctx, x, y - 14, 56, 52, self.time, 'rgba(40,30,60,0.15)');
+          ctx.save(); ctx.translate(x, y); ctx.scale(1.6, 1.6);
           if (!un) ctx.filter = 'brightness(0)';
           sp.bodyIdle.down[Math.floor(self.time * 1.5 + i) % 2].draw(ctx, 0, 0); sp.head.down.normal.draw(ctx, 0, -10);
           ctx.restore();
-          text(ctx, un ? c.name : '???', x, y + 14, 10, INK, 'center', FONT_TITLE, 400, false);
+          text(ctx, un ? c.name : '???', x, y + 11, 8.5, INK, 'center', FONT_TITLE, 400, false);
         });
         const c = CHARACTERS[sel]; const un = !c.unlock || g.save.isUnlocked(c.unlock);
-        wrap(ctx, un ? c.desc : 'Locked — ' + c.unlockHint, 8, 340).forEach((l, i) => text(ctx, l, 240, 168 + i * 10, 8, INK2, 'center', FONT_BODY, 600, false));
-        if (un) text(ctx, c.passive, 240, 200, 7.5, '#4a3a6a', 'center', FONT_BODY, 600, false);
-        hint(ctx, 'Enter to start a run · Esc back');
+        const top = 90 + rows * 60 - 26;
+        wrap(ctx, un ? c.desc : 'Locked — ' + c.unlockHint, 7.5, 360).forEach((l, i) => text(ctx, l, 240, top + i * 9, 7.5, INK2, 'center', FONT_BODY, 600, false));
+        if (un) text(ctx, c.passive, 240, top + 22, 7, '#4a3a6a', 'center', FONT_BODY, 600, false);
+        if (un) drawMarks(ctx, g, c.id, 240, top + 41);
+        hint(ctx, 'Arrows or mouse to choose · Enter to start a run · Esc back');
       },
     };
   }

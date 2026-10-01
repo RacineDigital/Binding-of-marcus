@@ -127,6 +127,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
     r.npcs.push({ kind: 'book', x: ctr.x, y: ctr.y - 6 }, { kind: 'armchair', x: ctr.x + 120, y: ctr.y - 50 });
   }
   if (save && !special) placeNote(floor, run, save);
+  if (save && !special) placeEcho(floor, run, save);
   return floor;
 }
 
@@ -155,6 +156,43 @@ function placeNote(floor: Floor, run: Run, save: SaveManager): void {
   const [fc, fr] = free[Math.min(free.length - 1, rng.int(2, 8))];
   const p = room.cellCenter(fc, fr);
   room.npcs.push({ kind: 'note', x: p.x, y: p.y + 4, data: { id: note.id } });
+}
+
+/**
+ * Echoes: where you died last time, your echo waits in a room of its own, off a quiet corridor.
+ * Added after everything else (with its own RNG) so the rest of the seed's floor is unchanged.
+ * Never in challenges or the Daily Run.
+ */
+function placeEcho(floor: Floor, run: Run, save: SaveManager): void {
+  const ec = save.data?.echo;
+  if (!ec || ec.floor !== floor.index || run.challenge || run.mode === 'daily') return;
+  const rng = new RNG(`${run.seed}:echo${floor.index}`);
+  const map = floor.map;
+  const free = (x: number, y: number) => inb(x, y) && map[y * MAP_SIZE + x] === -1;
+  const cands: { r: RoomData; x: number; y: number; side: Side; lonely: boolean }[] = [];
+  for (const r of floor.rooms) {
+    if (r.type !== 'normal' || r.distance < 1) continue;
+    for (const [x0, y0] of r.cells()) for (const [dx, dy, side] of DIRS) {
+      const x = x0 + dx, y = y0 + dy;
+      if (!free(x, y) || x < 1 || y < 1 || x >= MAP_SIZE - 1 || y >= MAP_SIZE - 1) continue;
+      // best of all a cell that touches only this room (it reads as a dead end on the map)
+      const lonely = !DIRS.some(([ex, ey]) => { const v = inb(x + ex, y + ey) ? map[(y + ey) * MAP_SIZE + x + ex] : -1; return v >= 0 && v !== r.id; });
+      cands.push({ r, x, y, side, lonely });
+    }
+  }
+  if (!cands.length) return;
+  const lonely = cands.filter((q) => q.lonely);
+  const c = rng.pick(lonely.length ? lonely : cands);
+  const id = floor.rooms.length;
+  const room = new RoomData(id, c.x, c.y, 1, 1, 'echo', `${run.seed}:f${floor.index}:echo`);
+  map[c.y * MAP_SIZE + c.x] = id;
+  floor.rooms.push(room);
+  const slot = c.side === Side.N || c.side === Side.S ? c.x - c.r.gx : c.y - c.r.gy;
+  c.r.doors.push({ side: c.side, slot, to: id, kind: 'echo', locked: false, hidden: false });
+  room.doors.push({ side: opposite(c.side), slot: 0, to: c.r.id, kind: 'echo', locked: false, hidden: false });
+  room.distance = c.r.distance + 1;
+  populateRoom(room, floor, run, new RNG(room.seed + ':pop'), save);
+  room.bossId = 'echo';
 }
 
 /** The Last Page: a landing and, through one door, a huge arena. */
@@ -307,7 +345,7 @@ function bfs(adj: number[][], s: number): number[] {
 
 const SPECIAL_DOOR: Partial<Record<RoomType, DoorKind>> = {
   treasure: 'treasure', boss: 'boss', shop: 'shop', secret: 'secret', supersecret: 'supersecret', challenge: 'challenge',
-  sacrifice: 'sacrifice', arcade: 'arcade', cursed: 'cursed', library: 'library', miniboss: 'miniboss', event: 'event', deal: 'deal', blessing: 'blessing', lostfound: 'lostfound',
+  sacrifice: 'sacrifice', arcade: 'arcade', cursed: 'cursed', library: 'library', miniboss: 'miniboss', event: 'event', deal: 'deal', blessing: 'blessing', lostfound: 'lostfound', echo: 'echo',
 };
 
 function connectDoors(c: Ctx, fi: number): void {
