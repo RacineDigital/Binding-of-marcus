@@ -7,8 +7,8 @@ const fs = require('fs');
 const { DiscordPresence } = require('./discord.cjs');
 
 // Discord Rich Presence: the Application ID from https://discord.com/developers/applications
-// ("Playing <name>" shows that application's name). Leave empty to turn Rich Presence off.
-const DISCORD_CLIENT_ID = process.env.LOST_MARCUS_DISCORD_ID || '';
+// ("Playing <name>" shows that application's name). Set it to '' to turn Rich Presence off.
+const DISCORD_CLIENT_ID = process.env.LOST_MARCUS_DISCORD_ID || '1555081290250719294';
 
 const SMOKE = process.argv.includes('--smoke');
 let win = null;

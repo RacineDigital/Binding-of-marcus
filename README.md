@@ -27,9 +27,9 @@ application, whose name is what Discord shows after "Playing":
    name you want people to see (for example *Lost Marcus (Beta)*).
 2. Copy the **Application ID** from the General Information page and put it in
    `DISCORD_CLIENT_ID` in `electron/main.cjs` (or set the `LOST_MARCUS_DISCORD_ID` environment
-   variable).
+   variable). The official app's ID is already filled in.
 3. Optional: under **Rich Presence → Art Assets**, upload a 512×512 or larger image named `logo`.
-   It appears as the big picture on the status card.
+   It appears as the big picture on the status card. `art/discord-logo-1024.png` is made for this.
 
 It turns itself off when Discord isn't running and can be switched off in Options → Discord status.
 

@@ -1,5 +1,7 @@
 ## What's new in 2.2 (beta)
 
+**2.2.1:** Discord status is switched on (it shows "Playing Lost Marcus" with your chapter, boss fight and run time while Discord is open).
+
 - The game is now called **Lost Marcus**, with a new title logo. Desktop saves from Binding of
   Marcus are copied over automatically the first time you start it.
 - Discord status: shows the chapter you're in, the boss you're fighting and the run time.
