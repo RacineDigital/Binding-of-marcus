@@ -1,3 +1,11 @@
+## What's new in 2.7 (beta)
+
+- **The end game makes itself known.** Once you've finished the story, the Binding is never the
+  same: its chapter card warns you in red, and its boss is always **It Remembers**: the Unbound,
+  awake, with every attack open from the start and more health (like Mom's Heart becoming It Lives).
+- **The light has to be earned.** The beam of light after the Binding only comes down once you've
+  beaten the Unwritten twice. Until then you'll see how close you are (1/2).
+
 ## What's new in 2.6 (beta)
 
 - **Jeffy.** Find the Big Boy Diaper, the Nose Pencil and the Blue Bike Helmet to become Jeffy:

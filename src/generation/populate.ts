@@ -233,6 +233,8 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       // the chapter's own bosses are most likely; earlier chapters' bosses can reappear
       room.bossId = rng.weighted(opts, (b) => (opts.indexOf(b) < 2 ? 3 : 1)) ?? opts[0];
       room.flags.bossItem = run.pools.roll('boss', prng);
+      // the end game: once the story is finished, the Binding always holds It Remembers
+      if (floor.theme.id === 'binding' && fi === 7 && save?.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless') room.bossId = 'itremembers';
       if (run.challenge === 'twins' && fi < 7) room.bossId = room.bossId + '+' + room.bossId;
       ensurePaths(room);
       break;

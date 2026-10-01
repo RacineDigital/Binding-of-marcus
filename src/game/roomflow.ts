@@ -49,7 +49,9 @@ export function startFloor(w: World): void {
   if (floor.curse === 'lost') { /* map hidden */ }
   if (floor.curse === 'seen') revealMap(w, false);
   w.floorIntroT = 2.6;
-  w.hud.floorCard(floor.label, floor.theme.subtitle, floor.curse);
+  // the end game announces itself: the Binding is not the Binding you remember
+  const endgame = floor.theme.id === 'binding' && run.floorIndex === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless';
+  w.hud.floorCard(floor.label, endgame ? 'It remembers you.' : floor.theme.subtitle, floor.curse, endgame);
   w.audio.setMusic(floor.theme.music);
   w.audio.prepareMusic(bossMusic(w.run));
   const nextTheme = pickTheme(w.run, w.run.floorIndex + 1);
@@ -501,7 +503,11 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();
-    if (w.run.flags.margins && fi === LASTPAGE_FLOOR) { w.game.save.unlock(w.run.flags.light ? 'beat_author' : 'beat_unwritten'); w.game.onVictory(); return; }
+    if (w.run.flags.margins && fi === LASTPAGE_FLOOR) {
+      if (w.run.flags.light) w.game.save.unlock('beat_author');
+      else { w.game.save.unlock('beat_unwritten'); w.game.save.stat('unwrittenWins', 1); }
+      w.game.onVictory(); return;
+    }
     if (w.run.flags.margins && fi === MARGINS_FLOOR) {
       // every boss in the Margins pays out; only one opens the way to the Last Page
       spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
@@ -524,10 +530,18 @@ export function onBossKilled(w: World, e: Enemy): void {
       room.flags.exit = { x: c.x - 56, y: c.y + 30 };
       w.trapdoor = { x: c.x + 56, y: c.y + 30, t: 0, kind: 'portal' };
       room.flags.trap = { x: c.x + 56, y: c.y + 30, kind: 'portal' };
-      w.lightBeam = { x: c.x, y: c.y + 52, t: 0 };
-      room.flags.beam = { x: c.x, y: c.y + 52 };
-      w.audio.stinger('lostfound'); w.audio.stinger('blessing');
-      w.hud.banner('Three ways on', 'The EXIT ends the story. The tear goes down into the ink. The light goes up.');
+      // the light only reaches down once the Unwritten has fallen twice
+      const wins = w.game.save.data.stats.unwrittenWins ?? 0;
+      if (wins >= 2) {
+        w.lightBeam = { x: c.x, y: c.y + 52, t: 0 };
+        room.flags.beam = { x: c.x, y: c.y + 52 };
+        w.audio.stinger('blessing');
+        w.hud.banner('Three ways on', 'The EXIT ends the story. The tear goes down into the ink. The light goes up.');
+      } else {
+        w.hud.banner('Two ways on', 'The EXIT ends the story. The tear goes further in.');
+        if (wins > 0) w.after(3.2, () => w.hud.toast(`A crack of light above you, still too far to reach (${wins}/2).`, 3));
+      }
+      w.audio.stinger('lostfound');
       return;
     }
     if (fi >= goal) { w.game.onVictory(); return; }

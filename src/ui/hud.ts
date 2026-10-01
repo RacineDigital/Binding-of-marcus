@@ -154,7 +154,8 @@ export class Hud {
   }
   banner(title: string, sub: string, icon: HTMLCanvasElement | null = null): void { this.banners = [{ title, sub, t: 0, icon }]; }
   toast(s: string, dur = 2.4): void { this.toasts.push({ text: s, t: 0, dur }); if (this.toasts.length > 3) this.toasts.shift(); }
-  floorCard(title: string, sub: string, curse: string | null): void { this.floorCardT = 3.2; this.floorTitle = title; this.floorSub = sub; this.floorCurse = curse; }
+  floorCardAlarm = false;
+  floorCard(title: string, sub: string, curse: string | null, alarm = false): void { this.floorCardT = 3.2; this.floorTitle = title; this.floorSub = sub; this.floorCurse = curse; this.floorCardAlarm = alarm; }
   roomName(s: string): void { this.roomNameT = 2.2; this.roomNameText = s; }
   bossIntro(name: string, sub: string, ref: Enemy): void { this.bossIntroT = 2.3; this.bossName = name; this.bossSub = sub; this.bossRef = ref; this.bossTrail = 1; }
   flashActive(): void { this.activeFlash = 0.6; }
@@ -701,7 +702,8 @@ export class Hud {
     const [chapter, name] = this.floorTitle.split(' — ');
     text(ctx, chapter ?? '', VIEW_W / 2, VIEW_H / 2 - 12, 8, COL.dim, 'center', FONT_BODY, 600);
     text(ctx, name ?? this.floorTitle, VIEW_W / 2, VIEW_H / 2 + 8, 22, '#efe2c8', 'center', FONT_TITLE, 400);
-    text(ctx, this.floorSub, VIEW_W / 2, VIEW_H / 2 + 20, 7, COL.dim, 'center', FONT_BODY, 400);
+    if (this.floorCardAlarm) text(ctx, this.floorSub, VIEW_W / 2, VIEW_H / 2 + 23, 10, '#e0303a', 'center', FONT_TITLE, 400);
+    else text(ctx, this.floorSub, VIEW_W / 2, VIEW_H / 2 + 20, 7, COL.dim, 'center', FONT_BODY, 400);
     if (this.floorCurse) text(ctx, CURSE_NAMES[this.floorCurse] ?? '', VIEW_W / 2, VIEW_H / 2 + 36, 8, '#c090ff', 'center', FONT_TITLE, 400);
     ctx.restore();
   }

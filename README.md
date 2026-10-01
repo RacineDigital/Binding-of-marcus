@@ -149,9 +149,12 @@ Menus also work with the mouse: hover, click and scroll.
   huge chapter of the hardest creatures with five identical boss rooms, one to three treasure rooms
   and a shop. Every boss there drops a boss item, but only one of them opens the way to **The Last
   Page**, a huge arena where **The Unwritten** waits: it rewrites itself into the shapes of the
-  bosses you've beaten (and fights like them) before throwing everything at once. A third way,
-  a **beam of light**, goes up to **The Dedication** and **The Foreword**, where **The Author**
-  waits. Each path has its own ending: the EXIT, the ink, and the light.
+  bosses you've beaten (and fights like them) before throwing everything at once. Once you've
+  beaten the Unwritten twice, a third way opens: a **beam of light** up to **The Dedication** and
+  **The Foreword**, where **The Author** waits. Each path has its own ending: the EXIT, the ink,
+  and the light. After your first finished story the Binding's boss is always **It Remembers**,
+  the Unbound awake and angrier (like Mom's Heart becoming It Lives), so you know you're in the
+  end game.
 - **Seeded floors.** Floors are built on a hidden 13×13 grid with 1×1, 2×1, 1×2 and 2×2 rooms.
   Each floor places:
   - a boss room at the furthest dead end;

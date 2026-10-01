@@ -453,5 +453,31 @@ const unbound: EnemyDef = {
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { yoff: 8 }); w.r.addGlow(sx, sy - e.z - 30, 60, e.data.phase ? '#ff3050' : '#f0d0a0', 0.15); },
 };
 
-export const BOSSES_C: EnemyDef[] = [ossuaryknight, mothmother, bellringer, choirmaster, blottedman, blottedhalf, unbound];
+// ================================================================== It Remembers (end game)
+// Once the story has been finished, the Binding's boss is always this: the Unbound, awake, with
+// every attack open from the start, less rest between them and more health. (Mom's Heart -> It Lives.)
+const remembersBrain: BossBrain = {
+  ...unboundBrain,
+  idleTime: [0.4, 0.75],
+  attacks: unboundBrain.attacks.map((a) => ({ ...a, phases: undefined })),
+  onPhase(e, w, ph) {
+    e.anim = 'open';
+    w.hud.toast(ph === 1 ? 'It remembers how you did it last time.' : 'It will not let the book close again.');
+    w.whiteFlash = 0.5;
+    if (ph === 2) w.audio.setMusic('bossFinal');
+  },
+};
+const itremembers: EnemyDef = {
+  ...unbound,
+  id: 'itremembers', name: 'It Remembers', desc: 'You closed the book once. It has been waiting on the last page ever since.',
+  hp: 1250, light: [110, '#ff3050'],
+  init(e) { e.anim = 'open'; e.data.idleT = 1.2; e.z = 18; },
+  update(e, w, dt) {
+    bossUpdate(e, w, dt, remembersBrain);
+    if (Math.random() < dt * 7) w.fx.burst(e.x + (Math.random() - 0.5) * 60, e.y - e.z - 20, 4, 1, Math.random() < 0.5 ? '#e6dcc0' : '#c83a4a', 30, 1, 2, 30);
+  },
+  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { yoff: 8, tint: '#ff2040', tintAmt: 0.22 + 0.08 * Math.sin(e.t * 4) }); w.r.addGlow(sx, sy - e.z - 30, 70, '#ff3050', 0.22); },
+};
+
+export const BOSSES_C: EnemyDef[] = [ossuaryknight, mothmother, bellringer, choirmaster, blottedman, blottedhalf, unbound, itremembers];
 void teeth; void legs; void sprinkle; void distToPlayer; void (null as unknown as World);
