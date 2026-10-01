@@ -7,7 +7,8 @@ import type { AttackProfile } from '../projectiles/profile';
 export type Role = 'melee' | 'flyer' | 'shooter' | 'swarm' | 'heavy' | 'turret' | 'special' | 'boss';
 export type SpriteSet = Record<string, Sprite[]>;
 
-export interface HurtInfo { ang: number; knock: number; source: string; crit?: boolean; prof?: AttackProfile | null; status?: string | null }
+/** procMul scales status-effect chances (beams tick many times a second, so they roll at a reduced rate). */
+export interface HurtInfo { ang: number; knock: number; source: string; crit?: boolean; prof?: AttackProfile | null; status?: string | null; procMul?: number }
 
 export interface EnemyDef {
   id: string; name: string; desc?: string;

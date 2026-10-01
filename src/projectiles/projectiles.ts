@@ -140,13 +140,18 @@ export class Projectiles {
           p.target = w.nearestEnemy(p.x, p.y, 220, p.hits); p.retarget = 0.12;
         }
         if (p.target) {
-          const cur = Math.atan2(p.vy, p.vx), want = Math.atan2(p.target.y - 6 - p.y, p.target.x - p.x);
-          const turn = clamp(angleDiff(cur, want), -p.homing * 5.5 * dt, p.homing * 5.5 * dt);
+          // aim at the same point collision tests against, and turn harder up close so shots
+          // don't circle a nearby target forever
+          const tx = p.target.x, ty = p.target.y - p.target.hitY + p.z * 0.25;
+          const cur = Math.atan2(p.vy, p.vx), want = Math.atan2(ty - p.y, tx - p.x);
+          const near = Math.sqrt(dist2(p.x, p.y, tx, ty));
+          const rate = p.homing * 5.5 * (1 + clamp((90 - near) / 25, 0, 4)) * dt;
+          const turn = clamp(angleDiff(cur, want), -rate, rate);
           const na = cur + turn; p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd;
         }
       }
       if (prof?.spiral) {
-        const cur = Math.atan2(p.vy, p.vx) + 5.2 * dt / (1 + p.t * 1.2);
+        const cur = Math.atan2(p.vy, p.vx) + 3.4 * dt / (1 + p.t * 1.5);
         p.vx = Math.cos(cur) * p.spd; p.vy = Math.sin(cur) * p.spd;
       }
       if (p.curve) {

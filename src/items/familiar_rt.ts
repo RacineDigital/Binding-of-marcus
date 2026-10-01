@@ -141,7 +141,7 @@ export function updateFamiliars(w: World, dt: number): void {
         if (e.dead || e.hidden || e.spawnT > 0 || e.friendly) continue;
         if (dist2(f.x, f.y, e.x, e.y - e.hitY * 0.5) < (f.r + e.r) ** 2) {
           const dmg = f.temp ? pl.stats.damage * 2 + 2 : s.contact * (1 + w.run.floorIndex * 0.25);
-          w.damageEnemy(e, dmg, { ang: angleTo(f.x, f.y, e.x, e.y), knock: 0.5, source: 'familiar' });
+          w.damageEnemy(e, dmg, { ang: angleTo(f.x, f.y, e.x, e.y), knock: 0.5, source: 'familiar', prof: pl.prof, procMul: 0.5 });
           if (s.special === 'spider') e.slow = 2;
           f.cd = 0.25;
           if (f.temp) { f.dead = true; w.fx.burst(f.x, f.y, 4, 8, '#2a2e70', 60, 0.4); w.audio.play('splat', { x: f.x, vol: 0.4 }); }
@@ -158,8 +158,14 @@ export function updateFamiliars(w: World, dt: number): void {
       if (ang !== null) {
         f.cd = 1 / sh.rate;
         const prof = familiarProfile(f, w);
-        if (sh.laser) {
-          const b = new Beam(prof); b.laser = true; b.dur = 0.1; b.width = 2; b.dmg = sh.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = '#6ad0ff';
+        const copy = sh.inherit && (pl.mode === 'beam' || pl.mode === 'laser') ? pl.mode : null;
+        if (copy === 'beam') {
+          // twins copy the Burning Glass: a shorter, weaker beam carrying your full profile
+          f.cd = 1 / (sh.rate * 0.4);
+          const b = new Beam(prof); b.dur = 0.35; b.width = 5; b.dmg = pl.stats.damage * sh.dmg * 0.55; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = prof.tint ?? '#6a58ff';
+          w.beams.push(b);
+        } else if (sh.laser || copy === 'laser') {
+          const b = new Beam(prof); b.laser = true; b.dur = 0.1; b.width = 2; b.dmg = copy ? pl.stats.damage * sh.dmg : sh.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = copy ? prof.tint ?? '#ff5a6a' : '#6ad0ff';
           w.beams.push(b);
         } else {
           const st = { ...pl.stats, damage: sh.inherit ? pl.stats.damage * sh.dmg : sh.dmg, fireRate: sh.rate, range: sh.range ?? 200 };

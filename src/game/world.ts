@@ -16,7 +16,7 @@ import { FlowField } from '../enemies/ai';
 import { OpenDoor } from '../rooms/collide';
 import { TILE } from '../core/constants';
 import { TAU, clamp, dist, dist2 } from '../core/math';
-import { AttackProfile, luckChance } from '../projectiles/profile';
+import { AttackProfile, luckChance, luckChance as luckChanceBase } from '../projectiles/profile';
 import { Bomb, updateBombs } from './bombs';
 import { Familiar, updateFamiliars, syncFamiliars } from '../items/familiar_rt';
 import { Npc, updateNpcs } from './npc';
@@ -293,7 +293,8 @@ export class World {
     // statuses
     const prof = info.prof;
     if (prof && !e.def.noStatus) {
-      const luck = this.player.stats.luck;
+      const luck = this.player.stats.luck, pm = info.procMul ?? 1;
+      const luckChance = (c: number, l: number) => luckChanceBase(c, l) * pm;
       if (prof.burn > 0 && Math.random() < luckChance(prof.burn, luck)) { e.burn = 3; e.burnDmg = Math.max(1, this.player.stats.damage * 0.35); }
       if (prof.poison > 0 && Math.random() < luckChance(prof.poison, luck)) { e.poison = 3.5; e.poisonDmg = Math.max(1, this.player.stats.damage * 0.3); }
       if (prof.slow > 0 && Math.random() < luckChance(prof.slow, luck)) e.slow = 2.5;

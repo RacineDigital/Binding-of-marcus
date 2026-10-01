@@ -63,7 +63,8 @@ export function mergeProfile(p: AttackProfile, part: ProfilePart): void {
 
 /** Resolve the primary attack mode from the collected set. */
 export function primaryMode(p: AttackProfile): AttackMode {
-  const order: AttackMode[] = ['beam', 'laser', 'melee', 'burst', 'charge'];
+  // Melee keeps the blade and folds the other modes into it; beams fold laser/burst/charge in, and so on.
+  const order: AttackMode[] = ['melee', 'beam', 'laser', 'burst', 'charge'];
   for (const m of order) if (p.modes.has(m)) return m;
   return 'shot';
 }

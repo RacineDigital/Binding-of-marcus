@@ -106,7 +106,10 @@ export class Player {
 
   chargeTime(): number {
     // Higher fire rate charges faster.
-    return clamp(this.prof.chargeTime * (2.73 / this.stats.fireRate), 0.25, 3.2);
+    const m = this.prof.modes;
+    // a laser filament focuses the Burning Glass; Held Breath steadies every charged attack
+    const k = (this.mode === 'beam' && m.has('laser') ? 0.65 : 1) * (this.mode !== 'charge' && m.has('charge') ? 0.85 : 1);
+    return clamp(this.prof.chargeTime * k * (2.73 / this.stats.fireRate), 0.25, 3.2);
   }
 
   update(w: World, dt: number): void {
@@ -214,11 +217,12 @@ export class Player {
         this.wcharge = Math.min(1, this.wcharge + dt / (this.chargeTime() * 1.3));
         if (this.fireCd <= 0 && this.wcharge < 0.35) {
           this.swing = meleeSwing(w, prof, st, this.x, this.y - 8, ang, false);
+          this.modeCombos(w, ang, false);
           this.fireCd = 1 / Math.max(1.2, st.fireRate * 0.55);
           this.onFired(w, ang, 'swing');
         }
       } else if (this.wasAiming) {
-        if (this.wcharge >= 1) { this.swing = meleeSwing(w, prof, st, this.x, this.y - 8, this.aimAng, true); this.onFired(w, this.aimAng, 'spin'); w.shake(3); }
+        if (this.wcharge >= 1) { this.swing = meleeSwing(w, prof, st, this.x, this.y - 8, this.aimAng, true); this.modeCombos(w, this.aimAng, true); this.onFired(w, this.aimAng, 'spin'); w.shake(3); }
         this.wcharge = 0;
       }
       this.wasAiming = !!aim;
@@ -230,11 +234,11 @@ export class Player {
     while (this.fireCd <= 0 && volleys < 3) { this.fireCd += 1 / st.fireRate; volleys++; }
     if (mode === 'laser') {
       const n = Math.max(1, Math.min(5, prof.shots));
-      for (let i = 0; i < n; i++) {
-        const b = new Beam(prof);
-        b.ang = ang; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.14; b.laser = true; b.dur = 0.12;
-        b.width = 2 + (st.size - 1) * 3; b.dmg = st.damage; b.color = '#ff5a6a';
-        w.beams.push(b);
+      const heavy = prof.modes.has('charge');
+      for (const base of this.fireAngles(ang)) {
+        for (let i = 0; i < n; i++) this.fireLaser(w, base, n === 1 ? 0 : (i - (n - 1) / 2) * 0.14, st.damage * (heavy ? 1.3 : 1), heavy ? 1 : 0);
+        // burst: each pull also scatters a pair of weaker stray lasers
+        if (prof.modes.has('burst')) for (const o of [-0.3, 0.3]) this.fireLaser(w, base, o + (Math.random() - 0.5) * 0.2, st.damage * 0.55, 0);
       }
       this.onFired(w, ang, 'laser');
       return;
@@ -253,23 +257,23 @@ export class Player {
     if (mode === 'beam') {
       if (c < 1) return;
       const n = Math.max(1, Math.min(5, prof.shots));
-      for (let i = 0; i < n; i++) {
+      const heavy = prof.modes.has('charge');
+      for (const base of this.fireAngles(ang)) for (let i = 0; i < n; i++) {
         const b = new Beam(prof);
-        b.ang = ang; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
-        b.dur = 0.5; b.width = 7 * Math.min(2.2, st.size); b.dmg = st.damage * 0.55;
-        b.color = prof.tint ?? '#6a58ff';
+        b.ang = base; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
+        b.dur = 0.5; b.width = 7 * Math.min(2.2, st.size) * (heavy ? 1.25 : 1); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1);
+        b.color = prof.tint ?? (prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff');
         w.beams.push(b);
       }
+      // burst: the beam goes off with a spray of shots
+      if (prof.modes.has('burst')) this.spray(w, ang, 6 + prof.shots * 2, 0.8);
       w.shake(2.5);
       this.onFired(w, ang, 'beam');
       return;
     }
     if (mode === 'burst') {
-      const n = Math.round(3 + 13 * c) + (prof.shots - 1) * 2;
-      for (let i = 0; i < n; i++) {
-        const a = ang + (Math.random() - 0.5) * 0.9;
-        w.proj.player(w, prof, m.x, m.y, m.z, a, st.damage * 0.9, SHOT_PX * st.shotSpeed * (0.7 + Math.random() * 0.6), st.range * (0.7 + Math.random() * 0.5), st.size * (0.8 + Math.random() * 0.5));
-      }
+      const n = Math.round((3 + 13 * c) * (prof.modes.has('charge') ? 1.4 : 1)) + (prof.shots - 1) * 2;
+      for (const base of this.fireAngles(ang)) this.spray(w, base, base === ang ? n : Math.ceil(n / 3), 0.9);
       w.shake(1 + c * 2);
       this.onFired(w, ang, 'burst');
       return;
@@ -278,6 +282,45 @@ export class Player {
     volley(w, prof, st, m.x, m.y, m.z, ang, { dmgMul: 0.3 + c * 3.7, sizeMul: 0.6 + c * 1.1, speedMul: 1 + c * 0.25, rangeMul: 1 + c * 0.3, inherit: { vx: this.vx, vy: this.vy } });
     if (c >= 1) w.shake(2);
     this.onFired(w, ang, c >= 1 ? 'bigshot' : 'shot');
+  }
+
+  /** Aim direction plus the extra directions rear / side shots add. */
+  private fireAngles(ang: number): number[] {
+    const a = [ang];
+    if (this.prof.rear) a.push(ang + Math.PI);
+    if (this.prof.sides) a.push(ang + Math.PI / 2, ang - Math.PI / 2);
+    return a;
+  }
+  private fireLaser(w: World, ang: number, offset: number, dmg: number, extraW: number): void {
+    const b = new Beam(this.prof);
+    b.ang = ang; b.offset = offset; b.laser = true; b.dur = 0.12;
+    b.width = 2 + (this.stats.size - 1) * 3 + extraW; b.dmg = dmg; b.color = this.prof.tint ?? '#ff5a6a';
+    w.beams.push(b);
+  }
+  /** A burst-style spray of shots carrying the full profile. */
+  private spray(w: World, ang: number, n: number, dmgMul: number): void {
+    const m = this.muzzle(ang), st = this.stats;
+    for (let i = 0; i < n; i++) {
+      const a = ang + (Math.random() - 0.5) * 0.9;
+      w.proj.player(w, this.prof, m.x, m.y, m.z, a, st.damage * dmgMul, SHOT_PX * st.shotSpeed * (0.7 + Math.random() * 0.6), st.range * (0.7 + Math.random() * 0.5), st.size * (0.8 + Math.random() * 0.5));
+    }
+  }
+  /** Melee folds the other attack modes into its swings. */
+  private modeCombos(w: World, ang: number, charged: boolean): void {
+    const m = this.prof.modes, st = this.stats;
+    if (m.has('laser')) {
+      if (charged) for (let i = 0; i < 8; i++) this.fireLaser(w, ang + (i / 8) * TAU, 0, st.damage * 1.2, 1);
+      else this.fireLaser(w, ang, 0, st.damage * 0.8, 0);
+    }
+    if (m.has('beam') && charged) {
+      for (const base of this.fireAngles(ang)) {
+        const b = new Beam(this.prof);
+        b.ang = base; b.dur = 0.45; b.width = 7 * Math.min(2.2, st.size); b.dmg = st.damage * 0.5; b.color = this.prof.tint ?? '#6a58ff';
+        w.beams.push(b);
+      }
+    }
+    if (m.has('burst') && charged) for (let i = 0; i < 4; i++) this.spray(w, ang + (i / 4) * TAU, 3, 0.7);
+    if (m.has('charge') && charged) w.shake(1.5);
   }
 
   private onFired(w: World, ang: number, kind: string): void {
@@ -359,11 +402,14 @@ export class Player {
       ctx.save();
       ctx.globalAlpha = 1 - k;
       ctx.strokeStyle = sw.big ? '#e8e0ff' : '#d8d0c0'; ctx.lineWidth = sw.big ? 4 : 3;
-      const a0 = sw.ang - sw.arc / 2, a1 = sw.ang + sw.arc / 2;
-      const sweep = a0 + (a1 - a0) * Math.min(1, k * 2.2);
-      ctx.beginPath(); ctx.ellipse(sx, sy - 8, sw.radius * 0.9, sw.radius * 0.75, 0, a0, sweep); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.ellipse(sx, sy - 8, sw.radius, sw.radius * 0.85, 0, a0, sweep); ctx.stroke();
+      for (const c of sw.big ? [sw.ang] : sw.centers) {
+        const a0 = c - sw.arc / 2, a1 = c + sw.arc / 2;
+        const sweep = a0 + (a1 - a0) * Math.min(1, k * 2.2);
+        ctx.strokeStyle = sw.big ? '#e8e0ff' : this.prof.tint ?? '#d8d0c0'; ctx.lineWidth = sw.big ? 4 : 3;
+        ctx.beginPath(); ctx.ellipse(sx, sy - 8, sw.radius * 0.9, sw.radius * 0.75, 0, a0, sweep); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(sx, sy - 8, sw.radius, sw.radius * 0.85, 0, a0, sweep); ctx.stroke();
+      }
       ctx.restore();
     }
   }

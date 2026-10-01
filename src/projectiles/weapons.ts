@@ -44,7 +44,7 @@ export function volley(w: World, prof: AttackProfile, st: FinalStats, x: number,
 export class Beam {
   active = true; t = 0; dur = 0.5; ang = 0; width = 7; dmg = 1; tick = 0; prof: AttackProfile; offset = 0;
   pts: number[] = []; followPlayer = true; x = 0; y = 0; laser = false; hitOnce = new Set<number>(); color = '#6a58ff';
-  enemyBeam = false; warmup = 0; rot = 0;
+  enemyBeam = false; warmup = 0; rot = 0; baseWidth = 0; phase = Math.random() * TAU; sweep = 0;
   constructor(prof: AttackProfile) { this.prof = prof; }
 }
 
@@ -110,20 +110,40 @@ export function updateBeams(w: World, dt: number): void {
     if (b.enemyBeam) { updateEnemyBeam(w, b, dt); if (b.t >= b.dur) w.beams.splice(i, 1); continue; }
     const pl = w.player;
     if (b.followPlayer) { b.x = pl.x; b.y = pl.y - 11; }
-    const a = b.ang + b.offset;
-    b.pts = traceBeam(w, b.x + Math.cos(a) * 6, b.y + Math.sin(a) * 4, a, b.prof, b.laser ? Math.max(120, pl.stats.range * 1.3) : 900);
+    const prof = b.prof;
+    // shot-movement modifiers bend the beam: wiggle sways it, spiral spins it, grow widens it
+    if (!b.baseWidth) b.baseWidth = b.width;
+    if (!b.laser) {
+      if (prof.spiral) b.sweep += dt * 3.2;
+      if (prof.boomerang) b.sweep = Math.sin(b.t * 7) * 0.45;
+      if (prof.grow) b.width = b.baseWidth * Math.min(2.4, 1 + prof.grow * b.t * 2.2);
+    }
+    const a = b.ang + b.offset + b.sweep + (prof.wiggle && !b.laser ? Math.sin(b.t * 14 + b.phase) * 0.12 * Math.min(2, prof.wiggle) : 0);
+    b.pts = traceBeam(w, b.x + Math.cos(a) * 6, b.y + Math.sin(a) * 4, a, prof, b.laser ? Math.max(120, pl.stats.range * 1.3) : 900);
     const half = b.width / 2;
+    const pathFx = () => alongBeam(b.pts, 10, (x, y) => {
+      if (prof.magnet) w.cancelEnemyShotsNear(x, y, half + 6);
+      if (prof.pull) w.pullPickups(x, y, 30);
+      if (prof.shatter) { const [c, r] = w.room.cellAt(x, y); if (w.room.inGrid(c, r)) w.hitObstacle(c, r, b.dmg, true, x, y); }
+    });
     if (b.laser) {
-      if (b.t <= dt * 1.5) beamHits(w, b, half, (e) => { if (!b.hitOnce.has(e.id)) { b.hitOnce.add(e.id); beamDamage(w, b, e, b.dmg); } });
+      if (b.t <= dt * 1.5) {
+        beamHits(w, b, half, (e) => { if (!b.hitOnce.has(e.id)) { b.hitOnce.add(e.id); beamDamage(w, b, e, b.dmg); } });
+        pathFx();
+        const ex = b.pts[b.pts.length - 2], ey = b.pts[b.pts.length - 1];
+        if (prof.creep) w.addCreep(ex, ey, 8, 'player', b.dmg * 0.35, 1.8);
+      }
     } else {
       b.tick -= dt;
       if (b.tick <= 0) {
         b.tick = 0.055;
         beamHits(w, b, half, (e) => beamDamage(w, b, e, b.dmg));
         // obstacles along the path take damage too
-        for (let k = 0; k + 1 < b.pts.length; k += 2) w.damageObstacleAt(b.pts[k], b.pts[k + 1], b.dmg * 0.5);
+        alongBeam(b.pts, 10, (x, y) => w.damageObstacleAt(x, y, b.dmg * 0.5));
+        pathFx();
         const ex = b.pts[b.pts.length - 2], ey = b.pts[b.pts.length - 1];
-        if (b.prof.explode > 0 && Math.random() < 0.25) w.explode(ex, ey, b.prof.explode, Math.max(4, b.dmg * 2), { friendly: true, small: true });
+        if (prof.explode > 0 && Math.random() < 0.25) w.explode(ex, ey, prof.explode, Math.max(4, b.dmg * 2), { friendly: true, small: true });
+        if (prof.creep && Math.random() < 0.3) w.addCreep(ex, ey, 9, 'player', b.dmg * 0.6, 2);
         w.fx.spray(ex, ey, 6, b.ang + Math.PI, 1.5, 2, b.color, 80, 0.3);
       }
     }
@@ -131,12 +151,31 @@ export function updateBeams(w: World, dt: number): void {
   }
 }
 
+const RAINBOW = ['burn', 'slow', 'poison', 'fear', 'confuse'];
+
+/** Damage from a player beam or laser. Every shot effect applies; continuous beams roll procs at a lower rate per tick. */
 function beamDamage(w: World, b: Beam, e: Enemy, dmg: number): void {
-  const prof = b.prof;
-  w.damageEnemy(e, dmg, { ang: b.ang, knock: 0.25, source: 'beam', prof });
-  if (prof.chain > 0 && Math.random() < luckChance(prof.chainChance * 0.35, w.player.stats.luck)) w.chainLightning(e, prof.chain, dmg * 1.5, prof);
-  if (prof.split > 0 && Math.random() < 0.08) {
+  const prof = b.prof, luck = w.player.stats.luck;
+  const tick = !b.laser;
+  const crit = prof.crit > 0 && Math.random() < luckChance(prof.crit, luck) * (tick ? 0.3 : 1);
+  const d = dmg * (crit ? 3 : 1);
+  const status = prof.rainbow && Math.random() < (tick ? 0.12 : 1) ? RAINBOW[Math.floor(Math.random() * RAINBOW.length)] : null;
+  w.damageEnemy(e, d, { ang: b.ang, knock: (tick ? 0.25 : 1) * prof.knock * (crit ? 2 : 1), source: 'beam', prof, crit, status, procMul: tick ? 0.35 : 1 });
+  if (prof.chain > 0 && Math.random() < luckChance(prof.chainChance * (tick ? 0.35 : 1), luck)) w.chainLightning(e, prof.chain, dmg * 1.5, prof);
+  if (prof.explode > 0 && Math.random() < (tick ? 0.1 : 1)) w.explode(e.x, e.y, prof.explode, Math.max(4, d * (tick ? 2 : 1.4)), { friendly: true, small: true });
+  if (prof.lifesteal > 0 && Math.random() < prof.lifesteal * 0.05 * (tick ? 0.15 : 1)) w.player.healRed(1, true);
+  if (prof.creep && Math.random() < (tick ? 0.08 : 0.6)) w.addCreep(e.x, e.y, 8, 'player', dmg * 0.35, 1.8);
+  if (prof.split > 0 && Math.random() < (tick ? 0.08 : 0.4)) {
     for (let k = 0; k < Math.min(4, prof.split); k++) w.proj.player(w, prof, e.x, e.y - 6, 8, Math.random() * TAU, w.player.stats.damage * 0.5, 220, 90, 0.7, 1);
+  }
+}
+
+/** Walk a beam polyline in fixed steps. */
+export function alongBeam(pts: number[], step: number, fn: (x: number, y: number) => void): void {
+  for (let i = 0; i + 3 < pts.length; i += 2) {
+    const x0 = pts[i], y0 = pts[i + 1], dx = pts[i + 2] - x0, dy = pts[i + 3] - y0;
+    const n = Math.max(1, Math.ceil(Math.hypot(dx, dy) / step));
+    for (let k = i === 0 ? 0 : 1; k <= n; k++) fn(x0 + (dx * k) / n, y0 + (dy * k) / n);
   }
 }
 
@@ -180,39 +219,58 @@ function hexA(h: string, a: number): string {
 }
 
 // ------------------------------------------------------------------ melee
-export interface Swing { t: number; dur: number; ang: number; arc: number; radius: number; big: boolean }
+export interface Swing { t: number; dur: number; ang: number; arc: number; radius: number; big: boolean; centers: number[] }
 
 export function meleeSwing(w: World, prof: AttackProfile, st: FinalStats, x: number, y: number, ang: number, charged: boolean): Swing {
   const radius = (26 + (st.size - 1) * 16) * (charged ? 1.35 : 1) + (prof.shots - 1) * 3;
-  const arc = charged ? TAU : Math.min(TAU, (Math.PI * 0.7) + (prof.shots - 1) * 0.35);
+  let arc = charged ? TAU : Math.min(TAU, (Math.PI * 0.7) + (prof.shots - 1) * 0.35);
+  // rear / side shots become extra blades behind and beside
+  const centers = [ang];
+  if (prof.rear) centers.push(ang + Math.PI);
+  if (prof.sides) centers.push(ang + Math.PI / 2, ang - Math.PI / 2);
+  if (centers.length >= 3) arc = Math.max(arc, Math.PI * 0.9);
+  const inArc = (a: number) => arc >= TAU - 0.01 || centers.some((c) => Math.abs(angleDiff(c, a)) <= arc / 2 + 0.2);
+  const luck = st.luck;
   const dmg = st.damage * (charged ? 4 : 2.2);
   const hitSet = new Set<number>();
+  let shards = 0;
   for (const e of w.enemies) {
     if (e.dead || e.hidden || e.spawnT > 0 || e.friendly) continue;
     const dx = e.x - x, dy = e.y - e.hitY - y;
     const d = Math.hypot(dx, dy);
     if (d > radius + e.r) continue;
-    if (arc < TAU - 0.01 && Math.abs(angleDiff(ang, Math.atan2(dy, dx))) > arc / 2 + 0.2) continue;
+    if (!inArc(Math.atan2(dy, dx))) continue;
     hitSet.add(e.id);
-    w.damageEnemy(e, dmg, { ang: Math.atan2(dy, dx), knock: 2.2, source: 'melee', prof });
+    const crit = prof.crit > 0 && Math.random() < luckChance(prof.crit, luck);
+    const status = prof.rainbow ? RAINBOW[Math.floor(Math.random() * RAINBOW.length)] : null;
+    w.damageEnemy(e, dmg * (crit ? 3 : 1), { ang: Math.atan2(dy, dx), knock: 2.2 * prof.knock * (crit ? 1.5 : 1), source: 'melee', prof, crit, status });
     if (prof.explode > 0) w.explode(e.x, e.y, prof.explode, dmg * 0.8, { friendly: true, small: true });
     if (prof.chain > 0 && Math.random() < prof.chainChance + 0.2) w.chainLightning(e, prof.chain, dmg * 0.5, prof);
+    if (prof.lifesteal > 0 && Math.random() < prof.lifesteal * 0.08) w.player.healRed(1, true);
+    if (prof.creep) w.addCreep(e.x, e.y, 9, 'player', st.damage * 0.5, 2);
+    if (prof.split > 0 && shards < 2) {
+      shards++;
+      for (let k = 0; k < Math.min(4, prof.split); k++) w.proj.player(w, prof, e.x, e.y - 6, 8, Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.6, st.damage * 0.6, 220, 100, 0.7, 1);
+    }
   }
+  if (prof.pull) w.pullPickups(x, y, radius * 1.6);
   // swat enemy projectiles out of the air
   for (const p of w.proj.list) {
     if (!p.active || p.team !== Team.Enemy) continue;
     const dx = p.x - x, dy = p.y - y; const d = Math.hypot(dx, dy);
-    if (d > radius + 4) continue;
-    if (arc < TAU - 0.01 && Math.abs(angleDiff(ang, Math.atan2(dy, dx))) > arc / 2 + 0.2) continue;
+    if (d > radius + 4 + (prof.magnet ? 14 : 0)) continue;
+    if (!inArc(Math.atan2(dy, dx))) continue;
     w.fx.sparks(p.x, p.y - p.z, 4, '#ffe0a0', 90);
     w.proj.kill(p);
   }
   // obstacles in reach
-  for (let k = 0; k < 5; k++) {
-    const a = ang + (k / 4 - 0.5) * Math.min(arc, Math.PI);
-    w.damageObstacleAt(x + Math.cos(a) * radius * 0.8, y + Math.sin(a) * radius * 0.8 + 6, dmg * 0.5);
+  for (const c0 of centers) for (let k = 0; k < 5; k++) {
+    const a = c0 + (k / 4 - 0.5) * Math.min(arc, Math.PI);
+    const ox = x + Math.cos(a) * radius * 0.8, oy = y + Math.sin(a) * radius * 0.8 + 6;
+    if (prof.shatter) { const [c, r] = w.room.cellAt(ox, oy); if (w.room.inGrid(c, r)) w.hitObstacle(c, r, dmg * 0.5, true, ox, oy); }
+    else w.damageObstacleAt(ox, oy, dmg * 0.5);
   }
   // charged swing throws a wave carrying the full profile
   if (charged) volley(w, prof, st, x, y + 6, 10, ang, { dmgMul: 1.5, sizeMul: 1.4 });
-  return { t: 0, dur: charged ? 0.3 : 0.16, ang, arc, radius, big: charged };
+  return { t: 0, dur: charged ? 0.3 : 0.16, ang, arc, radius, big: charged, centers };
 }
