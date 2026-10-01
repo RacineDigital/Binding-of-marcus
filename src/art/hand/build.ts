@@ -19,6 +19,14 @@ export interface HandRig {
 }
 
 const BW = 18, BH = 13;
+/**
+ * The walk cycle: eight frames per stride pair, and how far the torso (and the head with it) dips on
+ * each. The dip lasts two frames around each footfall, so the bob reads as weight, not a twitch.
+ */
+export const WALK_FRAMES = 8;
+export const WALK_BOB = [0, 0, 1, 1, 0, 0, 1, 1];
+/** Pixels walked per walk frame (a full cycle is 40px: about two and a half strides a second). */
+export const WALK_STEP = 5;
 
 function withFace(base: string[], f?: [number, string[]]): string[] {
   if (!f) return base;
@@ -45,12 +53,13 @@ export function buildHandSprites(R: HandRig): PlayerSprites {
   const body = {} as PlayerSprites['body'];
   const bodyIdle = {} as PlayerSprites['bodyIdle'];
   const F = R.legsFront, Sd = R.legsSide;
+  // frame 0 is standing; 1..8 are the walk: a foot up for three frames, both down, the other foot
   const seq = {
-    down: [F.idle, F.leftUp, F.leftUp, F.idle, F.rightUp, F.rightUp, F.idle],
-    up: [F.idle, F.rightUp, F.rightUp, F.idle, F.leftUp, F.leftUp, F.idle],
-    side: [Sd.idle, Sd.strideA, Sd.strideA, Sd.idle, Sd.strideB, Sd.strideB, Sd.idle],
+    down: [F.idle, F.leftUp, F.leftUp, F.leftUp, F.idle, F.rightUp, F.rightUp, F.rightUp, F.idle],
+    up: [F.idle, F.rightUp, F.rightUp, F.rightUp, F.idle, F.leftUp, F.leftUp, F.leftUp, F.idle],
+    side: [Sd.idle, Sd.strideA, Sd.strideA, Sd.strideA, Sd.idle, Sd.strideB, Sd.strideB, Sd.strideB, Sd.idle],
   };
-  const bob = [0, 0, 1, 0, 0, 1, 0];
+  const bob = [0, ...WALK_BOB];
   for (const d of ['down', 'up', 'side'] as const) {
     body[d] = seq[d].map((legs, i) => new Sprite(bodyArt(R, d, legs, bob[i]), BW / 2, BH));
     const legsIdle = d === 'side' ? Sd.idle : F.idle;

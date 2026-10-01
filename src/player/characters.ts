@@ -17,7 +17,7 @@ export const CHARACTERS: CharacterDef[] = [
     id: 'marcus', name: 'Marcus', title: 'The Grandson', look: 'marcus',
     desc: 'Eleven years old, lost inside an oversized hoodie. Flicks ink when he is frightened, which is always.',
     base: { damage: 3.5, tears: 2.73, range: 230, shotSpeed: 1, speed: 1, luck: 0 },
-    health: { red: 3 }, items: ['ink_tear'], buttons: 0, keys: 1, bombs: 1, unlockHint: '', passive: 'Ink Tear: getting hurt makes him cry a ring of ink tears.',
+    health: { red: 3 }, items: [], buttons: 0, keys: 1, bombs: 1, unlockHint: '', passive: 'None. The baseline.',
   },
   {
     id: 'wren', name: 'Wren', title: 'The Cousin', look: 'wren',

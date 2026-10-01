@@ -330,7 +330,7 @@ const echo: EnemyDef = {
   draw(e, ctx, w, sx, sy) {
     const sp = w.game.menus.sprites(charById(e.data.char ?? 'marcus'));
     const dir = (e.data.dir ?? 'down') as 'down' | 'up' | 'side';
-    const moving = true, f = Math.floor(e.t * 10) % 6 + 1;
+    const moving = true, f = Math.floor(e.t * 11) % 8 + 1;
     ctx.save();
     ctx.globalAlpha = 0.55 + 0.25 * Math.sin(e.t * 7) * Math.sin(e.t * 2.3);
     ctx.filter = 'grayscale(1) brightness(1.3) sepia(0.4) hue-rotate(170deg) saturate(2.2)';

@@ -241,7 +241,7 @@ function paintDeath(L: CharacterLook, f: number): PixelArt {
 
 // ---------------------------------------------------------------- every reader on Marcus's rig
 const HAIR = new Set(['K', 'h', 'H', 'L', 'l']);
-const BALD: Record<string, string> = { K: 'd', h: 's', H: 'S', L: 'S', l: 'W' };
+const BALD: Record<string, string> = { K: 's', h: 'S', H: 'S', L: 'S', l: 'S' };
 const HOOD: Record<string, string> = { K: 'c', h: 'c', H: 'C', L: 'D', l: 'E' };
 /** Reshape a head grid: hair becomes skin (shaved) or cloth (a hood), clipped to a round dome and re-outlined. */
 function reshapeHead(rows: string[], mod: 'bald' | 'hood'): string[] {

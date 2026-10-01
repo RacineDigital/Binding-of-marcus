@@ -1,4 +1,5 @@
 // Marcus (or another character): movement, attacking, animation state and inventory.
+import { WALK_BOB, WALK_FRAMES, WALK_STEP } from '../art/hand/build';
 import type { World } from '../game/world';
 import { Health } from './health';
 import { computeStats, FinalStats, StatMods } from './stats';
@@ -154,9 +155,10 @@ export class Player {
     const before = { x: this.x, y: this.y };
     moveBody(w.room, this, this.vx * dt, this.vy * dt, this.flight ? 'fly' : 'walk', doors);
     const moved = Math.hypot(this.x - before.x, this.y - before.y);
-    const stepBefore = Math.floor(this.walkDist / 14);
+    // a puff of dust each time a foot lands (twice per walk cycle)
+    const half = (WALK_FRAMES / 2) * WALK_STEP, stepBefore = Math.floor((this.walkDist + WALK_STEP) / half);
     this.walkDist += moved;
-    if (!this.flight && Math.floor(this.walkDist / 14) !== stepBefore && Math.hypot(this.vx, this.vy) > 60) {
+    if (!this.flight && Math.floor((this.walkDist + WALK_STEP) / half) !== stepBefore && Math.hypot(this.vx, this.vy) > 60) {
       w.fx.smoke(this.x - this.vx * 0.04, this.y + 1, 1, 'rgba(120,110,105,', 2, 0.35, 3);
     }
     if (moved < 0.05) this.idleT += dt; else this.idleT = 0;
@@ -414,9 +416,10 @@ export class Player {
     const flicker = this.iframes > 0 && Math.floor(this.iframes * 18) % 2 === 0;
     const alpha = flicker ? 0.35 : this.char.id === 'elias' ? 0.85 : 1;
     const moving = Math.hypot(this.vx, this.vy) > 12;
+    const walkFrame = Math.floor(this.walkDist / WALK_STEP) % WALK_FRAMES;
     let body;
     if (this.pickupT > 0) body = s.pickup;
-    else if (moving) body = s.body[this.bodyDir][1 + (Math.floor(this.walkDist / 4.2) % 6)];
+    else if (moving) body = s.body[this.bodyDir][1 + (walkFrame % (s.body[this.bodyDir].length - 1))];
     else body = s.bodyIdle[this.bodyDir][Math.floor(w.time * 1.6) % 2];
     const by = sy - hover;
     const o = { flip: this.bodyDir === 'side' && this.bodyFlip, alpha, sx: this.squashX, sy: this.squashY, flash: this.hurtT > 0.3 ? (this.hurtT - 0.3) * 4 : 0, tint: this.hurtT > 0 ? '#ff2030' : undefined, tintAmt: this.hurtT > 0 ? this.hurtT * 0.8 : 0 };
@@ -427,8 +430,9 @@ export class Player {
     else if (this.happyT > 0 || this.pickupT > 0) hs = 'happy';
     else if (this.blinkT < 0) hs = 'blink';
     const head = s.head[this.headDir][hs];
-    const bob = moving ? (Math.floor(this.walkDist / 4.2) % 3 === 0 ? 1 : 0) : (Math.floor(w.time * 1.6) % 2);
-    const headY = by - 10 + bob * 0.5;
+    // the head rides on the torso: it dips exactly when the body does, a whole pixel, never a half
+    const bob = this.pickupT > 0 ? 0 : moving ? WALK_BOB[walkFrame] : (Math.floor(w.time * 1.6) % 2);
+    const headY = by - 10 + bob;
     const hsq = this.fireFlash > 0 ? { sx: 1.06, sy: 0.92 } : { sx: this.squashX, sy: this.squashY };
     // costume pieces are layered around the body and head
     const acc = this.costume.acc;

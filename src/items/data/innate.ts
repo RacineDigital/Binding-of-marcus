@@ -2,20 +2,10 @@
 // found in a pool, can't be rerolled or traded away, and show in the tracker so you can read them.
 import type { ItemDef } from '../types';
 import { ramp, hex, P } from './kit';
-import { TAU } from '../../core/math';
 
 const SIG = ['quest', 'innate'];
 
 export const INNATE_ITEMS: ItemDef[] = [
-  { id: 'ink_tear', name: 'Ink Tear', kind: 'passive', quality: 0, pools: {}, tags: SIG,
-    pickup: 'Marcus cries ink', effect: ['When you are hurt, you burst into tears: a ring of 8 ink tears flies out from you.'],
-    hooks: { onHurt: (w) => {
-      const pl = w.player;
-      for (let i = 0; i < 8; i++) w.proj.player(w, pl.prof, pl.x, pl.y - 8, 10, (i / 8) * TAU + 0.2, pl.stats.damage, 200, 120, 1);
-      w.fx.ring(pl.x, pl.y - 8, 4, 26, '#4450b0', 0.3);
-    } },
-    icon: (p: P) => { p.ball(9, 11, 4.5, 5, ramp('#4450b0'), { dither: 0.3 }); p.poly([6, 9, 9, 2, 12, 9], hex('#4450b0')); p.set(7, 9, '#c8d0ff'); p.set(8, 8, '#ffffff'); },
-    lore: 'He always cried when he was frightened. Down here, it helps.' },
   { id: 'stitchwork', name: 'Stitchwork', kind: 'passive', quality: 0, pools: {}, tags: SIG,
     pickup: 'Edda sews them together', effect: ['Your needles pierce, and often stitch the enemy they hit to another nearby: the thread carries the damage across.'],
     attack: { chain: 1, chainChance: 0.35 },

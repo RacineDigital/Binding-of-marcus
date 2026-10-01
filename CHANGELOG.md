@@ -2,6 +2,15 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.1.1
+
+- **Smoother walking.** The walk cycle has twice as many frames and a calmer stride, so the legs
+  don't flicker. The body dips once on each footfall, the head now moves exactly with the body
+  (it used to bob on its own beat, half a pixel out), and footstep dust lands when the feet do.
+- **Marcus is the plain default character again**, like Isaac: no signature ability, just the
+  baseline everyone else is measured against.
+- Bram's shaved head is smooth instead of streaky.
+
 ## What's new in 3.1.0: "Readers"
 
 ### Every reader has their own thing
@@ -9,7 +18,6 @@ All ten readers are now drawn on Marcus's hand-drawn sprite, Isaac-style: same b
 hair, colours and accessories (Wren's ginger braid, Edda's black bob with a needle in it, Elias's
 beard and spectacles, Bram's shaved head and bandage, Ozzie's goggles and more). Each also has a
 signature, shown on the Tab screen:
-- **Marcus**, Ink Tear: getting hurt makes him cry a ring of ink tears.
 - **The Blot**, Azazel-style: it can't shoot. A wound tears open in its chest, its eyes blaze, and
   it spews a short, thick beam of ink, then the wound seals over. It also flies on wings of ink.
 - **Ozzie**, Loaded: every shot rolls a die, and a six hits for triple damage.
