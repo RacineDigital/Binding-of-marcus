@@ -220,9 +220,9 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'boss': {
-      if (floor.theme.id === 'lastpage') {
+      if (floor.theme.id === 'lastpage' || floor.theme.id === 'foreword') {
         // a huge bare arena with four pillars to hide behind
-        room.bossId = 'unwritten';
+        room.bossId = floor.theme.bosses[0];
         for (const [c, r] of [[7, 5], [room.cols - 8, 5], [7, room.rows - 6], [room.cols - 8, room.rows - 6]]) room.setOb(c, r, Ob.Pillar);
         break;
       }

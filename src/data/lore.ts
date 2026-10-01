@@ -32,6 +32,13 @@ export const TRUE_ENDING_STORY = [
   '"He found the way out on his own."',
   'The book closed. This time, he was holding it.',
 ];
+/** After the Foreword: the ending for following the light. */
+export const LIGHT_ENDING_STORY = [
+  'Grandfather put the pen down and looked at him for a long time.',
+  'Then he turned to the very first page, and wrote above everything else:',
+  '"For Marcus, who finished it."',
+  'The light came in through the window. It was morning, and it was real.',
+];
 export const ENDING_STORY = [
   'The last page was blank.',
   'Marcus dipped his fingers in the ink and wrote the only ending he knew:',

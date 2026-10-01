@@ -20,4 +20,12 @@ export const LOOKS: Record<string, CharacterLook> = {
     sockL: '#2a2230', sockR: '#2a2230', shoe: '#1f1a20', hairStyle: 'bob', extra: 'none' },
   blot: { skin: '#1a1830', hair: '#0e0c1c', eye: '#f2f0ff', shirt: '#26234a', trim: '#6a64b8', shorts: '#15132a',
     sockL: '#26234a', sockR: '#26234a', shoe: '#0e0c1c', hairStyle: 'blot', extra: 'none' },
+  ozzie: { skin: '#e0b088', hair: '#2a2622', eye: '#1c1628', shirt: '#2f6a3a', trim: '#e8c050', shorts: '#2a2a3a',
+    sockL: '#e8e2d4', sockR: '#e8c050', shoe: '#3a2a22', hairStyle: 'messy', extra: 'goggles' },
+  nell: { skin: '#f0cfa8', hair: '#d8a848', eye: '#2a1a14', shirt: '#c06a2a', trim: '#ffe8a0', shorts: '#3a2a22',
+    sockL: '#e8e2d4', sockR: '#e8e2d4', shoe: '#4a2a1a', hairStyle: 'braid', extra: 'none' },
+  bram: { skin: '#c88a60', hair: '#3a1e10', eye: '#1a1010', shirt: '#7a2a2a', trim: '#c8a060', shorts: '#2a2a30',
+    sockL: '#2a2a30', sockR: '#2a2a30', shoe: '#1a1414', hairStyle: 'bald', extra: 'bandage' },
+  wick: { skin: '#dcd4c4', hair: '#8a7a64', eye: '#1a1410', shirt: '#8a7a5a', trim: '#e0d0a8', shorts: '#4a4030',
+    sockL: '#8a7a5a', sockR: '#8a7a5a', shoe: '#3a3024', hairStyle: 'hood', extra: 'none' },
 };

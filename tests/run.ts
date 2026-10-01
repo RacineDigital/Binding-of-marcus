@@ -175,6 +175,14 @@ console.log('content:', JSON.stringify(counts));
     const lp = generateFloor(run, LASTPAGE_FLOOR);
     const arena = lp.rooms.find((r) => r.type === 'boss');
     ok(lp.theme.id === 'lastpage' && !!arena && arena.cw === 2 && arena.ch === 2 && arena.bossId === 'unwritten', 'last page arena');
+    // the light path: the Dedication and the Foreword
+    const lrun = new Run('light' + i, 'marcus', () => true);
+    lrun.flags.margins = true; lrun.flags.light = true;
+    const ded = generateFloor(lrun, MARGINS_FLOOR);
+    ok(ded.theme.id === 'dedication' && ded.rooms.filter((r) => r.type === 'boss').length >= 3 && ded.rooms.filter((r) => r.flags.trueBoss).length === 1, 'dedication floor');
+    ok(ded.rooms.filter((r) => r.type === 'boss').every((r) => !!getEnemy(r.bossId!)), 'dedication bosses exist');
+    const fw = generateFloor(lrun, LASTPAGE_FLOOR);
+    ok(fw.theme.id === 'foreword' && fw.rooms.find((r) => r.type === 'boss')?.bossId === 'author', 'foreword arena');
   }
   console.log(`margins: ${(bossTotal / 60).toFixed(1)} boss rooms on average, ${fives}/60 with five`);
 }

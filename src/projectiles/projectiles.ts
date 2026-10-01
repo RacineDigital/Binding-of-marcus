@@ -298,6 +298,8 @@ export class Projectiles {
       if ((landed || wall) && Math.random() < 0.35) w.decalSplat(p.x, p.y, col, Math.min(5, p.r * 0.7));
       // arcing shots come down on whatever they were lobbed at
       if (landed && p.lob) w.damageObstacleAt(p.x, p.y, p.dmg);
+      // creep shots leave a puddle where they end, even point-blank
+      if ((p.creep || prof?.creep) && !wall) w.addCreep(p.x, p.y, 9, 'player', p.dmg * 0.35, 1.8);
       w.audio.play('splat', { vol: 0.25, pitch: 1.2 - p.r * 0.02, x: p.x });
       if (prof) {
         if (prof.split > 0 && prof.splitOnExpire && p.depth === 0) this.split(w, p);

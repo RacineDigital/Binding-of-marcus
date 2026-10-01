@@ -241,6 +241,25 @@ export const LASTPAGE_THEME: FloorTheme = {
   pal: { ...MARGINS_THEME.pal, floor: '#e6dcc4', floor2: '#ddd2b8', grout: '#a89878', wall: '#14101c', wall2: '#0c0a12', stain: '#14163a' },
   darkness: 0.3, enemies: { blot: 1 }, bosses: ['unwritten'], music: 'binding', hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
 };
+/**
+ * The light path (the beam after the Binding): the Dedication, a bright twin of the Margins, then
+ * the Foreword, where the Author waits.
+ */
+export const DEDICATION_THEME: FloorTheme = {
+  ...MARGINS_THEME, id: 'dedication', name: 'The Dedication', subtitle: '"For my grandson, who was always braver than me"', chapter: 'Epilogue',
+  floor: 'tile', wall: 'chapel', ambience: 'motes',
+  pal: { floor: '#e8e0cc', floor2: '#d8ccb0', grout: '#a8987a', wall: '#c8bca4', wall2: '#a8987e', mortar: '#5a4a38',
+    rock: '#b8ac94', accent: '#ffd870', stain: '#c8b47a', heap: '#fff4dc', heapKind: 'wax' },
+  ambient: '#100c06', darkness: 0.22, playerLight: 110,
+  enemies: { cherubmoth: 6, choirboy: 5, censer: 5, penitent: 5, sheetghost: 4, wheelwraith: 3, skullorbit: 3, mirrorshade: 3, pagewraith: 3, orderly: 3, ossspider: 3, candlewick: 3 },
+  bosses: ['bellringer', 'choirmaster', 'matron', 'rimebride', 'pendulum', 'thornwife', 'sleepwalker', 'ossuaryknight', 'mothmother', 'wardrobe', 'furnaceheart', 'typesetter', 'grubmother', 'bookbinder'],
+  music: 'chapel',
+};
+export const FOREWORD_THEME: FloorTheme = {
+  ...DEDICATION_THEME, id: 'foreword', name: 'The Foreword', subtitle: 'Before the story, there was the one who wrote it', chapter: 'The Beginning',
+  floor: 'pages', pal: { ...DEDICATION_THEME.pal, floor: '#f4ecd8', floor2: '#ece2c8', grout: '#c8b890' },
+  darkness: 0.15, enemies: { cherubmoth: 1 }, bosses: ['author'], hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
+};
 /** Chapter indices beyond the Binding when a run goes through the portal. */
 export const MARGINS_FLOOR = FINAL_FLOOR + 1, LASTPAGE_FLOOR = FINAL_FLOOR + 2;
 

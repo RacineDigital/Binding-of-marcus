@@ -1,7 +1,8 @@
 // Niche real-life references. Two sets, each with a transformation:
 //   'drain' - Bladee / Drain Gang (Icedancer, Gluee, Red Light, 333, Spiderr, Be Nice 2 Me, Exeter...)
 //   'vamp'  - Playboi Carti (Whole Lotta Red, Die Lit, Vamp Anthem, Magnolia, Sky, Stop Breathing...)
-// plus a handful of internet-era objects (brick phone, pocket pet, lava lamp, Frutiger Aero, Y2K).
+// plus a handful of internet-era objects (brick phone, pocket pet, lava lamp, Frutiger Aero, Y2K),
+// and 'jeffy' - Jeffy (SML): the diaper, the pencil up the nose and the blue bike helmet.
 import type { ItemDef } from '../types';
 import { I, ramp, hex, P, conditional, counter } from './kit';
 import { TAU } from '../../core/math';
@@ -303,6 +304,35 @@ export const REFERENCES: ItemDef[] = [
       p.ball(9, 10, 5, 6, c); p.line(9, 4, 9, 16, c[1]);
       for (const y of [7, 10, 13]) { p.line(4, y, 1, y - 1, hex('#1a3a20')); p.line(14, y, 17, y - 1, hex('#1a3a20')); }
       p.rect(6, 8, 2, 3, hex('#0a1a0a')); p.rect(10, 8, 2, 3, hex('#0a1a0a')); p.set(6, 9, '#8aff8a'); p.set(10, 9, '#8aff8a');
+    } },
+  // ---------------------------------------------------------------- Jeffy
+  { id: 'big_boy_diaper', name: 'Big Boy Diaper', kind: 'passive', quality: 2, pools: { treasure: 0.8, shop: 0.6 }, tags: ['jeffy'],
+    pickup: 'I\'m a big boy!', effect: ['Speed up.', 'Getting hit leaves a puddle that hurts enemies standing in it.'],
+    stats: { speed: 0.15 },
+    hooks: { onHurt: (w) => { w.addCreep(w.player.x, w.player.y, 20, 'player', w.player.stats.damage * 1.2, 5, '#e8d040'); w.hud.toast('Uh oh.', 1); } },
+    icon: (p) => {
+      const c = ramp('#f4f2ec');
+      p.poly([2, 5, 16, 5, 13, 15, 5, 15], c[3]); p.shadeV(2, 5, 15, 11, c, 0.6);
+      p.rect(2, 5, 15, 2, hex('#ffffff')); p.rect(1, 6, 3, 2, hex('#7ab8f0')); p.rect(15, 6, 3, 2, hex('#7ab8f0'));
+      p.set(7, 10, '#f0d860'); p.set(10, 11, '#f0d860'); p.set(8, 12, '#e8c840');
+    } },
+  { id: 'nose_pencil', name: 'Nose Pencil', kind: 'passive', quality: 2, pools: { treasure: 1 }, tags: ['jeffy'],
+    pickup: 'Why\'d you have to do that?', effect: ['Damage up.', 'Your shots are sharpened pencils that pierce the first enemy.'],
+    stats: { damage: 0.6 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' },
+    icon: (p) => {
+      p.line(3, 15, 13, 5, hex('#e8b020'), 3); p.line(4, 15, 14, 5, hex('#f8d050'), 1);
+      p.poly([13, 3, 16, 2, 15, 5], '#e8c8a0'); p.set(15, 3, '#2a2a2a');
+      p.rect(1, 15, 3, 3, hex('#e88a9a')); p.rect(3, 14, 2, 2, hex('#b8b8c0'));
+    } },
+  { id: 'bike_helmet', name: 'Blue Bike Helmet', kind: 'passive', quality: 2, pools: { treasure: 0.8, shop: 0.8 }, tags: ['jeffy'],
+    pickup: 'Safety first', effect: ['+1 brass heart.', 'Your own bombs can\'t hurt you.'],
+    health: { brass: 1 },
+    icon: (p) => {
+      const c = ramp('#2a6ad8');
+      p.ball(9, 9, 7, 6, c); p.rect(2, 10, 15, 3, c[1]);
+      for (const x of [6, 9, 12]) p.line(x, 4, x, 8, c[0]);
+      p.set(6, 6, '#a8d0ff'); p.set(7, 5, '#a8d0ff');
+      p.line(3, 13, 6, 16, hex('#1a1a2a')); p.line(15, 13, 12, 16, hex('#1a1a2a'));
     } },
 ];
 

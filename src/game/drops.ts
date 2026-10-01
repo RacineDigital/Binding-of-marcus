@@ -8,12 +8,12 @@ import { luckChance } from '../projectiles/profile';
 export type DropTable = 'room' | 'small' | 'urn' | 'chest' | 'crimson' | 'boss';
 
 const TABLES: Record<DropTable, [string, number][]> = {
-  room: [['button', 20], ['heart', 16], ['key', 18], ['bomb', 18], ['chest', 6], ['page', 6], ['sweet', 5], ['spark', 3], ['wax', 4], ['charm', 1.5]],
-  small: [['button', 40], ['heart', 20], ['key', 13], ['bomb', 13], ['wax', 5], ['page', 5], ['sweet', 5]],
+  room: [['button', 20], ['heart', 16], ['key', 18], ['bomb', 18], ['chest', 6], ['page', 6], ['sweet', 5], ['spark', 3], ['wax', 4], ['ink', 2.5], ['charm', 1.5]],
+  small: [['button', 40], ['heart', 20], ['key', 13], ['bomb', 13], ['wax', 5], ['ink', 2.5], ['page', 5], ['sweet', 5]],
   urn: [['button', 42], ['heart', 15], ['key', 14], ['bomb', 14], ['sweet', 8], ['page', 7]],
-  chest: [['button', 34], ['key', 19], ['bomb', 19], ['heart', 15], ['page', 8], ['sweet', 8], ['charm', 4]],
+  chest: [['button', 34], ['key', 19], ['bomb', 19], ['heart', 15], ['page', 8], ['sweet', 8], ['ink', 4], ['charm', 4]],
   crimson: [['ink', 20], ['page', 20], ['sweet', 15], ['charm', 10], ['button5', 15], ['brass', 6]],
-  boss: [['heart', 50], ['wax', 20], ['brass', 10], ['button5', 20]],
+  boss: [['heart', 45], ['wax', 18], ['ink', 10], ['brass', 10], ['button5', 20]],
 };
 
 export function rollDropKind(rng: RNG, luck: number, table: DropTable): string | null {
@@ -26,7 +26,7 @@ export function rollDropKind(rng: RNG, luck: number, table: DropTable): string |
 export function resolveKind(rng: RNG, kind: string, luck = 0): { kind: string; data?: any } {
   switch (kind) {
     case 'button': { const r = rng.next(); return { kind: r < luckChance(0.02, luck) ? 'button10' : r < luckChance(0.1, luck) ? 'button5' : 'button' }; }
-    case 'heart': { const r = rng.next(); return { kind: r < 0.02 ? 'gilded' : r < 0.05 ? 'brass' : r < 0.15 ? 'wax' : r < 0.4 ? 'heartHalf' : 'heart' }; }
+    case 'heart': { const r = rng.next(); return { kind: r < 0.02 ? 'gilded' : r < 0.05 ? 'brass' : r < 0.09 ? 'ink' : r < 0.18 ? 'wax' : r < 0.4 ? 'heartHalf' : 'heart' }; }
     case 'key': return { kind: rng.next() < 0.025 ? 'goldKey' : 'key' };
     case 'bomb': { const r = rng.next(); return { kind: r < 0.015 ? 'goldBomb' : r < 0.12 ? 'bomb2' : 'bomb' }; }
     case 'chest': { const r = rng.next(); return { kind: r < 0.04 ? 'chest:crimson' : r < 0.3 ? 'chest:locked' : 'chest:tin' }; }

@@ -65,6 +65,7 @@ export function renderWorld(w: World): void {
     if (f === 3) r.addLight(t.x - camX, t.y - camY, 26, 0.3);
   }
   if (w.exitDoor) drawExitDoor(w, ctx, w.exitDoor.x - camX, w.exitDoor.y - camY, w.exitDoor.t);
+  if (w.lightBeam) drawLightBeam(w, ctx, w.lightBeam.x - camX, w.lightBeam.y - camY, w.lightBeam.t);
   // --------------------------------------------------------------- y-sorted entities
   drawables.length = 0;
   for (const e of w.enemies) drawables.push({ y: e.y + (e.def.boss ? -4 : 0), kind: 0, ref: e });
@@ -335,6 +336,22 @@ function drawPortal(w: World, ctx: CanvasRenderingContext2D, x: number, y: numbe
   ctx.restore();
   w.r.addGlow(x, y, 40, '#7a50ff', 0.5 * k);
   w.r.addLight(x, y, 50, 0.6 * k);
+}
+
+/** A shaft of light falling from above onto a bright spot on the floor, with motes drifting up it. */
+function drawLightBeam(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
+  const k = Math.min(1, t / 1.2), wd = 10 * k;
+  if (wd <= 0.5) return;
+  ctx.save();
+  const g = ctx.createLinearGradient(0, y - 140, 0, y);
+  g.addColorStop(0, 'rgba(255,248,220,0)'); g.addColorStop(1, `rgba(255,248,220,${0.55 * k})`);
+  ctx.fillStyle = g; ctx.fillRect(x - wd, y - 140, wd * 2, 140);
+  ctx.fillStyle = `rgba(255,255,240,${0.6 * k})`; ctx.fillRect(x - wd * 0.35, y - 140, wd * 0.7, 140);
+  ctx.fillStyle = `rgba(255,240,190,${0.5 * k})`; ctx.beginPath(); ctx.ellipse(x, y, wd * 1.3, wd * 0.5, 0, 0, TAU); ctx.fill();
+  for (let i = 0; i < 6; i++) { const m = (w.time * 0.6 + i / 6) % 1; ctx.fillStyle = `rgba(255,255,255,${0.8 * (1 - m) * k})`; ctx.fillRect(Math.round(x + Math.sin(i * 7 + w.time * 2) * wd * 0.6), Math.round(y - m * 120), 1, 1); }
+  ctx.restore();
+  w.r.addGlow(x, y - 30, 60, '#fff0c0', 0.5 * k);
+  w.r.addLight(x, y - 20, 70, 0.8 * k);
 }
 
 /** The way out: a plain door standing in the boss room, with a lit EXIT sign over it. */

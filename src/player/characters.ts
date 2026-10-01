@@ -50,5 +50,34 @@ export const CHARACTERS: CharacterDef[] = [
     profile: { creep: true, shape: 'void' },
     unlock: 'beat_final', unlockHint: 'Finish the story once.', passive: 'Ink hearts only. Shots trail damaging ink.',
   },
+  {
+    id: 'ozzie', name: 'Ozzie', title: 'The Gambler', look: 'ozzie',
+    desc: 'The neighbour\'s boy, who never once said no to a bet. He keeps a six-sided die in his pocket and trusts it more than his eyes.',
+    base: { damage: 3.2, tears: 2.73, range: 230, shotSpeed: 1, speed: 1.05, luck: 2 },
+    health: { red: 2, wax: 2 }, items: ['old_dice'], buttons: 7, keys: 1, bombs: 1,
+    unlock: 'beat_ch3', unlockHint: 'Defeat the Chapter III boss.', passive: 'Starts with the D6 and 2 luck. Not much health.',
+  },
+  {
+    id: 'nell', name: 'Nell', title: 'The Lamplighter', look: 'nell',
+    desc: 'Marcus\'s older sister. She came down after him with Grandmother\'s magnifying glass and a lamp, and she is furious about it.',
+    base: { damage: 3.3, tears: 2.5, range: 220, shotSpeed: 1, speed: 1, luck: 0 },
+    health: { red: 3 }, items: ['burning_glass', 'pocket_lantern'], buttons: 0, keys: 1, bombs: 1,
+    unlock: 'beat_ch5', unlockHint: 'Defeat the Chapter V boss.', passive: 'Starts with the Burning Glass (a beam) and the Pocket Lantern.',
+  },
+  {
+    id: 'bram', name: 'Bram', title: 'The Bruiser', look: 'bram',
+    desc: 'The boy from the end of the street. He does not throw things. He hits them, with the bone folder he took from the bindery.',
+    base: { damage: 4.2, tears: 2.2, range: 200, shotSpeed: 0.95, speed: 0.88, luck: -1 },
+    health: { red: 4 }, items: ['bone_folder', 'tin_heart'], buttons: 0, keys: 0, bombs: 2,
+    unlock: 'flawless_boss', unlockHint: 'Defeat a boss without getting hit.', passive: 'Starts with the Bone Folder (melee) and the Tin Heart. Slow and sturdy.',
+  },
+  {
+    id: 'wick', name: 'Wick', title: 'The Moth Child', look: 'wick',
+    desc: 'Something that lived in the lampshade, raised by moths. It floats, it follows the light, and its moths follow it.',
+    base: { damage: 2.8, tears: 3.0, range: 240, shotSpeed: 1.05, speed: 1.05, luck: 0 },
+    health: { red: 2, wax: 2 }, items: ['moth_friend', 'moth_jar'], buttons: 0, keys: 1, bombs: 1,
+    profile: { shape: 'moth' }, flight: true,
+    unlock: 'transform_moth', unlockHint: 'Become Mothkin.', passive: 'Flies. Starts with the Lampmoth and a Jar of Moths.',
+  },
 ];
 export const charById = (id: string) => CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];

@@ -11,14 +11,14 @@ import { Beam } from '../../projectiles/weapons';
 import { getItem } from '../registry';
 import type { RoomType } from '../../rooms/room';
 
-function poolForRoom(t: RoomType): PoolId {
+export function poolForRoom(t: RoomType): PoolId {
   switch (t) {
     case 'shop': return 'shop'; case 'boss': return 'boss'; case 'deal': return 'deal'; case 'blessing': return 'blessing';
     case 'library': return 'library'; case 'secret': case 'supersecret': return 'secret'; case 'cursed': return 'curse';
     case 'arcade': return 'arcade'; case 'challenge': return 'challenge'; default: return 'treasure';
   }
 }
-function reroll(w: World): boolean {
+export function reroll(w: World): boolean {
   let n = 0;
   for (const p of w.pickups) {
     if (!p.pedestal || !p.data.id) continue;
@@ -33,7 +33,7 @@ function reroll(w: World): boolean {
 }
 
 export const ACTIVES: ItemDef[] = [
-  { id: 'old_dice', name: 'Old Dice', kind: 'active', quality: 4, pools: { treasure: 0.5, secret: 1 },
+  { id: 'old_dice', name: 'The D6', kind: 'active', quality: 4, pools: { treasure: 0.5, secret: 1 }, tags: ['dice'],
     pickup: 'Reroll your fate', effect: ['Rerolls every item pedestal in the room into a new item.'], active: { charge: 6, type: 'room', use: reroll },
     icon: (p) => { const c = ramp('#e8dcc0'); p.rect(3, 4, 12, 12, c[2]); p.rect(3, 4, 12, 2, c[4]); p.rect(14, 5, 1, 11, c[0]); for (const [x, y] of [[5, 7], [9, 10], [12, 13], [12, 7], [5, 13]]) p.set(x, y, '#1a1010'); } },
   { id: 'stopped_watch', name: 'Stopped Watch', kind: 'active', quality: 3, pools: { treasure: 0.8 }, tags: ['clock'], unlock: 'transform_clock',

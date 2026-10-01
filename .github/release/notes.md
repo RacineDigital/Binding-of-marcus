@@ -1,3 +1,19 @@
+## What's new in 2.6 (beta)
+
+- **Jeffy.** Find the Big Boy Diaper, the Nose Pencil and the Blue Bike Helmet to become Jeffy:
+  each piece shows on you, and together you're shirtless in a diaper and helmet with a pencil up
+  your nose. Getting hit throws a tantrum of pencils.
+- **Every die from Isaac:** D1, D4, D6, D7, D8, D10, D12, D20, D100, Eternal D6, Spindown Dice and
+  D Infinity, plus a D9 (Isaac never had one: it rerolls your charms). Old Dice is now the D6.
+- **Three endings after the Binding.** Next to the EXIT and the ink tear, a beam of light now goes
+  up to the Dedication and the Foreword, where the Author waits. Each path has its own ending.
+- **Four new characters who start with items:** Ozzie (the D6, 2 luck), Nell (the Burning Glass and
+  the Pocket Lantern), Bram (melee with the Bone Folder, plus the Tin Heart) and Wick (flies, with
+  two moths). Characters you've won with get a gold star.
+- **More ink hearts** in room drops, chests, boss drops and heart rolls.
+- Creep shots leave a puddle where they land; refighting a room with the D7 rolls a fresh reward;
+  whole-number stats read +1 instead of +1.0; the Tab screen shows which face D Infinity is on.
+
 ## What's new in 2.5 (beta)
 
 - **Beyond the Binding.** Finish the story once, and next time the Binding opens two ways on: an

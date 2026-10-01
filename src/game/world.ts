@@ -71,6 +71,8 @@ export class World {
   trapdoor: { x: number; y: number; t: number; kind: 'down' | 'light' | 'portal'; armed?: boolean } | null = null;
   /** After the Binding (once the story is finished): the door that ends the run as a win. */
   exitDoor: { x: number; y: number; t: number } | null = null;
+  /** After the Binding: a beam of light up to the Dedication. */
+  lightBeam: { x: number; y: number; t: number } | null = null;
   ambient: { x: number; y: number; vx: number; vy: number; life: number; kind: number }[] = [];
   telegraphs: { x: number; y: number; r: number; t: number; dur: number; color: string }[] = [];
   corpses: { e: Enemy; t: number; dur: number }[] = [];
@@ -371,6 +373,13 @@ export class World {
     this.roomHit = true;
     if (this.room.type === 'boss') this.run.flags.bossHit = true;
     if (!o.redFirst) this.itemHook('onHurt');
+    // Jeffy throws a tantrum: pencils everywhere and a burst of speed
+    if (pl.transformations.has('jeffy') && !res.dead) {
+      for (let i = 0; i < 14; i++) this.proj.player(this, pl.prof, pl.x, pl.y - 6, 10, (i / 14) * TAU, pl.stats.damage * 1.3, 240, 170, 1);
+      pl.clearTemp((t) => t.id === 'tantrum'); pl.addTemp({ id: 'tantrum', time: 3, stats: { speed: 0.4, tearsMult: 1.4 } });
+      this.hud.toast(['WHY\'D YOU HAVE TO DO THAT?!', 'DADDY!', 'I\'M A BIG BOY!', 'THAT\'S MINE!'][Math.floor(Math.random() * 4)], 1.2);
+      this.audio.play('bossRoar', { x: pl.x, pitch: 2.2, vol: 0.4 });
+    }
     if (res.dead) this.onPlayerDied(source);
     return true;
   }
@@ -448,7 +457,7 @@ export class World {
       if (dist2(x, y, e.x, e.y - e.hitY * 0.5) < (r + e.r) * (r + e.r)) this.damageEnemy(e, dmg, { ang: Math.atan2(e.y - y, e.x - x), knock: small ? 1 : 3, source: 'explosion' });
     }
     const pl = this.player;
-    if (!o.friendly && !o.noPlayer && dist2(x, y, pl.x, pl.y) < (r + 4) * (r + 4) && !this.player.has('blast_apron')) this.hurtPlayer(2, 'an explosion');
+    if (!o.friendly && !o.noPlayer && dist2(x, y, pl.x, pl.y) < (r + 4) * (r + 4) && !this.player.has('blast_apron') && !(o.bomb && this.player.has('bike_helmet'))) this.hurtPlayer(2, 'an explosion');
     // obstacles
     const room = this.room;
     const [c0, r0] = room.cellAt(x - r, y - r), [c1, r1] = room.cellAt(x + r, y + r);

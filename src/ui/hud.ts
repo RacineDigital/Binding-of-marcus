@@ -18,6 +18,7 @@ import { sweetName, dealCost, dealCostText } from '../game/roomflow';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { drawHitboxes } from '../game/worldrender';
 import { ticketFor, doorOdds } from '../game/bargain';
+import { diceFace } from '../items/data/dice';
 import { bindLabel, fmtKeys } from '../core/input';
 
 interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null }
@@ -244,7 +245,7 @@ export class Hud {
       const it = getItem(pl.active);
       if (it) {
         head(`ACTIVE  ·  ${bindLabel('active')}`);
-        const ch = it.active ? `charge ${Math.min(pl.charge, it.active.charge)}/${it.active.charge}` : '';
+        const ch = (it.active ? `charge ${Math.min(pl.charge, it.active.charge)}/${it.active.charge}` : '') + (it.id === 'd_infinity' ? `  ·  showing ${diceFace(w)}` : '');
         entry(itemIconCanvas(it.id), it.name, [it.pickup, ch].filter(Boolean).join('  ·  '), describeItem(it));
       }
     }
@@ -252,9 +253,10 @@ export class Hud {
     if (pl.charms.length) {
       head(`CHARM${pl.charms.length > 1 ? 'S' : ''}  ·  hold ${bindLabel('drop')} to drop`);
       for (const id of pl.charms) {
+        // charms: their own effect text (their stat lines would only repeat it)
         const it = getItem(id), c = getConsumable(id) as any;
-        if (it) entry(itemIconCanvas(id), it.name, it.pickup, describeItem(it));
-        else if (c) entry(itemIconCanvas(id), c.name, c.desc ?? '', plain(c.effect ?? []));
+        if (c) entry(itemIconCanvas(id), c.name, c.desc ?? '', plain(c.effect ?? []));
+        else if (it) entry(itemIconCanvas(id), it.name, it.pickup, describeItem(it));
       }
     }
     // pocket: pages and sweets

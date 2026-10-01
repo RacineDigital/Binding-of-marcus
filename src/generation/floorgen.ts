@@ -3,7 +3,7 @@
 import { RNG } from '../core/rng';
 import { MAP_SIZE } from '../core/constants';
 import { RoomData, RoomType, Side, DoorKind, opposite } from '../rooms/room';
-import { MARGINS_THEME, LASTPAGE_THEME, MARGINS_FLOOR, LASTPAGE_FLOOR, FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel } from '../data/floors';
+import { MARGINS_THEME, LASTPAGE_THEME, DEDICATION_THEME, FOREWORD_THEME, MARGINS_FLOOR, LASTPAGE_FLOOR, FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel } from '../data/floors';
 import type { Run, Floor } from '../game/run';
 import { populateRoom } from './populate';
 import type { SaveManager } from '../save/save';
@@ -61,8 +61,8 @@ export function themeAt(seed: string, fi: number): FloorTheme {
   return fi < FINAL_FLOOR ? order[fi] : chapterOrder(seed + ':loop' + Math.floor(fi / FINAL_FLOOR))[fi % FINAL_FLOOR];
 }
 export function pickTheme(run: Run, fi: number): FloorTheme {
-  if (run.flags.margins && fi === MARGINS_FLOOR) return MARGINS_THEME;
-  if (run.flags.margins && fi === LASTPAGE_FLOOR) return LASTPAGE_THEME;
+  if (run.flags.margins && fi === MARGINS_FLOOR) return run.flags.light ? DEDICATION_THEME : MARGINS_THEME;
+  if (run.flags.margins && fi === LASTPAGE_FLOOR) return run.flags.light ? FOREWORD_THEME : LASTPAGE_THEME;
   return themeAt(run.seed, fi);
 }
 
@@ -70,7 +70,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const theme = pickTheme(run, fi);
   const base = new RNG(`${run.seed}:floor${fi}`);
   const isFinal = fi === FINAL_FLOOR;
-  const special = theme === MARGINS_THEME ? 'margins' : theme === LASTPAGE_THEME ? 'lastpage' : null;
+  const special = theme === MARGINS_THEME || theme === DEDICATION_THEME ? 'margins' : theme === LASTPAGE_THEME || theme === FOREWORD_THEME ? 'lastpage' : null;
   const target = isFinal ? 7 : special === 'margins' ? 24 + base.int(0, 2) : Math.min(19, 7 + Math.floor(fi * 1.5) + base.int(0, 2));
   let c: Ctx | null = null;
   for (let attempt = 0; attempt < 400; attempt++) {

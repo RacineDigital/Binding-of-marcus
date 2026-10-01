@@ -11,6 +11,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'beat_ch7', name: 'Through the Hollow', desc: 'Defeat the Chapter VII boss.', unlocks: 'Unlocks the Ossuary Key.' },
   { id: 'beat_final', name: 'The Binding Holds', desc: 'Finish the story.', unlocks: 'Unlocks The Blot, the Challenges and Second Edition (Hard mode).' },
   { id: 'beat_unwritten', name: 'The Last Page', desc: 'Go through the tear after the Binding and defeat what waits on the Last Page.', unlocks: 'Your name in the margins, in gold.', hidden: true },
+  { id: 'beat_author', name: 'The Foreword', desc: 'Follow the light after the Binding and face the one who wrote it all.', unlocks: 'A dedication, in your name.', hidden: true },
   { id: 'flawless_boss', name: 'Untouched', desc: 'Defeat a boss without taking damage.', unlocks: 'Unlocks the Glass Heart.' },
   { id: 'secrets_10', name: 'Hollow Walls', desc: 'Find 10 secrets.', unlocks: 'Unlocks the Chalk Line.' },
   { id: 'transform_moth', name: 'Mothkin', desc: 'Become Mothkin.', unlocks: 'Unlocks the Moth Cocoon.', hidden: true },
@@ -47,8 +48,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'fast_floor', name: 'Quick Study', desc: 'Clear a chapter in under 90 seconds.', unlocks: 'Unlocks Shoota.' },
   { id: 'all_bosses', name: 'Bestiary', desc: 'Defeat every boss at least once.', unlocks: 'Unlocks Rockstar Made.' },
   { id: 'daily_first', name: 'Morning Paper', desc: 'Play a Daily Run.', unlocks: 'Unlocks Red Light.' },
+  { id: 'win_ozzie', name: 'House Edge', desc: 'Finish the story as Ozzie.', unlocks: 'A gold star on Ozzie\'s card.' },
+  { id: 'win_nell', name: 'Lights On', desc: 'Finish the story as Nell.', unlocks: 'A gold star on Nell\'s card.' },
+  { id: 'win_bram', name: 'Heavy Hitter', desc: 'Finish the story as Bram.', unlocks: 'A gold star on Bram\'s card.' },
+  { id: 'win_wick', name: 'Into the Lamp', desc: 'Finish the story as Wick.', unlocks: 'A gold star on Wick\'s card.' },
   { id: 'win_hard', name: 'Second Edition', desc: 'Finish the story in Second Edition (Hard).', unlocks: 'Unlocks the Narcissist.' },
   { id: 'transform_drain', name: 'Drainer', desc: 'Become the Drainer.', unlocks: 'Unlocks the Drain Butterfly.', hidden: true },
+  { id: 'transform_jeffy', name: 'Jeffy', desc: 'Become Jeffy.', unlocks: 'A pencil, permanently, in your heart.', hidden: true },
   { id: 'transform_vamp', name: 'King Vamp', desc: 'Become King Vamp.', unlocks: 'Unlocks Whole Lotta Red.', hidden: true },
 ];
 export interface ChallengeDef { id: string; name: string; desc: string; char: string; rules: string[]; unlock?: string; goal: number }

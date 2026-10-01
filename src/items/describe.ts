@@ -13,7 +13,7 @@ export function statLines(stats?: StatMods): DescLine[] {
     if (!v) continue;
     const label = STAT_LABEL[k];
     if (k === 'damageMult' || k === 'tearsMult') { if (v !== 1) out.push({ text: `${label} x${fmt1(v)}`, color: v > 1 ? 'up' : 'down' }); continue; }
-    const shown = k === 'range' ? `${v > 0 ? '+' : ''}${Math.round(v)}` : `${v > 0 ? '+' : ''}${fmt1(v)}`;
+    const shown = k === 'range' || k === 'luck' || Number.isInteger(v) && Math.abs(v) >= 1 ? `${v > 0 ? '+' : ''}${Math.round(v)}` : `${v > 0 ? '+' : ''}${fmt1(v)}`;
     out.push({ text: `${label} ${shown}`, color: v > 0 ? 'up' : 'down' });
   }
   return out;

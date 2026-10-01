@@ -110,15 +110,20 @@ Menus also work with the mouse: hover, click and scroll.
 
   `npm run test:synergy` checks every item with every attack mode and every pair of modes, checks
   that each shot modifier's effect really shows up in every mode, and runs hundreds of random builds.
-- **173 items:** 123 passives, 29 actives and 21 familiars. Each one is a data definition with stat
+- **189 items:** 127 passives, 41 actives and 21 familiars. Each one is a data definition with stat
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
 - **Reference items.** A Drain Gang / Bladee set (Icedancer, Gluee, Red Light, 333, Exeter...), a
   Playboi Carti set (Whole Lotta Red, Die Lit, Vamp Anthem, Magnolia, Sky, Stop Breathing...) and
-  internet-era objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug).
-- **Nine transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
-  thread, bone, void, drain, vamp) triggers one.
+  internet-era objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug), plus Jeffy's
+  Big Boy Diaper, Nose Pencil and Blue Bike Helmet.
+- **The dice.** Every die from Isaac: D1, D4, the D6, D7, D8, D10, D12, D20, D100, Eternal D6,
+  Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
+  charms.
+- **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
+  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look. Jeffy
+  throws a tantrum of pencils whenever he gets hit.
 - **Twenty chapters in a different order every run.** A run is seven chapters drawn from twenty
   (never two from the same family), then The Binding. The first chapter is always a gentle one,
   and no chapter shows up more than one step earlier than its usual depth. Enemy health and room
@@ -133,7 +138,7 @@ Menus also work with the mouse: hover, click and scroll.
 
   Every chapter has its own floor and wall painter, palette, ambient particles, lighting, enemy
   pool, boss pool and music.
-- **45 enemy types and 21 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
+- **45 enemy types and 22 bosses.** Each enemy has a telegraphed attack. Each boss has an intro
   card, several attack patterns, phase changes and a death sequence. Every chapter has at least two
   bosses that fit it: the Thornwife in the Greenhouse, the Rime Bride in the Frozen Cistern, the
   Pendulum in the Clocktower, the Typesetter in the Print Shop and the Bookbinder in the Binding
@@ -144,7 +149,9 @@ Menus also work with the mouse: hover, click and scroll.
   huge chapter of the hardest creatures with five identical boss rooms, one to three treasure rooms
   and a shop. Every boss there drops a boss item, but only one of them opens the way to **The Last
   Page**, a huge arena where **The Unwritten** waits: it rewrites itself into the shapes of the
-  bosses you've beaten (and fights like them) before throwing everything at once.
+  bosses you've beaten (and fights like them) before throwing everything at once. A third way,
+  a **beam of light**, goes up to **The Dedication** and **The Foreword**, where **The Author**
+  waits. Each path has its own ending: the EXIT, the ink, and the light.
 - **Seeded floors.** Floors are built on a hidden 13×13 grid with 1×1, 2×1, 1×2 and 2×2 rooms.
   Each floor places:
   - a boss room at the furthest dead end;
@@ -185,7 +192,9 @@ Menus also work with the mouse: hover, click and scroll.
 - **Modes.** Normal; Second Edition (Hard) and Endless (the story keeps going after The Binding,
   harder each chapter), both unlocked by finishing the story; and a Daily Run with the same seed and
   reader for everyone that day. Every run ends with a score and a personal best.
-- **Five characters:** Marcus, Wren, Edda, Elias and The Blot. **Five challenge runs.**
+- **Nine characters:** Marcus, Wren, Edda, Elias, The Blot, and four who start with items: Ozzie
+  (the D6), Nell (the Burning Glass and a lantern), Bram (a bone folder and a tin heart) and Wick
+  (flies, with two moths). **Five challenge runs.**
 - **Audio.** Around 80 layered sound effects are rendered offline at startup with variants, pitch
   jitter, stereo panning, voice limiting and a shared reverb. The soundtrack is rendered offline in
   the background: synthesized distorted guitars (double-tracked, palm-muted chugs and power chords),

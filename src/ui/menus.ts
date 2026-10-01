@@ -13,7 +13,7 @@ import { describeItem } from '../items/describe';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
 import { formatSeed, normalizeSeed, RNG } from '../core/rng';
 import { dailySeed, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
-import { INTRO_STORY, ENDING_STORY, TRUE_ENDING_STORY } from '../data/lore';
+import { INTRO_STORY, ENDING_STORY, TRUE_ENDING_STORY, LIGHT_ENDING_STORY } from '../data/lore';
 import { FINAL_FLOOR } from '../data/floors';
 import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
@@ -340,6 +340,8 @@ export class MenuSystem {
         // info
         const x0 = 190;
         text(ctx, un ? c.name : '???', x0, 70, 20, INK, 'left', FONT_TITLE, 400, false);
+        // a gold star once the story has been finished with this reader
+        if (un && (c.id === 'marcus' ? g.save.isUnlocked('beat_final') : g.save.isUnlocked('win_' + c.id))) text(ctx, '★', x0 + measure(ctx, c.name, 20, FONT_TITLE, 400) + 6, 66, 12, '#c89a2a', 'left', FONT_BODY, 700, false);
         text(ctx, un ? c.title : 'Locked', x0, 82, 8, '#8a3a2a', 'left', FONT_BODY, 600, false);
         const lines = wrap(ctx, un ? c.desc : c.unlockHint, 7.5, 220);
         lines.forEach((l, i) => text(ctx, l, x0, 96 + i * 9, 7.5, INK2, 'left', FONT_BODY, 600, false));
@@ -359,6 +361,8 @@ export class MenuSystem {
           for (let i = 0; i < (c.health.ink ?? 0) / 2; i++) { ctx.drawImage(H.ink.canvas, hx, hy); hx += 11; }
           for (let i = 0; i < (c.health.brass ?? 0); i++) { ctx.drawImage(H.brass.canvas, hx, hy); hx += 11; }
           text(ctx, c.passive, x0, hy + 20, 7, '#4a3a6a', 'left', FONT_BODY, 600, false);
+          // starting items, shown as their icons
+          c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), x0 + 240 - (c.items.length - i) * 18, hy - 4, 16, 16); });
         }
         // seed & start
         const opts = [`Mode: ${MODE_NAMES[modes[mi]]}`, `Seed: ${editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random'}`, 'Begin'];
@@ -453,9 +457,9 @@ export class MenuSystem {
     const seen = new Set(g.save.data.itemsSeen);
     // What you've found comes first, gathered into sets (a transformation's items, then actives,
     // familiars and the rest); everything still missing waits at the end as silhouettes.
-    const SET_TAGS = ['vamp', 'drain', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
+    const SET_TAGS = ['vamp', 'drain', 'jeffy', 'dice', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
     const setOf = (it: typeof all[number]) => SET_TAGS.find((t) => it.tags?.includes(t)) ?? (it.kind === 'active' ? 'active' : it.kind === 'familiar' ? 'familiar' : 'curio');
-    const SET_NAME = (k: string) => k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
+    const SET_NAME = (k: string) => k === 'dice' ? 'The Dice' : k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
     const itemGroups: GridGroup[] = [];
     for (const k of [...SET_TAGS, 'active', 'familiar', 'curio']) {
       const inSet = all.filter((it) => setOf(it) === k);
@@ -936,7 +940,7 @@ export class MenuSystem {
       update(keys) { if (this.t > 4 && keys.includes('confirm')) g.fadeTo(() => g.quitToMenu(), 0.8); },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        (w.run.flags.margins && w.run.floorIndex > FINAL_FLOOR ? TRUE_ENDING_STORY : ENDING_STORY).forEach((l, i) => { ctx.globalAlpha = clamp((this.t - i * 2.2) * 1, 0, 1); text(ctx, l, VIEW_W / 2, 60 + i * 22, 11, '#efe2c8', 'center', i === 2 ? FONT_TITLE : FONT_BODY, i === 2 ? 400 : 600); });
+        (w.run.flags.margins && w.run.floorIndex > FINAL_FLOOR ? (w.run.flags.light ? LIGHT_ENDING_STORY : TRUE_ENDING_STORY) : ENDING_STORY).forEach((l, i) => { ctx.globalAlpha = clamp((this.t - i * 2.2) * 1, 0, 1); text(ctx, l, VIEW_W / 2, 60 + i * 22, 11, '#efe2c8', 'center', i === 2 ? FONT_TITLE : FONT_BODY, i === 2 ? 400 : 600); });
         ctx.globalAlpha = clamp(this.t - 9, 0, 1);
         text(ctx, 'THE END', VIEW_W / 2, 170, 24, '#c8a878', 'center', FONT_TITLE, 400);
         text(ctx, `${fmtTime(w.run.stats.time)} · ${w.run.stats.kills} enemies · Seed ${formatSeed(w.run.seed)}`, VIEW_W / 2, 186, 8, COL.dim, 'center');

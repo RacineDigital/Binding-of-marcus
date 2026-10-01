@@ -11,14 +11,16 @@ export type Acc =
   | 'ring' | 'thimble' | 'bracelet' | 'lantern'
   | 'breastplate' | 'apron' | 'skeletonKey' | 'keyRing'
   | 'wingsMoth' | 'wingsSoot' | 'wingsWax' | 'wingsIce' | 'wingsQueen' | 'wingsAngel'
-  | 'capeVamp' | 'capeCobweb' | 'capeJacket';
+  | 'capeVamp' | 'capeCobweb' | 'capeJacket'
+  | 'bikeHelmet' | 'nosePencil' | 'diaper';
 
 type Layer = 'back' | 'body' | 'hand' | 'head' | 'face';
 const LAYER: Record<Acc, Layer> = {
   crown: 'head', quill: 'head', paperCrown: 'head', waxCrown: 'head', halo: 'head', haloWhite: 'head', antennae: 'head', flower: 'head', clover: 'head',
   glasses: 'face', monocle: 'face', paperMask: 'face', teeth: 'face', pipe: 'face', visor: 'face', hollowEyes: 'face',
   ring: 'hand', thimble: 'hand', bracelet: 'hand', lantern: 'hand',
-  breastplate: 'body', apron: 'body', skeletonKey: 'body', keyRing: 'body',
+  breastplate: 'body', apron: 'body', skeletonKey: 'body', keyRing: 'body', diaper: 'body',
+  bikeHelmet: 'head', nosePencil: 'face',
   wingsMoth: 'back', wingsSoot: 'back', wingsWax: 'back', wingsIce: 'back', wingsQueen: 'back', wingsAngel: 'back',
   capeVamp: 'back', capeCobweb: 'body', capeJacket: 'back',
 };
@@ -33,6 +35,7 @@ export const ITEM_ACC: Record<string, Acc[]> = {
   grandpas_pipe: ['pipe'], cold_visions: ['visor'], hollow_eyes: ['hollowEyes'],
   wax_crown: ['waxCrown'], ch_paper_crown: ['paperCrown'], wax_halo: ['halo'], angel_333: ['haloWhite'],
   magnolia: ['flower'], four_leaf: ['clover'],
+  big_boy_diaper: ['diaper'], nose_pencil: ['nosePencil'], bike_helmet: ['bikeHelmet'],
   brass_plate: ['breastplate'], blast_apron: ['apron'], skeleton_key: ['skeletonKey'], key_ring: ['keyRing'],
   moth_wings_rev: ['wingsMoth'], soot_wings: ['wingsSoot'], wax_wings: ['wingsWax'], drain_butterfly: ['wingsIce'],
   moth_queen_wings: ['wingsQueen'], cobweb_cloak: ['capeCobweb'], dust_jacket: ['capeJacket'],
@@ -54,6 +57,10 @@ export const ITEM_OUTFIT: Record<string, Outfit> = {
 
 /** Every transformation is a new look (they win over item outfits). */
 export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
+  // Jeffy: no shirt, just the diaper, the helmet and the pencil
+  jeffy: { id: 'jeffy', name: 'Jeffy', acc: ['bikeHelmet', 'nosePencil', 'diaper'], pal: {
+    c: '#b8876a', C: '#d8a684', D: '#e8b896', E: '#f1c7a1', R: '#f1c7a1', q: '#c8987a',
+    j: '#dcdcd6', J: '#f4f4f0' } },
   vamp: { id: 'vamp', name: 'King Vamp', acc: ['crown', 'capeVamp'], pal: {
     S: '#ece0e0', s: '#cbbcc0', d: '#9c8890', W: '#fff6f6', v: '#e01828', r: '#d8a0a8', m: '#5a0a18',
     K: '#06040a', h: '#0e0a12', H: '#16121c', L: '#5a1020', l: '#a01830',
@@ -178,7 +185,22 @@ const PAINT: Record<Acc, (f: Frame) => void> = {
   antennae: (f) => { const p = H(f), w = Math.round(Math.sin(f.t * 4)); p(6, -1, '#4a3a2a'); p(5, -2, '#4a3a2a'); p(4 + w, -3, '#8a7656', 2, 1); p(13, -1, '#4a3a2a'); p(14, -2, '#4a3a2a'); p(14 - w, -3, '#8a7656', 2, 1); },
   flower: (f) => { const p = H(f); p(15, 3, '#f0a8c8', 2, 2); p(14, 4, '#f8d0e0'); p(17, 4, '#f8d0e0'); p(15, 2, '#f8d0e0'); p(15, 5, '#f8d0e0'); p(15, 3, '#ffe890'); },
   clover: (f) => { const p = H(f); p(3, 4, '#4a9a4a', 2, 2); p(5, 3, '#5ab05a', 2, 2); p(4, 2, '#4a9a4a'); p(5, 6, '#2a6a2a'); },
+  bikeHelmet: (f) => {
+    // a blue bicycle helmet with vents, and the chin strap
+    const p = H(f), b = '#2a6ad8', d = '#1c4aa0', l = '#7ab0ff';
+    p(3, 0, b, 14, 4); p(2, 2, b, 1, 4); p(17, 2, b, 1, 4); p(4, -1, b, 12, 1); p(6, -2, d, 8, 1);
+    p(3, 4, d, 14, 1);
+    if (f.hdir !== 'up') { for (const x of [6, 10, 14]) p(x, 0, d, 1, 3); p(5, 0, l, 2, 1); }
+    else for (const x of [5, 8, 11, 14]) p(x, 0, d, 1, 4);
+    if (f.hdir === 'down') { p(3, 5, '#1a1a2a', 1, 9); p(16, 5, '#1a1a2a', 1, 9); }
+    else if (f.hdir === 'side') p(8, 5, '#1a1a2a', 1, 9);
+  },
   // ---------------------------------------------------------------- face
+  nosePencil: (f) => {
+    if (f.hdir === 'up') return; const p = H(f);
+    if (f.hdir === 'down') { p(10, 15, '#e8b020', 1, 3); p(11, 15, '#c89010', 1, 3); p(10, 18, '#b8b8c0', 2, 1); p(10, 19, '#e88a9a', 2, 1); }
+    else { p(17, 15, '#e8c8a0', 2, 1); p(19, 14, '#e8b020', 3, 1); p(19, 15, '#c89010', 3, 1); p(22, 14, '#b8b8c0', 1, 2); p(23, 14, '#e88a9a', 1, 2); }
+  },
   glasses: (f) => {
     if (f.hdir === 'up') return; const p = H(f), c = '#c8a040', g = 'rgba(200,230,255,0.35)';
     if (f.hdir === 'down') { for (const x of [3, 12]) { p(x, 11, c, 5, 1); p(x, 15, c, 5, 1); p(x, 12, c, 1, 3); p(x + 4, 12, c, 1, 3); p(x + 1, 12, g, 3, 3); } p(8, 12, c, 4, 1); }
@@ -230,6 +252,7 @@ const PAINT: Record<Acc, (f: Frame) => void> = {
   },
   // ---------------------------------------------------------------- body
   breastplate: (f) => { if (f.bdir === 'up') return; const p = B(f), x = f.bdir === 'side' ? 7 : 6; p(x, 3, '#b8862a', 6, 4); p(x + 1, 3, '#e8c050', 4, 1); p(x + 1, 7, '#8a5a1a', 4, 1); p(x + 2, 4, '#f8e08a'); },
+  diaper: (f) => { const p = B(f), x = f.bdir === 'side' ? 6 : 4; p(x, 8, '#f4f4f0', 10, 4); p(x, 8, '#ffffff', 10, 1); p(x + 1, 11, '#d8d8d0', 8, 1); if (f.bdir === 'down') { p(x, 9, '#7ab8f0', 1, 2); p(x + 9, 9, '#7ab8f0', 1, 2); } },
   apron: (f) => { if (f.bdir === 'up') return; const p = B(f), x = f.bdir === 'side' ? 8 : 5; p(x, 4, '#6a4a2a', 8, 6); p(x + 1, 3, '#4a3218', 6, 1); p(x + 2, 6, '#8a6a3a', 4, 1); },
   skeletonKey: (f) => { const p = B(f), x = f.bdir === 'side' ? 6 : 12; p(x, 8, '#e8e0cc', 1, 4); p(x - 1, 7, '#e8e0cc', 3, 1); p(x + 1, 11, '#e8e0cc'); },
   keyRing: (f) => { const p = B(f), x = f.bdir === 'side' ? 6 : 12; p(x, 8, '#c8a040', 2, 2); p(x + 1, 10, '#d8d0b0', 1, 2); p(x - 1, 10, '#b8a888', 1, 2); },

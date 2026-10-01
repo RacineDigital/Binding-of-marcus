@@ -135,6 +135,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
   w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: room.flags.trap.kind ?? 'down' } : null;
   w.exitDoor = room.flags.exit ? { x: room.flags.exit.x, y: room.flags.exit.y, t: 2 } : null;
+  w.lightBeam = room.flags.beam ? { x: room.flags.beam.x, y: room.flags.beam.y, t: 2 } : null;
   w.roomTime = 0; w.roomHit = false; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
@@ -381,7 +382,7 @@ function onClear(w: World, reward: boolean): void {
   w.audio.play('roomClear');
   w.audio.setIntensity(0);
   if (reward && (room.type === 'normal' || room.type === 'miniboss')) {
-    const rng = new RNG(room.seed + ':clear');
+    const rng = new RNG(room.seed + ':clear' + (room.flags.refights ?? ''));
     let kind = rollDropKind(rng, w.player.stats.luck, 'room');
     if (room.type === 'miniboss') kind = rng.chance(0.5) ? 'chest' : 'heart';
     // pity: low on health makes hearts much more likely
@@ -500,13 +501,16 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();
-    if (w.run.flags.margins && fi === LASTPAGE_FLOOR) { w.game.save.unlock('beat_unwritten'); w.game.onVictory(); return; }
+    if (w.run.flags.margins && fi === LASTPAGE_FLOOR) { w.game.save.unlock(w.run.flags.light ? 'beat_author' : 'beat_unwritten'); w.game.onVictory(); return; }
     if (w.run.flags.margins && fi === MARGINS_FLOOR) {
       // every boss in the Margins pays out; only one opens the way to the Last Page
       spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
       const rng = new RNG(room.seed + ':bossdrop');
       spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
-      if (room.flags.trueBoss) {
+      if (room.flags.trueBoss && w.run.flags.light) {
+        w.lightBeam = { x: c.x, y: c.y + 30, t: 0 }; room.flags.beam = { x: c.x, y: c.y + 30 };
+        w.audio.stinger('blessing'); w.hud.toast('The light comes down.');
+      } else if (room.flags.trueBoss) {
         w.trapdoor = { x: c.x, y: c.y + 30, t: 0, kind: 'portal' };
         room.flags.trap = { x: c.x, y: c.y + 30, kind: 'portal' };
         w.audio.stinger('lostfound'); w.hud.toast('The page tears open.');
@@ -520,8 +524,10 @@ export function onBossKilled(w: World, e: Enemy): void {
       room.flags.exit = { x: c.x - 56, y: c.y + 30 };
       w.trapdoor = { x: c.x + 56, y: c.y + 30, t: 0, kind: 'portal' };
       room.flags.trap = { x: c.x + 56, y: c.y + 30, kind: 'portal' };
-      w.audio.stinger('lostfound');
-      w.hud.banner('Two ways on', 'The EXIT ends the story. The tear goes further in.');
+      w.lightBeam = { x: c.x, y: c.y + 52, t: 0 };
+      room.flags.beam = { x: c.x, y: c.y + 52 };
+      w.audio.stinger('lostfound'); w.audio.stinger('blessing');
+      w.hud.banner('Three ways on', 'The EXIT ends the story. The tear goes down into the ink. The light goes up.');
       return;
     }
     if (fi >= goal) { w.game.onVictory(); return; }
@@ -584,6 +590,16 @@ export function updateSpecial(w: World, dt: number): void {
         w.audio.play('fall');
         w.game.fadeTo(() => nextFloor(w), 0.7);
       }
+    }
+  }
+  if (w.lightBeam) {
+    const b = w.lightBeam; b.t += dt;
+    if (b.t > 1 && Math.abs(pl.x - b.x) < 9 && Math.abs(pl.y - b.y) < 8 && !w.transition && w.deathT < 0 && !w.game.fading) {
+      // up into the light: the Dedication, then the Foreword
+      pl.controlLock = 2; pl.vx = pl.vy = 0;
+      w.run.flags.margins = true; w.run.flags.light = true;
+      w.audio.stinger('blessing'); w.whiteFlash = 1;
+      w.game.fadeTo(() => nextFloor(w), 1.4);
     }
   }
   if (w.exitDoor) {
@@ -885,7 +901,7 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
   checkProgress(w);
   syncFamiliars(w);
   // transformations
-  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp'];
+  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp', 'jeffy'];
   for (const t of tags) {
     if (pl.transformations.has(t)) continue;
     if (pl.tagCount(t) >= 3) {

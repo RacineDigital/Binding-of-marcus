@@ -394,6 +394,12 @@ const bookbinder: EnemyDef = {
 // A towering mass of ink that keeps rewriting itself. Past three quarters of its health it starts
 // taking the shapes of the stories Marcus already finished (any boss, inked over), fighting the way
 // they fought; at the end it drops every shape and throws everything at once.
+/** The two final bosses share their moves; this picks shot shapes, colours and summons. */
+interface FinalStyle { main: string; alt: string; light: string; creep: string; glow: string; tint: string; summons: string[]; forms: string }
+const INK_STYLE: FinalStyle = { main: 'inkE', alt: 'dark', light: 'holy', creep: '#14112a', glow: '#8a7aff', tint: '#1a1440', summons: ['blot', 'pagewraith', 'voideye', 'mirrorshade'], forms: 'rewrites itself as' };
+const LIGHT_STYLE: FinalStyle = { main: 'holy', alt: 'wax', light: 'star', creep: '#e8d8a0', glow: '#ffe8a0', tint: '#fff2c8', summons: ['cherubmoth', 'choirboy', 'censer', 'penitent'], forms: 'remembers' };
+const styleOf = (e: Enemy): FinalStyle => (e.def.id === 'author' ? LIGHT_STYLE : INK_STYLE);
+
 type Move = 'spray' | 'charge' | 'rings' | 'beams' | 'rain' | 'drops' | 'spiral' | 'summon' | 'tendrils' | 'pages';
 const FORMS: Record<string, Move[]> = {
   grubmother: ['spray', 'drops'], wardrobe: ['charge', 'rings'], furnaceheart: ['rings', 'spiral'], oldstoker: ['spray', 'charge'],
@@ -440,33 +446,33 @@ function startMove(e: Enemy, w: World, m: Move): void {
 }
 /** Runs the current move one frame; returns true when it's done. */
 function runMove(e: Enemy, w: World, dt: number): boolean {
-  const t = (e.data.mt += dt), m: Move = e.data.move, fast = e.data.fast ?? 1;
+  const t = (e.data.mt += dt), m: Move = e.data.move, fast = e.data.fast ?? 1, S = styleOf(e);
   const at = (times: number[], fn: (i: number) => void) => { while (e.data.mk < times.length && t > times[e.data.mk]) { fn(e.data.mk); e.data.mk++; } };
   switch (m) {
-    case 'spray': at([0.3, 0.6, 0.9], () => { for (let i = 0; i < 9; i++) shoot(e, w, aimAngle(e, w) + (Math.random() - 0.5) * 1.0, (130 + Math.random() * 60) * fast, { shape: 'inkE', r: 3.5 + Math.random() }); w.audio.play('bossSpit', { x: e.x }); }); return t > 1.3;
+    case 'spray': at([0.3, 0.6, 0.9], () => { for (let i = 0; i < 9; i++) shoot(e, w, aimAngle(e, w) + (Math.random() - 0.5) * 1.0, (130 + Math.random() * 60) * fast, { shape: S.main, r: 3.5 + Math.random() }); w.audio.play('bossSpit', { x: e.x }); }); return t > 1.3;
     case 'charge': {
       if (t < 0.55) return false;
       const h = e.move(w, Math.cos(e.data.ca) * 270 * dt, Math.sin(e.data.ca) * 270 * dt);
-      if (Math.random() < 0.5) w.addCreep(e.x, e.y, 9, 'enemy', 1, 2.5, '#14112a');
-      if (h.hx || h.hy || t > 1.5) { w.shake(5); ringShot(e, w, 16, 120 * fast, Math.random(), { shape: 'inkE', r: 4 }); w.audio.play('slam', { x: e.x }); return true; }
+      if (Math.random() < 0.5) w.addCreep(e.x, e.y, 9, 'enemy', 1, 2.5, S.creep);
+      if (h.hx || h.hy || t > 1.5) { w.shake(5); ringShot(e, w, 16, 120 * fast, Math.random(), { shape: S.main, r: 4 }); w.audio.play('slam', { x: e.x }); return true; }
       return false;
     }
-    case 'rings': at([0.3, 0.75, 1.2], (i) => { gapRing(e, w, 22, 3, 100 * fast, angleTo(e.x, e.y, w.player.x, w.player.y) + (i - 1) * 0.6, { shape: 'dark', r: 3.5 }); w.audio.play('bell', { x: e.x, vol: 0.4, pitch: 0.6 }); }); return t > 1.6;
+    case 'rings': at([0.3, 0.75, 1.2], (i) => { gapRing(e, w, 22, 3, 100 * fast, angleTo(e.x, e.y, w.player.x, w.player.y) + (i - 1) * 0.6, { shape: S.alt, r: 3.5 }); w.audio.play('bell', { x: e.x, vol: 0.4, pitch: 0.6 }); }); return t > 1.6;
     case 'beams': for (const b of e.data.bs as Beam[]) { b.x = e.x; b.y = e.y - 40; } if (t > 4.1) { e.data.bs = []; return true; } return false;
     case 'rain': at([0.3, 1.0], () => {
       const room = w.room; const gap = Math.floor(Math.random() * (room.cols - 4)) + 2;
-      for (let c = 0; c < room.cols; c++) { if (Math.abs(c - gap) <= 1) continue; w.proj.enemy(room.ox + c * TILE + 12, room.oy + 4, Math.PI / 2, 95 * fast, { shape: 'inkE', r: 4, range: room.rows * TILE + 20, z: 10, delay: 0.5 + (c % 2) * 0.15 }); }
+      for (let c = 0; c < room.cols; c++) { if (Math.abs(c - gap) <= 1) continue; w.proj.enemy(room.ox + c * TILE + 12, room.oy + 4, Math.PI / 2, 95 * fast, { shape: S.main, r: 4, range: room.rows * TILE + 20, z: 10, delay: 0.5 + (c % 2) * 0.15 }); }
       w.audio.play('pageUse', { x: e.x });
     }); return t > 2.2;
-    case 'drops': at([0.1, 0.4, 0.7, 1.0], () => { const pl = w.player; for (let i = 0; i < 3; i++) { const x = pl.x + (Math.random() - 0.5) * 70, y = pl.y + (Math.random() - 0.5) * 50; if (inRoom(w, x, y)) dropAt(w, x, y, i * 0.08, { shape: 'inkE', r: 5 }); } }); return t > 1.8;
+    case 'drops': at([0.1, 0.4, 0.7, 1.0], () => { const pl = w.player; for (let i = 0; i < 3; i++) { const x = pl.x + (Math.random() - 0.5) * 70, y = pl.y + (Math.random() - 0.5) * 50; if (inRoom(w, x, y)) dropAt(w, x, y, i * 0.08, { shape: S.main, r: 5 }); } }); return t > 1.8;
     case 'spiral': {
       e.data.sa = (e.data.sa ?? 0) + dt * 2.4 * fast; e.data.sst = (e.data.sst ?? 0) - dt;
-      if (e.data.sst <= 0) { e.data.sst = 0.1; for (let i = 0; i < 4; i++) shoot(e, w, e.data.sa + (i / 4) * TAU, 100 * fast, { shape: i % 2 ? 'dark' : 'holy', r: 3.5 }); }
+      if (e.data.sst <= 0) { e.data.sst = 0.1; for (let i = 0; i < 4; i++) shoot(e, w, e.data.sa + (i / 4) * TAU, 100 * fast, { shape: i % 2 ? S.alt : S.light, r: 3.5 }); }
       return t > 2.8;
     }
-    case 'summon': at([0.4], () => { const n = w.enemies.filter((x) => !x.dead && !x.isBoss).length; for (let i = 0; i < Math.max(0, 4 - n); i++) { const p = randomFloorPoint(w, 80); const k = w.spawnEnemy(['blot', 'pagewraith', 'voideye', 'mirrorshade'][i % 4], p.x, p.y, false); if (k) k.noDrop = true; } w.audio.play('secret', { x: e.x, vol: 0.5 }); }); return t > 1;
-    case 'tendrils': at([0.35, 0.8, 1.25], (i) => { const a = angleTo(e.x, e.y, w.player.x, w.player.y); for (const s of e.data.phase >= 2 ? [-0.5, 0, 0.5] : [-0.3, 0.3]) tendril(w, e.x, e.y, a + s + (i - 1) * 0.15, 14, 15); w.audio.play('rumble', { x: e.x, vol: 0.4 }); }); return t > 1.9;
-    case 'pages': at([0.3, 0.55, 0.8, 1.05], () => { const a = aimAngle(e, w); for (const s of [-1, 1]) shoot(e, w, a - s * 0.8, 125 * fast, { curve: s * 1.4, shape: 'holy', r: 3.5, range: 420 }); w.audio.play('pageGet', { x: e.x, vol: 0.5 }); }); return t > 1.6;
+    case 'summon': at([0.4], () => { const n = w.enemies.filter((x) => !x.dead && !x.isBoss).length; for (let i = 0; i < Math.max(0, 4 - n); i++) { const p = randomFloorPoint(w, 80); const k = w.spawnEnemy(S.summons[i % S.summons.length], p.x, p.y, false); if (k) k.noDrop = true; } w.audio.play('secret', { x: e.x, vol: 0.5 }); }); return t > 1;
+    case 'tendrils': at([0.35, 0.8, 1.25], (i) => { const a = angleTo(e.x, e.y, w.player.x, w.player.y); for (const s of e.data.phase >= 2 ? [-0.5, 0, 0.5] : [-0.3, 0.3]) tendril(w, e.x, e.y, a + s + (i - 1) * 0.15, 14, 15, { shape: S.main }); w.audio.play('rumble', { x: e.x, vol: 0.4 }); }); return t > 1.9;
+    case 'pages': at([0.3, 0.55, 0.8, 1.05], () => { const a = aimAngle(e, w); for (const s of [-1, 1]) shoot(e, w, a - s * 0.8, 125 * fast, { curve: s * 1.4, shape: S.light, r: 3.5, range: 420 }); w.audio.play('pageGet', { x: e.x, vol: 0.5 }); }); return t > 1.6;
   }
   return true;
 }
@@ -485,23 +491,24 @@ function rewrite(e: Enemy, w: World): void {
   const seen = ids.filter((id) => w.game.save.data.bossesBeaten.includes(id));
   const pool = seen.length >= 4 ? seen : ids;
   e.data.form = pool[Math.floor(Math.random() * pool.length)];
-  w.fx.spray(e.x, e.y, 30, 0, TAU, 30, '#14112a', 140, 0.7, '#14112a');
+  const S = styleOf(e);
+  w.fx.spray(e.x, e.y, 30, 0, TAU, 30, S.creep, 140, 0.7, S.creep);
   // the arena is bigger than the screen: reappear in view, a fair distance from Marcus
   const p = nearPlayer(w, 120); e.x = p.x; e.y = p.y;
   e.data.formT = e.data.phase >= 2 ? 5 : 7;
   e.flash = 1; w.audio.play('bossRoar', { x: e.x, pitch: 0.7 });
   const def = getEnemy(e.data.form);
-  w.hud.toast(`It rewrites itself as ${def?.name ?? 'something you remember'}.`, 1.6);
+  w.hud.toast(`It ${S.forms} ${def?.name ?? 'something you remember'}.`, 1.6);
 }
-const unwritten: EnemyDef = {
-  id: 'unwritten', name: 'The Unwritten', desc: 'Everything the book left out, writing itself in. It wants the last word.', boss: true,
-  hp: 1100, r: 24, speed: 0, role: 'boss', cost: 0, hitY: 44, mass: 60, noKnock: true, gore: '#14112a', goreDecal: '#0c0a1a', light: [120, '#8a7aff'],
-  sprites: () => ({ idle: frames(96, 104, 4, (p, f) => paintUnwritten(p, f, 0)), rage: frames(96, 104, 4, (p, f) => paintUnwritten(p, f, 1)) }),
+const finalBoss = (id: string, name: string, desc: string, gore: string, glow: string, paint: (p: any, f: number, rage: number) => void): EnemyDef => ({
+  id, name, desc, boss: true,
+  hp: 1100, r: 24, speed: 0, role: 'boss', cost: 0, hitY: 44, mass: 60, noKnock: true, gore, goreDecal: gore, light: [120, glow],
+  sprites: () => ({ idle: frames(96, 104, 4, (p, f) => paint(p, f, 0)), rage: frames(96, 104, 4, (p, f) => paint(p, f, 1)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.data.phase = 0; },
   update(e, w, dt) {
     const d = e.data;
     e.animate(dt, 5);
-    if (Math.random() < dt * 8) w.fx.burst(e.x + (Math.random() - 0.5) * 50, e.y, 3, 1, '#14112a', 30, 0.8);
+    if (Math.random() < dt * 8) w.fx.burst(e.x + (Math.random() - 0.5) * 50, e.y, 3, 1, styleOf(e).creep, 30, 0.8);
     // phases at 75%, 50% and 25%
     const TH = [0.75, 0.5, 0.25];
     if (d.phase < TH.length && e.hpFrac() <= TH[d.phase]) {
@@ -517,7 +524,7 @@ const unwritten: EnemyDef = {
     if (d.move) {
       if (runMove(e, w, dt)) { d.move = null; d.idleT = (d.phase >= 3 ? 0.35 : d.phase >= 2 ? 0.55 : 0.8) + Math.random() * 0.3; }
       // the last stand layers a slow spiral under everything else
-      if (d.phase >= 3 && d.move !== 'spiral') { d.ls = (d.ls ?? 0) - dt; if (d.ls <= 0) { d.ls = 0.32; d.la = (d.la ?? 0) + 0.45; for (let i = 0; i < 3; i++) shoot(e, w, d.la + (i / 3) * TAU, 80, { shape: 'dark', r: 3 }); } }
+      if (d.phase >= 3 && d.move !== 'spiral') { d.ls = (d.ls ?? 0) - dt; if (d.ls <= 0) { d.ls = 0.32; d.la = (d.la ?? 0) + 0.45; for (let i = 0; i < 3; i++) shoot(e, w, d.la + (i / 3) * TAU, 80, { shape: styleOf(e).alt, r: 3 }); } }
       return;
     }
     // circle Marcus at a distance, never quite still (the arena is bigger than the screen)
@@ -542,15 +549,39 @@ const unwritten: EnemyDef = {
       const set = def ? (getSprites(def).idle ?? Object.values(getSprites(def))[0]) : null;
       if (set) {
         const spr = set[Math.floor(e.t * 5) % set.length];
-        spr.draw(ctx, sx, sy + 2, { flip: e.flip, flash: e.flash > 0 ? 0.6 : 0, sx: 1.45 * e.sx, sy: 1.45 * e.sy, tint: '#1a1440', tintAmt: 0.62 });
-        w.r.addGlow(sx, sy - 30, 70, '#8a7aff', 0.2);
+        spr.draw(ctx, sx, sy + 2, { flip: e.flip, flash: e.flash > 0 ? 0.6 : 0, sx: 1.45 * e.sx, sy: 1.45 * e.sy, tint: styleOf(e).tint, tintAmt: 0.62 });
+        w.r.addGlow(sx, sy - 30, 70, styleOf(e).glow, 0.2);
         return;
       }
     }
     drawBoss(e, ctx, sx, sy, { yoff: 6 });
-    w.r.addGlow(sx, sy - 50, 80, d.phase >= 3 ? '#ff3050' : '#8a7aff', 0.2);
+    w.r.addGlow(sx, sy - 50, 80, d.phase >= 3 ? '#ff3050' : styleOf(e).glow, e.def.id === 'author' ? 0.08 : 0.2);
   },
-};
+});
+const unwritten = finalBoss('unwritten', 'The Unwritten', 'Everything the book left out, writing itself in. It wants the last word.', '#14112a', '#8a7aff', paintUnwritten);
 
-export const BOSSES_D: EnemyDef[] = [thornwife, rimebride, pendulum, typesetter, bookbinder, unwritten];
+/** The Author: robed in white, haloed in quills, the pen that started all of this. */
+function paintAuthor(p: any, f: number, rage: number): void {
+  const robe = ramp('#efe6d2'), gold = ramp('#d8b048'), shade = ramp('#b8ab90');
+  const cx = 48, by = 96;
+  // long robe flaring at the hem, with gold trim
+  for (let y = 26; y < by; y++) {
+    const k = (y - 26) / (by - 26), half = 9 + k * 24 + Math.sin(y * 0.3 + f * 1.3) * 1.5;
+    for (let x = Math.floor(cx - half); x < cx + half; x++) p.set(x, y, robe[(x - cx) > half * 0.4 ? 1 : (x - cx) < -half * 0.6 ? 3 : 2]);
+    p.set(Math.floor(cx - half), y, gold[2]); p.set(Math.ceil(cx + half) - 1, y, gold[1]);
+  }
+  for (let x = cx - 33; x < cx + 33; x++) p.set(x, by - 1, gold[3]);
+  // the great quill held across the body
+  p.tube(cx - 26, 70, cx + 18, 30, 1.5, shade);
+  for (let i = 0; i < 12; i++) p.line(cx + 18 - i * 3, 30 + i * 3, cx + 24 - i * 3, 22 + i * 3, robe[4]);
+  p.set(cx - 27, 71, '#14112a'); p.set(cx - 28, 72, '#14112a');
+  // hood with no face, only light; a halo of quill nibs
+  p.ball(cx, 16, 12, 13, robe, { dither: 0.4 });
+  p.ball(cx, 18, 7, 8, ramp(rage ? '#ff6050' : '#fff2c0'), { dither: 0.2 });
+  for (let i = 0; i < 9; i++) { const a = Math.PI + (i / 8) * Math.PI; const x = cx + Math.cos(a) * 18, y = 12 + Math.sin(a) * 14; p.poly([x - 1.2, y, x + 1.2, y, x + Math.cos(a) * 5, y + Math.sin(a) * 5], gold[3 - (i % 2)]); }
+  sprinkle(p, '#ffffff', 10, 5 + f);
+}
+const author = finalBoss('author', 'The Author', 'Grandfather, as he was when he first picked up the pen. He would like a better ending.', '#e8d8a0', '#ffe8a0', paintAuthor);
+
+export const BOSSES_D: EnemyDef[] = [thornwife, rimebride, pendulum, typesetter, bookbinder, unwritten, author];
 void clamp; void dist; void hex; void eye;
