@@ -45,41 +45,75 @@ export class Beam {
   active = true; t = 0; dur = 0.5; ang = 0; width = 7; dmg = 1; tick = 0; prof: AttackProfile; offset = 0;
   pts: number[] = []; followPlayer = true; x = 0; y = 0; laser = false; hitOnce = new Set<number>(); color = '#6a58ff';
   enemyBeam = false; warmup = 0; rot = 0; baseWidth = 0; phase = Math.random() * TAU; sweep = 0;
+  /** What a homing beam is locked onto. */
+  target: Enemy | null = null;
   constructor(prof: AttackProfile) { this.prof = prof; }
 }
 
-/** Trace a beam path from (x,y) along ang with bounces and homing bends. */
-export function traceBeam(w: World, x: number, y: number, ang: number, prof: AttackProfile | null, maxLen = 900, spectral = true): number[] {
+/**
+ * The enemy a homing beam locks onto: the one nearest the line you're aiming along (inside a
+ * forward cone that widens with homing strength), preferring the current target so a held beam
+ * doesn't flicker between enemies.
+ */
+export function homingTarget(w: World, x: number, y: number, ang: number, homing: number, maxLen: number, keep: Enemy | null = null): Enemy | null {
+  const cone = Math.min(Math.PI * 0.6, 0.7 + homing * 0.5);
+  let best: Enemy | null = null, bestScore = Infinity;
+  for (const e of w.enemies) {
+    if (e.dead || e.hidden || e.spawnT > 0 || e.friendly || e.invuln) continue;
+    const tx = e.x, ty = e.y - e.hitY - e.z;
+    const d = Math.hypot(tx - x, ty - y);
+    if (d > maxLen * 0.9 || d < 4) continue;
+    const off = Math.abs(angleDiff(ang, Math.atan2(ty - y, tx - x)));
+    if (off > cone) continue;
+    const score = d * (1 + off * 2.2) * (e === keep ? 0.6 : 1);
+    if (score < bestScore) { bestScore = score; best = e; }
+  }
+  return best;
+}
+
+/**
+ * Trace a beam path from (x,y) along ang with bounces. With homing and a target, the beam bends in
+ * a smooth curve that ends exactly on the target's body (so a homing laser never misses), then
+ * carries on straight past it.
+ */
+export function traceBeam(w: World, x: number, y: number, ang: number, prof: AttackProfile | null, maxLen = 900, spectral = true, target: Enemy | null = null): number[] {
   const pts = [x, y];
   let a = ang, cx = x, cy = y, len = 0;
   let bounces = prof?.bounce ?? 0;
-  const homing = prof?.homing ?? 0;
   const step = 4;
-  let target: Enemy | null = null;
-  if (homing > 0) target = w.nearestEnemy(x + Math.cos(ang) * 60, y + Math.sin(ang) * 60, 260);
-  let sinceLast = 0;
-  while (len < maxLen) {
-    if (target && !target.dead) {
-      const want = Math.atan2(target.y - 6 - cy, target.x - cx);
-      a += clamp(angleDiff(a, want), -0.06 * homing, 0.06 * homing);
-      if (dist2(cx, cy, target.x, target.y - 6) < 100) target = null;
+  const mode = spectral ? 'ghost' : 'shot';
+  if (target && !target.dead && (prof?.homing ?? 0) > 0) {
+    const tx = target.x, ty = target.y - target.hitY - target.z;
+    const d = Math.hypot(tx - x, ty - y);
+    // quadratic curve: leaves the barrel along the aim, arrives on the target
+    const k = Math.min(d * 0.45, 70), qx = x + Math.cos(ang) * k, qy = y + Math.sin(ang) * k;
+    const n = Math.max(4, Math.ceil(d / 10));
+    let px = x, py = y;
+    for (let i = 1; i <= n; i++) {
+      const t = i / n, u = 1 - t;
+      const nx = u * u * x + 2 * u * t * qx + t * t * tx, ny = u * u * y + 2 * u * t * qy + t * t * ty;
+      if (!spectral && pointBlocked(w.room, nx, ny, mode)) { pts.push(px, py); return pts; }
+      pts.push(nx, ny); px = nx; py = ny;
     }
+    // carry on past the target in the direction the curve was heading
+    a = Math.atan2(ty - qy, tx - qx); cx = tx; cy = ty; len = d;
+  }
+  while (len < maxLen) {
     const nx = cx + Math.cos(a) * step, ny = cy + Math.sin(a) * step;
-    const blocked = pointBlocked(w.room, nx, ny, spectral ? 'ghost' : 'shot');
+    const blocked = pointBlocked(w.room, nx, ny, mode);
     if (blocked) {
       if (bounces > 0) {
         bounces--;
-        const bx = pointBlocked(w.room, nx, cy, spectral ? 'ghost' : 'shot'), by = pointBlocked(w.room, cx, ny, spectral ? 'ghost' : 'shot');
+        const bx = pointBlocked(w.room, nx, cy, mode), by = pointBlocked(w.room, cx, ny, mode);
         if (bx || !by) a = Math.PI - a;
         if (by || !bx) a = -a;
-        pts.push(cx, cy); sinceLast = 0;
+        pts.push(cx, cy);
         continue;
       }
       pts.push(cx, cy);
       return pts;
     }
-    cx = nx; cy = ny; len += step; sinceLast += step;
-    if (homing > 0 && sinceLast >= 12) { pts.push(cx, cy); sinceLast = 0; }
+    cx = nx; cy = ny; len += step;
   }
   pts.push(cx, cy);
   return pts;
@@ -119,7 +153,10 @@ export function updateBeams(w: World, dt: number): void {
       if (prof.grow) b.width = b.baseWidth * Math.min(2.4, 1 + prof.grow * b.t * 2.2);
     }
     const a = b.ang + b.offset + b.sweep + (prof.wiggle && !b.laser ? Math.sin(b.t * 14 + b.phase) * 0.12 * Math.min(2, prof.wiggle) : 0);
-    b.pts = traceBeam(w, b.x + Math.cos(a) * 6, b.y + Math.sin(a) * 4, a, prof, b.laser ? Math.max(120, pl.stats.range * 1.3) : 900);
+    const ox = b.x + Math.cos(a) * 6, oy = b.y + Math.sin(a) * 4, maxLen = b.laser ? Math.max(120, pl.stats.range * 1.3) : 900;
+    // homing: lock onto the enemy nearest the aim (lasers once, when they fire; beams keep their target)
+    if (prof.homing > 0 && (!b.laser || b.t <= dt * 1.5)) { b.target = homingTarget(w, ox, oy, a, prof.homing, maxLen, b.target && !b.target.dead ? b.target : null); }
+    b.pts = traceBeam(w, ox, oy, a, prof, maxLen, true, b.target);
     const half = b.width / 2;
     const pathFx = () => alongBeam(b.pts, 10, (x, y) => {
       if (prof.magnet) w.cancelEnemyShotsNear(x, y, half + 6);

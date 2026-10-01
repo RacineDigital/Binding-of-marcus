@@ -2,6 +2,13 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.0.1
+
+- **Homing lasers always hit.** A laser is instant, so with any homing item it now locks onto the
+  enemy nearest your aim and bends in a smooth curve that ends right on its body. Before, it
+  aimed at enemies' feet and turned too slowly, so about one homing laser in four missed. The
+  Burning Glass beam uses the same targeting and holds onto its target instead of flickering.
+
 ## What's new in 3.0: Echoes
 
 - **Echoes.** Where you died last time, your echo is waiting. Next run, the chapter you fell in
