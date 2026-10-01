@@ -1,5 +1,7 @@
 ## What's new in 2.1
 
+**2.1.1:** the Options menu scrolls (mouse wheel, arrows or hover/click), so every setting is reachable.
+
 - **A real Windows game.** Installer and portable .exe, saves to disk, three save slots with
   export/import, autosave on every room, and Continue drops you back in the exact room.
 - **New title screen** with mouse support, Run History, a Bestiary and save-slot management.

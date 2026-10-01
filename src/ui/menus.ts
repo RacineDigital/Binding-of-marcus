@@ -613,7 +613,10 @@ export class MenuSystem {
     ];
     if (!overlay) opts.push({ label: 'Erase all progress', value: () => '', ok: () => self.push(self.confirmScreen('Erase every unlock, statistic and saved run?', () => { g.save.reset(); self.openMain(); })) });
     opts.forEach((o) => { if (o.ok && !o.left) { o.left = o.ok; o.right = o.ok; } });
-    let sel = 0;
+    // more options than fit on the page: show a window that follows the selection
+    const VIS = 11, ROW = 16.5, TOP = 62;
+    let sel = 0, scroll = 0;
+    const follow = () => { if (sel < scroll) scroll = sel; if (sel >= scroll + VIS) scroll = sel - VIS + 1; };
     return {
       t: 0, overlay,
       update(keys) {
@@ -624,19 +627,35 @@ export class MenuSystem {
           if (k === 'right') opts[sel].right?.();
           if (k === 'confirm') (opts[sel].ok ?? opts[sel].right)?.();
         }
+        follow();
+      },
+      pointer(x, y, click, moved, wheel) {
+        if (wheel) { scroll = clamp(scroll + wheel, 0, opts.length - VIS); sel = clamp(sel, scroll, scroll + VIS - 1); return; }
+        const i = Math.floor((y - TOP + 9) / ROW) + scroll;
+        if (x < 100 || x > 380 || i < scroll || i >= Math.min(opts.length, scroll + VIS)) return;
+        if (moved && i !== sel) { sel = i; self.sfxMove(); }
+        if (click) {
+          sel = i;
+          const o = opts[i];
+          // click the left half of a slider to lower it, the right half to raise it
+          if (!o.ok && o.left && x < 300) o.left(); else (o.ok ?? o.right)?.();
+        }
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 90, 16, 300, 240, 1, 4);
         text(ctx, 'Options', 240, 40, 16, INK, 'center', FONT_TITLE, 400, false);
+        if (scroll > 0) text(ctx, '▲', 240, 51, 7, INK2, 'center', FONT_BODY, 600, false);
+        if (scroll + VIS < opts.length) text(ctx, '▼ more', 240, TOP + VIS * ROW - 2, 7, INK2, 'center', FONT_BODY, 600, false);
         opts.forEach((o, i) => {
-          const y = 60 + i * 16.5;
+          if (i < scroll || i >= scroll + VIS) return;
+          const y = TOP + (i - scroll) * ROW;
           if (i === sel) inkBlot(ctx, 240, y - 3, 270, 15, self.time, 'rgba(40,30,60,0.15)');
           text(ctx, o.label, 112, y, 8.5, i === sel ? INK : INK2, 'left', FONT_BODY, 600, false);
           const v = o.value();
           if (v) text(ctx, (o.left && i === sel && !o.ok ? '◀ ' : '') + v + (o.right && i === sel && !o.ok ? ' ▶' : ''), 368, y, 8.5, INK, 'right', FONT_BODY, 600, false);
         });
-        hint(ctx, '←/→ adjust · Enter toggle · Esc back');
+        hint(ctx, '↑/↓ or wheel to scroll · ←/→ adjust · Enter toggle · Esc back');
       },
     };
   }
