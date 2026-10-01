@@ -6,10 +6,12 @@ export interface CharacterLook {
   extra?: 'ink' | 'glasses' | 'bandage' | 'goggles' | 'none';
   beard?: boolean;
   ghost?: boolean;
+  /** Hand-drawn rig id; overrides the procedural painter. */
+  hand?: 'marcus';
 }
 export const LOOKS: Record<string, CharacterLook> = {
   marcus: { skin: '#f1c7a1', hair: '#4a2a1c', eye: '#1c1628', shirt: '#2f7a70', trim: '#d9b25f', shorts: '#40324e',
-    sockL: '#b8323a', sockR: '#e8e2d4', shoe: '#5b3a2a', hairStyle: 'messy', extra: 'ink' },
+    sockL: '#b8323a', sockR: '#e8e2d4', shoe: '#5b3a2a', hairStyle: 'messy', extra: 'ink', hand: 'marcus' },
   wren: { skin: '#d9a079', hair: '#c9612c', eye: '#23162a', shirt: '#6b4a8c', trim: '#e0d3b5', shorts: '#2e3a52',
     sockL: '#e8e2d4', sockR: '#e8e2d4', shoe: '#3a2a22', hairStyle: 'braid', extra: 'bandage' },
   elias: { skin: '#b9d2de', hair: '#e7eef2', eye: '#1a2a3a', shirt: '#5a6c86', trim: '#c9d8e2', shorts: '#394a5e',

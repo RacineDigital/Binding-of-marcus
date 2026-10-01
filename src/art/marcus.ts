@@ -3,6 +3,17 @@ import { PixelArt } from '../render/pixel';
 import { ramp, hex, darken, lighten } from '../render/color';
 import { Sprite } from '../render/sprite';
 import { CharacterLook } from './look';
+import { buildHandSprites, HandRig } from './hand/build';
+import * as HM from './hand/marcus';
+
+const MARCUS_RIG: HandRig = {
+  pal: HM.MARCUS_PAL,
+  head: { down: HM.HEAD_DOWN, side: HM.HEAD_SIDE, up: HM.HEAD_UP },
+  faces: { down: HM.FACE_DOWN, side: HM.FACE_SIDE },
+  torso: { down: HM.TORSO_DOWN, up: HM.TORSO_UP, side: HM.TORSO_SIDE },
+  legsFront: HM.LEGS_FRONT, legsSide: HM.LEGS_SIDE,
+  sleeve: 'C', skin: 'S', outline: 'o',
+};
 
 export type HeadDir = 'down' | 'up' | 'side';
 export type HeadState = 'normal' | 'fire' | 'hurt' | 'blink' | 'happy';
@@ -227,6 +238,7 @@ function paintDeath(L: CharacterLook, f: number): PixelArt {
 }
 
 export function buildPlayerSprites(L: CharacterLook): PlayerSprites {
+  if (L.hand === 'marcus') return buildHandSprites(MARCUS_RIG);
   const states: HeadState[] = ['normal', 'fire', 'hurt', 'blink', 'happy'];
   const head = {} as PlayerSprites['head'];
   for (const d of ['down', 'up', 'side'] as HeadDir[]) {
