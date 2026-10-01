@@ -99,6 +99,7 @@ export class Hud {
     if (w.game.save.data.settings.showStats) this.drawStats(ctx);
     this.drawConsumables(ctx);
     if (w.floor.curse !== 'lost') this.drawMinimap(ctx, this.fullMap);
+    if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     else text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right');
     this.drawBossBar(ctx);
     this.drawItemPanel(ctx);
@@ -192,6 +193,37 @@ export class Hud {
       text(ctx, v, 26, y0 + i * 9, 7, COL.text, 'left');
     });
     ctx.globalAlpha = 1;
+  }
+
+  /** Collected passive items and familiars as a compact icon grid under the minimap. */
+  private itemSeenAt = new Map<string, number>();
+  private drawItemTracker(ctx: CanvasRenderingContext2D): void {
+    const pl = this.w.player, ids = pl.itemOrder.filter((id) => (pl.items.get(id) ?? 0) > 0 && getItem(id)?.kind !== 'active');
+    if (!ids.length) return;
+    const now = this.w.time;
+    for (const id of ids) if (!this.itemSeenAt.has(id)) this.itemSeenAt.set(id, now);
+    // bottom-right corner, growing upward from above the consumables; stays clear of the side doors
+    const right = VIEW_W - 8, bottom = VIEW_H - 34, maxH = 76, width = 84;
+    let cell = 14;
+    while (cell > 8 && Math.ceil(ids.length / Math.floor(width / cell)) * cell > maxH) cell -= 1;
+    const cols = Math.min(ids.length, Math.floor(width / cell));
+    const rows = Math.ceil(ids.length / cols);
+    const top = bottom - rows * cell;
+    const blind = this.w.blindItems();
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,6,12,0.4)'; ctx.fillRect(right - cols * cell - 2, top - 2, cols * cell + 4, rows * cell + 4);
+    ctx.imageSmoothingEnabled = false;
+    ids.forEach((id, i) => {
+      const x = right - cols * cell + (i % cols) * cell, y = top + Math.floor(i / cols) * cell;
+      const age = now - (this.itemSeenAt.get(id) ?? -9);
+      if (age < 1.5) { ctx.globalAlpha = (1 - age / 1.5) * 0.8; ctx.fillStyle = '#ffe9a0'; ctx.fillRect(x, y, cell, cell); ctx.globalAlpha = 1; }
+      const icon = itemIconCanvas(id, blind);
+      const pad = cell >= 12 ? 1 : 0.5;
+      ctx.drawImage(icon, x + pad, y + pad, cell - pad * 2, cell - pad * 2);
+      const n = pl.items.get(id) ?? 1;
+      if (n > 1) text(ctx, 'x' + n, x + cell - 0.5, y + cell - 0.5, 5, COL.text, 'right', FONT_BODY, 700);
+    });
+    ctx.restore();
   }
 
   private drawConsumables(ctx: CanvasRenderingContext2D): void {

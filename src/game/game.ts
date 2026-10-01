@@ -136,10 +136,12 @@ export class Game {
     this.unlockQueue.forEach((u, i) => {
       const a = Math.min(1, u.t * 4, (3.5 - u.t) * 3);
       ui.globalAlpha = Math.max(0, a);
-      ui.fillStyle = 'rgba(12,8,16,0.92)'; ui.fillRect(VIEW_W - 150, VIEW_H - 40 - i * 26, 144, 22);
-      ui.strokeStyle = '#c8a050'; ui.lineWidth = 0.6; ui.strokeRect(VIEW_W - 150, VIEW_H - 40 - i * 26, 144, 22);
-      text(ui, 'UNLOCKED', VIEW_W - 144, VIEW_H - 31 - i * 26, 6, COL.gold);
-      text(ui, u.name, VIEW_W - 144, VIEW_H - 22 - i * 26, 9, COL.text, 'left', FONT_TITLE, 400);
+      // bottom-left, above the charms (the bottom-right corner holds the item tracker)
+      const tx = 6, ty = VIEW_H - 56 - i * 26;
+      ui.fillStyle = 'rgba(12,8,16,0.92)'; ui.fillRect(tx, ty, 144, 22);
+      ui.strokeStyle = '#c8a050'; ui.lineWidth = 0.6; ui.strokeRect(tx, ty, 144, 22);
+      text(ui, 'UNLOCKED', tx + 6, ty + 9, 6, COL.gold);
+      text(ui, u.name, tx + 6, ty + 18, 9, COL.text, 'left', FONT_TITLE, 400);
       ui.globalAlpha = 1;
     });
     if (this.save.data.settings.showFps) text(ui, `${Math.round(this.fps)} fps`, 4, VIEW_H - 4, 6, COL.dim);
