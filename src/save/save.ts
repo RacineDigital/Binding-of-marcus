@@ -8,6 +8,8 @@ export interface Settings {
   interpolate: boolean;
   /** Show collected items on the HUD. */
   showItems: boolean;
+  /** 'eid' = compact External-Item-Descriptions style text, 'card' = large card. */
+  descStyle: 'eid' | 'card';
   /** Frame-rate cap; 0 = match the display refresh rate. */
   fpsCap: number;
 }
@@ -54,7 +56,7 @@ export interface SlotInfo { slot: number; empty: boolean; unlocks: number; wins:
 export function defaultSave(): SaveData {
   return {
     version: 1, unlocks: [], itemsSeen: [], bossesBeaten: [], challengesDone: [], stats: {},
-    settings: { music: 0.7, sfx: 0.8, shake: 1, scale: 'sharp', diagonalAim: false, showStats: true, showFps: false, fireDropChance: 0.1, bindings: structuredClone(DEFAULT_BINDINGS), fullscreen: false, hudScale: 1, interpolate: true, fpsCap: 0, showItems: true },
+    settings: { music: 0.7, sfx: 0.8, shake: 1, scale: 'sharp', diagonalAim: false, showStats: true, showFps: false, fireDropChance: 0.1, bindings: structuredClone(DEFAULT_BINDINGS), fullscreen: false, hudScale: 1, interpolate: true, fpsCap: 0, showItems: true, descStyle: 'eid' },
     run: null, bestTime: 0, lastSeed: '', introSeen: false,
   };
 }

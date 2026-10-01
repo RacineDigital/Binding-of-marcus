@@ -547,6 +547,7 @@ export class MenuSystem {
       { label: 'Screen shake', value: () => pct(st().shake), left: () => step('shake', -0.1), right: () => step('shake', 0.1) },
       { label: 'Scaling', value: () => ({ sharp: 'Sharp (fit)', integer: 'Pixel perfect', stretch: 'Nearest (fit)' } as any)[st().scale], ok: () => { const m = ['sharp', 'integer', 'stretch'] as const; st().scale = m[(m.indexOf(st().scale) + 1) % 3]; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fullscreen', value: () => (document.fullscreenElement ? 'On' : 'Off'), ok: () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); } },
+      { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },
       { label: 'Motion smoothing', value: () => (st().interpolate !== false ? 'On' : 'Off'), ok: () => { st().interpolate = st().interpolate === false; g.save.markDirty(); } },

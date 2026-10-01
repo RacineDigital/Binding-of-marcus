@@ -3,6 +3,7 @@ import { inspectInfo, InspectInfo } from './inspect';
 import type { Pickup } from '../game/pickups';
 import type { World } from '../game/world';
 import { pickupSprites } from '../art/pickups';
+import { TRANSFORM_EFFECTS } from '../player/player';
 import { itemIconCanvas } from '../art/items';
 import { getItem, getConsumable } from '../items/registry';
 import { describeItem, DescLine } from '../items/describe';
@@ -96,13 +97,14 @@ export class Hud {
     this.drawActive(ctx);
     this.drawHearts(ctx);
     this.drawResources(ctx);
-    if (w.game.save.data.settings.showStats) this.drawStats(ctx);
+    const eid = w.game.save.data.settings.descStyle !== 'card';
+    if (w.game.save.data.settings.showStats && !(eid && this.panelFade > 0.05)) this.drawStats(ctx);
     this.drawConsumables(ctx);
     if (w.floor.curse !== 'lost') this.drawMinimap(ctx, this.fullMap);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     else text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right');
     this.drawBossBar(ctx);
-    this.drawItemPanel(ctx);
+    if (eid) this.drawEID(ctx); else this.drawItemPanel(ctx);
     this.drawBanners(ctx);
     this.drawToasts(ctx);
     this.drawRoomName(ctx);
@@ -300,6 +302,44 @@ export class Hud {
     ctx.fillStyle = 'rgba(255,200,200,0.35)'; ctx.fillRect(bx, by, bw * f, 1);
     ctx.strokeStyle = '#8a7560'; ctx.lineWidth = 0.6; ctx.strokeRect(bx - 2, by - 2, bw + 4, 8);
     text(ctx, w.room.type === 'boss' && this.bossName ? this.bossName : w.bossList[0].def.name, VIEW_W / 2, by - 4, 8, COL.text, 'center', FONT_TITLE, 400);
+    ctx.restore();
+  }
+
+  /** Compact, External-Item-Descriptions-style readout in the top-left corner. */
+  private drawEID(ctx: CanvasRenderingContext2D): void {
+    if (this.panelFade <= 0 || !this.panelInfo) return;
+    const info = this.panelInfo, p = this.panelPickup, w = this.w;
+    const x = 8, y0 = 74, maxW = 190;
+    const a = this.panelFade;
+    type L = { t: string; c: string; size: number; bullet?: string; bc?: string };
+    const lines: L[] = [];
+    const qCol = ['#a8a8a8', '#efe6d6', '#8ae07a', '#7ab8ff', '#ffd060'][Math.max(0, info.quality)] ?? COL.text;
+    if (info.kindLabel) lines.push({ t: info.kindLabel, c: COL.dim, size: 6 });
+    for (const l of info.lines) {
+      const [bullet, bc, c] = l.color === 'up' ? ['↑', '#7ae070', '#c8f0c0'] : l.color === 'down' ? ['↓', '#ff6a5a', '#ffc8c0'] : l.color === 'note' ? ['‣', '#b8a8ff', '#d8d0ff'] : ['•', '#c8b8a0', COL.text];
+      wrap(ctx, l.text, 7.5, maxW - 10).forEach((s, i) => lines.push({ t: s, c, size: 7.5, bullet: i === 0 ? bullet : '', bc }));
+    }
+    // transformation progress, like EID's transformation hints
+    for (const tag of info.tags ?? []) {
+      const T = TRANSFORM_EFFECTS[tag]; if (!T) continue;
+      const have = w.player.tagCount(tag), done = w.player.transformations.has(tag);
+      lines.push({ t: done ? `${T.name} (complete)` : `${T.name} ${Math.min(3, have)}/3`, c: '#d0a8ff', size: 7, bullet: '◆', bc: '#b080ff' });
+    }
+    if (info.itemId && !w.game.save.data.itemsSeen.includes(info.itemId)) lines.push({ t: 'New to your collection!', c: COL.gold, size: 7, bullet: '★', bc: COL.gold });
+    if (p && p.price > 0) lines.push({ t: `Costs ${p.price} buttons${w.player.buttons < p.price ? ` (you have ${w.player.buttons})` : ''}`, c: w.player.buttons >= p.price ? COL.gold : COL.down, size: 7, bullet: '¢', bc: COL.gold });
+    if (p && p.deal > 0) lines.push({ t: `Costs ${p.deal} heart container${p.deal > 1 ? 's' : ''}`, c: COL.down, size: 7, bullet: '♥', bc: COL.down });
+    let h = 11; for (const l of lines) h += l.size + 2.5;
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x - 3, y0 - 3, maxW + 6, h + 4);
+    if (info.icon) { const iw = (info.icon as HTMLCanvasElement).width || 16; const k = Math.min(1, 12 / iw); ctx.drawImage(info.icon, x, y0, iw * k, ((info.icon as HTMLCanvasElement).height || 16) * k); }
+    text(ctx, info.title, x + 16, y0 + 9, 9, qCol, 'left', FONT_BODY, 700);
+    if (info.quality >= 0) text(ctx, `Q${info.quality}`, x + 16 + measure(ctx, info.title, 9, FONT_BODY, 700) + 4, y0 + 9, 6.5, qCol, 'left', FONT_BODY, 600);
+    let y = y0 + 11;
+    for (const l of lines) {
+      y += l.size + 2.5;
+      if (l.bullet) text(ctx, l.bullet, x + 1, y - 0.5, l.size, l.bc ?? COL.text, 'left', FONT_BODY, 700);
+      text(ctx, l.t, x + 9, y - 0.5, l.size, l.c, 'left', FONT_BODY, 600);
+    }
     ctx.restore();
   }
 
