@@ -94,10 +94,10 @@ export const FINAL_SONGS: Record<string, Song> = {
       { kind: 'arp', sound: 'chip', octave: 5, rate: 1, seq: [0, 2, 3, 5, 3, 2], layer: 'combat', vol: 0.12, from: 16, to: 24 },
       { kind: 'arp', sound: 'chip', octave: 5, rate: 2, seq: [0, 1, 2, 3, 2, 1], layer: 'combat', vol: 0.12, from: 24 },
       // electric guitars: an 8th-note rock riff, huge half-time chords, punk tremolo, the riff again
-      { kind: 'guitar', low: 40, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X.x.x.X.x.x.C-D-'], layer: 'combat', vol: 0.62, to: 8 },
-      { kind: 'guitar', low: 28, riff: ['X-------x.x.X---', 'X-------x.x.x.x.', 'X-------X-------', 'x.x.x.x.xxxxXXXX'], layer: 'combat', vol: 0.68, from: 8, to: 16 },
-      { kind: 'guitar', low: 40, riff: ['XXXXXXXXXXXXXXXX'], layer: 'combat', vol: 0.56, from: 16, to: 24 },
-      { kind: 'guitar', low: 40, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X.x.x.X.x.x.C-D-'], layer: 'combat', vol: 0.64, from: 24 },
+      { kind: 'guitar', low: 40, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X.x.x.X.x.x.C-D-'], layer: 'combat', vol: 0.45, to: 8 },
+      { kind: 'guitar', low: 28, riff: ['X-------x.x.X---', 'X-------x.x.x.x.', 'X-------X-------', 'x.x.x.x.xxxxXXXX'], layer: 'combat', vol: 0.49, from: 8, to: 16 },
+      { kind: 'guitar', low: 40, riff: ['XXXXXXXXXXXXXXXX'], layer: 'combat', vol: 0.40, from: 16, to: 24 },
+      { kind: 'guitar', low: 40, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X.x.x.X.x.x.C-D-'], layer: 'combat', vol: 0.46, from: 24 },
       { kind: 'bass', octave: 1, followGuitar: true, layer: 'combat', vol: 0.55, grit: 0.55 },
       { kind: 'drums', style: 'rock', layer: 'combat', vol: 0.95, to: 8, ...ROCK_A },
       { kind: 'drums', style: 'rock', layer: 'combat', vol: 1, from: 8, to: 16, ...ROCK_B },
@@ -106,11 +106,10 @@ export const FINAL_SONGS: Record<string, Song> = {
       { kind: 'perc', sound: 'riser', midi: 60, pat: ['x...............'], layer: 'combat', vol: 0.35, from: 15, to: 16 },
       { kind: 'perc', sound: 'riser', midi: 60, pat: ['x...............'], layer: 'combat', vol: 0.35, from: 23, to: 24 },
       // the hook on chip, doubled by guitar at the end, a slow chip line, a guitar solo when it races
-      // the hook on a played lead guitar, a twin a third below at the end, the chip only as a glint an octave up
-      { kind: 'lead', sound: 'realguitar', octave: 4, layer: 'combat', vol: 0.5, pan: -0.15, melody: `${UNW_HOOK} | ${UNW_SLOW} | ${rest(8)} | ${UNW_HOOK}` },
-      { kind: 'lead', sound: 'realguitar', octave: 4, layer: 'combat', vol: 0.4, pan: 0.2, melody: `${rest(24)} | ${up(UNW_HOOK, -2)}` },
-      { kind: 'lead', sound: 'chip', octave: 5, layer: 'combat', vol: 0.12, rev: 0.4, melody: `${UNW_HOOK} | ${rest(16)} | ${UNW_HOOK}` },
-      { kind: 'lead', sound: 'realguitar', octave: 4, layer: 'combat', vol: 0.5, pan: 0.1, melody: `${rest(16)} | ${SOLO} | ${rest(8)}` },
+      // no lead guitar: the chip sings the hook, a softer chip twin a third below, and the solo is chip too
+      { kind: 'lead', sound: 'chip', octave: 4, layer: 'combat', vol: 0.36, rev: 0.4, glide: true, melody: `${UNW_HOOK} | ${UNW_SLOW} | ${SOLO} | ${UNW_HOOK}` },
+      { kind: 'lead', sound: 'chip', octave: 4, layer: 'combat', vol: 0.18, rev: 0.4, pan: 0.35, melody: `${rest(24)} | ${up(UNW_HOOK, -2)}` },
+      { kind: 'lead', sound: 'strings', octave: 4, layer: 'combat', vol: 0.16, rev: 0.5, melody: `${rest(8)} | ${UNW_SLOW} | ${rest(16)}` },
     ],
   },
 
@@ -131,10 +130,10 @@ export const FINAL_SONGS: Record<string, Song> = {
       { kind: 'arp', sound: 'chip', octave: 5, rate: 2, seq: [0, 1, 2, 3, 4, 3, 2, 1], layer: 'combat', vol: 0.08, from: 24 },
       { kind: 'stacc', sound: 'strings', octave: 4, pat: ['0101210101210121'], layer: 'combat', vol: 0.16, from: 8, to: 16 },
       // electric guitars: a driving riff, the same pushed harder, punk tremolo under the solo, the riff hammered
-      { kind: 'guitar', low: 43, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X.x.x.X.x.x.C-D-'], layer: 'combat', vol: 0.62, to: 8 },
-      { kind: 'guitar', low: 43, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X---X---XXXXXXXX'], layer: 'combat', vol: 0.64, from: 8, to: 16 },
-      { kind: 'guitar', low: 43, riff: ['XXXXXXXXXXXXXXXX'], layer: 'combat', vol: 0.56, from: 16, to: 24 },
-      { kind: 'guitar', low: 43, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X---X---XXXXXXXX'], layer: 'combat', vol: 0.64, from: 24 },
+      { kind: 'guitar', low: 43, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X.x.x.X.x.x.C-D-'], layer: 'combat', vol: 0.45, to: 8 },
+      { kind: 'guitar', low: 43, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X---X---XXXXXXXX'], layer: 'combat', vol: 0.46, from: 8, to: 16 },
+      { kind: 'guitar', low: 43, riff: ['XXXXXXXXXXXXXXXX'], layer: 'combat', vol: 0.40, from: 16, to: 24 },
+      { kind: 'guitar', low: 43, notes: [0, 3, 5, 7, 10, 12], riff: ['X.x.x.X.x.x.X.x.', 'X---X---XXXXXXXX'], layer: 'combat', vol: 0.46, from: 24 },
       { kind: 'bass', octave: 1, followGuitar: true, layer: 'combat', vol: 0.55, grit: 0.5 },
       { kind: 'drums', style: 'rock', layer: 'combat', vol: 0.95, to: 8, ...ROCK_A },
       { kind: 'drums', style: 'rock', layer: 'combat', vol: 1, from: 8, to: 16, ...ROCK_D },
@@ -143,11 +142,10 @@ export const FINAL_SONGS: Record<string, Song> = {
       { kind: 'perc', sound: 'riser', midi: 60, pat: ['x...............'], layer: 'combat', vol: 0.35, from: 15, to: 16 },
       { kind: 'perc', sound: 'riser', midi: 60, pat: ['x...............'], layer: 'combat', vol: 0.35, from: 23, to: 24 },
       // leads: the hook on a played lead guitar, twin guitars and choir answering, the solo, everything
-      { kind: 'lead', sound: 'realguitar', octave: 4, layer: 'combat', vol: 0.5, pan: -0.15, melody: `${AUT_HOOK} | ${AUT_ANS} | ${rest(8)} | ${AUT_HOOK}` },
-      { kind: 'lead', sound: 'realguitar', octave: 4, layer: 'combat', vol: 0.4, pan: 0.2, melody: `${rest(8)} | ${up(AUT_ANS, -2)} | ${rest(8)} | ${up(AUT_HOOK, -2)}` },
+      // no lead guitar: the chip sings the hook and the solo, a softer chip twin and the choir answer
+      { kind: 'lead', sound: 'chip', octave: 4, layer: 'combat', vol: 0.36, rev: 0.4, glide: true, melody: `${AUT_HOOK} | ${AUT_ANS} | ${SOLO} | ${AUT_HOOK}` },
+      { kind: 'lead', sound: 'chip', octave: 4, layer: 'combat', vol: 0.18, rev: 0.4, pan: 0.35, melody: `${rest(8)} | ${up(AUT_ANS, -2)} | ${rest(8)} | ${up(AUT_HOOK, -2)}` },
       { kind: 'lead', sound: 'choir', octave: 4, layer: 'combat', vol: 0.26, rev: 0.6, melody: `${rest(8)} | ${AUT_ANS} | ${rest(8)} | ${AUT_HOOK}` },
-      { kind: 'lead', sound: 'chip', octave: 5, layer: 'combat', vol: 0.12, rev: 0.4, melody: `${AUT_HOOK} | ${rest(16)} | ${AUT_HOOK}` },
-      { kind: 'lead', sound: 'realguitar', octave: 4, layer: 'combat', vol: 0.5, pan: 0.1, melody: `${rest(16)} | ${SOLO} | ${rest(8)}` },
     ],
   },
 };
