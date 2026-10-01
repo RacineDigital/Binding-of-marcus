@@ -15,7 +15,7 @@ import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../it
 import { generateFloor, addBargainRoom } from '../generation/floorgen';
 import { itemIconCanvas } from '../art/items';
 import { dist2, TAU } from '../core/math';
-import { solidCell } from '../rooms/collide';
+import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { FINAL_FLOOR } from '../data/floors';
@@ -78,7 +78,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.pendingKegs = []; w.lockdown = false; w.labels = [];
   w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
   w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: 'down' } : null;
-  w.roomTime = 0; w.roomRng = new RNG(room.seed + ':rt');
+  w.roomTime = 0; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
   w.proj.enemySpeedMul = [0.8, 0.86, 0.92, 0.96, 1, 1.02, 1.05, 1.08][Math.min(7, w.run.floorIndex)];
@@ -400,8 +400,31 @@ export function onBossKilled(w: World, e: Enemy): void {
   });
 }
 
+/**
+ * Failsafe against soft-locks: if every enemy left in the room is walled in where Marcus can
+ * neither walk nor shoot, they crumble after a few seconds so the doors open.
+ */
+function freeSealedEnemies(w: World, dt: number): void {
+  const room = w.room, pl = w.player;
+  if (room.cleared || w.bossList.some((b) => !b.dead) || w.aliveEnemies() === 0 || w.transition) { w.stuckT = 0; return; }
+  const sealed = (e: Enemy): boolean => {
+    if (e.mode !== 'walk') return false;
+    const [c, r] = room.cellAt(e.x, e.y);
+    for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (w.flow.at(c + dc, r + dr) >= 0) return false;
+    return !lineClear(room, pl.x, pl.y - 8, e.x, e.y - (e.def.hitY ?? 6), 'shot');
+  };
+  const all = w.enemies.filter((e) => !e.dead && !e.friendly && !e.data.noClear);
+  if (all.length && all.every(sealed)) w.stuckT += dt; else w.stuckT = 0;
+  if (w.stuckT > 5) {
+    w.stuckT = 0;
+    for (const e of all) { w.fx.burst(e.x, e.y, 6, 14, '#8a8078', 70, 0.5); w.killEnemy(e); }
+    w.hud.toast('The walls swallow what they hid.', 2);
+  }
+}
+
 export function updateSpecial(w: World, dt: number): void {
   const room = w.room, pl = w.player;
+  freeSealedEnemies(w, dt);
   if (w.trapdoor) {
     const t = w.trapdoor; t.t += dt;
     if (t.t > 0.8 && dist2(pl.x, pl.y, t.x, t.y) < 11 * 11 && !w.transition && w.deathT < 0 && !w.game.fading) {

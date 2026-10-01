@@ -59,6 +59,8 @@ export class World {
   timeScale = 1; slowT = 0;
   labels: { x: number; y: number; text: string; color: string }[] = [];
   nearPedestal: Pickup | null = null;
+  /** Seconds every remaining enemy has been unreachable and unhittable (soft-lock failsafe). */
+  stuckT = 0;
   /** Closest pedestal or shop pickup, for the inspect card. */
   nearInspect: Pickup | null = null;
   trapdoor: { x: number; y: number; t: number; kind: 'down' | 'light' } | null = null;

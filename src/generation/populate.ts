@@ -92,6 +92,57 @@ function carve(room: RoomData, c0: number, r0: number, c1: number, r1: number): 
   room.setOb(c, r, Ob.None);
 }
 
+/**
+ * Every walking enemy must be reachable on foot from the doors; otherwise a rock ring can seal a
+ * turret in and the room can never be cleared without bombs. Carve the shortest way out.
+ */
+function freeSpawns(room: RoomData, spawns: SpawnDef[]): void {
+  if (!room.doors.length) return;
+  const walk = (k: number) => k === Ob.None || k === Ob.Spikes || k === Ob.TimedSpikes || k === Ob.Web || k === Ob.Button;
+  const N = room.cols * room.rows;
+  const reach = (): Uint8Array => {
+    const seen = new Uint8Array(N);
+    const q: number[] = [];
+    for (const d of room.doors) { const [c, r] = room.doorInner(d.side, d.slot); if (room.inGrid(c, r)) { seen[room.idx(c, r)] = 1; q.push(room.idx(c, r)); } }
+    while (q.length) {
+      const i = q.pop()!, c = i % room.cols, r = (i / room.cols) | 0;
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nc = c + dc, nr = r + dr;
+        if (!room.inGrid(nc, nr)) continue;
+        const j = room.idx(nc, nr);
+        if (seen[j] || !walk(room.at(nc, nr))) continue;
+        seen[j] = 1; q.push(j);
+      }
+    }
+    return seen;
+  };
+  let seen = reach();
+  for (const s of spawns) {
+    const def = getEnemy(s.id);
+    if (!def || def.flying || def.ghost) continue;
+    const c0 = Math.max(0, Math.min(room.cols - 1, Math.round(s.c))), r0 = Math.max(0, Math.min(room.rows - 1, Math.round(s.r)));
+    if (seen[room.idx(c0, r0)]) continue;
+    // BFS through anything to the nearest reachable cell, then clear the obstacles on that path
+    const prev = new Int32Array(N).fill(-2);
+    const start = room.idx(c0, r0); prev[start] = -1;
+    const q = [start]; let found = -1;
+    for (let h = 0; h < q.length && found < 0; h++) {
+      const i = q[h], c = i % room.cols, r = (i / room.cols) | 0;
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nc = c + dc, nr = r + dr;
+        if (!room.inGrid(nc, nr)) continue;
+        const j = room.idx(nc, nr);
+        if (prev[j] !== -2) continue;
+        prev[j] = i;
+        if (seen[j]) { found = j; break; }
+        q.push(j);
+      }
+    }
+    for (let i = found; i >= 0; i = prev[i]) { const c = i % room.cols, r = (i / room.cols) | 0; if (!walk(room.at(c, r))) room.setOb(c, r, Ob.None); }
+    seen = reach();
+  }
+}
+
 function nearDoor(room: RoomData, c: number, r: number): boolean {
   for (const d of room.doors) { const [dc, dr] = room.doorInner(d.side, d.slot); if (Math.abs(dc - c) + Math.abs(dr - r) <= 3) return true; }
   return false;
@@ -155,6 +206,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       if (room.cw === 2) for (const r of [1, room.rows - 2]) if (rng.chance(0.5)) room.setOb(17, r, Ob.Pillar);
       ensurePaths(room);
       room.spawns = castEnemies(room, floor, rng, slots);
+      freeSpawns(room, room.spawns);
       if (room.spawns.length === 0) room.cleared = true;
       break;
     }
@@ -245,6 +297,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
         item(cx, cy, 'curse', 'deal');
         const sl = [{ c: 2, r: 2, ch: 'M' }, { c: 12, r: 6, ch: 'M' }, { c: 2, r: 6, ch: 'F' }, { c: 12, r: 2, ch: 'F' }];
         room.spawns = castEnemies(room, floor, rng, sl, 1.3);
+        freeSpawns(room, room.spawns);
       } else for (let i = 0; i < 3; i++) pk(rng.pick(['ink', 'page', 'sweet', 'button5']), cx + (i - 1) * 24, cy);
       break;
     }

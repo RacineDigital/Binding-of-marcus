@@ -10,7 +10,7 @@ import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
 import { ACHIEVEMENTS } from '../src/data/achievements';
 import { MAP_SIZE } from '../src/core/constants';
-import { Side } from '../src/rooms/room';
+import { Side, Ob } from '../src/rooms/room';
 
 let failures = 0, checks = 0;
 function ok(cond: boolean, msg: string): void { checks++; if (!cond) { failures++; console.error('FAIL:', msg); } }
@@ -60,6 +60,18 @@ for (let i = 0; i < 150; i++) {
       if (r.type === 'treasure' || r.type === 'boss' || r.type === 'shop') ok(r.doors.filter((d) => !d.hidden).length === 1, `${seed} f${f}: ${r.type} room ${r.id} has a single entrance`);
       if (r.type === 'secret' || r.type === 'supersecret') ok(r.doors.every((d) => d.hidden), `${seed} f${f}: ${r.type} entrances are hidden`);
       for (const s of r.spawns) ok(!!getEnemy(s.id), `${seed}: spawn ${s.id} exists`);
+      // walking enemies can be reached on foot from a door (no rock-sealed soft-locks)
+      if (r.spawns.length && r.doors.length) {
+        const walk = (k: number) => k === Ob.None || k === Ob.Spikes || k === Ob.TimedSpikes || k === Ob.Web || k === Ob.Button;
+        const seen = new Uint8Array(r.cols * r.rows); const q: number[] = [];
+        for (const d of r.doors) { const [c, rr] = r.doorInner(d.side, d.slot); if (r.inGrid(c, rr)) { seen[r.idx(c, rr)] = 1; q.push(r.idx(c, rr)); } }
+        while (q.length) { const i = q.pop()!, c = i % r.cols, rr = (i / r.cols) | 0; for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = rr + dr; if (!r.inGrid(nc, nr)) continue; const j = r.idx(nc, nr); if (!seen[j] && walk(r.at(nc, nr))) { seen[j] = 1; q.push(j); } } }
+        for (const sp of r.spawns) {
+          const def = getEnemy(sp.id); if (!def || def.flying || def.ghost) continue;
+          const c = Math.max(0, Math.min(r.cols - 1, Math.round(sp.c))), rr = Math.max(0, Math.min(r.rows - 1, Math.round(sp.r)));
+          ok(!!seen[r.idx(c, rr)], `${seed} f${f}: ${sp.id} in room ${r.id} (${r.type}) is reachable on foot`);
+        }
+      }
     }
     // every non-secret room reachable from the start through visible doors
     const seen = new Set([0]); const q = [0];

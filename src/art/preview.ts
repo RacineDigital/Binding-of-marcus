@@ -1,3 +1,6 @@
+import { grid } from './grid';
+import * as HM from './hand/marcus';
+const HAND = { pal: HM.MARCUS_PAL, sheets: () => ({ down: HM.HEAD_DOWN }) };
 import { buildPlayerSprites } from './marcus';
 import { LOOKS } from './look';
 import { ALL_ENEMY_DEFS } from '../enemies/registry';
@@ -11,6 +14,9 @@ import { familiarSprites } from './familiars';
 export interface Sheet { label: string; canvas: HTMLCanvasElement }
 export function artSheets(which: string): Sheet[] {
   const out: Sheet[] = [];
+  if (which === 'hand') {
+    for (const [label, rows] of Object.entries(HAND.sheets())) out.push({ label, canvas: grid(rows, HAND.pal).toCanvas() });
+  }
   if (which === 'player') {
     for (const k of Object.keys(LOOKS)) {
       const s = buildPlayerSprites(LOOKS[k]);
