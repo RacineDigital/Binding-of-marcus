@@ -3,6 +3,7 @@ import type { World } from '../game/world';
 import type { Pickup } from '../game/pickups';
 import { getItem, getConsumable } from '../items/registry';
 import { describeItem, DescLine } from '../items/describe';
+import { poolInfo, PoolInfo } from '../items/homes';
 import { itemIconCanvas } from '../art/items';
 import { pickupSprites } from '../art/pickups';
 import { SWEET_EFFECTS } from '../items/data/consumables';
@@ -18,6 +19,8 @@ export interface InspectInfo {
   kindLabel: string;        // PASSIVE / ACTIVE / FAMILIAR / PICKUP ...
   tags?: string[];
   itemId?: string;
+  /** Which pool the item comes from, so you can tell an Inkwell item from a shop one. */
+  pool?: PoolInfo | null;
 }
 
 const PICKUP_TEXT: Record<string, [string, string, string]> = {
@@ -53,7 +56,7 @@ function inspectRaw(w: World, p: Pickup): InspectInfo | null {
     const it = getItem(p.data.id); if (!it) return null;
     if (blind) return { key: 'blind', icon: itemIconCanvas(it.id, true), title: '???', subtitle: 'Something hidden by the Blight', lines: [{ text: 'You cannot make out what it is.', color: 'plain' }], quality: -1, kindLabel: '' };
     const kindLabel = p.data.swap ? 'LOST & FOUND  ·  take one, leave one' : it.kind === 'active' ? `ACTIVE ITEM  ·  ${K('active')} to use` : it.kind === 'familiar' ? 'FAMILIAR' : it.kind === 'trinket' ? 'CHARM' : 'PASSIVE ITEM';
-    return { key: it.id, icon: itemIconCanvas(it.id, false), title: it.name, subtitle: it.pickup, lines: describeItem(it), quality: it.quality, kindLabel, tags: it.tags, itemId: it.id };
+    return { key: it.id, icon: itemIconCanvas(it.id, false), title: it.name, subtitle: it.pickup, lines: describeItem(it), quality: it.quality, kindLabel, tags: it.tags, itemId: it.id, pool: poolInfo(it) };
   }
   if (p.kind === 'charm' && p.data.id) {
     const it = getItem(p.data.id) ?? getConsumable(p.data.id) as any;

@@ -1,5 +1,7 @@
 # Lost Marcus
 
+[![Downloads](https://img.shields.io/github/downloads/RacineDigital/Binding-of-marcus/total?label=downloads)](https://github.com/RacineDigital/Binding-of-marcus/releases) [![Latest release downloads](https://img.shields.io/github/downloads/RacineDigital/Binding-of-marcus/latest/total?label=latest%20release)](https://github.com/RacineDigital/Binding-of-marcus/releases/latest)
+
 A top-down, room-by-room action roguelike for Windows and the browser. Marcus goes down into the cellar of his late
 grandfather's bindery, where the frightening stories the old bookbinder stitched shut have come
 unbound. He has to fight through eight chapters and bind the story again.
@@ -123,9 +125,13 @@ Menus also work with the mouse: hover, click and scroll.
   Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
   charms. The strongest ones are earned: the D4 (two transformations at once), D8 (15 damage),
   Spindown Dice (three challenges), D100 (beat the Author) and D Infinity (roll every other die).
-- **Eleven transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
-  thread, bone, void, drain, vamp, jeffy, crew) triggers one, and each one changes how you look. Jeffy
+- **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
+  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look. Jeffy
   throws a tantrum of pencils whenever he gets hit.
+- **One pool per item.** Every item lives in exactly one pool, and a transformation's items all
+  share theirs. Inkblooded lives in the Inkwell, King Vamp in secret rooms, Clockwork in the shop,
+  and so on. Each item's description says which pool it is from, and Inkwell, Hexed and Chapel
+  items carry a glow of their room wherever they turn up.
 - **Twenty chapters in a different order every run.** A run is seven chapters drawn from twenty
   (never two from the same family), then The Binding. The first chapter is always a gentle one,
   and no chapter shows up more than one step earlier than its usual depth. Enemy health and room

@@ -180,18 +180,18 @@ const DIE = (id: string, name: string, label: string, body: string, charge: numb
 });
 
 export const DICE: ItemDef[] = [
-  DIE('d1', 'D1', 'D1', '#e8dcc0', 4, 1, 'Double one', ['Duplicates a random pickup lying in the room.'], d1, { treasure: 0.5, shop: 0.5 }),
-  DIE('d4', 'D4', 'D4', '#c8d8f0', 6, 3, 'Reroll yourself', ['Every passive item you carry turns into a random other item.'], d4, { treasure: 0.35, secret: 0.6 }, 'two_transforms'),
-  DIE('d7', 'D7', 'D7', '#f0c8c8', 3, 2, 'Again!', ['In a room you already cleared, brings its enemies back so you can clear it again for another reward.'], d7, { treasure: 0.5 }),
-  DIE('d8', 'D8', 'D8', '#e0c8f0', 4, 2, 'Reroll your stats', ['Rerolls your damage and fire rate multipliers (x0.6 to x1.6), plus your range and speed. For good.'], d8, { treasure: 0.5, secret: 0.5 }, 'dmg_15'),
-  DIE('d9', 'D9', 'D9', '#c8f0d8', 2, 1, 'Reroll your charms', ['Each charm you carry becomes a different charm.', 'There is no D9 in Isaac. There is now.'], d9, { treasure: 0.4, shop: 0.6 }),
-  DIE('d10', 'D10', 'D10', '#f0e0b0', 2, 1, 'Reroll the monsters', ['Every enemy in the room becomes a different enemy from this chapter.'], d10, { treasure: 0.5 }),
-  DIE('d12', 'D12', 'D12', '#d0c0a8', 2, 1, 'Reroll the furniture', ['Rocks, urns, heaps, kegs and blocks in the room turn into other obstacles.'], d12, { treasure: 0.4, shop: 0.4 }),
-  DIE('d20', 'D20', 'D20', '#b8e0e8', 4, 2, 'Reroll the floor', ['Every pickup lying in the room (not items or shop stock) turns into a different pickup.'], d20, { treasure: 0.5, shop: 0.5 }),
+  DIE('d1', 'D1', 'D1', '#e8dcc0', 4, 1, 'Double one', ['Duplicates a random pickup lying in the room.'], d1, { shop: 0.5 }),
+  DIE('d4', 'D4', 'D4', '#c8d8f0', 6, 3, 'Reroll yourself', ['Every passive item you carry turns into a random other item.'], d4, { shop: 0.6 }, 'two_transforms'),
+  DIE('d7', 'D7', 'D7', '#f0c8c8', 3, 2, 'Again!', ['In a room you already cleared, brings its enemies back so you can clear it again for another reward.'], d7, { shop: 0.5 }),
+  DIE('d8', 'D8', 'D8', '#e0c8f0', 4, 2, 'Reroll your stats', ['Rerolls your damage and fire rate multipliers (x0.6 to x1.6), plus your range and speed. For good.'], d8, { shop: 0.5 }, 'dmg_15'),
+  DIE('d9', 'D9', 'D9', '#c8f0d8', 2, 1, 'Reroll your charms', ['Each charm you carry becomes a different charm.', 'There is no D9 in Isaac. There is now.'], d9, { shop: 0.6 }),
+  DIE('d10', 'D10', 'D10', '#f0e0b0', 2, 1, 'Reroll the monsters', ['Every enemy in the room becomes a different enemy from this chapter.'], d10, { shop: 0.5 }),
+  DIE('d12', 'D12', 'D12', '#d0c0a8', 2, 1, 'Reroll the furniture', ['Rocks, urns, heaps, kegs and blocks in the room turn into other obstacles.'], d12, { shop: 0.4 }),
+  DIE('d20', 'D20', 'D20', '#b8e0e8', 4, 2, 'Reroll the floor', ['Every pickup lying in the room (not items or shop stock) turns into a different pickup.'], d20, { shop: 0.5 }),
   DIE('d100', 'D100', '100', '#f0d070', 6, 4, 'Reroll everything', ['Rerolls your items, every item pedestal and every pickup in the room, all at once.'],
-    (w) => { const a = d4(w), b = reroll(w), c = d20(w); return a || b || c; }, { secret: 0.4, deal: 0.3 }, 'beat_author'),
-  DIE('eternal_d6', 'Eternal D6', 'ED6', '#f4f4f8', 2, 2, 'Reroll your fate?', ['Rerolls every item pedestal in the room, but each item has a 1 in 4 chance to vanish instead.'], eternal, { treasure: 0.5, blessing: 0.6 }),
-  DIE('spindown', 'Spindown Dice', 'S', '#5a5a6a', 6, 3, 'Count down', ['Every item pedestal in the room becomes the item listed just before it in the collection.'], spindown, { secret: 0.6, shop: 0.3 }, 'challenges_3'),
-  DIE('d_infinity', 'D Infinity', 'D∞', '#2a2a3a', 4, 3, 'Every die at once', ['Rolls the face it shows (D1, D4, D6, D7, D8, D9, D10, D12 or D20), then lands on a new face for next time.'], dInfinity, { secret: 0.5, deal: 0.4 }, 'all_dice'),
+    (w) => { const a = d4(w), b = reroll(w), c = d20(w); return a || b || c; }, { shop: 0.4 }, 'beat_author'),
+  DIE('eternal_d6', 'Eternal D6', 'ED6', '#f4f4f8', 2, 2, 'Reroll your fate?', ['Rerolls every item pedestal in the room, but each item has a 1 in 4 chance to vanish instead.'], eternal, { shop: 0.6 }),
+  DIE('spindown', 'Spindown Dice', 'S', '#5a5a6a', 6, 3, 'Count down', ['Every item pedestal in the room becomes the item listed just before it in the collection.'], spindown, { shop: 0.3 }, 'challenges_3'),
+  DIE('d_infinity', 'D Infinity', 'D∞', '#2a2a3a', 4, 3, 'Every die at once', ['Rolls the face it shows (D1, D4, D6, D7, D8, D9, D10, D12 or D20), then lands on a new face for next time.'], dInfinity, { shop: 0.5 }, 'all_dice'),
 ];
 void hex;

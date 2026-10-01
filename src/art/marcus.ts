@@ -239,6 +239,47 @@ function paintDeath(L: CharacterLook, f: number): PixelArt {
   return p;
 }
 
+// ---------------------------------------------------------------- every reader on Marcus's rig
+const HAIR = new Set(['K', 'h', 'H', 'L', 'l']);
+const BALD: Record<string, string> = { K: 'd', h: 's', H: 'S', L: 'S', l: 'W' };
+const HOOD: Record<string, string> = { K: 'c', h: 'c', H: 'C', L: 'D', l: 'E' };
+/** Reshape a head grid: hair becomes skin (shaved) or cloth (a hood), clipped to a round dome and re-outlined. */
+function reshapeHead(rows: string[], mod: 'bald' | 'hood'): string[] {
+  const H = rows.length, W = rows[0].length;
+  const g = rows.map((r) => [...r]);
+  const map = mod === 'bald' ? BALD : HOOD;
+  const cx = (W - 1) / 2, cy = 9.5, rx = mod === 'hood' ? 10 : 9.4, ry = mod === 'hood' ? 10 : 9.2;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const ch = g[y][x];
+    if (HAIR.has(ch)) g[y][x] = map[ch];
+    // round the top of the head off where the spikes were
+    if (y < 9 && ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) g[y][x] = '.';
+  }
+  // a shine on the bald dome; a seam down the hood
+  if (mod === 'bald') { for (const [x, y] of [[6, 3], [7, 3], [5, 4]]) if (g[y]?.[x] && g[y][x] !== '.') g[y][x] = 'W'; }
+  else for (let y = 1; y < 9; y++) if (g[y][10] && g[y][10] !== '.') g[y][10] = 'c';
+  // re-outline: drop the old outer edge, then trace a new one round whatever is filled
+  const filled = (x: number, y: number) => y >= 0 && y < H && x >= 0 && x < W && g[y][x] !== '.';
+  const outer = (x: number, y: number) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !filled(x + dx, y + dy));
+  for (let y = 0; y < 10; y++) for (let x = 0; x < W; x++) if (g[y][x] === 'o' && outer(x, y)) g[y][x] = '.';
+  const add: [number, number][] = [];
+  for (let y = 0; y < 10; y++) for (let x = 0; x < W; x++) if (g[y][x] === '.' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => filled(x + dx, y + dy))) add.push([x, y]);
+  for (const [x, y] of add) g[y][x] = 'o';
+  return g.map((r) => r.join(''));
+}
+const rigCache = new Map<string, HandRig>();
+/** Marcus's rig in a reader's colours (and an outfit's, on top), with their hair reshaped. */
+function rigFor(L: CharacterLook, outfitPal?: Partial<Palette>, key = ''): HandRig {
+  const k = (L.headMod ?? '') + ':' + JSON.stringify(L.pal ?? {}) + ':' + key;
+  let r = rigCache.get(k);
+  if (!r) {
+    const head = L.headMod ? { down: reshapeHead(HM.HEAD_DOWN, L.headMod), side: reshapeHead(HM.HEAD_SIDE, L.headMod), up: reshapeHead(HM.HEAD_UP, L.headMod) } : MARCUS_RIG.head;
+    r = { ...MARCUS_RIG, head, ghost: !!L.ghost, pal: { ...MARCUS_RIG.pal, ...(L.pal ?? {}), ...(outfitPal ?? {}) } as Palette };
+    rigCache.set(k, r);
+  }
+  return r;
+}
+
 /** Sprites for a reader, optionally recoloured by an outfit (cached per look + outfit). */
 const outfitCache = new Map<string, PlayerSprites>();
 export function buildOutfitSprites(lookId: string, L: CharacterLook, outfit: Outfit | null): PlayerSprites {
@@ -246,7 +287,7 @@ export function buildOutfitSprites(lookId: string, L: CharacterLook, outfit: Out
   let s = outfitCache.get(key);
   if (!s) {
     if (!outfit) s = buildPlayerSprites(L);
-    else if (L.hand === 'marcus') s = buildHandSprites({ ...MARCUS_RIG, pal: { ...MARCUS_RIG.pal, ...outfit.pal } as Palette });
+    else if (L.hand === 'marcus') s = buildHandSprites(rigFor(L, outfit.pal, outfit.id));
     else s = buildPlayerSprites(outfitLook(L, outfit));
     outfitCache.set(key, s);
   }
@@ -254,7 +295,7 @@ export function buildOutfitSprites(lookId: string, L: CharacterLook, outfit: Out
 }
 
 export function buildPlayerSprites(L: CharacterLook): PlayerSprites {
-  if (L.hand === 'marcus') return buildHandSprites(MARCUS_RIG);
+  if (L.hand === 'marcus') return buildHandSprites(rigFor(L));
   const states: HeadState[] = ['normal', 'fire', 'hurt', 'blink', 'happy'];
   const head = {} as PlayerSprites['head'];
   for (const d of ['down', 'up', 'side'] as HeadDir[]) {

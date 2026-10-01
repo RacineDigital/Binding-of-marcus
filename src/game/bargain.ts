@@ -1,6 +1,6 @@
 // Bargain doors. When a chapter's boss falls, a door may open beside its room: the Inkwell (items for
 // heart containers), the Wax Chapel (free blessings) or the Lost & Found (things you left behind,
-// traded one-for-one for something you carry). Getting hit makes a door less likely, and the odds are
+// traded one-for-one for something you carry). Losing red hearts makes a door less likely, and the odds are
 // shown on the HUD so you can watch them.
 import type { World } from './world';
 import type { Pickup } from './pickups';
@@ -14,9 +14,9 @@ import { HOSPITAL_THEMES } from '../data/notes';
 export type BargainKind = 'deal' | 'blessing' | 'lostfound';
 export const BARGAIN_NAMES: Record<BargainKind, string> = { deal: 'The Inkwell', blessing: 'Wax Chapel', lostfound: 'Lost & Found' };
 
-/** Bonus for getting through a chapter without being hit. Lost on the first hit. */
+/** Bonus for getting through a chapter without losing a red heart (Isaac's rule: other hearts don't count). */
 export const UNTOUCHED = 0.35;
-/** Bonus for not being hit by the chapter's boss. */
+/** Bonus for not losing a red heart to the chapter's boss. */
 export const CLEAN_BOSS = 0.15;
 
 export interface DoorOdds {
@@ -34,10 +34,10 @@ export function doorOdds(w: World): DoorOdds {
   const base = f.dealChance ?? 0.2;
   let c = base;
   parts.push({ label: 'Base chance', value: pct(base), good: true });
-  if (!f.hitThisFloor) { c += UNTOUCHED; parts.push({ label: 'Not hit this chapter', value: '+' + pct(UNTOUCHED), good: true }); }
-  else parts.push({ label: 'Hit this chapter', value: '+0%', good: false });
-  if (!f.bossHit) { c += CLEAN_BOSS; parts.push({ label: w.room?.type === 'boss' ? 'Boss hasn\'t hit you' : 'Clean boss fight', value: '+' + pct(CLEAN_BOSS), good: true }); }
-  else parts.push({ label: 'Hit by the boss', value: '+0%', good: false });
+  if (!f.redHit) { c += UNTOUCHED; parts.push({ label: 'No red hearts lost this chapter', value: '+' + pct(UNTOUCHED), good: true }); }
+  else parts.push({ label: 'Lost red hearts this chapter', value: '+0%', good: false });
+  if (!f.bossRedHit) { c += CLEAN_BOSS; parts.push({ label: w.room?.type === 'boss' ? 'Boss hasn\'t cost you a red heart' : 'No red hearts lost to the boss', value: '+' + pct(CLEAN_BOSS), good: true }); }
+  else parts.push({ label: 'The boss cost you red hearts', value: '+0%', good: false });
   if (f.lastDoorFloor === fi - 1) { c *= 0.5; parts.push({ label: 'A door opened last chapter', value: 'x1/2', good: false }); }
   if (fi === 0) { c = 0; parts.push({ label: 'No doors in Chapter I', value: '0%', good: false }); }
   else if (fi === FINAL_FLOOR && w.run.mode !== 'endless') { c = 0; parts.push({ label: 'No doors in the final chapter', value: '0%', good: false }); }
@@ -147,7 +147,7 @@ function stockLostFound(w: World, room: RoomData): void {
 /** Passive items Marcus could hand over at the counter. */
 function tradeable(w: World): string[] {
   const pl = w.player;
-  return pl.itemOrder.filter((id) => (pl.items.get(id) ?? 0) > 0 && !NO_TRADE.has(id) && getItem(id)?.kind !== 'active');
+  return pl.itemOrder.filter((id) => (pl.items.get(id) ?? 0) > 0 && !NO_TRADE.has(id) && !getItem(id)?.tags?.includes('quest') && getItem(id)?.kind !== 'active');
 }
 
 /**

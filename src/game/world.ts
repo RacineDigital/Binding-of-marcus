@@ -28,6 +28,7 @@ import { RNG } from '../core/rng';
 import { rollDropKind, spawnDrop } from './drops';
 import { checkProgress } from './progress';
 import * as flow from './roomflow';
+import { loopBossFrames } from '../bosses/bosslife';
 import { renderWorld } from './worldrender';
 import { Hud } from '../ui/hud';
 
@@ -182,6 +183,7 @@ export class World {
     if (e.freeze > 0) return;
     e.st += dt;
     e.def.update(e, this, dt);
+    if (e.def.boss) loopBossFrames(e, dt);
   }
 
   private separateEnemies(): void {
@@ -216,8 +218,10 @@ export class World {
     // spikes & fires & creep
     const [c, r] = this.room.cellAt(pl.x, pl.y);
     const k = this.room.at(c, r);
-    if (!pl.flight && !pl.has('ewens_bike') && (k === Ob.Spikes || (k === Ob.TimedSpikes && this.spikesUp(c, r)))) {
-      if (this.hurtPlayer(1, 'Spikes', { redFirst: this.room.type === 'sacrifice' }) && this.room.type === 'sacrifice') flow.onPincushion(this);
+    // the Pincushion's spikes are an offering: wings and bikes don't get you out of paying
+    const pin = this.room.type === 'sacrifice';
+    if ((pin || (!pl.flight && !pl.has('ewens_bike'))) && (k === Ob.Spikes || (k === Ob.TimedSpikes && this.spikesUp(c, r)))) {
+      if (this.hurtPlayer(1, 'Spikes', { redFirst: pin }) && pin) flow.onPincushion(this);
     }
     for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
       if (this.room.at(c + dc, r + dr) === Ob.Fire) {
@@ -365,6 +369,7 @@ export class World {
       this.run.flags.jacket = false; pl.iframes = 1; this.audio.play('brass', { x: pl.x }); this.fx.ring(pl.x, pl.y - 10, 4, 24, '#8ab0d0', 0.3);
       this.hud.toast('The jacket takes the blow.', 1.2); return false;
     }
+    const red0 = pl.health.red;
     const res = pl.health.damage(half, !!o.redFirst);
     if (!o.noIframes) pl.iframes = 1.25 + this.player.count('pocket_watch') * 0.3;
     pl.hurtT = 0.45;
@@ -379,6 +384,9 @@ export class World {
     this.run.flags.hitThisFloor = true;
     this.roomHit = true;
     if (this.room.type === 'boss') this.run.flags.bossHit = true;
+    // only losing red hearts costs you the bargain door (wax, ink and brass soak hits for free), and
+    // paying the Pincushion never counts
+    if (pl.health.red < red0 && !o.redFirst) { this.run.flags.redHit = true; if (this.room.type === 'boss') this.run.flags.bossRedHit = true; }
     if (!o.redFirst) this.itemHook('onHurt');
     // Jeffy throws a tantrum: pencils everywhere and a burst of speed
     if (pl.transformations.has('jeffy') && !res.dead) {

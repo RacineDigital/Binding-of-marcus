@@ -31,6 +31,7 @@ export interface AttackProfile {
   shatter: boolean;       // shots break rocks
   magnet: boolean;        // enemy projectiles near shots are cancelled
   rainbow: boolean;       // random status each shot
+  short: boolean;         // beams stop short (the Blot's mouth)
 }
 
 export type ProfilePart = Partial<Omit<AttackProfile, 'modes'>> & { mode?: AttackMode };
@@ -41,7 +42,7 @@ export function baseProfile(): AttackProfile {
     splitOnHit: false, splitOnExpire: false, explode: 0, chain: 0, chainChance: 0, orbit: false, boomerang: false,
     wiggle: 0, spiral: false, arc: false, grow: 0, accel: 0, burn: 0, poison: 0, slow: 0, freeze: 0, fear: 0,
     confuse: 0, mark: 0, charm: 0, crit: 0, creep: false, rear: false, sides: false, lifesteal: 0, knock: 1,
-    shape: 'ink', tint: null, chargeTime: 1.1, pull: false, shatter: false, magnet: false, rainbow: false,
+    shape: 'ink', tint: null, chargeTime: 1.1, pull: false, shatter: false, magnet: false, rainbow: false, short: false,
   };
 }
 

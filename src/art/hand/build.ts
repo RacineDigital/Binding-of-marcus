@@ -14,6 +14,8 @@ export interface HandRig {
   legsSide: { idle: string[]; strideA: string[]; strideB: string[] };
   /** Palette keys for raised arms in the pickup pose. */
   sleeve: string; skin: string; outline: string;
+  /** Ghosts fade out below the knee. */
+  ghost?: boolean;
 }
 
 const BW = 18, BH = 13;
@@ -28,6 +30,7 @@ function bodyArt(R: HandRig, dir: 'down' | 'up' | 'side', legs: string[], bob: n
   const L = grid(legs, R.pal, 'legs'), T = grid(R.torso[dir], R.pal, 'torso');
   p.stamp(L, 0, BH - L.h);
   p.stamp(T, 0, bob);
+  if (R.ghost) for (let y = BH - 4; y < BH; y++) for (let x = 0; x < BW; x++) if ((x + y) % 2 || y === BH - 1) p.clear(x, y);
   return p;
 }
 

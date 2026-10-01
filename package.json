@@ -1,7 +1,7 @@
 {
   "name": "lost-marcus",
   "private": true,
-  "version": "3.0.4",
+  "version": "3.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,9 @@
     "dist:win": "npm run build:single && electron-builder --win --publish never"
   },
   "devDependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/pirata-one": "^5.3.0",
     "@types/node": "^22.20.4",
     "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
@@ -26,9 +29,7 @@
     "vite": "^6.4.3"
   },
   "dependencies": {
-    "@fontsource/barlow-condensed": "^5.3.0",
-    "@fontsource/cinzel": "^5.3.0",
-    "@fontsource/pirata-one": "^5.3.0"
+    "electron-updater": "^6.8.9"
   },
   "main": "electron/main.cjs",
   "description": "Lost Marcus - a dark top-down roguelike",
@@ -36,7 +37,7 @@
   "build": {
     "appId": "com.racinedigital.lostmarcus",
     "productName": "Lost Marcus",
-    "copyright": "© Papermoth Games",
+    "copyright": "\u00a9 Papermoth Games",
     "directories": {
       "output": "release-desktop",
       "buildResources": "electron"
@@ -46,7 +47,8 @@
       "electron/preload.cjs",
       "electron/discord.cjs",
       "electron/icon.png",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
     ],
     "extraResources": [
       {
@@ -89,6 +91,14 @@
         "AppImage"
       ],
       "category": "Game"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "RacineDigital",
+        "repo": "Binding-of-marcus",
+        "releaseType": "release"
+      }
+    ]
   }
 }

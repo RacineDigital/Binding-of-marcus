@@ -41,6 +41,8 @@ export class Player {
   pickupT = 0; pickupSprite: HTMLCanvasElement | null = null;
   aimAng = Math.PI / 2; aiming = false; lastAim = { x: 0, y: 1 };
   fireCd = 0; wcharge = 0; wasAiming = false; altHand = 1;
+  /** The Blot's chest: how far the wound is torn open (0..1). */
+  chest = 0;
   swing: Swing | null = null;
   dead = false; deathT = 0;
   squashX = 1; squashY = 1;
@@ -98,7 +100,7 @@ export class Player {
 
   /** Items and transformations change how you look; rebuild the sprites only when the outfit changes. */
   refreshCostume(): void {
-    const c = costumeFor(this.items.keys(), this.charms, this.transformations);
+    const c = costumeFor(this.items.keys(), this.charms, this.transformations, this.flight, this.char.look);
     if ((c.outfit?.id ?? '') !== (this.costume.outfit?.id ?? '')) this.spr = buildOutfitSprites(this.char.look, LOOKS[this.char.look] ?? LOOKS.marcus, c.outfit);
     this.costume = c;
   }
@@ -123,7 +125,15 @@ export class Player {
     return clamp(this.prof.chargeTime * k * (2.73 / this.stats.fireRate), 0.25, 3.2);
   }
 
+  /** Where the Blot's beam pours from: the middle of the chest, wherever the body is floating. */
+  chestY(): number { return this.y - (this.flight ? 8 : 0) - 6; }
   update(w: World, dt: number): void {
+    // the chest tears open as the beam charges, gapes while it pours, then seals over again
+    if (this.prof.short) {
+      const firing = w.beams.some((b) => !b.enemyBeam && b.prof?.short);
+      const want = firing ? 1 : this.wcharge * 0.75;
+      this.chest += (want - this.chest) * Math.min(1, dt * (want > this.chest ? 14 : 5));
+    } else this.chest = 0;
     if (this.dead) { this.deathT += dt; return; }
     const inp = w.input;
     const locked = this.controlLock > 0 || w.inputLocked();
@@ -203,7 +213,7 @@ export class Player {
    * his torso and face, a little inside the sprite so grazes feel fair.
    */
   hurtCapsule(): { x: number; y0: number; y1: number; r: number } {
-    const lift = this.flight ? 3 : 0;
+    const lift = this.flight ? 8 : 0;
     return { x: this.x, y0: this.y - HURT_TOP - lift, y1: this.y - HURT_BOT - lift, r: HURT_R };
   }
   /** Squared distance from a screen-space point to the hurt capsule's spine. */
@@ -292,7 +302,7 @@ export class Player {
       for (const base of this.fireAngles(ang)) for (let i = 0; i < n; i++) {
         const b = new Beam(prof);
         b.ang = base; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
-        b.dur = 0.5; b.width = 7 * Math.min(2.2, st.size) * (heavy ? 1.25 : 1); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1);
+        b.dur = prof.short ? 0.7 : 0.5; b.width = (prof.short ? 9 : 7) * Math.min(2.2, st.size) * (heavy ? 1.25 : 1); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1);
         b.color = prof.tint ?? (prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff');
         w.beams.push(b);
       }
@@ -389,11 +399,20 @@ export class Player {
     }
     if (this.invisible) return;
     // shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.32)';
-    ctx.beginPath(); ctx.ellipse(sx, sy, this.flight ? 5 : 7, 2.5, 0, 0, TAU); ctx.fill();
+    // flying readers ride well above a small, faint shadow, with a downdraft stirring under them
+    const hover = this.flight ? 8 + Math.sin(w.time * 4) * 2 : 0;
+    if (this.flight) {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(sx, sy + 1, 4.5 - (hover - 8) * 0.4, 1.8, 0, 0, TAU); ctx.fill();
+      const k = (w.time * 1.6) % 1;
+      ctx.strokeStyle = `rgba(230,230,255,${0.3 * (1 - k)})`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(sx, sy + 1, 4 + k * 7, 1.5 + k * 2.2, 0, 0, TAU); ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
+      ctx.beginPath(); ctx.ellipse(sx, sy, 7, 2.5, 0, 0, TAU); ctx.fill();
+    }
     const flicker = this.iframes > 0 && Math.floor(this.iframes * 18) % 2 === 0;
     const alpha = flicker ? 0.35 : this.char.id === 'elias' ? 0.85 : 1;
-    const hover = this.flight ? 3 + Math.sin(w.time * 5) * 1.5 : 0;
     const moving = Math.hypot(this.vx, this.vy) > 12;
     let body;
     if (this.pickupT > 0) body = s.pickup;
@@ -422,8 +441,10 @@ export class Player {
     const facingAway = this.bodyDir === 'up' && this.pickupT <= 0;
     if (!facingAway) layer('back');
     if (!headAbove) { body.draw(ctx, sx, by, o); layer('body'); layer('hand'); }
+    if (!headAbove) this.drawChest(w, ctx, sx, by);
     head.draw(ctx, sx, headY, { ...o, flip: this.headDir === 'side' && this.headFlip, sx: hsq.sx, sy: hsq.sy });
     layer('face'); layer('head');
+    if (this.chest > 0.05) this.drawBlazingEyes(w, ctx, sx, headY, head);
     if (headAbove) { body.draw(ctx, sx, by, o); layer('body'); layer('hand'); }
     if (facingAway) layer('back');
     if (this.pickupT > 0 && this.pickupSprite) {
@@ -455,6 +476,59 @@ export class Player {
       ctx.restore();
     }
   }
+  /** The wound in the Blot's chest: a ragged ring of ink with little teeth, a churning void, drips. */
+  private drawChest(w: World, ctx: CanvasRenderingContext2D, sx: number, by: number): void {
+    const k = this.chest; if (k < 0.04) return;
+    const cx = sx + (this.bodyDir === 'side' ? (this.bodyFlip ? -1 : 1) : 0), cy = by - 6, t = w.time;
+    const rx = 0.8 + 3.6 * k, ry = 0.8 + 3.2 * k;
+    ctx.save();
+    // torn rim: a jagged ring of ink, its spikes curling as it breathes
+    ctx.fillStyle = '#2a2650';
+    ctx.beginPath();
+    for (let i = 0; i <= 16; i++) {
+      const a = (i / 16) * TAU, spike = i % 2 ? 1 + 0.5 * k + Math.sin(t * 9 + i) * 0.25 : 0.8;
+      ctx.lineTo(cx + Math.cos(a) * (rx + 1.5) * spike, cy + Math.sin(a) * (ry + 1.3) * spike);
+    }
+    ctx.fill();
+    // the hole itself
+    ctx.fillStyle = '#05030a'; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU); ctx.fill();
+    // ink swirling in the dark
+    for (let i = 0; i < 5; i++) {
+      const a = t * 6 + i * 1.26, r = (0.3 + (i % 3) * 0.25) * Math.min(rx, ry);
+      ctx.fillStyle = i % 2 ? '#3a2a8a' : '#6a5ad8';
+      ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.8), 1, 1);
+    }
+    if (k > 0.5) { ctx.globalAlpha = (k - 0.5) * 2 * (0.6 + 0.4 * Math.sin(t * 30)); ctx.fillStyle = '#a898ff'; ctx.fillRect(Math.round(cx - 1), Math.round(cy - 0.5), 2, 1); ctx.globalAlpha = 1; }
+    // little teeth round the edge once it's wide open
+    if (k > 0.45) {
+      ctx.fillStyle = '#e8e4ff';
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + 0.2; ctx.fillRect(Math.round(cx + Math.cos(a) * rx * 0.9), Math.round(cy + Math.sin(a) * ry * 0.9), 1, 1); }
+    }
+    // ink running down from the wound
+    ctx.fillStyle = '#14122a';
+    for (let i = 0; i < 3; i++) {
+      const l = ((t * 1.6 + i * 0.33) % 1) * (2 + k * 5);
+      ctx.fillRect(Math.round(cx - 2 + i * 2), Math.round(cy + ry), 1, Math.round(1 + l));
+    }
+    ctx.restore();
+    w.r.addGlow(cx, cy, 10 + k * 12, '#6a4aff', 0.12 + k * 0.25);
+  }
+  /** While the wound is open the Blot's eyes burn white-violet. */
+  private drawBlazingEyes(w: World, ctx: CanvasRenderingContext2D, sx: number, headY: number, head: { ox: number; oy: number; w: number }): void {
+    if (this.headDir === 'up') return;
+    const k = this.chest, x0 = sx - head.ox, y0 = headY - head.oy, flip = this.headDir === 'side' && this.headFlip;
+    const eyes = this.headDir === 'down' ? [5, 14] : [13];
+    const flick = 0.75 + 0.25 * Math.sin(w.time * 40);
+    for (const ex of eyes) {
+      const x = flip ? x0 + head.w - ex - 2 : x0 + ex;
+      ctx.globalAlpha = Math.min(1, k * 1.6) * flick; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x), Math.round(y0 + 12), 2, 2);
+      ctx.fillStyle = '#c8bcff'; ctx.fillRect(Math.round(x - 1), Math.round(y0 + 13), 1, 1); ctx.fillRect(Math.round(x + 2), Math.round(y0 + 13), 1, 1);
+      // streaks of light trailing off the eyes
+      ctx.globalAlpha = k * 0.5 * flick; ctx.fillRect(Math.round(x + (flip ? 2 : -1)), Math.round(y0 + 12 - k * 2), 1, Math.round(1 + k * 2));
+      w.r.addGlow(x + 1, y0 + 13, 8 + k * 10, '#b8a8ff', 0.25 + k * 0.45);
+    }
+    ctx.globalAlpha = 1;
+  }
 }
 
 /** Transformation bonuses (granted by collecting 3 items sharing a tag). */
@@ -468,6 +542,5 @@ export const TRANSFORM_EFFECTS: Record<string, { name: string; desc: string; sta
   void: { name: 'Hollowed', desc: 'Spectral homing shots.', attack: { spectral: true, homing: 0.4 } },
   drain: { name: 'Drainer', desc: 'Flight. Speed up. Every shot can chill.', stats: { speed: 0.2, tears: 0.3 }, attack: { slow: 0.25, tint: '#a8dcff' }, flight: true },
   vamp: { name: 'King Vamp', desc: 'Damage up. Your shots drink blood.', stats: { damage: 1.5 }, attack: { lifesteal: 0.35, tint: '#d01828', shape: 'blood' } },
-  crew: { name: 'The Crew', desc: 'Damage and fire rate up. One of your mates turns up for every fight.', stats: { damage: 0.7, tears: 0.4 } },
   jeffy: { name: 'Jeffy', desc: 'Speed and damage up. Getting hit throws a tantrum of pencils.', stats: { damage: 1, speed: 0.2 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' } },
 };

@@ -3,16 +3,17 @@
 // Accessories are painted pixel by pixel in head- or body-local coordinates of the player rig and
 // mirrored when the player faces left; whole-outfit changes are palette swaps of the rig.
 import type { Palette } from './grid';
-import type { CharacterLook } from './look';
+import { LOOKS, type CharacterLook } from './look';
 
 export type Acc =
   | 'crown' | 'quill' | 'paperCrown' | 'waxCrown' | 'halo' | 'haloWhite' | 'antennae' | 'flower' | 'clover'
   | 'glasses' | 'monocle' | 'paperMask' | 'teeth' | 'pipe' | 'visor' | 'hollowEyes'
   | 'ring' | 'thimble' | 'bracelet' | 'lantern'
   | 'breastplate' | 'apron' | 'skeletonKey' | 'keyRing'
-  | 'wingsMoth' | 'wingsSoot' | 'wingsWax' | 'wingsIce' | 'wingsQueen' | 'wingsAngel'
+  | 'wingsMoth' | 'wingsSoot' | 'wingsWax' | 'wingsIce' | 'wingsQueen' | 'wingsAngel' | 'wingsPaper' | 'wingsInk'
   | 'capeVamp' | 'capeCobweb' | 'capeJacket'
-  | 'bikeHelmet' | 'nosePencil' | 'diaper' | 'fatLip';
+  | 'bikeHelmet' | 'nosePencil' | 'diaper' | 'fatLip' | 'inkHorns'
+  | 'braidRed' | 'braidGold' | 'bobBlack' | 'bobGrey' | 'beardWhite' | 'goggles' | 'plaster' | 'headBandage' | 'needleHair';
 
 type Layer = 'back' | 'body' | 'hand' | 'head' | 'face';
 const LAYER: Record<Acc, Layer> = {
@@ -20,8 +21,9 @@ const LAYER: Record<Acc, Layer> = {
   glasses: 'face', monocle: 'face', paperMask: 'face', teeth: 'face', pipe: 'face', visor: 'face', hollowEyes: 'face',
   ring: 'hand', thimble: 'hand', bracelet: 'hand', lantern: 'hand',
   breastplate: 'body', apron: 'body', skeletonKey: 'body', keyRing: 'body', diaper: 'body',
-  bikeHelmet: 'head', nosePencil: 'face', fatLip: 'face',
-  wingsMoth: 'back', wingsSoot: 'back', wingsWax: 'back', wingsIce: 'back', wingsQueen: 'back', wingsAngel: 'back',
+  bikeHelmet: 'head', nosePencil: 'face', fatLip: 'face', inkHorns: 'head',
+  braidRed: 'head', braidGold: 'head', bobBlack: 'head', bobGrey: 'head', beardWhite: 'face', goggles: 'head', plaster: 'face', headBandage: 'head', needleHair: 'head',
+  wingsMoth: 'back', wingsSoot: 'back', wingsWax: 'back', wingsIce: 'back', wingsQueen: 'back', wingsAngel: 'back', wingsPaper: 'back', wingsInk: 'back',
   capeVamp: 'back', capeCobweb: 'body', capeJacket: 'back',
 };
 
@@ -35,7 +37,7 @@ export const ITEM_ACC: Record<string, Acc[]> = {
   grandpas_pipe: ['pipe'], cold_visions: ['visor'], hollow_eyes: ['hollowEyes'],
   wax_crown: ['waxCrown'], ch_paper_crown: ['paperCrown'], wax_halo: ['halo'], angel_333: ['haloWhite'],
   magnolia: ['flower'], four_leaf: ['clover'],
-  big_boy_diaper: ['diaper'], nose_pencil: ['nosePencil'], bike_helmet: ['bikeHelmet'], gavyns_pouch: ['fatLip'],
+  big_boy_diaper: ['diaper'], nose_pencil: ['nosePencil'], bike_helmet: ['bikeHelmet'], gavyns_pouch: ['fatLip'], ink_horns: ['inkHorns'], the_signature: ['inkHorns'], ink_wings: ['wingsInk'],
   brass_plate: ['breastplate'], blast_apron: ['apron'], skeleton_key: ['skeletonKey'], key_ring: ['keyRing'],
   moth_wings_rev: ['wingsMoth'], soot_wings: ['wingsSoot'], wax_wings: ['wingsWax'], drain_butterfly: ['wingsIce'],
   moth_queen_wings: ['wingsQueen'], cobweb_cloak: ['capeCobweb'], dust_jacket: ['capeJacket'],
@@ -58,8 +60,6 @@ export const ITEM_OUTFIT: Record<string, Outfit> = {
 /** Every transformation is a new look (they win over item outfits). */
 export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
   // Jeffy: no shirt, just the diaper, the helmet and the pencil
-  crew: { id: 'crew', name: 'The Crew', pal: {
-    c: '#4a1010', C: '#7a1a1a', D: '#a82626', E: '#c83a3a', R: '#e05a4a', q: '#6a1414' } },
   jeffy: { id: 'jeffy', name: 'Jeffy', acc: ['bikeHelmet', 'nosePencil', 'diaper'], pal: {
     c: '#b8876a', C: '#d8a684', D: '#e8b896', E: '#f1c7a1', R: '#f1c7a1', q: '#c8987a',
     j: '#dcdcd6', J: '#f4f4f0' } },
@@ -95,16 +95,20 @@ export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
 export interface Costume { outfit: Outfit | null; acc: Acc[] }
 
 /** Work out what the player looks like from items, charms and transformations. */
-export function costumeFor(items: Iterable<string>, charms: string[], transformations: Iterable<string>): Costume {
+export function costumeFor(items: Iterable<string>, charms: string[], transformations: Iterable<string>, flight = false, look = ''): Costume {
   const acc: Acc[] = [];
   const add = (a: Acc) => { if (acc.includes(a)) return; if (isBack(a) && acc.some(isBack)) return; acc.push(a); };
   let outfit: Outfit | null = null;
   for (const t of transformations) { const o = TRANSFORM_OUTFIT[t]; if (o) { outfit = o; break; } }
   const owned = [...items, ...charms];
+  // who they are comes first: Wren's braid, Elias's beard, Ozzie's goggles
+  for (const a of (LOOKS[look]?.acc ?? []) as Acc[]) add(a);
   if (!outfit) for (const id of owned) if (ITEM_OUTFIT[id]) { outfit = ITEM_OUTFIT[id]; break; }
   // the outfit's own pieces first, so its wings or cape win
   for (const a of outfit?.acc ?? []) add(a);
   for (const id of owned) for (const a of ITEM_ACC[id] ?? []) add(a);
+  // anyone who can fly shows it: plain paper wings unless something better is already on their back
+  if (flight && !acc.some((a) => a.startsWith('wings'))) { const i = acc.findIndex(isBack); if (i >= 0) acc.splice(i, 1); add(look === 'blot' ? 'wingsInk' : look === 'wick' ? 'wingsMoth' : 'wingsPaper'); }
   return { outfit, acc };
 }
 const isBack = (a: Acc) => LAYER[a] === 'back';
@@ -161,6 +165,20 @@ function wings(f: Frame, outer: string, inner: string, spot: string | null, big 
     ctx.lineTo(cx + s * (8 * big), cy + 4 * big); ctx.closePath(); ctx.fill();
     if (spot) { ctx.fillStyle = spot; ctx.fillRect(Math.round(cx + s * 9 * big - 1), Math.round(cy - 2 * big - flap * 0.6), 2, 2); }
   }
+}
+/** A plait hanging down behind one shoulder (or down the back), tied off with a ribbon. */
+function braid(f: Frame, c: string[], tie: string): void {
+  const p = H(f);
+  const x = f.hdir === 'down' ? 17 : f.hdir === 'side' ? 2 : 9;
+  for (let y = 9; y < 22; y++) { const k = (y >> 1) % 2; p(x + k, y, c[1], 2, 1); p(x + (k ? 0 : 2), y, c[0]); if (y % 2 === 0) p(x + k, y, c[2]); }
+  p(x, 22, tie, 3, 1); p(x + 1, 23, c[1]); p(x, 24, c[1], 3, 1); p(x + 1, 25, c[0]);
+}
+/** Hair cut to the jaw on both sides. */
+function bob(f: Frame, c: string[]): void {
+  const p = H(f);
+  if (f.hdir === 'down') for (const x of [0, 17]) { p(x, 7, c[1], 3, 10); p(x === 0 ? 0 : 19, 8, c[0], 1, 9); p(x + 1, 8, c[2], 1, 3); p(x, 17, c[0], 3, 1); }
+  else if (f.hdir === 'side') { p(1, 7, c[1], 6, 10); p(1, 8, c[0], 1, 9); p(3, 8, c[2], 1, 4); p(1, 17, c[0], 6, 1); }
+  else { p(1, 10, c[1], 18, 7); p(1, 17, c[0], 18, 1); for (let x = 3; x < 18; x += 3) p(x, 11, c[2], 1, 4); }
 }
 function cape(f: Frame, outer: string, inner: string, trim: string | null): void {
   const p = B(f);
@@ -229,6 +247,34 @@ const PAINT: Record<Acc, (f: Frame) => void> = {
     if (f.hdir === 'up') return; const p = H(f), x0 = f.hdir === 'down' ? 4 : 10, w = f.hdir === 'down' ? 12 : 9;
     p(x0, 15, '#1a0a10', w, 3); for (let x = x0; x < x0 + w; x += 2) { p(x, 15, '#f4eee0'); p(x + 1, 17, '#f4eee0'); }
   },
+  braidRed: (f) => braid(f, ['#5a1e0a', '#a8461a', '#f0a050'], '#c83a3a'),
+  braidGold: (f) => braid(f, ['#6a4a14', '#b08030', '#f8d878'], '#4a7ac8'),
+  bobBlack: (f) => bob(f, ['#06050a', '#1a1622', '#34304a']),
+  bobGrey: (f) => bob(f, ['#5a5660', '#a09ca8', '#ece8f0']),
+  beardWhite: (f) => {
+    if (f.hdir === 'up') return;
+    const p = H(f), d = '#a8b4bc', m = '#dce6ee', l = '#ffffff';
+    if (f.hdir === 'down') { p(5, 15, m, 10, 1); p(4, 16, m, 12, 3); p(5, 19, m, 10, 1); p(7, 20, m, 6, 1); p(9, 21, d, 2, 1); for (const x of [5, 9, 13]) p(x, 17, d, 1, 3); p(7, 16, l, 2, 1); p(3, 16, d, 1, 2); p(16, 16, d, 1, 2); }
+    else { p(11, 15, m, 7, 1); p(10, 16, m, 8, 3); p(11, 19, m, 6, 1); p(12, 20, d, 4, 1); p(13, 17, d, 1, 2); p(12, 16, l, 2, 1); }
+  },
+  goggles: (f) => {
+    const p = H(f), strap = '#3a2a1a', rim = '#c8a040', lens = '#4ab0c0';
+    if (f.hdir === 'up') { p(0, 6, strap, 20, 1); return; }
+    if (f.hdir === 'down') { p(0, 6, strap, 20, 1); for (const x of [4, 11]) { p(x, 5, rim, 5, 3); p(x + 1, 6, lens, 3, 1); p(x + 1, 5, '#e0ffff'); } }
+    else { p(2, 6, strap, 10, 1); p(12, 5, rim, 5, 3); p(13, 6, lens, 3, 1); p(13, 5, '#e0ffff'); }
+  },
+  plaster: (f) => { if (f.hdir === 'up') return; const p = H(f), x = f.hdir === 'down' ? 13 : 14; p(x, 15, '#e8d8c0', 3, 2); p(x + 1, 15, '#c8b090'); },
+  headBandage: (f) => {
+    const p = H(f);
+    p(1, 4, '#ece4d4', 18, 2); p(1, 5, '#c8c0b0', 18, 1);
+    if (f.hdir === 'down') { p(14, 3, '#ece4d4', 3, 1); p(15, 4, '#c83a3a'); }
+    if (f.hdir === 'up') { p(8, 6, '#ece4d4', 2, 3); p(10, 7, '#ece4d4', 2, 3); }
+  },
+  needleHair: (f) => { const p = H(f); for (let i = 0; i < 4; i++) p(15 + i, 1 - i, i === 3 ? '#ffffff' : '#c8c8d0'); p(14, 2, '#c83a4a'); p(13, 3, '#c83a4a'); },
+  inkHorns: (f) => {
+    const p = H(f), side = f.hdir === 'side';
+    for (const x of side ? [11] : [4, 15]) { p(x, 1, '#14101e', 2, 2); p(x + (x < 10 ? -1 : 1), -1, '#14101e', 1, 2); p(x + (x < 10 ? -1 : 1), -2, '#c81830'); p(x, 1, '#3a2a50'); }
+  },
   pipe: (f) => {
     if (f.hdir === 'up') return; const p = H(f), wood = '#6a3a1e', hi = '#9a5a2e';
     if (f.hdir === 'down') { p(11, 16, wood, 3, 1); p(14, 16, wood, 1, 2); p(14, 17, hi, 3, 3); p(15, 17, '#2a1408'); }
@@ -271,6 +317,8 @@ const PAINT: Record<Acc, (f: Frame) => void> = {
   wingsIce: (f) => wings(f, 'rgba(140,200,240,0.75)', 'rgba(220,240,255,0.8)', '#ffffff', 1.1),
   wingsQueen: (f) => wings(f, '#2a1a3a', '#5a3a7a', '#e8c050', 1.2),
   wingsAngel: (f) => wings(f, '#dce8f4', '#ffffff', null, 0.85),
+  wingsPaper: (f) => wings(f, '#cfc4a8', '#f4ecd8', '#4a4a7a', 0.95),
+  wingsInk: (f) => wings(f, '#14112a', '#2e2858', '#6a64b8', 1.05),
   capeVamp: (f) => cape(f, '#0e080c', '#a8162a', '#d8b048'),
   capeCobweb: (f) => {
     // a shawl of web over the shoulders: radiating strands and a few rings

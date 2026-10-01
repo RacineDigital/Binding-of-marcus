@@ -111,6 +111,16 @@ const STAT_ICON_MAPS: Record<string, string[]> = {
     'lLLLlLLLl',
     'lLLl.lLLl',
     '.ll.G.ll.'],
+  wing: [    // a white wing, for flight
+    '......ww.',
+    '....wwWw.',
+    '..wwWWWw.',
+    '.wWWWWWw.',
+    'wWWWWWw..',
+    '.wWWWw...',
+    '..wWw.u..',
+    '...w.uu..',
+    '....uuu..'],
   door: [    // arched door, half ink, half wax
     '..dddd..',
     '.dpppPd.',
@@ -122,11 +132,11 @@ const STAT_ICON_MAPS: Record<string, string[]> = {
     'dddddddd'],
 };
 /** What each stat icon stands for, spelled out. */
-const STAT_NAMES: Record<string, string> = { speed: 'Speed', damage: 'Damage', rate: 'Fire rate', range: 'Range', shot: 'Shot speed', luck: 'Luck', door: 'Bargain door' };
+const STAT_NAMES: Record<string, string> = { speed: 'Speed', damage: 'Damage', rate: 'Fire rate', range: 'Range', shot: 'Shot speed', luck: 'Luck', door: 'Bargain door', wing: 'Flight' };
 const STAT_ICON_PAL: Record<string, string> = {
   y: '#e8b830', Y: '#ffe890', w: '#e8e4f4', b: '#7a4a2a', R: '#e0283a', s: '#c8ccd8', S: '#ffffff',
   k: '#3a7ae8', K: '#a8d0ff', o: '#f08a30', t: '#c8a868', c: '#40d0e0', C: '#d8fcff', l: '#3a9a3a', L: '#7ae06a', G: '#2a5a20',
-  d: '#8a7560', p: '#3a2e7a', P: '#efe6d2',
+  d: '#8a7560', p: '#3a2e7a', P: '#efe6d2', W: '#ffffff', u: '#8ab8e8',
 };
 let statIcons: Record<string, HTMLCanvasElement> | null = null;
 function statIcon(k: string): HTMLCanvasElement {
@@ -441,6 +451,7 @@ export class Hud {
     if (this.doorPrev >= 0 && odds < this.doorPrev - 0.001 && this.w.run.floorIndex > 0) { this.doorFlash = 1.6; this.doorDrop = odds - this.doorPrev; }
     this.doorPrev = odds;
     this.doorFlash = Math.max(0, this.doorFlash - dt);
+    this.trackFlight(dt);
   }
 
   private drawStats(ctx: CanvasRenderingContext2D): void {
@@ -467,6 +478,19 @@ export class Hud {
     const label = `${Math.round(odds.total * 100)}%`;
     text(ctx, label, x + 11, y, 7, col, 'left');
     if (f > 0) { ctx.globalAlpha = Math.min(1, f * 2); text(ctx, `${Math.round(this.doorDrop * 100)}%`, x + 13 + measure(ctx, label, 7), y, 6.5, COL.down, 'left', FONT_BODY, 700); ctx.globalAlpha = 1; }
+    // flight gets its own line, so you always know your feet are off the floor
+    if (this.w.player.flight) {
+      const fy = y + 11, glow = this.flyFlash > 0 && Math.floor(this.flyFlash * 8) % 2 === 0;
+      ctx.drawImage(statIcon('wing'), x, fy - 7 + Math.round(Math.sin(this.w.time * 4) * 0.8));
+      text(ctx, 'Flying', x + 11, fy, 7, glow ? '#ffffff' : '#a8d0ff', 'left');
+    }
+  }
+  private flyFlash = 0; private flyPrev = false;
+  /** Getting flight is announced, so it never goes unnoticed. */
+  private trackFlight(dt: number): void {
+    const fl = this.w.player.flight;
+    if (fl && !this.flyPrev && this.w.time > 1) { this.flyFlash = 2; this.toast('Your feet leave the floor: you can fly!', 2); }
+    this.flyPrev = fl; this.flyFlash = Math.max(0, this.flyFlash - dt);
   }
 
   /** Collected passive items and familiars as a compact icon grid under the minimap. */
@@ -588,6 +612,7 @@ export class Hud {
     const lines: L[] = [];
     const qCol = ['#a8a8a8', '#efe6d6', '#8ae07a', '#7ab8ff', '#ffd060'][Math.max(0, info.quality)] ?? COL.text;
     if (info.kindLabel) lines.push({ t: info.kindLabel, c: COL.dim, size: 6 });
+    if (info.pool) lines.push({ t: info.pool.item, c: info.pool.color, size: 7, bullet: info.pool.mark, bc: info.pool.color });
     for (const l of info.lines) {
       const [bullet, bc, c] = l.color === 'up' ? ['↑', '#7ae070', '#c8f0c0'] : l.color === 'down' ? ['↓', '#ff6a5a', '#ffc8c0'] : l.color === 'note' ? ['‣', '#b8a8ff', '#d8d0ff'] : ['•', '#c8b8a0', COL.text];
       wrap(ctx, l.text, 7.5, maxW - 10).forEach((s, i) => lines.push({ t: s, c, size: 7.5, bullet: i === 0 ? bullet : '', bc }));
@@ -670,6 +695,13 @@ export class Hud {
     text(ctx, info.title.toUpperCase(), x + 31, y + 14, 12, gold ? COL.gold : COL.text, 'left', FONT_TITLE, 400);
     text(ctx, info.subtitle, x + 31, y + 24, 7.5, COL.dim, 'left', FONT_BODY, 500, false);
     if (info.quality >= 0) for (let i = 0; i < 4; i++) { ctx.fillStyle = i < info.quality ? '#f0c860' : 'rgba(255,255,255,0.18)'; ctx.fillRect(x + W - 10 - i * 5, y + 6, 3, 3); }
+    // where it's from: a coloured tag under the quality pips (an Inkwell item reads as one at a glance)
+    if (info.pool) {
+      const pl = info.pool, lbl = `${pl.mark} ${pl.item.toUpperCase()}`, tw = measure(ctx, lbl, 6.5, FONT_BODY, 700) + 6;
+      ctx.fillStyle = pl.dark ? 'rgba(40,0,10,0.9)' : 'rgba(255,255,255,0.06)'; ctx.fillRect(x + W - 6 - tw, y + 12, tw, 10);
+      ctx.strokeStyle = pl.color; ctx.globalAlpha = a * 0.7; ctx.strokeRect(x + W - 6 - tw + 0.5, y + 12.5, tw - 1, 9); ctx.globalAlpha = a;
+      text(ctx, lbl, x + W - 9, y + 19.5, 6.5, pl.color, 'right', FONT_BODY, 700, false);
+    }
     // divider + body
     ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x + pad, y + titleH + 1, W - pad * 2, 0.6);
     body.forEach((l, i) => text(ctx, l.t, x + pad, y + titleH + 12 + i * lineH, 8.5, l.c, 'left', FONT_BODY, 600, false));

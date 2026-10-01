@@ -105,5 +105,23 @@ function create() {
   }
 }
 
-app.whenReady().then(() => { migrateOldSaves(); discord.start(); create(); });
+// Auto-update (the installed version only; the portable .exe can't replace itself): check GitHub
+// releases at launch, download a newer version in the background, and install it on quit.
+function startUpdater() {
+  if (!app.isPackaged || SMOKE || process.env.PORTABLE_EXECUTABLE_DIR) return;
+  try {
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    const tell = (msg) => { if (win && !win.isDestroyed()) win.webContents.send('update', msg); };
+    autoUpdater.on('update-available', (i) => tell({ state: 'downloading', version: i.version }));
+    autoUpdater.on('update-downloaded', (i) => tell({ state: 'ready', version: i.version }));
+    autoUpdater.on('error', (err) => console.error('update check failed', err && err.message));
+    autoUpdater.checkForUpdates().catch((err) => console.error('update check failed', err && err.message));
+  } catch (err) { console.error('updater unavailable', err); }
+}
+ipcMain.on('update:auto', (e) => { e.returnValue = app.isPackaged && !process.env.PORTABLE_EXECUTABLE_DIR; });
+ipcMain.on('update:install', () => { try { require('electron-updater').autoUpdater.quitAndInstall(); } catch (err) { console.error(err); } });
+
+app.whenReady().then(() => { migrateOldSaves(); discord.start(); create(); setTimeout(startUpdater, 4000); });
 app.on('window-all-closed', () => { discord.stop(); app.quit(); });

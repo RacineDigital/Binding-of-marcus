@@ -1,5 +1,6 @@
 // Draws the current room: background, obstacles, doors, entities (y-sorted), projectiles, particles, lights.
 import type { World } from './world';
+import { drawBossLife } from '../bosses/bosslife';
 import { BG_MARGIN } from '../art/roombg';
 import { Ob, Side } from '../rooms/room';
 import { TILE, VIEW_W, VIEW_H } from '../core/constants';
@@ -226,6 +227,7 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
     }
   }
   if (champ) ctx.restore();
+  if (e.def.boss && !e.hidden && !e.dead) drawBossLife(w, ctx, e, sx, sy);
   if (breathe) ctx.restore();
   if (e.fear > 0 || e.confuse > 0) {
     ctx.fillStyle = e.fear > 0 ? '#c060ff' : '#ffe060';

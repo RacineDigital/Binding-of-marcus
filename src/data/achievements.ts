@@ -69,7 +69,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'win_wick', name: 'Into the Lamp', desc: 'Finish the story as Wick.', unlocks: 'A gold star on Wick\'s card.' },
   { id: 'win_hard', name: 'Second Edition', desc: 'Finish the story in Second Edition (Hard).', unlocks: 'Unlocks the Narcissist.' },
   { id: 'transform_drain', name: 'Drainer', desc: 'Become the Drainer.', unlocks: 'Unlocks the Drain Butterfly.', hidden: true },
-  { id: 'transform_crew', name: 'The Crew', desc: 'Become The Crew.', unlocks: 'Unlocks Grandad\'s Radio.', hidden: true },
+  { id: 'transform_crew', name: 'The Boys', desc: 'Hold Crug\'s Pen, Ewen\'s Bike, Gavyn\'s Pouch and Sam\'s Beer at the same time.', unlocks: 'Unlocks Grandad\'s Radio.', hidden: true },
   { id: 'transform_jeffy', name: 'Jeffy', desc: 'Become Jeffy.', unlocks: 'A pencil, permanently, in your heart.', hidden: true },
   { id: 'transform_vamp', name: 'King Vamp', desc: 'Become King Vamp.', unlocks: 'Unlocks Whole Lotta Red.', hidden: true },
 ];

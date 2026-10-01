@@ -4,6 +4,9 @@ import '@fontsource/pirata-one/400.css';
 import '@fontsource/barlow-condensed/400.css';
 import '@fontsource/barlow-condensed/600.css';
 import { boot } from './game/boot';
+import { watchForUpdates } from './core/update';
+
+watchForUpdates();
 
 boot().catch((e) => {
   console.error(e);

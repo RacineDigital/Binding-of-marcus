@@ -6,6 +6,7 @@ import { text, COL, FONT_TITLE, FONT_BODY, wrap, measure, heading, panel } from 
 import { VIEW_W, VIEW_H } from '../core/constants';
 import { CHARACTERS, CharacterDef } from '../player/characters';
 import { buildPlayerSprites, PlayerSprites } from '../art/marcus';
+import { costumeFor, drawCostume, type Frame } from '../art/costume';
 import { LOOKS } from '../art/look';
 import { ALL_ITEMS, getItem, CONSUMABLES } from '../items/registry';
 import { itemIconCanvas } from '../art/items';
@@ -16,6 +17,7 @@ import { dailySeed, todayKey, runScore, RunMode, MODE_NAMES } from '../game/prog
 import { INTRO_STORY } from '../data/lore';
 import { ENDINGS, ENDING_BY_ID, EPILOGUES, EndingId } from '../data/endings';
 import { NOTES, NoteDef } from '../data/notes';
+import { poolInfo } from '../items/homes';
 import { ITEM_LORE } from '../data/itemlore';
 import { roman } from '../data/floors';
 import { themeAt } from '../generation/floorgen';
@@ -270,8 +272,7 @@ export class MenuSystem {
         text(ctx, day, 240, 70, 8.5, INK2, 'center', FONT_BODY, 600, false);
         const sp = self.sprites(ch);
         ctx.save(); ctx.translate(150, 170); ctx.scale(3.5, 3.5);
-        sp.bodyIdle.down[Math.floor(self.time * 1.5) % 2].draw(ctx, 0, 0);
-        sp.head.down[(self.time % 4) < 0.15 ? 'blink' : 'normal'].draw(ctx, 0, -10);
+        drawReader(ctx, sp, ch, self.time);
         ctx.restore();
         const S = g.save.data.stats;
         const rows: [string, string][] = [['Reader', ch.name], ['Seed', formatSeed(seed)], ['Today\'s best', S['best_daily_' + day] ? String(S['best_daily_' + day]) : '—'], ['Best ever (Normal)', S.best_normal ? String(S.best_normal) : '—']];
@@ -336,8 +337,7 @@ export class MenuSystem {
         ctx.save(); ctx.translate(110, 150); ctx.scale(4, 4);
         ctx.fillStyle = 'rgba(60,40,30,0.25)'; ctx.beginPath(); ctx.ellipse(0, 0, 9, 2.5, 0, 0, TAU); ctx.fill();
         if (!un) ctx.filter = 'brightness(0)';
-        sp.bodyIdle.down[Math.floor(self.time * 1.5) % 2].draw(ctx, 0, 0);
-        sp.head.down[(self.time % 4) < 0.15 ? 'blink' : 'normal'].draw(ctx, 0, -10);
+        drawReader(ctx, sp, c, self.time);
         ctx.restore();
         if (!forceChar) { text(ctx, '◀', 62, 112, 12, INK2, 'center', FONT_BODY, 600, false); text(ctx, '▶', 158, 112, 12, INK2, 'center', FONT_BODY, 600, false); }
         if (un) drawMarks(ctx, g, c.id, 110, 172);
@@ -470,13 +470,13 @@ export class MenuSystem {
   // ------------------------------------------------------------ collection
   collectionScreen(): Screen {
     const self = this, g = this.g;
-    const all = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev');
+    const all = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev' && !i.tags?.includes('innate'));
     const seen = new Set(g.save.data.itemsSeen);
     // What you've found comes first, gathered into sets (a transformation's items, then actives,
     // familiars and the rest); everything still missing waits at the end as silhouettes.
-    const SET_TAGS = ['crew', 'vamp', 'drain', 'jeffy', 'dice', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
+    const SET_TAGS = ['boys', 'vamp', 'drain', 'jeffy', 'dice', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
     const setOf = (it: typeof all[number]) => SET_TAGS.find((t) => it.tags?.includes(t)) ?? (it.kind === 'active' ? 'active' : it.kind === 'familiar' ? 'familiar' : 'curio');
-    const SET_NAME = (k: string) => k === 'dice' ? 'The Dice' : k === 'crew' ? 'The Crew' : k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
+    const SET_NAME = (k: string) => k === 'dice' ? 'The Dice' : k === 'boys' ? 'The Boys' : k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
     const itemGroups: GridGroup[] = [];
     for (const k of [...SET_TAGS, 'active', 'familiar', 'curio']) {
       const inSet = all.filter((it) => setOf(it) === k);
@@ -544,11 +544,16 @@ export class MenuSystem {
         const lore = it.lore ?? ITEM_LORE[it.id];
         if (lore) { y += 3; for (const s of wrap(ctx, lore, 6.5, 108)) { if (y > 228) break; text(ctx, s, dx, y, 6.5, '#7a5a3a', 'left', FONT_BODY, 500, false); y += 8; } }
         text(ctx, `${SET_NAME(setOf(it))}  ·  ${it.kind}`, dx, 236, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        const pi = poolInfo(it);
+        if (pi) text(ctx, `${pi.mark} ${pi.name}`, dx + 114, 236, 6.5, pi.ink, 'right', FONT_BODY, 700, false);
       } else {
         text(ctx, '???', dx, dy + 46, 14, INK2, 'left', FONT_TITLE, 400, false);
         const a = it.unlock ? ACHIEVEMENTS.find((x) => x.id === it.unlock) : null;
         if (a && !g.save.isUnlocked(a.id)) wrap(ctx, 'Locked: ' + a.desc, 7.5, 108).forEach((l, i) => text(ctx, l, dx, dy + 62 + i * 9, 7.5, '#8a3a2a', 'left', FONT_BODY, 600, false));
         else text(ctx, 'Not yet found.', dx, dy + 62, 7.5, INK2, 'left', FONT_BODY, 600, false);
+        // a hint of where to look
+        const pi = poolInfo(it);
+        if (pi) text(ctx, `${pi.mark} Found in ${pi.name}`, dx, 236, 6.5, pi.ink, 'left', FONT_BODY, 700, false);
       }
     };
     // tab labels double as buttons
@@ -1242,4 +1247,14 @@ function drawBeast(ctx: CanvasRenderingContext2D, d: EnemyDef, x: number, y: num
   if (hidden) { ctx.filter = 'brightness(0)'; ctx.globalAlpha = 0.3; }
   ctx.drawImage(c, Math.round(x + (size - w) / 2), Math.round(y + (size - h) / 2), w, h);
   ctx.restore();
+}
+
+/** A reader standing at (0, 0), with whatever they always wear (a braid, a beard, wings if they fly). */
+function drawReader(ctx: CanvasRenderingContext2D, sp: PlayerSprites, c: CharacterDef, t: number): void {
+  const body = sp.bodyIdle.down[Math.floor(t * 1.5) % 2], head = sp.head.down[(t % 4) < 0.15 ? 'blink' : 'normal'];
+  const acc = costumeFor([], [], [], !!c.flight, c.look).acc;
+  const fr: Frame = { ctx, t, hx: -head.ox, hy: -10 - head.oy, hw: head.w, hflip: false, hdir: 'down', bx: -body.ox, by: -body.oy, bw: body.w, bflip: false, bdir: 'down' };
+  drawCostume(fr, acc, 'back');
+  body.draw(ctx, 0, 0); drawCostume(fr, acc, 'body'); drawCostume(fr, acc, 'hand');
+  head.draw(ctx, 0, -10); drawCostume(fr, acc, 'face'); drawCostume(fr, acc, 'head');
 }

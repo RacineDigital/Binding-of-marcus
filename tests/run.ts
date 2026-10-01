@@ -248,5 +248,27 @@ console.log('content:', JSON.stringify(counts));
   }
   ok(found >= 36, `echo rooms placed (${found}/40)`);
 }
+// 3.1: every item lives in exactly one pool, and a transformation's items all share it
+{
+  const { homePool } = await import('../src/items/homes');
+  const { LOOKS } = await import('../src/art/look');
+  for (const it of ALL_ITEMS) ok(Object.keys(it.pools).length <= 1, `${it.id} is in one pool (${Object.keys(it.pools).join(',')})`);
+  for (const t of Object.keys(TRANSFORM_EFFECTS)) {
+    const homes = new Set(ALL_ITEMS.filter((i) => i.tags?.includes(t) && Object.keys(i.pools).length).map((i) => homePool(i)));
+    ok(homes.size === 1, `${t} items share one pool (${[...homes].join(',')})`);
+  }
+  ok(!TRANSFORM_EFFECTS.crew && !TRANSFORM_EFFECTS.boys, 'the Boys are a set, not a transformation');
+  ok(ALL_ITEMS.filter((i) => i.tags?.includes('boys')).length === 4, 'four of the boys\' things');
+  for (const it of ALL_ITEMS.filter((i) => i.tags?.includes('innate'))) ok(Object.keys(it.pools).length === 0 && !!it.tags?.includes('quest'), `${it.id} never rolls and can't be traded`);
+  for (const c of CHARACTERS) { ok(LOOKS[c.look]?.hand === 'marcus', `${c.id} is drawn on Marcus's rig`); for (const id of c.items) ok(!!ALL_ITEMS.find((x) => x.id === id), `${c.id} starts with real item ${id}`); }
+  for (const id of ['ink_horns', 'the_signature', 'ink_wings']) ok(homePool(ALL_ITEMS.find((x) => x.id === id)!) === 'deal', `${id} is an Inkwell item`);
+  for (const id of ['black_cat', 'hex_doll', 'cracked_mirror']) ok(homePool(ALL_ITEMS.find((x) => x.id === id)!) === 'curse', `${id} is a Hexed item`);
+  ok(ALL_ITEMS.filter((i) => i.tags?.includes('vamp')).every((i) => homePool(i) === 'secret'), 'King Vamp lives in secret rooms');
+}
+{
+  const { GAME_VERSION } = await import('../src/core/constants');
+  const fs = await import('fs');
+  ok(JSON.parse(fs.readFileSync('package.json', 'utf8')).version === GAME_VERSION, 'GAME_VERSION matches package.json');
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

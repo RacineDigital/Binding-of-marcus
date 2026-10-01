@@ -1,6 +1,8 @@
 // The title screen: a layered, parallax "bindery at night" scene (moonlit window, bookshelves,
 // drying pages, Marcus reading by a candle) with a menu that works with keys, pad and mouse,
 // plus the save-profile picker.
+import { GAME_VERSION } from '../core/constants';
+import { update } from '../core/update';
 import type { MenuSystem, Screen } from './menus';
 import { text, COL, FONT_TITLE, FONT_BODY, measure, heading, FONT_LOGO } from './draw';
 import { VIEW_W, VIEW_H } from '../core/constants';
@@ -366,7 +368,8 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
       if (o.logo) {
         const info = g.save.slotInfo(g.save.slot);
         text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'right');
-        text(ctx, 'v3.0  ·  Papermoth Games', VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
+        text(ctx, `v${GAME_VERSION.split('.').slice(0, 2).join('.')}  ·  Papermoth Games`, VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
+        if (update.text) text(ctx, update.text, VIEW_W - 8, VIEW_H - 25, 6.5, update.ready ? '#a8e090' : '#e8c070', 'right');
       }
     },
   };

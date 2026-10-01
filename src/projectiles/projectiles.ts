@@ -184,7 +184,7 @@ export class Projectiles {
       if (p.lob) p.z = 6 + Math.sin(Math.min(1, p.dist / p.range) * Math.PI) * p.lobH;
       if (p.creep || prof?.creep) {
         p.creepAcc += Math.sqrt(mx * mx + my * my);
-        if (p.creepAcc > 22) { p.creepAcc = 0; if (p.team === Team.Player) w.addCreep(p.x, p.y, 8, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), 1.8, p.shape === 'beer' ? BEER : undefined); }
+        if (p.creepAcc > 22) { p.creepAcc = 0; if (p.team === Team.Player) w.addCreep(p.x, p.y, 8, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), 1.8, p.shape === 'beer' ? BEER : p.tint ?? undefined); }
       }
       if (prof?.magnet) w.cancelEnemyShotsNear(p.x, p.y, p.r + 6);
       if (p.team === Team.Player && prof && (prof.pull)) w.pullPickups(p.x, p.y, 40);
@@ -304,7 +304,7 @@ export class Projectiles {
       // arcing shots come down on whatever they were lobbed at
       if (landed && p.lob) w.damageObstacleAt(p.x, p.y, p.dmg);
       // creep shots leave a puddle where they end, even point-blank
-      if ((p.creep || prof?.creep) && !wall) w.addCreep(p.x, p.y, p.shape === 'beer' ? 12 : 9, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), p.shape === 'beer' ? 2.4 : 1.8, p.shape === 'beer' ? BEER : undefined);
+      if ((p.creep || prof?.creep) && !wall) w.addCreep(p.x, p.y, p.shape === 'beer' ? 12 : 9, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), p.shape === 'beer' ? 2.4 : 1.8, p.shape === 'beer' ? BEER : p.tint ?? undefined);
       w.audio.play('splat', { vol: 0.25, pitch: 1.2 - p.r * 0.02, x: p.x });
       if (prof) {
         if (prof.split > 0 && prof.splitOnExpire && p.depth === 0) this.split(w, p);

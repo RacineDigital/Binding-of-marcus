@@ -36,7 +36,7 @@ interface Frame { x: number; y: number; h: any }
 const tapeOf = (w: World): Frame[] => ((w as any).rewindTape ??= []);
 
 export const ECHO_ITEMS: ItemDef[] = [
-  { id: 'snow_globe', name: 'Snow Globe', kind: 'active', quality: 3, pools: { treasure: 0.8, shop: 0.5 },
+  { id: 'snow_globe', name: 'Snow Globe', kind: 'active', quality: 3, pools: { shop: 0.5 },
     pickup: 'Shake it, and everything stops', effect: ['Freezes every enemy and every enemy shot in the room for 3.5 seconds (bosses for 1.5).'],
     active: { charge: 4, type: 'room', use: (w) => {
       for (const e of w.enemies) if (!e.dead) e.freeze = Math.max(e.freeze, e.isBoss ? 1.5 : 3.5);
@@ -48,7 +48,7 @@ export const ECHO_ITEMS: ItemDef[] = [
       w.hud.toast('Everything hangs in the air.', 1.4);
     } },
     icon: snowGlobe, lore: 'Grandmother\'s, from a seaside town nobody can remember the name of.' },
-  { id: 'rewind_tape', name: 'Rewind Tape', kind: 'active', quality: 3, pools: { treasure: 0.7, secret: 0.6 }, unlock: 'echo_rest',
+  { id: 'rewind_tape', name: 'Rewind Tape', kind: 'active', quality: 3, pools: { secret: 0.6 }, unlock: 'echo_rest',
     pickup: 'Be kind, rewind', effect: ['Takes you back to where you were 3 seconds ago, healing any damage you took since then.', 'Clears enemy shots around you.'],
     hooks: { onTick: (w) => {
       // a frame every tenth of a second, three seconds long
@@ -70,7 +70,7 @@ export const ECHO_ITEMS: ItemDef[] = [
       w.fx.ring(pl.x, pl.y - 10, 30, 4, '#80c0ff', 0.4);
     } },
     icon: rewindTape, lore: 'Grandad taped everything off the telly. This one is labelled MARCUS – DO NOT RECORD OVER.' },
-  { id: 'grandads_radio', name: 'Grandad\'s Radio', kind: 'passive', quality: 2, pools: { treasure: 0.9, shop: 0.6 }, unlock: 'transform_crew',
+  { id: 'grandads_radio', name: 'Grandad\'s Radio', kind: 'passive', quality: 2, pools: { treasure: 0.9 }, unlock: 'transform_crew',
     pickup: 'Static every now and then', effect: ['Luck +1.', 'Every 9 seconds in a fight the radio crackles: every enemy in the room is confused for a moment.'],
     stats: { luck: 1 },
     hooks: { onTick: (w, dt) => {

@@ -5,6 +5,8 @@ import { moveBody } from '../rooms/collide';
 import { TAU } from '../core/math';
 import { itemIconCanvas } from '../art/items';
 import { getItem } from '../items/registry';
+import { homePool } from '../items/homes';
+import type { PoolId } from '../items/types';
 
 export class Pickup {
   kind: string; x: number; y: number; z = 0; vx = 0; vy = 0; vz = 0; r = 5;
@@ -76,13 +78,16 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
       const style = p.data.style ?? 'treasure';
       (S.pedestal[style] ?? S.pedestal.normal).draw(ctx, sx, sy + 2);
       if (p.data.id) {
-        const icon = itemIconCanvas(p.data.id, w.blindItems());
+        const blind = w.blindItems();
+        const icon = itemIconCanvas(p.data.id, blind);
         const bob = Math.sin(p.t * 3 + p.phase) * 2;
+        const it = getItem(p.data.id), home = it && !blind ? homePool(it) : null;
+        if (home) poolAura(w, ctx, home, sx, sy, p.t + p.phase);
         ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
         ctx.beginPath(); ctx.ellipse(sx, sy - 13, 6, 1.5, 0, 0, TAU); ctx.fill();
         ctx.globalAlpha = 1;
         ctx.drawImage(icon, Math.round(sx - icon.width / 2), Math.round(sy - 32 + bob));
-        w.r.addGlow(sx, sy - 24, 22, (getItem(p.data.id)?.quality ?? 0) >= 3 ? '#ffe090' : '#b0a8ff', 0.18);
+        w.r.addGlow(sx, sy - 24, 22, home && AURA[home] ? AURA[home]!.glow : (it?.quality ?? 0) >= 3 ? '#ffe090' : '#b0a8ff', home && AURA[home] ? 0.3 : 0.18);
       }
       return;
     }
@@ -117,4 +122,30 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
   }
   if (p.shop && p.price > 0) {/* label drawn in UI pass */}
   if (p.kind === 'goldKey' || p.kind === 'button10' || p.kind === 'gilded') if (Math.random() < 0.05) w.fx.stars(p.x + (Math.random() - 0.5) * 8, p.y - 4, 1, '#ffe070', 10);
+}
+
+/** Items from the darker and holier pools carry their room with them, wherever they turn up. */
+const AURA: Partial<Record<PoolId, { glow: string; mote: string; rise: number; n: number; size: number }>> = {
+  deal: { glow: '#ff2030', mote: '#14040a', rise: 22, n: 5, size: 2 },     // ink smoke curling up off it
+  curse: { glow: '#a040ff', mote: '#c070ff', rise: 14, n: 3, size: 1 },    // hex sparks
+  blessing: { glow: '#fff0b0', mote: '#fffbe8', rise: 18, n: 4, size: 1 },  // drifting light
+};
+function poolAura(w: World, ctx: CanvasRenderingContext2D, home: PoolId, sx: number, sy: number, t: number): void {
+  const a = AURA[home]; if (!a) return;
+  ctx.save();
+  for (let i = 0; i < a.n; i++) {
+    const k = (t * 0.55 + i / a.n) % 1;
+    const x = sx + Math.sin(t * 1.7 + i * 2.3) * (4 + k * 5), y = sy - 18 - k * a.rise;
+    ctx.globalAlpha = (1 - k) * (home === 'deal' ? 0.75 : 0.85) * Math.min(1, k * 5);
+    ctx.fillStyle = home === 'deal' && i % 2 ? '#7a0a14' : a.mote;
+    const sz = a.size + (home === 'deal' ? Math.round((1 - k) * 1.5) : 0);
+    ctx.fillRect(Math.round(x - sz / 2), Math.round(y), sz, sz);
+  }
+  if (home === 'deal') {
+    // a ring of red under the icon, like something watching from the ink
+    ctx.globalAlpha = 0.35 + Math.sin(t * 3) * 0.12; ctx.strokeStyle = '#ff2030'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(sx, sy - 13, 8, 2.2, 0, 0, TAU); ctx.stroke();
+  }
+  ctx.restore();
+  void w;
 }

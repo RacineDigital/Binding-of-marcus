@@ -143,7 +143,7 @@ export function updateBeams(w: World, dt: number): void {
     b.t += dt;
     if (b.enemyBeam) { updateEnemyBeam(w, b, dt); if (b.t >= b.dur) w.beams.splice(i, 1); continue; }
     const pl = w.player;
-    if (b.followPlayer) { b.x = pl.x; b.y = pl.y - 11; }
+    if (b.followPlayer) { b.x = pl.x; b.y = b.prof.short ? pl.chestY() : pl.y - 11; }
     const prof = b.prof;
     // shot-movement modifiers bend the beam: wiggle sways it, spiral spins it, grow widens it
     if (!b.baseWidth) b.baseWidth = b.width;
@@ -153,7 +153,7 @@ export function updateBeams(w: World, dt: number): void {
       if (prof.grow) b.width = b.baseWidth * Math.min(2.4, 1 + prof.grow * b.t * 2.2);
     }
     const a = b.ang + b.offset + b.sweep + (prof.wiggle && !b.laser ? Math.sin(b.t * 14 + b.phase) * 0.12 * Math.min(2, prof.wiggle) : 0);
-    const ox = b.x + Math.cos(a) * 6, oy = b.y + Math.sin(a) * 4, maxLen = b.laser ? Math.max(120, pl.stats.range * 1.3) : 900;
+    const ox = b.x + Math.cos(a) * (prof.short ? 2 : 6), oy = b.y + Math.sin(a) * (prof.short ? 1 : 4), maxLen = b.laser ? Math.max(120, pl.stats.range * 1.3) : prof.short ? Math.max(64, pl.stats.range * 0.45) : 900;
     // homing: lock onto the enemy nearest the aim (lasers once, when they fire; beams keep their target)
     if (prof.homing > 0 && (!b.laser || b.t <= dt * 1.5)) { b.target = homingTarget(w, ox, oy, a, prof.homing, maxLen, b.target && !b.target.dead ? b.target : null); }
     b.pts = traceBeam(w, ox, oy, a, prof, maxLen, true, b.target);
@@ -254,6 +254,7 @@ export function renderBeams(w: World, ctx: CanvasRenderingContext2D, camX: numbe
     const warm = b.enemyBeam && b.warmup > 0 && b.t < b.warmup;
     const k = b.laser ? 1 - b.t / b.dur : Math.min(1, b.t / 0.06) * Math.min(1, (b.dur - b.t) / 0.1);
     const wid = warm ? 1 : b.width * (0.75 + 0.25 * Math.sin(b.t * 60)) * k;
+    if (!b.enemyBeam && b.prof?.short) { renderInkBeam(w, ctx, b, camX, camY); continue; }
     const layers: [number, string, number][] = b.enemyBeam
       ? [[wid + 4, 'rgba(160,20,40,0.35)', 1], [wid, warm ? 'rgba(255,80,80,0.6)' : '#d8324a', 1], [Math.max(1, wid * 0.4), '#ffd0d0', 1]]
       : [[wid + 4, hexA(b.color, 0.3), 1], [wid, b.color, 1], [Math.max(1, wid * 0.35), '#e8e4ff', 1]];
@@ -266,9 +267,62 @@ export function renderBeams(w: World, ctx: CanvasRenderingContext2D, camX: numbe
       ctx.stroke();
     }
     ctx.lineCap = 'butt';
-    if (!warm) for (let i = 0; i < pts.length; i += 2) w.r.addGlow(pts[i] - camX, pts[i + 1] - camY, 18 + b.width, b.enemyBeam ? '#ff3050' : b.color, 0.35);
+    if (!warm && !(b.prof?.short && !b.enemyBeam)) for (let i = 0; i < pts.length; i += 2) w.r.addGlow(pts[i] - camX, pts[i + 1] - camY, 18 + b.width, b.enemyBeam ? '#ff3050' : b.color, 0.35);
     if (!warm) { w.r.addLight(pts[0] - camX, pts[1] - camY, 50, 0.6); w.r.addLight(pts[pts.length - 2] - camX, pts[pts.length - 1] - camY, 40, 0.6); }
   }
+}
+/**
+ * The Blot's beam: not light but a gush of ink. A ragged black column with a violet heart, edges that
+ * bulge and churn as it pours, droplets flung off the sides and a splash where it lands.
+ */
+function renderInkBeam(w: World, ctx: CanvasRenderingContext2D, b: Beam, camX: number, camY: number): void {
+  const pts = b.pts, t = b.t;
+  // swells open, holds, then chokes off
+  const env = Math.min(1, t / 0.08) * Math.min(1, (b.dur - t) / 0.16);
+  const W = b.width * 1.35 * env;
+  if (W <= 0.3) return;
+  const x0 = pts[0] - camX, y0 = pts[1] - camY, x1 = pts[pts.length - 2] - camX, y1 = pts[pts.length - 1] - camY;
+  const len = Math.hypot(x1 - x0, y1 - y0) || 1, ux = (x1 - x0) / len, uy = (y1 - y0) / len, nx = -uy, ny = ux;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const stroke = (lw: number, c: string) => { ctx.strokeStyle = c; ctx.lineWidth = Math.max(1, lw); ctx.beginPath(); ctx.moveTo(x0, y0); for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i] - camX, pts[i + 1] - camY); ctx.stroke(); };
+  stroke(W + 5, 'rgba(8,4,20,0.55)');
+  stroke(W + 1, '#0c0818');
+  // churning bulges along the column
+  for (let d = 0; d < len; d += 4) {
+    const wob = Math.sin(d * 0.35 - t * 38) * 0.5 + Math.sin(d * 0.13 + t * 21) * 0.5;
+    const r = W * (0.45 + 0.22 * wob);
+    const px = x0 + ux * d + nx * wob * W * 0.18, py = y0 + uy * d + ny * wob * W * 0.18;
+    ctx.fillStyle = (d / 4) % 3 === 0 ? '#1a1236' : '#0a0616';
+    ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, r), 0, Math.PI * 2); ctx.fill();
+  }
+  // a violet heart running down the middle, flickering
+  stroke(W * 0.42, '#2a1f5a');
+  stroke(Math.max(1, W * 0.12), Math.floor(t * 30) % 2 ? '#6a5ad8' : '#4a3aa8');
+  // streaks of ink rushing down the beam
+  for (let i = 0; i < 6; i++) {
+    const k = ((t * 3.2 + i / 6) % 1) * len, off = Math.sin(i * 2.7) * W * 0.3;
+    ctx.fillStyle = '#4a3a9a'; ctx.fillRect(Math.round(x0 + ux * k + nx * off), Math.round(y0 + uy * k + ny * off), 2, 1);
+  }
+  // droplets flung off the sides
+  for (let i = 0; i < 14; i++) {
+    const ph = (t * 2.6 + i * 0.137) % 1, d = ((i * 37) % 100) / 100 * len, side = i % 2 ? 1 : -1;
+    const out = W * 0.5 + ph * 14, fall = ph * ph * 6;
+    ctx.globalAlpha = 1 - ph; ctx.fillStyle = i % 3 ? '#14102a' : '#3a2a7a';
+    const s = i % 4 === 0 ? 2 : 1;
+    ctx.fillRect(Math.round(x0 + ux * d + nx * side * out), Math.round(y0 + uy * d + ny * side * out + fall), s, s);
+  }
+  ctx.globalAlpha = 1;
+  // the splash where it lands
+  for (let i = 0; i < 9; i++) {
+    const a = Math.atan2(-uy, -ux) + (i - 4) * 0.35, k = (t * 4 + i * 0.21) % 1, r = 3 + k * 10;
+    ctx.globalAlpha = 1 - k; ctx.fillStyle = i % 2 ? '#14102a' : '#2a1f5a';
+    ctx.fillRect(Math.round(x1 + Math.cos(a) * r), Math.round(y1 + Math.sin(a) * r + k * k * 4), 2, 2);
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#0a0616'; ctx.beginPath(); ctx.ellipse(x1, y1, W * 0.7, W * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  w.r.addGlow(x0, y0, 18, '#6a4aff', 0.18); w.r.addGlow((x0 + x1) / 2, (y0 + y1) / 2, 22, '#3a1a98', 0.08);
 }
 function hexA(h: string, a: number): string {
   const s = h.replace('#', '');

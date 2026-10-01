@@ -13,7 +13,7 @@ import { luckChance } from '../projectiles/profile';
 import { RNG } from '../core/rng';
 import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
-import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars, spawnMate } from '../items/familiar_rt';
+import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../items/familiar_rt';
 import { generateFloor, pickTheme } from '../generation/floorgen';
 import { rollBargain, onLeaveFloor, ticketFor } from './bargain';
 import { itemIconCanvas } from '../art/items';
@@ -55,7 +55,7 @@ export function startFloor(w: World): void {
   const run = w.run;
   const floor = generateFloor(run, run.floorIndex, w.game.save);
   w.floor = floor; w.theme = floor.theme; w.props = propsFor(floor.theme);
-  run.flags.hitThisFloor = false; run.flags.bossHit = false; run.flags.floorStartTime = run.stats.time;
+  run.flags.hitThisFloor = false; run.flags.bossHit = false; run.flags.redHit = false; run.flags.bossRedHit = false; run.flags.floorStartTime = run.stats.time;
   w.player.clearTemp((t) => !!t.floor);
   const start = floor.rooms[floor.startId];
   const c = start.center();
@@ -216,8 +216,6 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   if (room.cleared) for (const d of w.doors) d.open = d.def.locked || (d.def.hidden && !d.revealed) ? 0 : 1;
   // bonus decorations for special rooms
   familiarsOnRoomEnter(w);
-  // the Crew: a mate turns up whenever there's a fight
-  if (w.player.transformations.has('crew') && w.enemies.length && !room.cleared) { const who = spawnMate(w); w.after(0.6, () => w.hud.toast(`${who} turned up.`, 1.4)); }
   w.flow.build(w);
   w.snapCamera();
   if (snap && from !== null) {
@@ -1047,7 +1045,7 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
   checkProgress(w);
   syncFamiliars(w);
   // transformations
-  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp', 'jeffy', 'crew'];
+  const tags = ['moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void', 'drain', 'vamp', 'jeffy'];
   for (const t of tags) {
     if (pl.transformations.has(t)) continue;
     if (pl.tagCount(t) >= 3) {
@@ -1060,6 +1058,10 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
       w.game.save.unlock('transform_' + t);
     }
   }
+  // the Boys: not a transformation, just everything you borrowed off them at once
+  if (BOYS.every((b) => pl.has(b))) w.game.save.unlock('transform_crew');
 }
+/** Crug's pen, Ewen's bike, Gavyn's pouch and Sam's beer. */
+export const BOYS = ['crugs_pen', 'ewens_bike', 'gavyns_pouch', 'sams_beer'];
 
 void TAU; void VIEW_H;

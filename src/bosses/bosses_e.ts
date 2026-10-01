@@ -28,9 +28,9 @@ function pull(w: World, x: number, y: number, strength: number, dt: number): voi
 }
 
 // ================================================================== The Iron Lung (Intensive Care)
-function paintLung(p: any, f: number, rage: number): void {
+function paintLung(p: any, f: number, rage: number, n = 4): void {
   const iron = ramp('#6a7a84'), dark = ramp('#2a3238'), brass = ramp('#c8a04a'), skin = ramp('#d8c0a8');
-  const breath = Math.sin((f / 4) * TAU);
+  const breath = Math.sin((f / n) * TAU); f = (f / n) * 4;
   // wheeled stand
   p.rect(14, 46, 56, 4, dark[2]);
   for (const x of [20, 62]) { p.ball(x, 52, 4, 4, dark); p.set(x, 52, '#8a8a92'); }
@@ -54,7 +54,12 @@ function paintLung(p: any, f: number, rage: number): void {
   glowEye(p, 6, 26, rage ? '#ff3040' : '#1a1418'); glowEye(p, 10, 26, rage ? '#ff3040' : '#1a1418');
   p.ball(8, 32, 4, 3, ramp('#a8c8d0'), { dither: 0.3 }); p.set(8, 32, '#ffffff');
   p.tube(8, 35, 20, 44, 1.2, ramp('#c8d8e0'));
-  sprinkle(p, '#9aa8b0', 6, 3 + f, 14, 14, 56, 32);
+  // rust streaks, a condemned tag, tubes snaking to the stand
+  for (const x of [22, 41, 57]) for (let j = 0; j < 8; j++) p.set(x + (j % 2), 30 + j, j % 3 ? '#8a5a3a' : '#6a4a3a');
+  p.rect(36, 34, 8, 5, hex('#e8dca8')); p.rect(37, 35, 6, 1, hex('#c83a3a')); p.rect(37, 37, 4, 1, hex('#4a3a2a'));
+  p.tube(52, 44, 58, 48, 1, ramp('#c8d8e0')); p.tube(26, 44, 22, 47, 1, ramp('#c8d8e0'));
+  for (let x = 16; x < 70; x += 6) p.set(x + 2, 18 + ((x * 3) % 5), '#c8e0f0');   // condensation beads
+  sprinkle(p, '#9aa8b0', 6, 3 + Math.round(f), 14, 14, 56, 32);
 }
 const lungBrain: BossBrain = {
   idleTime: [0.8, 1.3], phases: [0.5],
@@ -115,7 +120,7 @@ const lungBrain: BossBrain = {
 const ironlung: EnemyDef = {
   id: 'ironlung', name: 'The Iron Lung', desc: 'It breathes for whoever is inside. It would like to breathe for you.', boss: true,
   hp: 420, r: 20, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 40, noKnock: true, gore: '#6a7a84', goreDecal: '#3a4a54', light: [60, '#c0e8ff'],
-  sprites: () => ({ idle: frames(84, 58, 4, (p, f) => paintLung(p, f, 0)), rage: frames(84, 58, 4, (p, f) => paintLung(p, f, 1)) }),
+  sprites: () => ({ idle: frames(84, 58, 8, (p, f, n) => paintLung(p, f, 0, n)), rage: frames(84, 58, 8, (p, f, n) => paintLung(p, f, 1, n)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
   update(e, w, dt) { bossUpdate(e, w, dt, lungBrain); if (Math.random() < dt * 3) w.fx.burst(e.x - (e.flip ? -36 : 36), e.y - 20, 2, 1, '#e8f0f4', 30, 0.6); },
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy); },
@@ -125,9 +130,9 @@ const ironlung: EnemyDef = {
 // What Marcus imagined was in the bed at the end of the ward: a tall shape under a hospital sheet,
 // tubes trailing to a drip stand, a heart monitor glowing through its chest. It is the last thing he
 // was afraid of. When it falls, it is only Grandad.
-function paintPatient(p: any, f: number, rage: number): void {
+function paintPatient(p: any, f: number, rage: number, n = 4): void {
   const sheet = ramp('#dce4e0'), gown = ramp('#9ab8c0'), ink = ramp('#14112a'), steel = ramp('#9a9aa4');
-  const cx = 44, bob = Math.sin((f / 4) * TAU) * 1.5;
+  const cx = 44, bob = Math.sin((f / n) * TAU) * 1.5; f = Math.round((f / n) * 4);
   // the drip stand beside it, with a bag and a tube to the arm
   p.rect(80, 14, 2, 80, steel[2]); p.rect(74, 92, 14, 2, steel[1]); p.rect(76, 12, 10, 2, steel[3]);
   p.ball(81, 22, 5, 7, ramp(rage ? '#c83a4a' : '#c8e0f0'), { dither: 0.3 }); p.set(79, 19, '#ffffff');
@@ -272,7 +277,7 @@ const patientBrain: BossBrain = {
 const patient: EnemyDef = {
   id: 'patient', name: 'The Patient', desc: 'The bed at the end of the ward. Everything Marcus was afraid he would find there.', boss: true,
   hp: 1050, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
-  sprites: () => ({ idle: frames(92, 104, 4, (p, f) => paintPatient(p, f, 0)), rage: frames(92, 104, 4, (p, f) => paintPatient(p, f, 1)) }),
+  sprites: () => ({ idle: frames(92, 104, 8, (p, f, n) => paintPatient(p, f, 0, n)), rage: frames(92, 104, 8, (p, f, n) => paintPatient(p, f, 1, n)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; },
   update(e, w, dt) { bossUpdate(e, w, dt, patientBrain); if (Math.random() < dt * 5) w.fx.burst(e.x + (Math.random() - 0.5) * 40, e.y, 2, 1, e.data.phase >= 2 ? '#14112a' : '#dce4e0', 20, 0.8); },
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { yoff: 6 }); w.r.addGlow(sx, sy - e.z - 46, 50, e.data.phase >= 2 ? '#ff4050' : '#60ff90', 0.14); },

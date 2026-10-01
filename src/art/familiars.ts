@@ -39,15 +39,6 @@ const PAINT: Record<string, Painter> = {
     p.set(4, 8, '#e86a7a'); p.set(5, 9, belly); p.set(4, 9, belly);
     p.set(1, 8, '#e8e0d0'); p.set(8, 8, '#e8e0d0');
   },
-  mate: (p, f) => {
-    // one of the lads: red hoodie, cap on backwards, hands in pockets
-    const hood = ramp('#c83a3a'), skin = ramp('#e2b48e');
-    p.rect(5, 9, 7, 6, hood[2]); p.rect(5, 9, 7, 1, hood[3]); p.rect(4, 10, 1, 4, hood[1]); p.rect(12, 10, 1, 4, hood[1]);
-    p.rect(7, 12, 3, 1, hood[1]);
-    p.rect(6, 15, 2, 2 - f, hex('#2a2a3a')); p.rect(9, 15, 2, 1 + f, hex('#2a2a3a'));
-    p.ball(8.5, 6, 3.4, 3.4, skin); p.rect(5, 2, 7, 2, hex('#2a3a6a')); p.rect(4, 3, 2, 1, hex('#2a3a6a'));
-    p.set(7, 6, '#1a1010'); p.set(10, 6, '#1a1010'); p.set(8, 8, '#a86a5a'); p.set(9, 8, '#a86a5a');
-  },
   thimble: (p) => { const c = ramp('#b8b8c0'); p.ball(8, 9, 4.5, 5, c); for (let y = 6; y < 13; y += 2) for (let x = 5; x < 12; x += 2) p.paint(x, y, c[1]); p.rect(3, 13, 10, 2, c[3]); },
   bookworm: (p, f) => { const c = ramp('#8ab05a'); for (let i = 0; i < 4; i++) p.ball(3 + i * 3, 10 + (i % 2 === f ? 1 : 0), 2.4, 2.4, c); p.ball(14, 9, 2.6, 2.6, c); p.set(15, 8, '#1a1020'); p.rect(12, 11, 3, 1, hex('#e8dcc0')); },
   button_jar: (p) => { const g = ramp('#9ab8c8'); p.rect(4, 5, 9, 10, g[1]); p.rect(5, 6, 7, 8, g[2]); p.rect(4, 3, 9, 2, hex('#8a6a4a')); p.set(6, 11, '#b87a44'); p.set(9, 9, '#c8c8d8'); p.set(8, 12, '#b87a44'); p.set(10, 12, '#e8c040'); p.set(5, 7, '#ffffff'); },

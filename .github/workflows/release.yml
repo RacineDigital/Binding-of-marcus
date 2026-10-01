@@ -85,4 +85,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release.outputs.tag }}
-        run: gh release upload "$TAG" release-desktop/*.exe --clobber
+        # latest.yml and the .blockmap are what installed copies read to update themselves
+        run: gh release upload "$TAG" release-desktop/*.exe release-desktop/latest.yml release-desktop/*.blockmap --clobber

@@ -1,6 +1,6 @@
 // Chapter I bosses.
 import type { EnemyDef, Enemy } from '../enemies/enemy';
-import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle, pack } from '../art/creature';
+import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle, pack, crack, grain, bigEye, maw } from '../art/creature';
 import { chase, aimAngle, shoot, spreadShot, ringShot, keepDistance, randomFloorPoint, distToPlayer } from '../enemies/ai';
 import { bossUpdate, BossBrain, telegraph } from './boss';
 import { TAU, angleTo, clamp, dist } from '../core/math';
@@ -72,33 +72,53 @@ const grubBrain: BossBrain = {
       } },
   ],
 };
-function paintGrub(p: any, f: number, rear: number, mouth: number): void {
-  const skin = ramp('#e2c6ae'), fold = ramp('#b88a7a');
-  const pulse = (i: number) => Math.sin(f * 1.6 + i) * 0.8;
-  // back segments (tail to front)
-  const segs = [[12, 30, 9], [22, 29, 11], [34, 28, 12.5]];
+function paintGrub(p: any, f: number, rear: number, mouth: number, n = 4): void {
+  // a pale, swollen grub mother: translucent skin over dark innards, a ripple running nose to tail,
+  // bristles, a cluster of beady eyes and a lamprey mouth ringed with teeth
+  const ph = (f / n) * TAU;
+  const skin = ramp('#ecd2bc'), fold = ramp('#b8806e'), gut = ramp('#6a3040');
+  const segs = [[7, 32, 5.5], [14, 31, 8], [23, 30, 10], [33, 29, 11.5]];
+  legs(p, 24, 37, 10, 0.3, 6, ph * 2, fold[0]);
   segs.forEach(([x, y, r], i) => {
-    p.ball(x, y - rear * i * 0.5, r + pulse(i), r * 0.8 + pulse(i) * 0.5, skin, { dither: 0.6 });
-    p.line(x - 2, y - r * 0.7, x - 2, y + r * 0.6, fold[1]);
+    const k = 1 + Math.sin(ph - i * 1.3) * 0.08;
+    const yy = y - rear * i * 0.6 + Math.sin(ph - i * 1.3) * 0.8;
+    p.ball(x, yy, r * k, r * 0.82 * k, skin, { dither: 0.5 });
+    p.ball(x + 1, yy + r * 0.25, r * 0.55 * k, r * 0.35 * k, gut, { dither: 0.9 });     // innards through the skin
+    p.line(x - r * 0.75, yy - r * 0.45, x - r * 0.75, yy + r * 0.6, fold[1]);            // the fold between segments
+    p.line(x - r * 0.75 + 1, yy - r * 0.4, x - r * 0.75 + 1, yy + r * 0.5, skin[4]);
+    for (let b = 0; b < r * 0.8; b += 2) p.line(x - r * 0.4 + b, yy - r * 0.78, x - r * 0.4 + b - 1, yy - r * 0.78 - 2 - (b % 3), fold[0]);
+    crack(p, x - 2, yy - r * 0.3, Math.round(r), '#c88a94', i * 7 + 3, 0.3, 1.1);
   });
-  legs(p, 26, 36, 8, 0.35, 6, f, fold[0]);
-  // head segment
-  const hx = 46, hy = 24 - rear * 8;
-  p.ball(hx, hy, 11, 10 + rear, skin, { dither: 0.5 });
-  // round mouth
-  const mr = 3 + mouth * 3.5;
-  p.ellipse(hx + 3, hy + 2, mr + 1.5, mr + 1, fold[1]);
-  p.ellipse(hx + 3, hy + 2, mr, mr * 0.9, '#2a0a12');
-  for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; p.set(hx + 3 + Math.cos(a) * mr * 0.85, hy + 2 + Math.sin(a) * mr * 0.8, '#f0e8d8'); }
-  // beady eyes
-  glowEye(p, hx - 4, hy - 5, '#1a0a10'); p.set(hx + 8, hy - 6, '#1a0a10');
-  sprinkle(p, '#c89a88', 20, 7);
+  // tail stinger
+  p.tube(2, 33, 6, 32, 1.8, fold); p.set(1, 34, fold[0]);
+  // two of her young clinging to her back
+  for (const [x, y] of [[16, 22], [27, 19]]) { p.ball(x, y - rear * 2, 2.6, 1.8, ramp('#f6eadc')); p.set(x + 2, y - rear * 2, '#2a0a10'); }
+  // head
+  const hx = 47, hy = 24 - rear * 8 + Math.sin(ph) * 0.8;
+  p.ball(hx, hy, 12, 10.5 + rear, skin, { dither: 0.45 });
+  p.ball(hx - 2, hy + 4, 8, 4, fold, { dither: 0.8 });
+  crack(p, hx - 6, hy - 6, 9, '#c88a94', 41, 0.2);
+  // lamprey mouth: a gum ring, two rings of teeth and a red throat
+  const mr = 3 + mouth * 4 + Math.sin(ph * 2) * 0.4;
+  p.ellipse(hx + 4, hy + 2, mr + 2.2, mr + 1.6, fold[1]);
+  p.ellipse(hx + 4, hy + 2, mr + 1, mr * 0.95 + 0.5, '#8a2a3a');
+  p.ellipse(hx + 4, hy + 2, mr, mr * 0.9, '#2a0610');
+  p.ellipse(hx + 4, hy + 2.5, mr * 0.45, mr * 0.4, '#6a1020');
+  for (let i = 0; i < 14; i++) { const a = (i / 14) * TAU + ph * 0.25; p.set(hx + 4 + Math.cos(a) * mr * 0.9, hy + 2 + Math.sin(a) * mr * 0.85, '#f4ecdc'); }
+  for (let i = 0; i < 9; i++) { const a = (i / 9) * TAU - ph * 0.3; p.set(hx + 4 + Math.cos(a) * mr * 0.55, hy + 2 + Math.sin(a) * mr * 0.5, '#d8ccb8'); }
+  if (mouth > 0.3) for (let j = 0; j < 2 + mouth * 4; j++) p.set(hx + 6, hy + 2 + mr + j, '#d8eadc');
+  // a cluster of glossy black eyes
+  for (const [ex, ey, er] of [[-6, -6, 1.6], [-3, -8, 1.3], [0, -6.5, 1.8], [-8, -3, 1.1], [3, -8, 1]] as [number, number, number][]) {
+    p.ball(hx + ex, hy + ey, er + 0.4, er + 0.4, ramp('#14080c')); p.set(hx + ex - 0.5, hy + ey - 0.5, '#ffffff');
+  }
+  sprinkle(p, '#c89a88', 26, 7);
+  sprinkle(p, '#8a5a5a', 10, 11);
 }
 const grubmother: EnemyDef = {
   id: 'grubmother', name: 'The Grubmother', desc: 'She has been eating the foundations for years. The surveyor said it was damp.', boss: true,
   hp: 210, r: 16, speed: 30, role: 'boss', cost: 0, hitY: 14, mass: 8, gore: '#c8a080', goreDecal: '#6a4a38', noKnock: true, noSeparate: false,
   sprites: () => ({
-    idle: frames(62, 44, 4, (p, f) => paintGrub(p, f, 0, 0.2)),
+    idle: frames(62, 44, 8, (p, f, n) => paintGrub(p, f, 0, 0.2, n)),
     rear: frames(62, 50, 2, (p, f) => paintGrub(p, 0, 1, f ? 1 : 0.4)),
   }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
@@ -170,41 +190,70 @@ const wardBrain: BossBrain = {
       } },
   ],
 };
-function paintWardrobe(p: any, open: number, tilt: number, bob: number): void {
-  const wood = ramp('#6a4028'), dark = ramp('#3a2418');
-  const x0 = 6, y0 = 8 + bob, W = 36, H = 44;
-  // legs
-  for (const lx of [x0 + 3, x0 + W - 6]) { p.rect(lx, y0 + H, 3, 4, dark[2]); p.set(lx - 1, y0 + H + 3, dark[1]); p.set(lx + 3, y0 + H + 3, dark[1]); }
+function paintWardrobe(p: any, open: number, tilt: number, bob: number, f = 0): void {
+  // a tall walnut wardrobe on clawed feet: carved crown with a face in it, grain, brass, a mirror on
+  // one door, a coat sleeve caught in the gap, and something looking out through the keyhole
+  const wood = ramp('#6e4228'), dark = ramp('#3a2418'), brass = ramp('#c89a3a');
+  const x0 = 7, y0 = 9 + bob, W = 36, H = 44;
+  // clawed feet
+  for (const lx of [x0 + 3, x0 + W - 6]) {
+    p.tube(lx + 1, y0 + H - 1, lx + 1, y0 + H + 3, 2, dark);
+    for (const dx of [-2, 0, 2]) { p.set(lx + 1 + dx, y0 + H + 4, '#e8dcc0'); p.set(lx + 1 + dx, y0 + H + 5, '#b8a888'); }
+  }
   // body
-  p.rect(x0, y0, W, H, wood[2]);
-  p.shadeV(x0, y0, W, H, wood, 0.5);
-  // crown
-  p.poly([x0 - 2, y0 + 1, x0 + W / 2, y0 - 7, x0 + W + 2, y0 + 1], wood[3]);
-  p.ball(x0 + W / 2, y0 - 3, 3, 2.5, ramp('#b8903a'));
-  // interior darkness with eyes and teeth
+  p.rect(x0, y0, W, H, wood[2]); p.shadeV(x0, y0, W, H, wood, 0.5);
+  grain(p, x0, y0, W, H, wood[1], 3);
+  p.rect(x0, y0, 2, H, wood[3]); p.rect(x0 + W - 2, y0, 2, H, wood[0]);
+  p.rect(x0 - 1, y0 + H - 3, W + 2, 3, wood[1]); p.rect(x0 - 1, y0 + H - 3, W + 2, 1, wood[3]);
+  // carved crown with a little scowling face
+  p.poly([x0 - 3, y0 + 1, x0 + 4, y0 - 4, x0 + W / 2, y0 - 9, x0 + W - 4, y0 - 4, x0 + W + 3, y0 + 1], wood[3]);
+  p.poly([x0 + 2, y0, x0 + W / 2, y0 - 7, x0 + W - 2, y0], wood[2]);
+  p.ball(x0 + W / 2, y0 - 3, 3.4, 2.8, brass);
+  p.set(x0 + W / 2 - 1, y0 - 4, '#1a0a08'); p.set(x0 + W / 2 + 1, y0 - 4, '#1a0a08'); p.line(x0 + W / 2 - 1, y0 - 2, x0 + W / 2 + 1, y0 - 2, '#5a3a10');
+  for (const s of [-1, 1]) p.line(x0 + W / 2 + s * 5, y0 - 3, x0 + W / 2 + s * 12, y0 - 1, wood[4]);
+  // the dark inside: many eyes, hangers, a lolling tongue and rows of teeth on the door edges
   const iw = W - 6;
   p.rect(x0 + 3, y0 + 5, iw, H - 10, '#0c0608');
   if (open > 0) {
-    glowEye(p, x0 + 12, y0 + 16, '#f0d040'); glowEye(p, x0 + 24, y0 + 16, '#f0d040');
-    teeth(p, x0 + 9, y0 + 24, 18, 6, open);
+    for (let i = 0; i < 3; i++) p.line(x0 + 8 + i * 8, y0 + 7, x0 + 10 + i * 8, y0 + 10, hex('#8a8a92'));
+    bigEye(p, x0 + 12, y0 + 16, 3.2, 0.3, 0.4, '#e8c030', { sclera: '#f0d860', veins: '#c86a20' });
+    bigEye(p, x0 + 24, y0 + 16, 3.2, -0.3, 0.4, '#e8c030', { sclera: '#f0d860', veins: '#c86a20' });
+    for (const [ex, ey] of [[x0 + 8, y0 + 30], [x0 + 28, y0 + 28], [x0 + 18, y0 + 10]]) { p.set(ex, ey, '#f0d040'); p.set(ex + 2, ey, '#f0d040'); }
+    maw(p, x0 + 8, y0 + 23, 20, 9, open, { gum: '#6a1a24', tongue: '#b8384a' });
+  } else {
+    // something peering out through the gap
+    if (f % 4 !== 3) { p.set(x0 + W / 2 - 1, y0 + 18, '#f0d040'); p.set(x0 + W / 2, y0 + 18, '#fff4a0'); }
   }
   // doors
   const dw = Math.round((iw / 2) * (1 - open * 0.8));
   for (const side of [0, 1]) {
     const dx = side ? x0 + 3 + iw - dw : x0 + 3;
     p.rect(dx, y0 + 5, dw, H - 10, wood[2]);
-    p.rect(dx + 1, y0 + 8, Math.max(1, dw - 2), H - 16, wood[1]);
+    if (dw > 4) {
+      p.rect(dx + 1, y0 + 8, dw - 2, H - 16, wood[1]); p.rect(dx + 2, y0 + 9, dw - 4, H - 18, wood[2]);
+      grain(p, dx + 2, y0 + 9, dw - 4, H - 18, wood[1], 11 + side);
+      if (side === 1 && dw > 8) {
+        // a mirror, cracked
+        p.rect(dx + 3, y0 + 11, dw - 6, 14, hex('#8aa0b0')); p.shadeV(dx + 3, y0 + 11, dw - 6, 14, ramp('#7a90a4'), 0.4);
+        crack(p, dx + 5, y0 + 13, 8, '#e8f4ff', 5, 1.2); p.set(dx + 4, y0 + 12, '#ffffff');
+      }
+      p.ball(side ? dx + 2 : dx + dw - 3, y0 + H / 2, 1.3, 1.6, brass);
+      if (side === 0) { p.rect(dx + dw - 3, y0 + H / 2 + 3, 1, 2, '#0a0404'); p.set(dx + dw - 3, y0 + H / 2 + 3, open > 0 ? '#0a0404' : '#f0c040'); }
+    }
     p.rect(dx, y0 + 5, dw, 1, wood[3]);
-    if (dw > 4) p.set(side ? dx + 1 : dx + dw - 2, y0 + H / 2, '#d8b060');
+    // teeth along the door edges when they part
+    if (open > 0.3) for (let y = y0 + 8; y < y0 + H - 6; y += 3) p.set(side ? dx - 1 : dx + dw, y, '#efe6d0');
   }
-  if (open > 0.6) { p.rect(x0 - 6, y0 + 6, 6, H - 12, wood[1]); p.rect(x0 + W, y0 + 6, 6, H - 12, wood[1]); }
+  // a coat sleeve caught in the closed doors
+  if (open < 0.2) { p.tube(x0 + W / 2, y0 + 30, x0 + W / 2 + 2, y0 + H - 4, 1.6, ramp('#4a4a6a')); p.set(x0 + W / 2 + 2, y0 + H - 3, '#e8c8a8'); }
+  if (open > 0.6) { p.rect(x0 - 6, y0 + 6, 6, H - 12, wood[1]); p.rect(x0 + W, y0 + 6, 6, H - 12, wood[1]); grain(p, x0 - 6, y0 + 6, 6, H - 12, wood[0], 21); }
   void tilt;
 }
 const wardrobe: EnemyDef = {
   id: 'wardrobe', name: 'The Wardrobe', desc: 'Grandmother hid the presents in it. Marcus was sure there was a man inside. There was.', boss: true,
   hp: 225, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 10, gore: '#6a4028', goreDecal: '#3a2418', noKnock: true,
   sprites: () => ({
-    closed: frames(50, 60, 1, (p) => paintWardrobe(p, 0, 0, 0)),
+    closed: frames(50, 60, 4, (p, f) => paintWardrobe(p, 0, 0, 0, f)),
     tilt: frames(50, 60, 1, (p) => paintWardrobe(p, 0.15, 1, 1)),
     open: frames(50, 60, 2, (p, f) => paintWardrobe(p, f ? 1 : 0.5, 0, 0)),
   }),
@@ -265,35 +314,41 @@ function snipBrain(aggressive: boolean): BossBrain {
     ],
   };
 }
-function paintSnip(p: any, f: number, open: number, brass: boolean): void {
+function paintSnip(p: any, f: number, open: number, brass: boolean, n = 4): void {
+  // a pair of old sewing shears walking on their finger loops: honed edges, a rusty pivot screw
+  // that is also an eye, and nicks in the blades
+  const ph = (f / n) * TAU;
   const blade = ramp('#c8ccd8'), handle = ramp(brass ? '#c89a3a' : '#9a2a3a');
-  const cx = 18, cy = 20;
-  const a = 0.18 + open * 0.5;
+  const cx = 18, cy = 20 + Math.round(Math.abs(Math.sin(ph)) * -1);
+  const a = 0.18 + open * 0.5 + Math.sin(ph * 2) * 0.03;
   for (const side of [-1, 1]) {
     const tx = cx + side * (3 + Math.sin(a) * 16), ty = cy - 19;
     p.poly([cx - side * 1, cy + 1, cx + side * 3, cy - 1, tx, ty, tx - side * 2, ty + 1], side < 0 ? blade[3] : blade[2]);
     p.line(cx + side * 3, cy - 1, tx, ty, blade[4]);
     p.line(cx - side * 1, cy + 1, tx - side * 2, ty + 1, blade[1]);
+    // a nick and a smear of something red near the tip
+    const nx = cx + side * (1 + Math.sin(a) * 9), ny = cy - 10; p.set(nx, ny, blade[0]); p.set(tx - side, ty + 2, '#8a1a24');
   }
-  const st = [0, 2, 0, -2][f % 4];
+  const st = Math.sin(ph) * 2;
   // handles double as legs
   p.line(cx - 2, cy + 2, cx - 6, cy + 8, handle[1]); p.line(cx + 2, cy + 2, cx + 6, cy + 8, handle[1]);
   p.ring(cx - 7, cy + 11 + st * 0.5, 4.5, handle[2], 2.2); p.ring(cx + 7, cy + 11 - st * 0.5, 4.5, handle[2], 2.2);
+  p.ring(cx - 7, cy + 11 + st * 0.5, 3.3, handle[3], 0.8); p.ring(cx + 7, cy + 11 - st * 0.5, 3.3, handle[1], 0.8);
   p.set(cx - 9, cy + 9 + st * 0.5, handle[4]); p.set(cx + 5, cy + 9 - st * 0.5, handle[4]);
   // pivot screw eye
-  p.ball(cx, cy, 4, 4, ramp('#e8e0d0'));
-  p.ball(cx + (open ? 0 : 0.5), cy, 2, 2, ramp(brass ? '#3a8a3a' : '#b02a2a'));
-  p.set(cx - 2, cy - 2, '#ffffff');
+  p.ball(cx, cy, 4.2, 4.2, ramp('#d8d0c0'));
+  for (let i = 0; i < 4; i++) p.set(cx + Math.cos(i * 1.6) * 3.6, cy + Math.sin(i * 1.6) * 3.6, '#8a5a3a');
+  bigEye(p, cx, cy, 2.6, Math.cos(ph) * 0.5, 0.2, brass ? '#3a8a3a' : '#b02a2a', { veins: '' });
 }
 const snipA: EnemyDef = {
   id: 'snipA', name: 'Snip', desc: '', boss: true, hp: 110, r: 9, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, gore: '#c8ccd8', goreDecal: '#5a1a24',
-  sprites: () => ({ walk: frames(36, 38, 4, (p, f) => paintSnip(p, f, 0, false)), open: frames(36, 38, 1, (p) => paintSnip(p, 0, 1, false)) }),
+  sprites: () => ({ walk: frames(36, 38, 8, (p, f, n) => paintSnip(p, f, 0, false, n)), open: frames(36, 38, 1, (p) => paintSnip(p, 0, 1, false)) }),
   init(e) { e.anim = 'walk'; e.data.idleT = 1; },
   update(e, w, dt) { bossUpdate(e, w, dt, snipBrainA); },
 };
 const snipB: EnemyDef = {
   id: 'snipB', name: 'Snap', desc: '', boss: true, hp: 110, r: 9, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, gore: '#c89a3a', goreDecal: '#5a1a24',
-  sprites: () => ({ walk: frames(36, 38, 4, (p, f) => paintSnip(p, f, 0, true)), open: frames(36, 38, 1, (p) => paintSnip(p, 0, 1, true)) }),
+  sprites: () => ({ walk: frames(36, 38, 8, (p, f, n) => paintSnip(p, f, 0, true, n)), open: frames(36, 38, 1, (p) => paintSnip(p, 0, 1, true)) }),
   init(e) { e.anim = 'walk'; e.data.idleT = 1.6; },
   update(e, w, dt) { bossUpdate(e, w, dt, snipBrainB); },
 };

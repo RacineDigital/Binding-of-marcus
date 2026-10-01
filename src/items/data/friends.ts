@@ -1,4 +1,4 @@
-// The crew: things borrowed off friends (Crug's pen, Ewen's bike, Gavyn's pouch, Sam's beer), Toffee
+// The Boys: things borrowed off friends (a collection set, not a transformation) (Crug's pen, Ewen's bike, Gavyn's pouch, Sam's beer), Badger
 // the tabby, and the Cherry Orchard, an ultra-rare tin of 99 cherry bombs.
 import type { ItemDef } from '../types';
 import { ramp, hex, P } from './kit';
@@ -47,34 +47,34 @@ function orchard(p: P): void {
 }
 
 export const FRIEND_ITEMS: ItemDef[] = [
-  { id: 'crugs_pen', name: 'Crug\'s Pen', kind: 'passive', quality: 2, pools: { treasure: 1, shop: 0.6 }, tags: ['crew'],
+  { id: 'crugs_pen', name: 'Crug\'s Pen', kind: 'passive', quality: 2, pools: { treasure: 1 }, tags: ['boys'],
     pickup: 'Flaming shots', effect: ['Your shots are on fire and set enemies alight.', 'Damage +0.3.'],
     stats: { damage: 0.3 }, attack: { burn: 0.45, shape: 'fire' }, icon: crugsPen,
     lore: 'Crug swears it\'s the good stuff. It smells like burnt mango.' },
-  { id: 'ewens_bike', name: 'Ewen\'s Bike', kind: 'passive', quality: 2, pools: { treasure: 0.9, shop: 0.5 }, tags: ['crew'],
+  { id: 'ewens_bike', name: 'Ewen\'s Bike', kind: 'passive', quality: 2, pools: { treasure: 0.9 }, tags: ['boys'],
     pickup: 'Spikes and creep can\'t hurt you', effect: ['You can\'t be hurt by spikes or creep.', 'Speed +0.15.'],
     stats: { speed: 0.15 }, icon: ewensBike,
     lore: 'An old red road bike, mostly rust. Ewen rides it over anything. The brakes are a suggestion.' },
-  { id: 'gavyns_pouch', name: 'Gavyn\'s Pouch', kind: 'passive', quality: 2, pools: { treasure: 1, shop: 0.6 }, tags: ['crew'],
+  { id: 'gavyns_pouch', name: 'Gavyn\'s Pouch', kind: 'passive', quality: 2, pools: { treasure: 1 }, tags: ['boys'],
     pickup: 'Fire rate up', effect: ['Fire rate +0.7.', 'Your upper lip is very fat now.'],
     stats: { tears: 0.7 }, icon: gavynsPouch,
     lore: 'Gavyn keeps one in at all times. Nobody has seen his real top lip in years.' },
-  { id: 'sams_beer', name: 'Sam\'s Beer', kind: 'passive', quality: 3, pools: { treasure: 0.9, shop: 0.4 }, tags: ['crew'],
+  { id: 'sams_beer', name: 'Sam\'s Beer', kind: 'passive', quality: 3, pools: { treasure: 0.9 }, tags: ['boys'],
     pickup: 'Frothy creep shots, damage up', effect: ['Damage +1.', 'Shots are beer: they leave brown creep that hurts enemies and fizzes away into foam.'],
     stats: { damage: 1 }, attack: { creep: true, shape: 'beer', tint: '#8a5a20' }, icon: samsBeer,
     lore: 'Sam\'s. Warm, flat, and somehow still foaming.' },
-  { id: 'toffee', name: 'Toffee', kind: 'familiar', quality: 3, pools: { treasure: 0.8, shop: 0.4 }, tags: ['crew'],
+  { id: 'toffee', name: 'Badger', kind: 'familiar', quality: 3, pools: { treasure: 0.8 },
     pickup: 'A tabby with a temper', effect: ['A brown tabby kitten that pounces on enemies.', 'Hisses when you\'re hurt, scaring enemies near you.', 'Brings you a present every 3 rooms.'],
     familiar: { kind: 'chaser', contact: 9, speed: 115, sprite: 'toffee', special: 'tabby', spawnEvery: 3, spawnDrop: ['button', 'heart', 'key', 'bomb', 'button5', 'sweet'] },
     hooks: { onHurt: (w) => {
-      // Toffee's hiss: everything near you is scared off for a moment
+      // Badger's hiss: everything near you is scared off for a moment
       const pl = w.player;
       for (const e of w.enemies) if (!e.dead && !e.isBoss && dist2(e.x, e.y, pl.x, pl.y) < 90 * 90) e.fear = Math.max(e.fear, 2.2);
-      w.audio.play('snip', { x: pl.x, pitch: 1.8, vol: 0.5 }); w.hud.toast('Toffee hisses!', 1);
+      w.audio.play('snip', { x: pl.x, pitch: 1.8, vol: 0.5 }); w.hud.toast('Badger hisses!', 1);
     } },
     icon: familiarIcon('toffee'),
     lore: 'Found under the bindery bench in a box marked FRAGILE. She is not fragile.' },
-  { id: 'cherry_orchard', name: 'The Cherry Orchard', kind: 'passive', quality: 4, pools: { treasure: 0.08, secret: 0.2 },
+  { id: 'cherry_orchard', name: 'The Cherry Orchard', kind: 'passive', quality: 4, pools: { secret: 0.2 },
     pickup: '99 bombs', effect: ['Your cherry bombs are set to 99.'],
     hooks: { onPickup: (w) => { w.player.bombs = 99; } }, icon: orchard,
     lore: 'Every cherry bomb the house ever had, in one basket. Ultra rare.' },
