@@ -86,7 +86,6 @@
         "AppImage"
       ],
       "category": "Game"
-    },
-    "electronDist": "node_modules/electron/dist"
+    }
   }
 }
