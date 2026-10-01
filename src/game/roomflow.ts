@@ -18,7 +18,7 @@ import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
-import { FINAL_FLOOR } from '../data/floors';
+import { FINAL_FLOOR, FLOORS } from '../data/floors';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 
@@ -41,6 +41,10 @@ export function startFloor(w: World): void {
   w.floorIntroT = 2.6;
   w.hud.floorCard(floor.label, floor.theme.subtitle, floor.curse);
   w.audio.setMusic(floor.theme.music);
+  w.audio.prepareMusic(w.run.floorIndex >= FINAL_FLOOR ? 'bossFinal' : w.run.floorIndex >= 4 ? 'boss2' : 'boss');
+  const nextTheme = FLOORS[Math.min(FLOORS.length - 1, w.run.floorIndex + 1)];
+  if (nextTheme) w.audio.prepareMusic(nextTheme.music);
+  if (w.run.floorIndex === 0) w.audio.prepareMusic('death');
   w.audio.setIntensity(0);
   w.game.saveSnapshot();
 }

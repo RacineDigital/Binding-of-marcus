@@ -158,6 +158,7 @@ export class MenuSystem {
     if (!this.g.save.data.introSeen) { this.push(this.introScreen()); return; }
     this.push(this.mainScreen());
     this.g.audio.setMusic('menu');
+    this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
   openPause(): void { this.pauseScreen = this.pauseMenu(); }
   renderPause(ctx: CanvasRenderingContext2D): void { this.pauseScreen?.render(ctx); if (this.stack.length) this.top()!.render(ctx); }

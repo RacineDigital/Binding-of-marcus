@@ -32,6 +32,7 @@ export class SynthAudio extends AudioEngine {
       this.reverbIn.connect(this.reverb); this.reverb.connect(rvOut); rvOut.connect(this.master);
       this.music = new Music(c, this.musicBus, this.reverbIn);
       if (this.pendingTrack) this.music.setTrack(this.pendingTrack);
+      for (const t of this.pendingPrepare) this.music.prepare(t);
       this.music.setIntensity(this.pendingIntensity);
       this.renderAll();
     }
@@ -95,6 +96,8 @@ export class SynthAudio extends AudioEngine {
     this.duck(0.35, (STINGERS[name]?.dur ?? 1.5) * 0.8);
   }
   setMusic(t: string | null): void { this.pendingTrack = t; this.music?.setTrack(t); }
+  prepareMusic(t: string): void { if (this.music) this.music.prepare(t); else this.pendingPrepare.push(t); }
+  private pendingPrepare: string[] = [];
   setIntensity(i: number): void { this.pendingIntensity = i; this.music?.setIntensity(i); }
   setVolumes(m: number, s: number): void {
     this.musicVol = m; this.sfxVol = s;
