@@ -1,7 +1,12 @@
-## What's new in 3.0.2
+## What's new in 3.0.3
 
-- **The announcer voice is gone.** Sweets, pages and transformations are no longer read out loud
-  (transformations still get their title card and sound).
+- **Clearer stat icons.** Each stat has its own picture and colour now: a yellow running shoe
+  (speed), a red sword (damage), blue tear drops (fire rate), a ruler with a double arrow (range),
+  a cyan shot with speed streaks (shot speed) and a four-leaf clover (luck).
+- **Stats are named.** Hold Tab to see every stat with its name and value, and when one changes
+  the popup says which (for example "+1.0 damage").
+- The announcer voice from 3.0.2 is gone for good (sweets, pages and transformations are no longer
+  read out).
 
 ## Download and play
 

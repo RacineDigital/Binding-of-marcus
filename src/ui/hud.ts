@@ -51,60 +51,66 @@ function icons(): Record<string, HTMLCanvasElement> {
 
 /** 8x8 stat icons drawn from character maps (palette letters below). */
 const STAT_ICON_MAPS: Record<string, string[]> = {
-  speed: [   // winged boot
-    '........',
-    '..bb....',
-    '..bbw.w.',
-    '..bbww..',
-    '..bbbw..',
-    '.bbbbb..',
-    'bbbbbbB.',
-    'BBBBBBB.'],
-  damage: [  // a nib, point down, dripping
-    '..rrrr..',
-    '..rRRr..',
-    '..rRRr..',
-    '...rr...',
-    '...rr...',
-    '...RR...',
-    '........',
-    '...R....'],
-  rate: [    // two ink drops
-    '...k....',
-    '..kk..k.',
-    '.kkKk.kk',
-    '.kKKkkKk',
-    '.kKKk.k.',
-    '..kk....',
-    '........',
-    '........'],
-  range: [   // a tape measure ribbon
-    'gggggggg',
-    'g.g.g.g.',
-    'GGGGGGGG',
-    '........',
-    '..cccc..',
-    '.cCCCCc.',
-    '.cCccCc.',
-    '..cccc..'],
-  shot: [    // an arrow with speed lines
-    '........',
-    '.....a..',
-    'w.....a.',
-    '.aaaaaaa',
-    'w.....a.',
-    '.....a..',
-    '........',
-    '........'],
-  luck: [    // four-leaf clover
-    '.ll.ll..',
-    'lLLlLLl.',
-    '.lLlLl..',
-    '..lll...',
-    '.lLlLl..',
-    'lLLlLLl.',
-    '.ll.ll..',
-    '...s....'],
+  speed: [   // a yellow running shoe with motion lines
+    '.........',
+    '...yyy...',
+    '...yYy...',
+    'w..yYy...',
+    '.w.yyyyy.',
+    'w..yyyyyy',
+    '.w.yyyyyy',
+    '...wwwwww',
+    '.........'],
+  damage: [  // a red-hilted sword
+    '.......ss',
+    '......sSs',
+    '.....sSs.',
+    '....sSs..',
+    '.R.sSs...',
+    '..RSs....',
+    '..bRR....',
+    '.b.......',
+    'b........'],
+  rate: [    // blue tear drops, one after another
+    '...k.....',
+    '..kk.....',
+    '..kKk..k.',
+    '.kKKk.kk.',
+    '.kKKkkKkk',
+    '.kKKk.kk.',
+    '..kk.....',
+    '.........',
+    '.........'],
+  range: [   // a double-headed arrow over a ruler
+    '.........',
+    '.o.....o.',
+    'oo.....oo',
+    'ooooooooo',
+    'oo.....oo',
+    '.o.....o.',
+    '.........',
+    'ttttttttt',
+    't.t.t.t.t'],
+  shot: [    // a shot flying fast, with speed streaks
+    '.........',
+    '......cc.',
+    'cccc.cCCc',
+    '.....cCCc',
+    'cccc.cCCc',
+    '......cc.',
+    '.........',
+    '.........',
+    '.........'],
+  luck: [    // a four-leaf clover
+    '.ll...ll.',
+    'lLLl.lLLl',
+    'lLLLlLLLl',
+    '.lLLlLLl.',
+    '..llGll..',
+    '.lLLlLLl.',
+    'lLLLlLLLl',
+    'lLLl.lLLl',
+    '.ll.G.ll.'],
   door: [    // arched door, half ink, half wax
     '..dddd..',
     '.dpppPd.',
@@ -115,9 +121,11 @@ const STAT_ICON_MAPS: Record<string, string[]> = {
     'dpppPPPd',
     'dddddddd'],
 };
+/** What each stat icon stands for, spelled out. */
+const STAT_NAMES: Record<string, string> = { speed: 'Speed', damage: 'Damage', rate: 'Fire rate', range: 'Range', shot: 'Shot speed', luck: 'Luck', door: 'Bargain door' };
 const STAT_ICON_PAL: Record<string, string> = {
-  b: '#8a5a3a', B: '#5a3824', w: '#e8e4f4', r: '#c8c0d8', R: '#d0283a', k: '#5a70d8', K: '#9ab0ff',
-  g: '#e8d8a8', G: '#a89060', c: '#c8a860', C: '#7a6038', a: '#e8e0d0', l: '#4aa84a', L: '#8ae07a', s: '#3a6a2a',
+  y: '#e8b830', Y: '#ffe890', w: '#e8e4f4', b: '#7a4a2a', R: '#e0283a', s: '#c8ccd8', S: '#ffffff',
+  k: '#3a7ae8', K: '#a8d0ff', o: '#f08a30', t: '#c8a868', c: '#40d0e0', C: '#d8fcff', l: '#3a9a3a', L: '#7ae06a', G: '#2a5a20',
   d: '#8a7560', p: '#3a2e7a', P: '#efe6d2',
 };
 let statIcons: Record<string, HTMLCanvasElement> | null = null;
@@ -125,7 +133,7 @@ function statIcon(k: string): HTMLCanvasElement {
   if (!statIcons) {
     statIcons = {};
     for (const [name, rows] of Object.entries(STAT_ICON_MAPS)) {
-      const p = new PixelArt(8, 8);
+      const p = new PixelArt(9, 9);
       rows.forEach((row, y) => [...row].forEach((ch, x) => { if (STAT_ICON_PAL[ch]) p.set(x, y, STAT_ICON_PAL[ch]); }));
       statIcons[name] = p.toCanvas();
     }
@@ -253,6 +261,15 @@ export class Hud {
       y += 4;
     };
     const plain = (arr: string[]): DescLine[] => arr.map((t) => ({ text: t, color: 'plain' as const }));
+    // your stats, named, in two columns
+    head('YOUR STATS');
+    this.statRows().forEach(([k, v], i) => {
+      const cx = X + (i % 2) * 100, cy = y + Math.floor(i / 2) * 11;
+      ctx.drawImage(statIcon(k), cx, cy);
+      text(ctx, STAT_NAMES[k], cx + 12, cy + 7.5, 7, COL.dim, 'left', FONT_BODY, 600);
+      text(ctx, v, cx + 92, cy + 7.5, 7.5, COL.text, 'right', FONT_BODY, 700);
+    });
+    y += Math.ceil(this.statRows().length / 2) * 11 + 4;
     // active item
     if (pl.active) {
       const it = getItem(pl.active);
@@ -436,7 +453,7 @@ export class Hud {
       const dl = this.statDelta.get(k);
       if (dl) {
         ctx.globalAlpha = Math.min(1, dl.t * 2);
-        text(ctx, `${dl.d > 0 ? '+' : ''}${k === 'luck' ? Math.round(dl.d) : fmt1(Math.round(dl.d * 100) / 100)}`, x + 13 + measure(ctx, v, 7), y, 6.5, dl.d > 0 ? COL.up : COL.down, 'left', FONT_BODY, 700);
+        text(ctx, `${dl.d > 0 ? '+' : ''}${k === 'luck' ? Math.round(dl.d) : fmt1(Math.round(dl.d * 100) / 100)} ${STAT_NAMES[k].toLowerCase()}`, x + 13 + measure(ctx, v, 7), y, 6.5, dl.d > 0 ? COL.up : COL.down, 'left', FONT_BODY, 700);
         ctx.globalAlpha = 1;
       }
     });
