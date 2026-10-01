@@ -513,7 +513,7 @@ export class World {
           if (drop === 'item') flow.spawnPedestal(this, p.x, p.y, this.run.pools.roll('secret'), 'normal');
           else if (drop) spawnDrop(this, drop, p.x, p.y);
           this.run.stats.secretsFound++;
-        } else if (rng.chance(0.03)) spawnDrop(this, 'button', p.x, p.y);
+        } else if (rng.chance(0.06)) spawnDrop(this, rng.pick(['button', 'button', 'key', 'bomb']), p.x, p.y);
         break;
       }
       case Ob.Heap: {

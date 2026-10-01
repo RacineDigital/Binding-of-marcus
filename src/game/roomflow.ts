@@ -311,6 +311,8 @@ function onClear(w: World, reward: boolean): void {
     // pity: low on health makes hearts much more likely
     const h = w.player.health;
     if (!h.noRed && h.red <= 2 && h.red < h.redMax && rng.chance(0.45)) kind = 'heart';
+    else if (w.player.keys === 0 && rng.chance(0.3)) kind = 'key';
+    else if (w.player.bombs === 0 && rng.chance(0.3)) kind = 'bomb';
     if (kind) {
       const p = freeSpotNear(w, room.center().x, room.center().y);
       spawnDrop(w, kind, p.x, p.y, true, rng);

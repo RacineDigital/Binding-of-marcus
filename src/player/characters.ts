@@ -17,7 +17,7 @@ export const CHARACTERS: CharacterDef[] = [
     id: 'marcus', name: 'Marcus', title: 'The Grandson', look: 'marcus',
     desc: 'Eleven years old, wearing his grandfather\'s cardigan. Flicks ink when he is frightened, which is always.',
     base: { damage: 3.5, tears: 2.73, range: 230, shotSpeed: 1, speed: 1, luck: 0 },
-    health: { red: 3 }, items: [], buttons: 0, keys: 0, bombs: 1, unlockHint: '', passive: 'None. The baseline.',
+    health: { red: 3 }, items: [], buttons: 0, keys: 1, bombs: 1, unlockHint: '', passive: 'None. The baseline.',
   },
   {
     id: 'wren', name: 'Wren', title: 'The Cousin', look: 'wren',

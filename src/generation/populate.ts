@@ -188,8 +188,12 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       const xs = [-80, -40, 0, 40, 80];
       const nItems = fi >= 4 ? 3 : 2;
       const itemSlots = rng.shuffle([0, 1, 2, 3, 4]).slice(0, nItems);
+      let staple = 0; // the first two pickup slots are always a key and a cherry bomb
       xs.forEach((dx, i) => {
-        if (itemSlots.includes(i)) {
+        if (!itemSlots.includes(i) && staple < 2) {
+          const kind = staple++ === 0 ? 'key' : 'bomb';
+          pk(kind, cx + dx, y + 6, { price: 4, shop: true });
+        } else if (itemSlots.includes(i)) {
           const id = run.pools.roll('shop', prng);
           pk('item', cx + dx, y, { id, style: 'shop', price: priceFor(id), shop: true });
         } else {
