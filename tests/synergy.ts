@@ -57,7 +57,7 @@ const MODE_ITEMS: Record<string, string> = { beam: 'burning_glass', laser: 'copp
       const ids = [...(mode === 'shot' ? [] : [MODE_ITEMS[mode]]), m.id, m.id];
       // chance-based effects get a few tries
       let missing = want;
-      for (let tries = 0; tries < 3 && missing.length; tries++) {
+      for (let tries = 0; tries < 6 && missing.length; tries++) {
         const r = await page.evaluate(([ids, frames]) => {
           const d = (window as any).__bomDebug; const w = d.world;
           const real = d.game.__realUpdate; const stub = w.update; w.update = real;
