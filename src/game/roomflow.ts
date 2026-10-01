@@ -75,6 +75,8 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.obstacleDirty = true;
   w.enemies = []; w.proj.clear(); w.beams = []; w.bombs = []; w.creep = []; w.fx.clear(); w.bossList = [];
   w.pendingKegs = []; w.lockdown = false; w.labels = [];
+  w.tasks = w.tasks.filter((t) => t.persist); w.telegraphs = []; w.corpses = [];
+  w.trapdoor = room.flags.trap ? { x: room.flags.trap.x, y: room.flags.trap.y, t: 2, kind: 'down' } : null;
   w.roomTime = 0; w.roomRng = new RNG(room.seed + ':rt');
   // pickups & npcs
   w.pickups = room.pickups.map((s) => {
@@ -360,14 +362,15 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
   if (!w.run.flags.bossHit) w.game.save.unlock('flawless_boss');
-  setTimeout(() => {
+  w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();
     if (fi >= FINAL_FLOOR) { w.game.onVictory(); return; }
-    spawnPedestal(w, c.x, c.y - 44, w.run.pools.roll('boss'), 'treasure');
+    spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
     const rng = new RNG(room.seed + ':bossdrop');
     spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
     w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
+    room.flags.trap = { x: c.x, y: c.y + 26 };
     w.audio.play('trapdoor');
     // a chance for a bargain door
     const chance = w.run.flags.dealChance + (w.run.flags.hitThisFloor ? 0 : 0.35) + (fi === 0 ? -1 : 0);
@@ -383,7 +386,7 @@ export function onBossKilled(w: World, e: Enemy): void {
         w.hud.toast(kind === 'deal' ? 'An inky door has opened.' : 'A door of wax has opened.');
       }
     }
-  }, 1300);
+  });
 }
 
 export function updateSpecial(w: World, dt: number): void {
@@ -541,7 +544,8 @@ function openChest(w: World, p: Pickup): void {
   p.opened = true; p.noCollect = 999;
   w.audio.play('chestOpen', { x: p.x });
   w.fx.stars(p.x, p.y - 8, 8, '#ffe8a0', 50);
-  const rng = new RNG(Math.random() * 1e9);
+  w.room.flags.chests = (w.room.flags.chests ?? 0) + 1;
+  const rng = new RNG(`${w.room.seed}:chest${w.room.flags.chests}`);
   if (kind === 'crimson') {
     const r = rng.next();
     if (r < 0.3) { w.hurtPlayer(1, 'a crimson box', { ignoreIframes: false }); w.fx.spray(p.x, p.y, 6, -Math.PI / 2, 1, 10, '#a01e2a'); }
@@ -554,7 +558,7 @@ function openChest(w: World, p: Pickup): void {
     if (kind === 'locked' && rng.chance(0.12)) { spawnPedestal(w, p.x, p.y, w.run.pools.roll('treasure'), 'normal'); return; }
     for (let i = 0; i < n; i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'chest') ?? 'button', p.x, p.y);
   }
-  setTimeout(() => { p.dead = true; }, 2500);
+  w.after(2.5, () => { p.dead = true; });
 }
 
 export function takeItem(w: World, p: Pickup): void {
@@ -634,7 +638,7 @@ export function grantItem(w: World, id: string, silentHealth = false): void {
     if (pl.tagCount(t) >= 3) {
       pl.transformations.add(t); pl.recompute();
       const T = TRANSFORM_EFFECTS[t];
-      setTimeout(() => { w.hud.banner(T.name.toUpperCase(), T.desc); w.audio.stinger('transform'); w.whiteFlash = 0.6; }, 1300);
+      w.after(1.3, () => { w.hud.banner(T.name.toUpperCase(), T.desc); w.audio.stinger('transform'); w.whiteFlash = 0.6; }, true);
       w.game.save.unlock('transform_' + t);
     }
   }

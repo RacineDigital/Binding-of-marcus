@@ -77,19 +77,30 @@ export class Renderer {
     this.lctx.globalAlpha = Math.min(1, intensity);
     this.lctx.drawImage(this.lightSprite, x - r, y - r, r * 2, r * 2);
   }
+  private glowCache = new Map<string, HTMLCanvasElement>();
+  private glowSprite(color: string): HTMLCanvasElement {
+    let c = this.glowCache.get(color);
+    if (!c) {
+      c = document.createElement('canvas'); c.width = c.height = 32;
+      const x = c.getContext('2d')!;
+      const g = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+      g.addColorStop(0, color); g.addColorStop(0.45, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.globalAlpha = 1; x.fillStyle = g; x.fillRect(0, 0, 32, 32);
+      // fade the mid-ring
+      const m = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+      m.addColorStop(0, 'rgba(0,0,0,0)'); m.addColorStop(0.3, 'rgba(0,0,0,0.35)'); m.addColorStop(1, 'rgba(0,0,0,1)');
+      x.globalCompositeOperation = 'destination-out'; x.fillStyle = m; x.fillRect(0, 0, 32, 32);
+      if (this.glowCache.size > 200) this.glowCache.clear();
+      this.glowCache.set(color, c);
+    }
+    return c;
+  }
   /** Additive coloured glow. */
   addGlow(x: number, y: number, r: number, color: string, alpha: number): void {
-    if (x < -r || y < -r || x > VIEW_W + r || y > VIEW_H + r) return;
+    if (x < -r || y < -r || x > VIEW_W + r || y > VIEW_H + r || alpha <= 0.01) return;
     const g = this.gctx;
     g.globalAlpha = Math.min(1, alpha);
-    g.globalCompositeOperation = 'source-over';
-    g.fillStyle = color;
-    g.save();
-    g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2);
-    const grad = g.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0, color); grad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = grad; g.fill();
-    g.restore();
+    g.drawImage(this.glowSprite(color), x - r, y - r, r * 2, r * 2);
     g.globalAlpha = 1;
   }
 

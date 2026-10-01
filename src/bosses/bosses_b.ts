@@ -448,7 +448,7 @@ const sleepBrain: BossBrain = {
           e.data.ht = 0.55; e.data.h++;
           const x = w.player.x, y = w.player.y;
           telegraph(w, x, y, 14, 0.7, '#c0c8ff');
-          setTimeout(() => { if (e.dead || !w.room) return; w.fx.burst(x, y, 4, 12, '#c0c8ff', 80, 0.5); w.proj.enemy(x, y, 0, 0, { r: 10, range: 1, shape: 'holy', z: 2, life: 0.15 }); for (let i = 0; i < 4; i++) w.proj.enemy(x, y, (i / 4) * TAU + Math.PI / 4, 90, { shape: 'holy', r: 3 }); w.audio.play('hit', { x, pitch: 0.6 }); }, 700);
+          w.after(0.7, () => { if (e.dead) return; w.fx.burst(x, y, 4, 12, '#c0c8ff', 80, 0.5); w.proj.enemy(x, y, 0, 0, { r: 10, range: 1, shape: 'holy', z: 2, life: 0.15 }); for (let i = 0; i < 4; i++) w.proj.enemy(x, y, (i / 4) * TAU + Math.PI / 4, 90, { shape: 'holy', r: 3 }); w.audio.play('hit', { x, pitch: 0.6 }); });
         }
         return t > (e.data.phase ? 3.4 : 2.2);
       } },

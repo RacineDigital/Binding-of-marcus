@@ -32,6 +32,7 @@ export class Game {
   fps = 60; private fpsAcc = 0; private fpsN = 0;
   unlockQueue: { name: string; t: number }[] = [];
   dropHold = 0;
+  perf = { update: 0, render: 0, present: 0 };
   constructor(cv: HTMLCanvasElement) {
     this.r = new Renderer(cv);
     this.input = new Input(cv);
@@ -67,9 +68,13 @@ export class Game {
       this.input.pollPad(dt);
       this.acc += dt;
       let steps = 0;
+      const t0 = performance.now();
       while (this.acc >= FIXED_DT && steps < 5) { this.step(FIXED_DT); this.acc -= FIXED_DT; steps++; this.input.endStep(); }
+      const t1 = performance.now();
       if (steps === 5) this.acc = 0;
       this.render(dt);
+      const t2 = performance.now();
+      this.perf.update = this.perf.update * 0.95 + (t1 - t0) * 0.05; this.perf.render = this.perf.render * 0.95 + (t2 - t1) * 0.05;
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
@@ -299,11 +304,13 @@ function challengeItems(ch: string): string[] {
 }
 
 import { SynthAudio } from '../audio/synth';
+import { attachDebug } from './debug';
 function createAudio(): AudioEngine { try { return new SynthAudio(); } catch { return new AudioEngine(); } }
 
 export function startGame(cv: HTMLCanvasElement, params: URLSearchParams): Game {
   const g = new Game(cv);
   (window as any).__bom = g;
+  attachDebug(g);
   g.start();
   if (params.has('play')) g.newRun(params.get('char') || 'marcus', params.get('seed') || undefined);
   else g.menus.openMain();

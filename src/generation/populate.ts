@@ -160,10 +160,10 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'boss': {
       stamp(room, BOSS_TEMPLATE, 0, 0, false, false, rng, floor, slots);
-      const beaten = new Set(save?.data.bossesBeaten ?? []);
       const opts = floor.theme.bosses.filter((b) => getEnemy(b));
-      // favour bosses the player has not met yet
-      room.bossId = rng.weighted(opts, (b) => (beaten.has(b) ? 1 : 2.5)) ?? opts[0];
+      // the chapter's own bosses are most likely; earlier chapters' bosses can reappear
+      room.bossId = rng.weighted(opts, (b) => (opts.indexOf(b) < 2 ? 3 : 1)) ?? opts[0];
+      room.flags.bossItem = run.pools.roll('boss', prng);
       if (run.challenge === 'twins' && fi < 7) room.bossId = room.bossId + '+' + room.bossId;
       ensurePaths(room);
       break;

@@ -275,8 +275,8 @@ export class Projectiles {
     const prof = p.prof;
     const col = p.tint ?? SHOT_COLORS[p.shape] ?? '#343a9a';
     if (p.team === Team.Player) {
-      w.fx.spray(p.x, p.y, Math.max(0, p.z), Math.atan2(-p.vy, -p.vx), wall ? 2.2 : TAU, 4 + Math.floor(p.r), col, 50 + p.r * 6, 0.3, landed ? col : null);
-      if (landed || wall) w.decalSplat(p.x, p.y + (wall ? 0 : 0), col, Math.min(6, p.r * 0.9));
+      w.fx.spray(p.x, p.y, Math.max(0, p.z), Math.atan2(-p.vy, -p.vx), wall ? 2.2 : TAU, Math.min(8, 3 + Math.floor(p.r * 0.6)), col, 50 + p.r * 6, 0.3, landed && Math.random() < 0.3 ? col : null);
+      if ((landed || wall) && Math.random() < 0.35) w.decalSplat(p.x, p.y, col, Math.min(5, p.r * 0.7));
       w.audio.play('splat', { vol: 0.25, pitch: 1.2 - p.r * 0.02, x: p.x });
       if (prof) {
         if (prof.split > 0 && prof.splitOnExpire && p.depth === 0) this.split(w, p);

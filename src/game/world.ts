@@ -62,6 +62,9 @@ export class World {
   ambient: { x: number; y: number; vx: number; vy: number; life: number; kind: number }[] = [];
   telegraphs: { x: number; y: number; r: number; t: number; dur: number; color: string }[] = [];
   corpses: { e: Enemy; t: number; dur: number }[] = [];
+  tasks: { t: number; fn: () => void; persist: boolean }[] = [];
+  /** Run fn after `delay` seconds of game time (paused with the game; dropped on room change unless persist). */
+  after(delay: number, fn: () => void, persist = false): void { this.tasks.push({ t: delay, fn, persist }); }
   constructor(game: Game, run: Run, player: Player) {
     this.game = game; this.r = game.r; this.input = game.input; this.audio = game.audio;
     this.run = run; this.player = player;
@@ -119,6 +122,10 @@ export class World {
     flow.checkExit(this);
     flow.updateSpecial(this, dt);
     this.itemHook('onTick', dt);
+    for (let i = 0; i < this.tasks.length; i++) {
+      const k = this.tasks[i]; k.t -= dt;
+      if (k.t <= 0) { this.tasks.splice(i--, 1); try { k.fn(); } catch (e) { console.error('task', e); } }
+    }
     for (const t of this.telegraphs) t.t += dt;
     this.telegraphs = this.telegraphs.filter((t) => t.t < t.dur);
     this.updateCorpses(dt);
@@ -410,9 +417,10 @@ export class World {
     const small = !!o.small;
     this.fx.flash(x, y - 6, r * 0.6, '#fff0c0', small ? 0.08 : 0.14);
     this.fx.ring(x, y, r * 0.3, r * 1.1, 'rgba(255,200,120,0.9)', small ? 0.2 : 0.35);
-    this.fx.smoke(x, y - 4, small ? 4 : 12, 'rgba(50,42,48,', small ? 5 : 9, small ? 0.6 : 1.1, 18);
-    this.fx.sparks(x, y - 6, small ? 6 : 18, '#ffb040', small ? 120 : 200, 0.35);
-    this.fx.shards(x, y, small ? 3 : 10, '#3a3034', 120);
+    const busy = this.fx.parts.length - (this.fx as any).free.length > 1500;
+    this.fx.smoke(x, y - 4, small ? (busy ? 1 : 3) : 12, 'rgba(50,42,48,', small ? 5 : 9, small ? 0.6 : 1.1, 18);
+    this.fx.sparks(x, y - 6, small ? (busy ? 2 : 5) : 18, '#ffb040', small ? 120 : 200, 0.35);
+    if (!busy || !small) this.fx.shards(x, y, small ? 2 : 10, '#3a3034', 120);
     this.scorch(x, y, r * 0.55);
     this.shake(small ? 1.5 : 6);
     if (!small) this.hitstop(0.06);
@@ -578,10 +586,12 @@ export class World {
   scorch(x: number, y: number, r: number): void {
     const bg = this.room.bgCache; if (!bg) return;
     const ctx = bg.getContext('2d')!;
-    for (let i = 0; i < 30; i++) {
-      const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * r;
-      ctx.globalAlpha = 0.18 + Math.random() * 0.2; ctx.fillStyle = '#0a0606';
-      ctx.fillRect(Math.round(x + Math.cos(a) * d + BG_MARGIN), Math.round(y + Math.sin(a) * d * 0.7 + BG_MARGIN), 2, 2);
+    const n = r > 15 ? 70 : 18;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * TAU, d = Math.pow(Math.random(), 0.7) * r;
+      ctx.globalAlpha = (0.12 + Math.random() * 0.25) * (1 - d / r * 0.5); ctx.fillStyle = Math.random() < 0.85 ? '#0a0606' : '#2a1a10';
+      const s = Math.random() < 0.5 ? 2 : 3;
+      ctx.fillRect(Math.round(x + Math.cos(a) * d + BG_MARGIN), Math.round(y + Math.sin(a) * d * 0.7 + BG_MARGIN), s, s - 1);
     }
     ctx.globalAlpha = 1;
   }

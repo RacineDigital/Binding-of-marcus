@@ -318,7 +318,7 @@ const blotBrain = (half: boolean): BossBrain => ({
           const d = 24 + e.data.tk * 22; const x = e.x + Math.cos(e.data.ta) * d, y = e.y + Math.sin(e.data.ta) * d;
           telegraph(w, x, y, 10, 0.5, '#8a7cff');
           const k = e.data.tk;
-          setTimeout(() => { if (e.dead || !w.room) return; w.fx.burst(x, y, 4, 8, '#1e1a36', 70, 0.5); w.proj.enemy(x, y, 0, 0, { r: 9, range: 1, shape: 'inkE', z: 2, life: 0.12 }); if (k % 2 === 0) for (const s of [-1, 1]) w.proj.enemy(x, y, e.data.ta + s * Math.PI / 2, 70, { shape: 'dark', r: 3 }); }, 500);
+          w.after(0.5, () => { if (e.dead) return; w.fx.burst(x, y, 4, 8, '#1e1a36', 70, 0.5); w.proj.enemy(x, y, 0, 0, { r: 9, range: 1, shape: 'inkE', z: 2, life: 0.12 }); if (k % 2 === 0) for (const s of [-1, 1]) w.proj.enemy(x, y, e.data.ta + s * Math.PI / 2, 70, { shape: 'dark', r: 3 }); });
           e.data.tk++;
         }
         return t > 1.6;

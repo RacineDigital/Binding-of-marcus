@@ -13,6 +13,24 @@ export class Particle {
 export interface Lightning { pts: number[]; life: number; max: number; color: string; width: number }
 export interface TextFx { x: number; y: number; text: string; life: number; max: number; color: string; vy: number; big: boolean }
 
+const smokeCache = new Map<string, HTMLCanvasElement>();
+function smokeSprite(color: string): HTMLCanvasElement {
+  let c = smokeCache.get(color);
+  if (!c) {
+    c = document.createElement('canvas'); c.width = c.height = 16;
+    const x = c.getContext('2d')!;
+    // soft dithered puff
+    for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) {
+      const d = Math.hypot(i - 7.5, j - 7.5) / 8;
+      if (d > 1) continue;
+      const a = (1 - d) * (((i + j) & 1) ? 0.9 : 0.7);
+      x.fillStyle = color + a.toFixed(2) + ')'; x.fillRect(i, j, 1, 1);
+    }
+    smokeCache.set(color, c);
+  }
+  return c;
+}
+
 export class FX {
   parts: Particle[] = [];
   private free: Particle[] = [];
@@ -165,10 +183,9 @@ export class FX {
           break;
         }
         case PK.Smoke: {
-          const r = p.size + (p.size2 - p.size) * t;
-          ctx.globalAlpha = 1;
-          ctx.fillStyle = p.color + (0.5 * (1 - t)).toFixed(3) + ')';
-          ctx.beginPath(); ctx.arc(sx, sy, Math.max(0.5, r), 0, TAU); ctx.fill();
+          const r = Math.max(1, p.size + (p.size2 - p.size) * t);
+          ctx.globalAlpha = 0.55 * (1 - t);
+          ctx.drawImage(smokeSprite(p.color), sx - r, sy - r, r * 2, r * 2);
           break;
         }
         case PK.Ring: {
@@ -181,8 +198,7 @@ export class FX {
         case PK.Flash: {
           const r = p.size + (p.size2 - p.size) * t;
           ctx.globalAlpha = 1 - t;
-          ctx.fillStyle = p.color;
-          ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+          ctx.drawImage(smokeSprite('rgba(255,244,214,'), sx - r, sy - r, r * 2, r * 2);
           glow(sx, sy, r * 3, p.color, 0.8 * (1 - t));
           break;
         }

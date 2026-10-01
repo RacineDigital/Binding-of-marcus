@@ -78,7 +78,7 @@ export function detonate(w: World, b: Bomb): void {
   if (m.cross) {
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * TAU;
-      for (let k = 1; k <= 3; k++) setTimeout(() => w.room && w.explode(b.x + Math.cos(a) * k * 26, b.y + Math.sin(a) * k * 20, 22, dmg * 0.4, { friendly: true, small: true }), k * 60);
+      for (let k = 1; k <= 3; k++) w.after(k * 0.06, () => w.explode(b.x + Math.cos(a) * k * 26, b.y + Math.sin(a) * k * 20, 22, dmg * 0.4, { friendly: true, small: true }));
     }
   }
   if (m.scatter && !b.mini) for (let i = 0; i < 4; i++) {

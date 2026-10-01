@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "tsx tests/run.ts"
+    "test": "tsx tests/run.ts",
+    "smoke": "tsx tests/smoke.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",

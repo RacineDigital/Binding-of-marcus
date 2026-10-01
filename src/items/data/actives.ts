@@ -127,7 +127,7 @@ export const ACTIVES: ItemDef[] = [
     icon: (p) => { const g = ramp('#8a7a5a'); p.rect(4, 7, 10, 9, g[2]); p.rect(3, 5, 12, 3, ramp('#e8e0c8')[3]); p.line(12, 2, 9, 7, hex('#6a4a2a')); } },
   { id: 'marrow_flute', name: 'Marrow Flute', kind: 'active', quality: 3, pools: { treasure: 0.6 }, tags: ['bone'], unlock: 'transform_bone',
     pickup: 'A hollow tune', effect: ['Plays three rings of bone shards that burst outward from you.'],
-    active: { charge: 2, type: 'room', use: (w) => { const pl = w.player; for (let k = 0; k < 3; k++) setTimeout(() => { if (!w.room) return; for (let i = 0; i < 10; i++) w.proj.player(w, { ...pl.prof, shape: 'bone', modes: pl.prof.modes }, pl.x, pl.y - 4, 10, (i / 10) * TAU + k * 0.3, pl.stats.damage * 1.2, 200, 160, 1); w.audio.play('flute', { pitch: 1 + k * 0.12 }); }, k * 220); } },
+    active: { charge: 2, type: 'room', use: (w) => { const pl = w.player; for (let k = 0; k < 3; k++) w.after(k * 0.22, () => { for (let i = 0; i < 10; i++) w.proj.player(w, { ...pl.prof, shape: 'bone', modes: pl.prof.modes }, pl.x, pl.y - 4, 10, (i / 10) * TAU + k * 0.3, pl.stats.damage * 1.2, 200, 160, 1); w.audio.play('flute', { pitch: 1 + k * 0.12 }); }); } },
     icon: (p) => { const b = ramp('#e8dcc8'); p.tube(3, 15, 15, 3, 1.8, b); for (let i = 0; i < 4; i++) p.set(6 + i * 2.5, 12 - i * 2.5, '#3a2a1a'); } },
   { id: 'fountain_pen', name: 'Fountain Pen', kind: 'active', quality: 3, pools: { treasure: 0.5 }, tags: ['ink'], unlock: 'ch_ink',
     pickup: 'Write in splinters', effect: ['For this room: shots split into three on impact and leave ink trails.'],

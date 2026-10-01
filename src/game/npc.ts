@@ -57,14 +57,14 @@ function touch(w: World, n: Npc): void {
       if (!pay(w, 1)) return;
       n.data.spin = 0.9; n.cd = 1.0;
       const res = rng.weighted(PAYOUT, (x) => x[1])![0];
-      setTimeout(() => {
+      w.after(0.85, () => {
         if (n.dead || !w.room) return;
         if (res === 'none') { w.audio.play('slotLose', { x: n.x }); return; }
         w.audio.play('slotWin', { x: n.x });
         if (res === 'mite') flow.spawnEnemy(w, 'mite', n.x, n.y + 14, true);
         else if (res === 'item') { flow.spawnPedestal(w, n.x, n.y + 22, w.run.pools.roll('arcade'), 'normal'); n.dead = true; w.fx.shards(n.x, n.y, 16, '#8a3a4a', 120); }
         else { const c = res === 'button' ? rng.int(2, 3) : 1; for (let i = 0; i < c; i++) spawnDrop(w, res, n.x, n.y + 12); }
-      }, 850);
+      });
       break;
     }
     case 'fortune': {
