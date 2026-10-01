@@ -18,7 +18,7 @@ function mott(f: number): PixelArt {
   p.line(12, 6 + bob, 7, 0, fur[1]); p.line(18, 6 + bob, 23, 0, fur[1]);
   for (let i = 0; i < 4; i++) { p.set(8 - i * 0.5, 2 + i, fur[3]); p.set(22 + i * 0.5, 2 + i, fur[3]); }
   p.rect(12, 18 + bob, 6, 2, fur[3]);
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function slot(f: number): PixelArt {
@@ -32,7 +32,7 @@ function slot(f: number): PixelArt {
   p.rect(9, 22, 8, 2, hex('#0a0808')); p.rect(8, 26, 10, 3, t[2]);
   p.line(24, 10, 24, 20, hex('#8a8a92')); p.ball(24, 9 - (f === 1 ? -6 : 0), 2, 2, ramp('#d04040'));
   p.rect(5, 2, 16, 4, t[2]); p.rect(6, 3, 14, 2, hex('#f0e0a0'));
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function fortune(f: number): PixelArt {
@@ -45,7 +45,7 @@ function fortune(f: number): PixelArt {
   if (f === 1) { p.set(11, 16, '#f0d040'); p.set(15, 16, '#f0d040'); }
   p.rect(8, 27, 10, 3, hex('#0a0808')); p.rect(9, 31, 8, 2, hex('#c8a04a'));
   p.poly([3, 8, 13, 1, 23, 8], wood[3]);
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function beggar(f: number): PixelArt {
@@ -56,7 +56,7 @@ function beggar(f: number): PixelArt {
   p.ball(12, 11 + (f % 2), 3.5, 3, ramp('#1a1614'));
   p.set(10, 11 + (f % 2), '#d0c0a0'); p.set(14, 11 + (f % 2), '#d0c0a0');
   p.tube(6, 18, 3, 21, 1.6, skin); p.ball(3, 22, 2.5, 1.8, ramp('#8a8a92'));
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function well(): PixelArt {
@@ -68,7 +68,7 @@ function well(): PixelArt {
   p.rect(4, 4, 2, 18, wd[2]); p.rect(26, 4, 2, 18, wd[1]);
   p.poly([2, 6, 16, 0, 30, 6, 28, 8, 16, 3, 4, 8], wd[3]);
   p.line(16, 5, 16, 14, hex('#8a7a5a')); p.rect(14, 14, 4, 3, wd[2]);
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function seamstress(f: number): PixelArt {
@@ -80,7 +80,7 @@ function seamstress(f: number): PixelArt {
   p.line(9, 22, 4, 26 + (f % 2), dress[1]); p.line(19, 22, 24, 24 - (f % 2), dress[1]);
   p.line(24, 24 - (f % 2), 26, 18 - (f % 2), hex('#e0e0e8'));
   p.rect(11, 16, 6, 1, hex('#c8a04a'));
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function clock(f: number): PixelArt {
@@ -94,7 +94,7 @@ function clock(f: number): PixelArt {
   p.rect(6, 22, 10, 18, hex('#1a1010'));
   const sw = Math.sin(a) * 3;
   p.line(11, 23, 11 + sw, 34, br[1]); p.ball(11 + sw, 35, 2.5, 2.5, br);
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 

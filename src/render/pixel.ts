@@ -164,6 +164,41 @@ export class PixelArt {
     this.data = out;
     return this;
   }
+  /**
+   * Final art pass used on generated sprites:
+   *  - despeckle: lone low-contrast pixels inside flat areas take their neighbours' colour
+   *  - hue-shifted shading: shadows lean cool/violet, highlights lean warm
+   *  - rim light on top-left edges, inner shadow on bottom-right edges
+   */
+  polish(o: { rim?: number; shade?: number; hue?: number } = {}): this {
+    const rim = o.rim ?? 0.16, shade = o.shade ?? 0.2, hue = o.hue ?? 1;
+    const W = this.w, H = this.h, d = this.data;
+    const lum = (v: Col) => (R(v) * 0.299 + G(v) * 0.587 + B(v) * 0.114) / 255;
+    // 1. despeckle
+    const clean = new Uint32Array(d);
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const v = d[y * W + x]; if (!v) continue;
+      const n = d[y * W + x - 1];
+      if (!n || n === v || d[y * W + x + 1] !== n || d[(y - 1) * W + x] !== n || d[(y + 1) * W + x] !== n) continue;
+      if (Math.abs(lum(v) - lum(n)) < 0.1) clean[y * W + x] = n;
+    }
+    // 2. hue shift by value + 3. rim / inner shadow
+    const out = new Uint32Array(clean);
+    const op = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && clean[y * W + x] !== 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      let v = clean[y * W + x]; if (!v) continue;
+      const L = lum(v);
+      let r = R(v), g = G(v), b = B(v);
+      if (L < 0.4) { const k = ((0.4 - L) / 0.4) * hue; r += 3 * k; g -= 7 * k; b += 16 * k; }
+      else if (L > 0.62) { const k = ((L - 0.62) / 0.38) * hue; r += 10 * k; g += 4 * k; b -= 12 * k; }
+      v = pack(Math.max(0, Math.min(255, r)), Math.max(0, Math.min(255, g)), Math.max(0, Math.min(255, b)), A(v));
+      if (!op(x, y - 1) || !op(x - 1, y)) v = lighten(v, rim);
+      else if (!op(x, y + 1) || !op(x + 1, y)) v = darken(v, shade);
+      out[y * W + x] = v;
+    }
+    this.data = out;
+    return this;
+  }
   /** Lighten top-left edge pixels, darken bottom-right edge pixels (subtle form hint). */
   edgeLight(amt = 0.25): this {
     const out = new Uint32Array(this.data);

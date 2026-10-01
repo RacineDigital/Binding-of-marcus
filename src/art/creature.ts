@@ -13,6 +13,7 @@ export function frames(w: number, h: number, n: number, painter: Painter, oy?: n
   for (let f = 0; f < n; f++) {
     const p = new PixelArt(w, h);
     painter(p, f, n);
+    p.polish();
     if (outline) p.outline(undefined, false, 0.86);
     out.push(new Sprite(p, Math.floor(w / 2), oy ?? h - 1));
   }

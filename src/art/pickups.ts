@@ -12,7 +12,7 @@ function button(base: string, holes = 4): PixelArt {
   if (holes === 4) { p.set(5, 5, hc); p.set(7, 5, hc); p.set(5, 7, hc); p.set(7, 7, hc); }
   else { p.set(5, 6, hc); p.set(7, 6, hc); }
   p.set(3, 3, c[4]); p.set(4, 3, c[4]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function key(gold = false): PixelArt {
@@ -22,7 +22,7 @@ function key(gold = false): PixelArt {
   p.rect(7, 4, 6, 2, c[2]); p.rect(7, 4, 6, 1, c[3]);
   p.rect(10, 6, 1, 2, c[1]); p.rect(12, 6, 1, 3, c[1]);
   p.set(2, 3, c[4]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function cherryBomb(big = false): PixelArt {
@@ -32,7 +32,7 @@ function cherryBomb(big = false): PixelArt {
   p.ball(7, 10, r, r, c, { dither: 0.4 });
   p.line(7, 5, 9, 2, hex('#4a6a2a')); p.set(10, 1, '#6a8a3a'); p.set(9, 1, '#6a8a3a');
   p.set(5, 7, c[4]); p.set(6, 7, lighten(c[4], 0.3));
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 export function heartIcon(kind: 'red' | 'wax' | 'ink' | 'brass' | 'empty' | 'gilded', half: 0 | 1 | 2): PixelArt {
@@ -87,7 +87,7 @@ function spark(big: boolean): PixelArt {
   p.line(7, 5, 5, 9, y[4]); p.line(5, 9, 7, 9, y[4]); p.line(7, 9, 5, 13, y[3]);
   if (big) { p.line(4, 6, 3, 8, y[2]); p.line(8, 10, 9, 12, y[2]); }
   p.set(3, 5, '#ffffff');
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function page(): PixelArt {
@@ -97,7 +97,7 @@ function page(): PixelArt {
   p.set(9, 1, 0 as any); p.set(10, 2, 0 as any); p.set(9, 2, c[1]);
   for (let y = 4; y < 11; y += 2) p.rect(3, y, 5, 1, hex('#8a7a60'));
   p.rect(3, 3, 3, 1, hex('#a02a2a'));
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 export const SWEET_COLORS = ['#d84a4a', '#4a8ad8', '#e8c040', '#5ab85a', '#b85ad8', '#e8e0d0', '#e88a3a', '#3ab8b0', '#d86aa8', '#6a6a7a', '#8a5a3a', '#c8e0f0'];
@@ -108,7 +108,7 @@ function sweet(ci: number): PixelArt {
   p.ball(7, 5, 3.6, 3.2, c, { dither: 0.3 });
   p.poly([1, 2, 4, 5, 1, 8], c2[2]); p.poly([13, 2, 10, 5, 13, 8], c2[2]);
   p.set(6, 3, '#ffffff'); p.line(5, 5, 9, 5, c2[3]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function chest(kind: 'tin' | 'locked' | 'crimson' | 'reliquary', open: boolean): PixelArt {
@@ -130,7 +130,7 @@ function chest(kind: 'tin' | 'locked' | 'crimson' | 'reliquary', open: boolean):
   }
   if (kind === 'reliquary') { p.set(10, 5, '#6ad0ff'); p.set(4, 14, '#6ad0ff'); p.set(15, 14, '#6ad0ff'); }
   if (kind === 'crimson') { p.set(9, 14, '#e0d0c0'); p.set(10, 14, '#e0d0c0'); p.set(9, 15, '#1a0a0a'); }
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function pedestal(kind: string): PixelArt {
@@ -142,7 +142,7 @@ function pedestal(kind: string): PixelArt {
   p.rect(2, 13, 18, 3, c[1]); p.rect(2, 13, 18, 1, c[2]);
   if (kind === 'gold' || kind === 'treasure') { p.set(11, 9, '#f0d070'); p.set(10, 10, '#f0d070'); p.set(12, 10, '#f0d070'); p.set(11, 11, '#f0d070'); }
   if (kind === 'deal') { p.rect(9, 8, 4, 3, hex('#4a44a0')); }
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function trapdoor(open: number): PixelArt {
@@ -159,7 +159,7 @@ function trapdoor(open: number): PixelArt {
     for (let y = 0; y < 6; y++) p.rect(3, 4 + y * 3, 24, 1, hex('#1a1216'));
   }
   p.rect(1, 2, 28, 1, m[3]); p.rect(1, 21, 28, 1, m[0]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 

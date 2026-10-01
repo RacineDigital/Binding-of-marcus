@@ -33,7 +33,7 @@ export function familiarSprites(id: string): Sprite[] {
   let s = cache.get(id);
   if (!s) {
     const painter = PAINT[id] ?? PAINT.inkling;
-    s = [0, 1].map((f) => { const p = new PixelArt(17, 17); painter(p, f); p.outline(undefined, false, 0.85); return new Sprite(p, 8, 15); });
+    s = [0, 1].map((f) => { const p = new PixelArt(17, 17); painter(p, f); p.polish().outline(undefined, false, 0.85); return new Sprite(p, 8, 15); });
     cache.set(id, s);
   }
   return s;

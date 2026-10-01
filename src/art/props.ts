@@ -41,7 +41,7 @@ function rock(theme: FloorTheme, seed: number, marked: boolean): PixelArt {
     p.line(8, 10, 16, 17, ch); p.line(9, 10, 17, 17, ch); p.line(16, 10, 8, 17, ch); p.line(17, 10, 9, 17, ch);
     p.paint(18, 17, lighten(ch, 0.1));
   }
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 
@@ -111,7 +111,7 @@ function heap(theme: FloorTheme, variant: number, stage: number): PixelArt {
   }
   if (variant === 1) p.speckle('#fff4b0', 0.06, () => r.next());
   if (variant === 2) p.speckle('#a8c060', 0.08, () => r.next());
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 
@@ -154,7 +154,7 @@ function fireBase(): PixelArt {
   for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; p.ball(12 + Math.cos(a) * 9, 8 + Math.sin(a) * 3, 2, 1.6, stone); }
   p.tube(5, 6, 19, 8, 1.7, wood); p.tube(6, 9, 18, 5, 1.7, wood);
   p.set(12, 7, '#f0a040'); p.set(11, 7, '#d04020'); p.set(13, 6, '#ffd060');
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 
@@ -178,7 +178,7 @@ function keg(): PixelArt {
   const red = hex('#c02a1e');
   p.line(8, 11, 13, 16, red); p.line(13, 11, 8, 16, red); p.line(9, 11, 14, 16, red); p.line(14, 11, 9, 16, red);
   p.set(11, 2, '#2a2a2a'); p.set(11, 1, '#d8c060');
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function urn(broken: boolean): PixelArt {
@@ -188,7 +188,7 @@ function urn(broken: boolean): PixelArt {
     p.ellipse(10, 18, 7, 2.5, c[1]);
     p.poly([4, 18, 5, 13, 8, 15, 10, 12, 13, 15, 16, 13, 16, 18], c[2]);
     p.shadeV(4, 12, 13, 7, c);
-    p.outline(undefined, false, 0.8);
+    p.polish().outline(undefined, false, 0.8);
     return p;
   }
   p.ball(10, 12, 7, 7, c, { dither: 0.5 });
@@ -197,7 +197,7 @@ function urn(broken: boolean): PixelArt {
   for (let x = 5; x < 16; x += 3) p.paint(x, 15, c[0]);
   for (let y = 19; y < 22; y++) for (let x = 0; x < 20; x++) p.clear(x, y);
   p.rect(6, 18, 8, 1, c[0]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function block(theme: FloorTheme): PixelArt {
@@ -211,7 +211,7 @@ function block(theme: FloorTheme): PixelArt {
   p.rect(1, 9, 22, 3, iron[2]); p.rect(1, 9, 22, 1, iron[3]);
   for (const x of [4, 12, 19]) { p.set(x, 10, iron[4]); p.set(x, 15, s[4]); p.set(x, 5, s[4]); }
   p.rect(5, 13, 14, 1, s[1]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function pillar(theme: FloorTheme): PixelArt {
@@ -223,7 +223,7 @@ function pillar(theme: FloorTheme): PixelArt {
   p.tube(12, 8, 12, 33, 7.5, s, { dither: 0.6 });
   p.rect(1, 3, 22, 6, s[2]); p.rect(1, 3, 22, 1, s[4]); p.rect(1, 8, 22, 1, s[0]);
   for (let y = 12; y < 33; y += 7) p.line(6, y, 18, y, s[1]);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function spikes(state: 0 | 1 | 2): PixelArt {
@@ -237,7 +237,7 @@ function spikes(state: 0 | 1 | 2): PixelArt {
     for (let k = 0; k < h; k++) { const w = Math.max(0, Math.floor((h - k) / 2.5)); p.rect(x - w, y + 2 - k, 1 + w * 2, 1, k === h - 1 ? metal[4] : (k % 2 ? metal[2] : metal[3])); }
     p.set(x + 1, y + 2, metal[0]);
   }
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function web(): PixelArt {
@@ -252,7 +252,7 @@ function button(down: boolean): PixelArt {
   const b = ramp('#5a5058'), r = ramp(down ? '#4a8a4a' : '#a83a3a');
   p.ellipse(12, 13, 10, 7, b[1]); p.ellipse(12, 12, 9, 6, b[2]);
   p.ball(12, down ? 12 : 10.5, 6, down ? 3.5 : 4.5, r);
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 function rubble(theme: FloorTheme, i: number): PixelArt {
@@ -260,7 +260,7 @@ function rubble(theme: FloorTheme, i: number): PixelArt {
   const rc = ramp(theme.pal.rock);
   const r = new RNG('rub' + i);
   for (let k = 0; k < 7; k++) { const x = r.int(4, 19), y = r.int(8, 19), s = r.int(1, 2); p.ball(x, y, s + 0.5, s, rc); }
-  p.outline(undefined, false, 0.7);
+  p.polish().outline(undefined, false, 0.7);
   return p;
 }
 
@@ -373,7 +373,7 @@ function doorFrame(kind: DoorKind, theme: FloorTheme): PixelArt {
   } else if (kind === 'miniboss') {
     for (let i = 0; i < 3; i++) p.line(cx - 12 + i * 3, 14, cx - 8 + i * 3, 24, hex('#1a1414'));
   }
-  p.outline(undefined, false, 0.85);
+  p.polish().outline(undefined, false, 0.85);
   return p;
 }
 function doorLeaves(kind: DoorKind, open: number): PixelArt {
@@ -416,7 +416,7 @@ function lockSprite(): PixelArt {
   // chains
   const ch = ramp('#6a6a72');
   for (let i = 0; i < 6; i++) { p.set(cx - 11 + i * 1.2, 16 + i * 2, ch[3]); p.set(cx + 10 - i * 1.2, 16 + i * 2, ch[3]); }
-  p.outline(undefined, false, 0.8);
+  p.polish().outline(undefined, false, 0.8);
   return p;
 }
 export function doorSprites(kind: DoorKind, theme: FloorTheme): DoorSprites {
