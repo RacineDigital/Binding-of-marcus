@@ -12,6 +12,8 @@ const col = (c: C): Col => (typeof c === 'string' ? hex(c) : c);
 export interface ShadeOpts { dither?: number; rim?: boolean; bias?: number; flatTop?: boolean }
 
 export class PixelArt {
+  /** Global dither strength for ball/tube shading; low values give clean cel-shaded clusters. */
+  static ditherScale = 0.3;
   readonly w: number; readonly h: number;
   data: Uint32Array;
   constructor(w: number, h: number) {
@@ -62,7 +64,7 @@ export class PixelArt {
   }
   /** Ramp-shaded ellipsoid (sphere lighting from the top-left). */
   ball(cx: number, cy: number, rx: number, ry: number, rmp: Col[], o: ShadeOpts = {}): this {
-    const dith = o.dither ?? 0.5, bias = o.bias ?? 0;
+    const dith = (o.dither ?? 0.5) * PixelArt.ditherScale, bias = o.bias ?? 0;
     const x0 = Math.floor(cx - rx - 1), x1 = Math.ceil(cx + rx + 1), y0 = Math.floor(cy - ry - 1), y1 = Math.ceil(cy + ry + 1);
     const n = rmp.length;
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -93,7 +95,7 @@ export class PixelArt {
   }
   /** Shaded capsule (limb/tube) between two points with radius r. */
   tube(x0: number, y0: number, x1: number, y1: number, r: number, rmp: Col[], o: ShadeOpts = {}): this {
-    const dith = o.dither ?? 0.4;
+    const dith = (o.dither ?? 0.4) * PixelArt.ditherScale;
     const dx = x1 - x0, dy = y1 - y0; const l2 = dx * dx + dy * dy || 1;
     const minx = Math.floor(Math.min(x0, x1) - r - 1), maxx = Math.ceil(Math.max(x0, x1) + r + 1);
     const miny = Math.floor(Math.min(y0, y1) - r - 1), maxy = Math.ceil(Math.max(y0, y1) + r + 1);

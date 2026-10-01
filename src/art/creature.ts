@@ -51,3 +51,23 @@ export function sprinkle(p: PixelArt, c: string, n: number, seed: number, x0 = 0
     p.paint(x, y, c);
   }
 }
+
+// ------------------------------------------------------------------ hand-drawn grids
+import { grid, Palette } from './grid';
+/** Sprites from hand-drawn grids (already outlined; no polish pass). Pivot at the bottom centre. */
+export function gridFrames(list: string[][], pal: Palette, oy?: number): Sprite[] {
+  return list.map((rows) => { const p = grid(rows, pal); return new Sprite(p, Math.floor(p.w / 2), oy ?? p.h - 1); });
+}
+/** Nearest-neighbour squash / stretch of a hand-drawn grid about its bottom centre (same canvas size). */
+export function scaledFrames(rows: string[], pal: Palette, scales: [number, number][], oy?: number): Sprite[] {
+  const src = grid(rows, pal);
+  return scales.map(([sx, sy]) => {
+    const p = new PixelArt(src.w, src.h);
+    const cx = src.w / 2, by = src.h;
+    for (let y = 0; y < src.h; y++) for (let x = 0; x < src.w; x++) {
+      const ux = Math.floor(cx + (x + 0.5 - cx) / sx), uy = Math.floor(by - (by - (y + 0.5)) / sy);
+      const v = src.get(ux, uy); if (v) p.set(x, y, v);
+    }
+    return new Sprite(p, Math.floor(p.w / 2), oy ?? p.h - 1);
+  });
+}
