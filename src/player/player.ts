@@ -4,7 +4,8 @@ import { Health } from './health';
 import { computeStats, FinalStats, StatMods } from './stats';
 import { AttackProfile, baseProfile, mergeProfile, primaryMode, AttackMode, ProfilePart } from '../projectiles/profile';
 import { CharacterDef } from './characters';
-import { buildPlayerSprites, PlayerSprites, HeadDir, HeadState } from '../art/marcus';
+import { buildOutfitSprites, PlayerSprites, HeadDir, HeadState } from '../art/marcus';
+import { costumeFor, Costume, drawCostume, Frame } from '../art/costume';
 import { LOOKS } from '../art/look';
 import { volley, Beam, meleeSwing, Swing, SHOT_PX } from '../projectiles/weapons';
 import { clamp, TAU } from '../core/math';
@@ -21,6 +22,8 @@ export class Player {
   x = 0; y = 0; z = 0; vx = 0; vy = 0; r = 5.5; hitR = 4;
   char: CharacterDef;
   spr: PlayerSprites;
+  /** What the player is wearing: accessories from items, and an outfit from strong items or a transformation. */
+  costume: Costume = { outfit: null, acc: [] };
   health = new Health();
   buttons = 0; keys = 0; bombs = 0;
   goldKey = false; goldBomb = false;
@@ -45,7 +48,7 @@ export class Player {
   invisible = false;
   constructor(char: CharacterDef) {
     this.char = char;
-    this.spr = buildPlayerSprites(LOOKS[char.look] ?? LOOKS.marcus);
+    this.spr = buildOutfitSprites(char.look, LOOKS[char.look] ?? LOOKS.marcus, null);
     this.flight = !!char.flight;
     this.recompute();
   }
@@ -90,6 +93,14 @@ export class Player {
     // Charged modes trade fire rate for power.
     this.stats = st; this.prof = prof; this.mode = primaryMode(prof);
     this.flight = flight; this.spectralBody = spectral;
+    this.refreshCostume();
+  }
+
+  /** Items and transformations change how you look; rebuild the sprites only when the outfit changes. */
+  refreshCostume(): void {
+    const c = costumeFor(this.items.keys(), this.charms, this.transformations);
+    if ((c.outfit?.id ?? '') !== (this.costume.outfit?.id ?? '')) this.spr = buildOutfitSprites(this.char.look, LOOKS[this.char.look] ?? LOOKS.marcus, c.outfit);
+    this.costume = c;
   }
 
   addTemp(t: TempEffect): void { this.temp.push(t); this.recompute(); }
@@ -380,10 +391,21 @@ export class Player {
     const bob = moving ? (Math.floor(this.walkDist / 4.2) % 3 === 0 ? 1 : 0) : (Math.floor(w.time * 1.6) % 2);
     const headY = by - 10 + bob * 0.5;
     const hsq = this.fireFlash > 0 ? { sx: 1.06, sy: 0.92 } : { sx: this.squashX, sy: this.squashY };
-    // the held-up item
-    if (!headAbove) body.draw(ctx, sx, by, o);
+    // costume pieces are layered around the body and head
+    const acc = this.costume.acc;
+    const fr: Frame | null = acc.length ? {
+      ctx, t: w.time,
+      hx: sx - head.ox, hy: headY - head.oy, hw: head.w, hflip: this.headDir === 'side' && this.headFlip, hdir: this.headDir,
+      bx: sx - body.ox, by: by - body.oy, bw: body.w, bflip: o.flip, bdir: this.pickupT > 0 ? 'down' : this.bodyDir,
+    } : null;
+    const layer = (l: 'back' | 'body' | 'hand' | 'head' | 'face') => { if (!fr) return; ctx.save(); ctx.globalAlpha = alpha; drawCostume(fr, acc, l); ctx.restore(); };
+    const facingAway = this.bodyDir === 'up' && this.pickupT <= 0;
+    if (!facingAway) layer('back');
+    if (!headAbove) { body.draw(ctx, sx, by, o); layer('body'); layer('hand'); }
     head.draw(ctx, sx, headY, { ...o, flip: this.headDir === 'side' && this.headFlip, sx: hsq.sx, sy: hsq.sy });
-    if (headAbove) body.draw(ctx, sx, by, o);
+    layer('face'); layer('head');
+    if (headAbove) { body.draw(ctx, sx, by, o); layer('body'); layer('hand'); }
+    if (facingAway) layer('back');
     if (this.pickupT > 0 && this.pickupSprite) {
       const k = Math.min(1, (1.1 - this.pickupT) * 6);
       ctx.drawImage(this.pickupSprite, Math.round(sx - 8), Math.round(headY - 34 - k * 4));

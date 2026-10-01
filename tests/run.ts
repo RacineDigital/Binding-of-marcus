@@ -7,6 +7,8 @@ import { BOSSES } from '../src/bosses/registry';
 import { FLOORS, ALT_FLOORS, CHAPTER_POOL, familyOf, FINAL_FLOOR } from '../src/data/floors';
 import { chapterOrder, themeAt } from '../src/generation/floorgen';
 import { SONGS } from '../src/audio/songs';
+import { ITEM_ACC, ITEM_OUTFIT, TRANSFORM_OUTFIT } from '../src/art/costume';
+import { TRANSFORM_EFFECTS } from '../src/player/player';
 import { TEMPLATES } from '../src/rooms/templates';
 import { generateLayout } from '../src/generation/roomgen';
 import { RNG } from '../src/core/rng';
@@ -130,6 +132,8 @@ for (const f of [...FLOORS, ...Object.values(ALT_FLOORS), ...CHAPTER_POOL]) {
     }
   }
 }
+for (const id of [...Object.keys(ITEM_ACC), ...Object.keys(ITEM_OUTFIT)]) ok(ALL_ITEMS.some((i) => i.id === id) || CONSUMABLES.some((c) => c.id === id), `costume item ${id} exists`);
+for (const id of Object.keys(TRANSFORM_EFFECTS)) ok(!!TRANSFORM_OUTFIT[id], `transformation ${id} has its own look`);
 for (const t of TEMPLATES) { ok(t.rows.length === 9 && t.rows.every((r) => r.length === 15), `template ${t.name} is 15x9`); }
 {
   const rng = new RNG('layouts');

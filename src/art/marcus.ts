@@ -5,6 +5,8 @@ import { Sprite } from '../render/sprite';
 import { CharacterLook } from './look';
 import { buildHandSprites, HandRig } from './hand/build';
 import * as HM from './hand/marcus';
+import type { Palette } from './grid';
+import { Outfit, outfitLook } from './costume';
 
 const MARCUS_RIG: HandRig = {
   pal: HM.MARCUS_PAL,
@@ -235,6 +237,20 @@ function paintDeath(L: CharacterLook, f: number): PixelArt {
   }
   if (f >= 4) { p.set(12, 15, '#ffffff'); p.set(18, 15, '#ffffff'); }
   return p;
+}
+
+/** Sprites for a reader, optionally recoloured by an outfit (cached per look + outfit). */
+const outfitCache = new Map<string, PlayerSprites>();
+export function buildOutfitSprites(lookId: string, L: CharacterLook, outfit: Outfit | null): PlayerSprites {
+  const key = lookId + ':' + (outfit?.id ?? '');
+  let s = outfitCache.get(key);
+  if (!s) {
+    if (!outfit) s = buildPlayerSprites(L);
+    else if (L.hand === 'marcus') s = buildHandSprites({ ...MARCUS_RIG, pal: { ...MARCUS_RIG.pal, ...outfit.pal } as Palette });
+    else s = buildPlayerSprites(outfitLook(L, outfit));
+    outfitCache.set(key, s);
+  }
+  return s;
 }
 
 export function buildPlayerSprites(L: CharacterLook): PlayerSprites {
