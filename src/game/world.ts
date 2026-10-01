@@ -267,7 +267,7 @@ export class World {
       return;
     }
     e.hp -= d;
-    e.flash = 0.1;
+    e.flash = e.isBoss ? 0.07 : 0.1;
     if (!e.def.noKnock && info.knock > 0 && !e.isBoss) {
       const kb = 120 * info.knock / (e.def.mass ?? 1);
       e.kvx += Math.cos(info.ang) * kb; e.kvy += Math.sin(info.ang) * kb;
@@ -359,7 +359,7 @@ export class World {
   private onPlayerDied(source: string): void {
     const pl = this.player;
     // revival items
-    for (const id of ['second_draft', 'spare_eye', 'moth_cocoon']) {
+    for (const id of ['second_draft', 'moth_cocoon']) {
       if (pl.count(id) > 0) {
         pl.items.delete(id); pl.itemOrder = pl.itemOrder.filter((x) => x !== id);
         if (pl.health.noRed) pl.health.addExtra('wax', 2); else { if (pl.health.redMax < 2) pl.health.addContainers(1); pl.health.red = Math.max(pl.health.red, 2); }

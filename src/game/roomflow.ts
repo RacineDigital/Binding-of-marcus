@@ -20,6 +20,7 @@ import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { FINAL_FLOOR } from '../data/floors';
 import { BOSS_ALIASES } from '../bosses/aliases';
+import { CHALLENGES } from '../data/achievements';
 
 // ------------------------------------------------------------------ floors
 export function startFloor(w: World): void {
@@ -216,6 +217,7 @@ export function doorShouldOpen(w: World, d: DoorRT): boolean {
   if (d.def.hidden && !d.revealed) return false;
   if (d.def.locked) return false;
   if (w.lockdown) return false;
+  if (w.room.type === 'challenge' && !w.room.flags.started) return true;
   return w.room.cleared;
 }
 
@@ -362,10 +364,11 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
   if (!w.run.flags.bossHit) w.game.save.unlock('flawless_boss');
+  const goal = w.run.challenge ? CHALLENGES.find((c) => c.id === w.run.challenge)?.goal ?? FINAL_FLOOR : FINAL_FLOOR;
   w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();
-    if (fi >= FINAL_FLOOR) { w.game.onVictory(); return; }
+    if (fi >= goal) { w.game.onVictory(); return; }
     spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
     const rng = new RNG(room.seed + ':bossdrop');
     spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
@@ -583,10 +586,11 @@ export function takeItem(w: World, p: Pickup): void {
   // choice groups: taking one removes the rest
   if (p.data.group !== undefined) for (const q of w.pickups) if (q !== p && q.pedestal && q.data.group === p.data.group && q.data.id) { q.data.id = null; w.fx.smoke(q.x, q.y - 16, 6); }
   const oldActive = it.kind === 'active' ? pl.active : null;
+  const storedCharge: number | undefined = p.data.charge;
   p.data.id = oldActive; p.data.charge = oldActive ? pl.charge : undefined;
   p.price = 0; p.deal = 0; p.shop = false;
   if (oldActive) { p.noCollect = 1.0; }
-  grantItem(w, id);
+  grantItem(w, id, false, storedCharge);
   // present
   pl.pickupT = 1.1; pl.pickupSprite = itemIconCanvas(id, w.blindItems());
   w.hud.banner(w.blindItems() ? '???' : it.name, w.blindItems() ? '' : it.pickup, itemIconCanvas(id, w.blindItems()));
@@ -596,12 +600,12 @@ export function takeItem(w: World, p: Pickup): void {
 }
 
 /** Give an item to the player, applying every one-time grant. */
-export function grantItem(w: World, id: string, silentHealth = false): void {
+export function grantItem(w: World, id: string, silentHealth = false, charge?: number): void {
   const pl = w.player, it = getItem(id);
   if (!it) return;
   w.run.pools.markTaken(id);
   if (it.kind === 'active') {
-    pl.active = id; pl.charge = it.active?.charge ?? 0;
+    pl.active = id; pl.charge = charge ?? it.active?.charge ?? 0;
   } else {
     pl.items.set(id, (pl.items.get(id) ?? 0) + 1);
     if (!pl.itemOrder.includes(id)) pl.itemOrder.push(id);

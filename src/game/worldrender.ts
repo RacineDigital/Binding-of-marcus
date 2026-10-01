@@ -196,7 +196,7 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
       else if (e.charm > 0) { tint = '#ff80c0'; tintAmt = 0.4; }
       else if (e.mark > 0) { tint = '#c040ff'; tintAmt = 0.3; }
       else if (e.champion) { tint = e.champion === 'armored' ? '#8a8aa8' : e.champion === 'swift' ? '#40c0ff' : '#e04040'; tintAmt = 0.35; }
-      spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? 1 : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
+      spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
     }
   }
   if (e.fear > 0 || e.confuse > 0) {

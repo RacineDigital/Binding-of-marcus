@@ -110,3 +110,32 @@ export const FLOORS: FloorTheme[] = [
   },
 ];
 export const FINAL_FLOOR = FLOORS.length - 1;
+
+/** Alternate takes on chapters I–VII. A floor is sometimes replaced by its variant (seeded). */
+type ThemeOverride = Partial<Omit<FloorTheme, 'pal' | 'hazards'>> & { pal?: Partial<FloorTheme['pal']>; hazards?: Partial<FloorTheme['hazards']> };
+function variant(base: FloorTheme, o: ThemeOverride): FloorTheme {
+  return { ...base, ...o, pal: { ...base.pal, ...(o.pal ?? {}) }, hazards: { ...base.hazards, ...(o.hazards ?? {}) } } as FloorTheme;
+}
+export const ALT_FLOORS: Record<string, FloorTheme> = {
+  cellar: variant(FLOORS[0], { id: 'rootcellar', name: 'The Root Cellar', subtitle: 'Something grew down here while nobody looked',
+    floor: 'earth', wall: 'cave', pal: { floor: '#4a3e30', floor2: '#3a3026', wall: '#4a3c2e', wall2: '#362c22', rock: '#6a5a44', stain: '#3a4a22', heap: '#c8b490' },
+    enemies: { mite: 8, moth: 8, ragcrawler: 8, gasper: 6, dripling: 6, pillbug: 7, mitenest: 4, rat: 5 } }),
+  boiler: variant(FLOORS[1], { id: 'coalchute', name: 'The Coal Chute', subtitle: 'Black dust in every breath',
+    floor: 'earth', ambience: 'ash', pal: { floor: '#2e2a2a', floor2: '#242020', rock: '#3a3436', stain: '#120e0e' }, darkness: 0.46,
+    enemies: { sootsprite: 9, valvehead: 5, stoker: 8, cinderhopper: 7, pipeworm: 5, rustcrab: 4, mite: 4 } }),
+  underworks: variant(FLOORS[2], { id: 'flooded', name: 'The Flooded Drains', subtitle: 'The water is rising, slowly',
+    pal: { floor: '#2e3e44', floor2: '#26343a', wall: '#34464a', stain: '#2a4a5a', rock: '#4a5a60' }, ambience: 'drips',
+    enemies: { leech: 9, drowner: 8, sludge: 6, bloater: 5, grateeye: 5, rat: 5 } }),
+  ward: variant(FLOORS[3], { id: 'morgue', name: 'The Morgue', subtitle: 'Cold drawers, cold hands',
+    pal: { floor: '#6e7c86', floor2: '#5c6872', wall: '#4a5a6a', wall2: '#3a4856', stain: '#3a4a5a', heap: '#c8d0d8' }, darkness: 0.5,
+    enemies: { orderly: 7, sheetghost: 8, wheelwraith: 4, mimic: 4, dripsentinel: 5, boneknight: 2, nursedoll: 4 } }),
+  depths: variant(FLOORS[4], { id: 'catacombs', name: 'The Catacombs', subtitle: 'Shelves of the patient dead',
+    floor: 'flag', wall: 'stone', pal: { floor: '#5a5048', floor2: '#4a423c', wall: '#4e4640', wall2: '#3a342e', rock: '#6e6458' },
+    enemies: { boneknight: 7, skullorbit: 6, ossspider: 6, gravedigger: 5, marrowmaw: 3, sheetghost: 3 } }),
+  chapel: variant(FLOORS[5], { id: 'belfry', name: 'The Belfry', subtitle: 'Every bell still remembers its last toll',
+    floor: 'brick', wall: 'chapel', pal: { floor: '#5a4232', floor2: '#4a3628', grout: '#1e1410', heap: '#efe4c2' }, ambience: 'dust',
+    enemies: { choirboy: 5, censer: 6, penitent: 5, cherubmoth: 7, sootsprite: 3, boneknight: 3 } }),
+  hollow: variant(FLOORS[6], { id: 'inkwell', name: 'The Inkwell', subtitle: 'Deep enough to drown a story',
+    pal: { floor: '#141a2e', floor2: '#10142a', wall: '#1e2846', wall2: '#161e38', accent: '#4a8aff' },
+    enemies: { blot: 8, voideye: 5, pagewraith: 5, hollowmaw: 4, mirrorshade: 3, drowner: 3 } }),
+};

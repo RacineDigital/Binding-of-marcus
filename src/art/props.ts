@@ -93,10 +93,19 @@ function heap(theme: FloorTheme, variant: number, stage: number): PixelArt {
       break;
     }
     case 'wax': {
-      const rr = 8 * sc + 2;
-      p.ball(cx, by - rr * 0.6, rr, rr * 0.7, c, { dither: 0.6 });
-      for (let i = 0; i < 4; i++) { const x = cx - rr + 3 + i * (rr / 2); p.rect(x, by - rr * 0.6 - 2, 1, 5, c[3]); }
-      if (stage < 3) { p.rect(cx - 1, by - rr * 1.3 - 4, 3, 6, c[3]); p.set(cx, by - rr * 1.3 - 5, '#2a1a10'); }
+      // a cluster of fused, guttered candles sitting in their own melted wax
+      const h = [12, 9, 6, 3][stage];
+      p.ball(cx, by - 2, 10 * sc + 1, 3.2, c, { dither: 0.6 });
+      const cs: [number, number, number][] = [[-5, h, 3], [1, h + 4, 3.2], [6, h - 2, 2.6]];
+      for (const [dx, hh, w] of cs) {
+        if (hh <= 1) continue;
+        p.rect(cx + dx - w / 2, by - 2 - hh, w, hh, c[2]);
+        p.rect(cx + dx - w / 2, by - 2 - hh, 1, hh, c[3]);
+        p.rect(cx + dx + w / 2 - 1, by - 2 - hh, 1, hh, c[1]);
+        p.rect(cx + dx - w / 2, by - 2 - hh, w, 1, c[4]);
+        p.set(cx + dx, by - 3 - hh, '#2a1a10');
+        p.tube(cx + dx + w / 2, by - hh, cx + dx + w / 2, by - hh + 3, 0.8, c);
+      }
       break;
     }
   }

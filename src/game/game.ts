@@ -156,6 +156,7 @@ export class Game {
     this.world = new World(this, run, pl);
     for (const id of ch.items) flow.grantItem(this.world, id, true);
     if (challenge) for (const id of challengeItems(challenge)) flow.grantItem(this.world, id, true);
+    if (challenge === 'swarm') pl.temp.push({ id: 'swarm_rule', stats: { damageMult: 0.5 } });
     pl.recompute();
     this.save.data.lastSeed = run.seed;
     this.save.stat('runs', 1);
@@ -215,9 +216,8 @@ export class Game {
   onVictory(): void {
     const w = this.world; if (!w) return;
     w.run.won = true;
-    this.save.stat('wins', 1);
-    this.save.unlock('beat_final');
-    if (w.run.charId !== 'marcus') this.save.unlock('win_' + w.run.charId);
+    if (!w.run.challenge) { this.save.stat('wins', 1); this.save.unlock('beat_final'); }
+    if (w.run.charId !== 'marcus' && !w.run.challenge) this.save.unlock('win_' + w.run.charId);
     if (w.run.challenge) { if (!this.save.data.challengesDone.includes(w.run.challenge)) this.save.data.challengesDone.push(w.run.challenge); this.save.unlock('ch_' + w.run.challenge); }
     const t = w.run.stats.time;
     if (!this.save.data.bestTime || t < this.save.data.bestTime) this.save.data.bestTime = t;

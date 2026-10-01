@@ -111,7 +111,7 @@ const grubmother: EnemyDef = {
       return;
     }
     const set = e.sprites[e.anim]; const spr = set[e.frame % set.length];
-    spr.draw(ctx, sx, sy + 4, { flip: e.flip, flash: e.flash > 0 ? 1 : 0, sx: e.sx, sy: e.sy });
+    spr.draw(ctx, sx, sy + 4, { flip: e.flip, flash: e.flash > 0 ? 0.5 : 0, sx: e.sx, sy: e.sy });
   },
 };
 
@@ -213,7 +213,7 @@ const wardrobe: EnemyDef = {
   draw(e, ctx, w, sx, sy) {
     const set = e.sprites[e.anim]; const spr = set[e.frame % set.length];
     const rot = e.anim === 'tilt' ? Math.sin(e.st * 30) * 0.04 - 0.08 : 0;
-    spr.draw(ctx, sx, sy - e.z + 2, { flash: e.flash > 0 ? 1 : 0, sx: e.sx, sy: e.sy, rot });
+    spr.draw(ctx, sx, sy - e.z + 2, { flash: e.flash > 0 ? 0.5 : 0, sx: e.sx, sy: e.sy, rot });
   },
 };
 

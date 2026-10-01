@@ -185,7 +185,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     case 'shop': {
       room.npcs.push({ kind: 'mott', x: cx, y: room.oy + 34 });
       const y = cy + 18;
-      const xs = [-96, -48, 0, 48, 96];
+      const xs = [-80, -40, 0, 40, 80];
       const nItems = fi >= 4 ? 3 : 2;
       const itemSlots = rng.shuffle([0, 1, 2, 3, 4]).slice(0, nItems);
       xs.forEach((dx, i) => {

@@ -130,7 +130,11 @@ export class Player {
     const before = { x: this.x, y: this.y };
     moveBody(w.room, this, this.vx * dt, this.vy * dt, this.flight ? 'fly' : 'walk', doors);
     const moved = Math.hypot(this.x - before.x, this.y - before.y);
+    const stepBefore = Math.floor(this.walkDist / 14);
     this.walkDist += moved;
+    if (!this.flight && Math.floor(this.walkDist / 14) !== stepBefore && Math.hypot(this.vx, this.vy) > 60) {
+      w.fx.smoke(this.x - this.vx * 0.04, this.y + 1, 1, 'rgba(120,110,105,', 2, 0.35, 3);
+    }
     if (moved < 0.05) this.idleT += dt; else this.idleT = 0;
     if (mv.x || mv.y) {
       if (Math.abs(mv.x) > Math.abs(mv.y) * 1.1) { this.bodyDir = 'side'; this.bodyFlip = mv.x < 0; }
@@ -188,7 +192,7 @@ export class Player {
   }
 
   private attack(w: World, dt: number, aim: { x: number; y: number } | null): void {
-    this.fireCd -= dt;
+    this.fireCd = Math.max(this.fireCd - dt, aim ? -dt * 4 : 0);
     const mode = this.mode;
     const prof = this.prof, st = this.stats;
     const ang = this.aimAng;
@@ -222,8 +226,8 @@ export class Player {
     }
     this.wasAiming = !!aim;
     if (!aim || this.fireCd > 0) return;
-    this.fireCd += 1 / st.fireRate;
-    if (this.fireCd < 0) this.fireCd = 0;
+    let volleys = 0;
+    while (this.fireCd <= 0 && volleys < 3) { this.fireCd += 1 / st.fireRate; volleys++; }
     if (mode === 'laser') {
       const n = Math.max(1, Math.min(5, prof.shots));
       for (let i = 0; i < n; i++) {
@@ -235,9 +239,11 @@ export class Player {
       this.onFired(w, ang, 'laser');
       return;
     }
-    const m = this.muzzle(ang);
-    volley(w, prof, st, m.x, m.y, m.z, ang, { inherit: { vx: this.vx, vy: this.vy } });
-    this.altHand = -this.altHand;
+    for (let k = 0; k < volleys; k++) {
+      const m = this.muzzle(ang);
+      volley(w, prof, st, m.x, m.y, m.z, ang, { inherit: { vx: this.vx, vy: this.vy } });
+      this.altHand = -this.altHand;
+    }
     this.onFired(w, ang, 'shot');
   }
 
@@ -287,8 +293,24 @@ export class Player {
   render(ctx: CanvasRenderingContext2D, w: World, sx: number, sy: number): void {
     const s = this.spr;
     if (this.dead) {
-      const f = Math.min(5, Math.floor(this.deathT / 0.14));
-      s.death[f].draw(ctx, sx, sy + 2);
+      const t = this.deathT;
+      const pr = Math.min(17, 3 + t * 16);
+      ctx.fillStyle = '#14163a'; ctx.beginPath(); ctx.ellipse(sx, sy, pr, pr * 0.42, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#2a2e70'; ctx.beginPath(); ctx.ellipse(sx - pr * 0.25, sy - pr * 0.12, pr * 0.45, pr * 0.15, 0, 0, TAU); ctx.fill();
+      if (t < 1.35) {
+        const k = t < 0.35 ? 0 : Math.min(1, (t - 0.35) / 1.0);
+        const jx = t < 0.35 ? (Math.random() - 0.5) * 3 : 0;
+        const sink = Math.round(k * k * 30);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(sx - 20, sy - 40, 40, 40 + 1); ctx.clip();
+        s.body.down[0].draw(ctx, sx + jx, sy + sink, { flash: t < 0.12 ? 1 : 0, tint: '#2a2e70', tintAmt: k * 0.7 });
+        s.head.down.hurt.draw(ctx, sx + jx, sy - 10 + sink, { tint: '#2a2e70', tintAmt: k * 0.7 });
+        ctx.restore();
+      } else {
+        const blink = Math.floor(t * 2.2) % 5 === 0;
+        ctx.fillStyle = '#f2f0ff';
+        if (!blink) { ctx.fillRect(Math.round(sx - 4), Math.round(sy - 2), 2, 2); ctx.fillRect(Math.round(sx + 2), Math.round(sy - 2), 2, 2); }
+      }
       return;
     }
     if (this.invisible) return;

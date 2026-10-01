@@ -374,6 +374,13 @@ function decor(c: Ctx): void {
     chapel: ['wax', 'wax', 'petal', 'petal', 'debris', 'candle'],
     hollow: ['inksplat', 'inksplat', 'glyph', 'debris'],
     binding: ['letter', 'letter', 'inksplat', 'debris', 'glyph'],
+    rootcellar: ['moss', 'moss', 'debris', 'bone', 'stain', 'candle'],
+    coalchute: ['coal', 'coal', 'coal', 'debris', 'stain'],
+    flooded: ['moss', 'stain', 'stain', 'debris'],
+    morgue: ['paper', 'pill', 'stain', 'debris', 'bone'],
+    catacombs: ['bone', 'skull', 'skull', 'debris', 'candle'],
+    belfry: ['wax', 'debris', 'petal', 'candle'],
+    inkwell: ['inksplat', 'inksplat', 'inksplat', 'glyph'],
   };
   const list = kinds[t.id] ?? kinds.cellar;
   const n = Math.floor((w * h) / 2200) + rng.int(0, 6);
@@ -552,7 +559,7 @@ function specialFloor(c: Ctx): void {
   }
   if (room.type === 'shop' || room.type === 'library' || room.type === 'arcade') {
     const rug = ramp(room.type === 'library' ? '#3a4a6a' : room.type === 'arcade' ? '#6a2a5a' : '#6a3a24');
-    const rw = 120, rh = 70;
+    const rw = room.type === 'shop' ? 196 : 120, rh = 70;
     for (let y = -rh / 2; y < rh / 2; y++) for (let x = -rw / 2; x < rw / 2; x++) {
       const ex = Math.min(x + rw / 2, rw / 2 - 1 - x), ey = Math.min(y + rh / 2, rh / 2 - 1 - y);
       const e = Math.min(ex, ey);

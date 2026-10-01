@@ -346,7 +346,7 @@ export class Hud {
     if (this.roomNameT <= 0) return;
     const a = Math.min(1, this.roomNameT * 2, (2.2 - this.roomNameT) * 4);
     ctx.globalAlpha = clamp(a, 0, 1);
-    text(ctx, this.roomNameText, VIEW_W / 2, 58, 12, '#e8dcc8', 'center', FONT_TITLE, 400);
+    text(ctx, this.roomNameText, VIEW_W / 2, this.banners.length ? 82 : 58, 12, '#e8dcc8', 'center', FONT_TITLE, 400);
     ctx.globalAlpha = 1;
   }
   private drawFloorCard(ctx: CanvasRenderingContext2D): void {

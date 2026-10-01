@@ -133,7 +133,7 @@ export class MenuSystem {
       const fr = getSprites(moth).idle;
       for (const m of this.moths) {
         m.a += dt * m.s;
-        const x = kx + Math.cos(m.a) * m.r, y = ky - 20 + Math.sin(m.a * 1.3) * m.r * 0.4 - m.y;
+        const x = kx + Math.cos(m.a) * m.r, y = ky - 26 + Math.sin(m.a * 1.7 + m.r) * m.r * 0.7 - m.y * 2;
         fr[Math.floor(t * 12 + m.r) % fr.length].draw(ctx, x, y, { flip: Math.cos(m.a + Math.PI / 2) < 0 });
       }
     }

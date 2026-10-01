@@ -8,7 +8,7 @@ import type { World } from '../game/world';
 
 function drawBoss(e: Enemy, ctx: CanvasRenderingContext2D, sx: number, sy: number, extra: Partial<{ rot: number; alpha: number; tint: string; tintAmt: number; yoff: number }> = {}): void {
   const set = e.sprites[e.anim] ?? e.sprites.idle; const spr = set[e.frame % set.length];
-  spr.draw(ctx, sx, sy - e.z + (extra.yoff ?? 2), { flip: e.flip, flash: e.flash > 0 ? 1 : 0, sx: e.sx, sy: e.sy, rot: extra.rot, alpha: extra.alpha ?? (e.alpha < 1 ? e.alpha : undefined), tint: extra.tint, tintAmt: extra.tintAmt });
+  spr.draw(ctx, sx, sy - e.z + (extra.yoff ?? 2), { flip: e.flip, flash: e.flash > 0 ? 0.5 : 0, sx: e.sx, sy: e.sy, rot: extra.rot, alpha: extra.alpha ?? (e.alpha < 1 ? e.alpha : undefined), tint: extra.tint, tintAmt: extra.tintAmt });
 }
 function gapRing(e: Enemy, w: World, n: number, gap: number, speed: number, at: number, o: Parameters<typeof shoot>[4] = {}): void {
   for (let i = 0; i < n; i++) {
@@ -170,21 +170,30 @@ const oldstoker: EnemyDef = {
 
 // ================================================================== The Rat King
 function paintRatKing(p: any, f: number, size: number): void {
-  const c = ramp('#6a5a5a'), pink = ramp('#c89a9a');
-  const cx = 24 * size, cy = 24 * size;
-  const R = 16 * size;
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * TAU + f * 0.2;
-    const x = cx + Math.cos(a) * R * 0.6, y = cy + Math.sin(a) * R * 0.45;
-    p.ball(x, y, 6 * size, 4 * size, c, { dither: 0.6 });
-    p.ball(x + Math.cos(a) * 5 * size, y + Math.sin(a) * 3 * size, 2.6 * size, 2.2 * size, c);
-    p.set(x + Math.cos(a) * 7 * size, y + Math.sin(a) * 4 * size, '#e04040');
-    p.line(x - Math.cos(a) * 4, y - Math.sin(a) * 3, cx, cy, pink[1]);
+  const fur = ramp('#6e5e5c'), pink = ramp('#d0a0a0');
+  const cx = 28 * size, cy = 26 * size;
+  // knotted tails in the middle
+  for (let i = 0; i < 7; i++) { const a = (i / 7) * TAU + 0.3; p.line(cx + Math.cos(a) * 4 * size, cy + Math.sin(a) * 3 * size, cx + Math.cos(a + 2.4) * 6 * size, cy + Math.sin(a + 2.4) * 4 * size, pink[2]); }
+  p.ring(cx, cy, 3.5 * size, pink[1]); p.ring(cx + 1, cy - 1, 2 * size, pink[3]);
+  // rats radiating outward
+  const n = size > 0.8 ? 8 : 6;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU + Math.sin(f * 1.5 + i) * 0.12;
+    const r0 = 7 * size, r1 = 17 * size;
+    const x0 = cx + Math.cos(a) * r0, y0 = cy + Math.sin(a) * r0 * 0.75;
+    const x1 = cx + Math.cos(a) * r1, y1 = cy + Math.sin(a) * r1 * 0.75;
+    p.tube(x0, y0, x1, y1, 3.6 * size, fur, { dither: 0.6 });
+    const hx = cx + Math.cos(a) * (r1 + 3 * size), hy = cy + Math.sin(a) * (r1 + 3 * size) * 0.75;
+    p.ball(hx, hy, 2.8 * size, 2.4 * size, fur);
+    p.ball(hx - Math.sin(a) * 2.5 * size, hy + Math.cos(a) * 2 * size - 1, 1.4 * size, 1.4 * size, pink);
+    p.set(hx + Math.cos(a) * 2.6 * size, hy + Math.sin(a) * 2 * size, '#e07a8a');
+    p.set(hx + Math.cos(a - 0.6) * 1.2 * size, hy + Math.sin(a - 0.6) * 1.2 * size - 1, '#ff3a3a');
+    p.set(x1 - Math.cos(a) * 3, y1 + 2 * size, fur[0]);
   }
-  p.ball(cx, cy, R * 0.45, R * 0.4, c, { dither: 0.5 });
-  // knotted tails
-  for (let i = 0; i < 6; i++) p.ring(cx + Math.cos(i) * 3, cy + Math.sin(i * 2) * 2, 3 * size, pink[2]);
-  if (size > 0.7) { p.poly([cx - 8, cy - 10, cx - 8, cy - 18, cx - 4, cy - 13, cx, cy - 19, cx + 4, cy - 13, cx + 8, cy - 18, cx + 8, cy - 10], hex('#e0b040')); p.set(cx, cy - 14, '#c83a3a'); }
+  if (size > 0.8) {
+    p.poly([cx - 9, cy - 9, cx - 9, cy - 19, cx - 5, cy - 14, cx, cy - 21, cx + 5, cy - 14, cx + 9, cy - 19, cx + 9, cy - 9], hex('#e0b040'));
+    p.line(cx - 9, cy - 9, cx + 9, cy - 9, hex('#a07020')); p.set(cx, cy - 14, '#c83a3a'); p.set(cx - 6, cy - 12, '#4ab0e0'); p.set(cx + 6, cy - 12, '#4ab0e0');
+  }
 }
 const ratBrain = (prince: boolean): BossBrain => ({
   idleTime: prince ? [0.6, 1] : [0.8, 1.3], phases: prince ? [] : [0.5],
@@ -229,7 +238,7 @@ const ratBrainK = ratBrain(false), ratBrainP = ratBrain(true);
 const ratking: EnemyDef = {
   id: 'ratking', name: 'The Rat King', desc: 'A crown, a knot, and two hundred tiny teeth.', boss: true,
   hp: 300, r: 17, speed: 0, role: 'boss', cost: 0, hitY: 14, mass: 8, noKnock: true, gore: '#6a3a3a', goreDecal: '#3a1a1a',
-  sprites: () => ({ idle: frames(50, 48, 4, (p, f) => paintRatKing(p, f, 1)) }),
+  sprites: () => ({ idle: frames(58, 52, 4, (p, f) => paintRatKing(p, f, 1)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1; },
   update(e, w, dt) { bossUpdate(e, w, dt, ratBrainK); },
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy); },
@@ -237,7 +246,7 @@ const ratking: EnemyDef = {
 const ratprince: EnemyDef = {
   id: 'ratprince', name: 'Rat Prince', desc: '', boss: true,
   hp: 110, r: 11, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, noKnock: true, gore: '#6a3a3a', goreDecal: '#3a1a1a',
-  sprites: () => ({ idle: frames(34, 32, 4, (p, f) => paintRatKing(p, f, 0.66)) }),
+  sprites: () => ({ idle: frames(40, 36, 4, (p, f) => paintRatKing(p, f, 0.7)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 0.8; },
   update(e, w, dt) { bossUpdate(e, w, dt, ratBrainP); },
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy); },
@@ -311,15 +320,24 @@ const bilgemaw: EnemyDef = {
   id: 'bilgemaw', name: 'Bilgemaw', desc: 'Everything drains down. It waits at the bottom with its mouth open.', boss: true,
   hp: 290, r: 13, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 10, noKnock: true, gore: '#3a5a4a', goreDecal: '#1a2a22', ghost: true, noSeparate: true,
   sprites: () => ({
-    idle: frames(34, 30, 2, (p, f) => {
-      const c = ramp('#4a6a5a');
-      p.ball(17, 15, 14, 11, c, { dither: 0.6 });
-      p.ellipse(22, 17, 7, 4 + f * 2, hex('#1a0608'));
-      for (let i = 0; i < 6; i++) { p.set(16 + i * 2, 17 - 3 - f * 2, '#f0e8d8'); p.set(17 + i * 2, 17 + 3 + f * 2, '#f0e8d8'); }
-      glowEye(p, 12, 9, '#e0f040'); glowEye(p, 20, 8, '#e0f040');
-      sprinkle(p, '#8ab08a', 14, 2);
+    idle: frames(44, 34, 2, (p, f) => {
+      const c = ramp('#4a6a5a'), belly = ramp('#a8b890');
+      // dorsal fin
+      for (let i = 0; i < 6; i++) p.line(8 + i * 4, 9 - (i % 2), 10 + i * 4, 3 + (i % 2) * 2, c[3]);
+      p.poly([6, 10, 30, 6, 36, 12, 30, 22, 8, 22], c[3]);
+      p.tube(6, 16, 30, 15, 8, c, { dither: 0.6 });
+      p.ball(18, 21, 12, 3, belly, { dither: 0.6 });
+      // jaws
+      const open = f ? 6 : 3;
+      p.poly([28, 12, 42, 13 - open * 0.3, 40, 16, 29, 17], c[2]);
+      p.poly([28, 18, 40, 19 + open * 0.8, 38, 22 + open * 0.5, 27, 22], c[1]);
+      p.poly([29, 16, 40, 16, 39, 19 + open * 0.6, 29, 19], hex('#1a0608'));
+      for (let x = 30; x < 40; x += 2) { p.set(x, 16, '#f0e8d8'); p.set(x + 1, 18 + open * 0.5, '#f0e8d8'); }
+      glowEye(p, 26, 11, '#e0f040');
+      p.line(10, 20, 5, 27, c[1]); p.line(12, 21, 9, 28, c[1]);
+      sprinkle(p, '#8ab08a', 12, 2);
     }),
-    seg: frames(22, 18, 1, (p) => { p.ball(11, 9, 9, 7, ramp('#4a6a5a'), { dither: 0.6 }); p.line(4, 9, 18, 9, ramp('#4a6a5a')[1]); }),
+    seg: frames(24, 20, 1, (p) => { const c = ramp('#4a6a5a'); for (let i = 0; i < 3; i++) p.line(5 + i * 5, 6, 7 + i * 5, 1, c[3]); p.tube(3, 11, 20, 11, 6.5, c, { dither: 0.6 }); p.ball(12, 15, 7, 2, ramp('#a8b890')); }),
   }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1; e.data.trail = []; e.mode = 'ghost'; },
   update(e, w, dt) {

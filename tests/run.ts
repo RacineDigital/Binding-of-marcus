@@ -4,7 +4,7 @@ import { generateFloor } from '../src/generation/floorgen';
 import { ALL_ITEMS, CONSUMABLES } from '../src/items/registry';
 import { ENEMY_DEFS, getEnemy } from '../src/enemies/registry';
 import { BOSSES } from '../src/bosses/registry';
-import { FLOORS } from '../src/data/floors';
+import { FLOORS, ALT_FLOORS } from '../src/data/floors';
 import { TEMPLATES } from '../src/rooms/templates';
 import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
@@ -34,12 +34,14 @@ ok(signature('ABCD2345') !== signature('MARCUS99'), 'different seeds produce dif
 
 // ------------------------------------------------------------ generation rules over many seeds
 const typeCounts: Record<string, number> = {};
+let altCount = 0;
 for (let i = 0; i < 150; i++) {
   const seed = 'T' + i.toString(36).toUpperCase().padStart(7, '2');
   const run = new Run(seed, 'marcus', () => true);
   for (let f = 0; f < 8; f++) {
     run.floorIndex = f;
     const fl = generateFloor(run, f);
+    if (fl.alt) altCount++;
     const rooms = fl.rooms;
     ok(rooms.filter((r) => r.type === 'boss').length === 1, `${seed} f${f}: exactly one boss room`);
     ok(rooms[0].type === 'start', `${seed} f${f}: room 0 is start`);
@@ -66,6 +68,7 @@ for (let i = 0; i < 150; i++) {
   }
 }
 console.log('room type frequency over 150 runs:', JSON.stringify(typeCounts));
+console.log('alt floors seen:', altCount);
 
 // ------------------------------------------------------------ data validation
 const ids = new Set<string>();
@@ -80,7 +83,7 @@ for (const it of ALL_ITEMS) {
   try { it.icon(p); ok(p.data.some((v) => v !== 0), `item ${it.id} icon draws something`); } catch (e) { ok(false, `item ${it.id} icon throws ${e}`); }
 }
 for (const c of CONSUMABLES) if (c.icon) { const p = new PixelArt(18, 18); try { c.icon(p); } catch (e) { ok(false, `charm ${c.id} icon throws`); } }
-for (const f of FLOORS) {
+for (const f of [...FLOORS, ...Object.values(ALT_FLOORS)]) {
   for (const id of Object.keys(f.enemies)) ok(!!getEnemy(id), `floor ${f.id} enemy ${id} exists`);
   for (const id of f.bosses) ok(!!getEnemy(id), `floor ${f.id} boss ${id} exists`);
 }

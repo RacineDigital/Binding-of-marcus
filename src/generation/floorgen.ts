@@ -3,7 +3,7 @@
 import { RNG } from '../core/rng';
 import { MAP_SIZE } from '../core/constants';
 import { RoomData, RoomType, Side, DoorKind, opposite } from '../rooms/room';
-import { FLOORS, FloorTheme, FINAL_FLOOR } from '../data/floors';
+import { FLOORS, FloorTheme, FINAL_FLOOR, ALT_FLOORS } from '../data/floors';
 import type { Run, Floor } from '../game/run';
 import { populateRoom } from './populate';
 import type { SaveManager } from '../save/save';
@@ -32,7 +32,10 @@ function place(c: Ctx, gx: number, gy: number, cw: number, ch: number, type: Roo
 }
 
 export function pickTheme(run: Run, fi: number): FloorTheme {
-  return FLOORS[Math.min(fi, FINAL_FLOOR)];
+  const base = FLOORS[Math.min(fi, FINAL_FLOOR)];
+  const alt = ALT_FLOORS[base.id];
+  if (alt && new RNG(`${run.seed}:alt${fi}`).next() < 0.22) return alt;
+  return base;
 }
 
 export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
@@ -56,7 +59,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const floor: Floor = {
     index: fi, theme, rooms: c.rooms, map: c.map, size: MAP_SIZE, startId: 0,
     bossId: c.rooms.findIndex((r) => r.type === 'boss'), curse,
-    label: `${theme.chapter} — ${theme.name}`, alt: false,
+    label: `${theme.chapter} — ${theme.name}`, alt: theme !== FLOORS[Math.min(fi, FINAL_FLOOR)],
   };
   // populate every room (deterministic per room seed, pools consumed in id order)
   const prng = new RNG(`${run.seed}:populate${fi}`);

@@ -126,15 +126,25 @@ function sludgeDef(id: string, size: number, next: string | null): EnemyDef {
     id, name: 'Sludge', desc: 'Splits when it dies. And again.', hp: 6 + size * 6, r, speed: 30 + (3 - size) * 14, role: size === 3 ? 'melee' : 'swarm', cost: size === 3 ? 1.6 : 0.5, hitY: r,
     gore: '#5a6a3a', goreDecal: '#3a4a22',
     sprites: () => ({
-      idle: frames(r * 2 + 8, r * 2 + 6, 4, (p, f) => {
+      idle: frames(r * 2 + 8, r * 2 + 8, 4, (p, f) => {
         const c = ramp('#6a7a4a');
         const wob = Math.sin((f / 4) * TAU) * 0.8;
         const cx = r + 4, cy = r + 4;
-        p.ball(cx, cy, r + wob, r - wob * 0.6, c, { dither: 0.8 });
-        p.ball(cx - r * 0.4, cy - r * 0.6, 1.2, 1.2, ramp('#c8d0a0'));
-        if (size >= 2) { glowEye(p, Math.round(cx - r * 0.3), Math.round(cy - 1), '#e0e040'); p.set(Math.round(cx + r * 0.3), Math.round(cy - 1), '#e0e040'); }
-        else p.set(cx, cy - 1, '#e0e040');
-        for (let i = 0; i < size + 1; i++) p.set(cx - r + 2 + i * 3, cy + r - 1, c[0]);
+        // body slumps wider at the base
+        p.ball(cx, cy + 1, r + wob, r * 0.85 - wob * 0.6, c, { dither: 0.8 });
+        p.ball(cx, cy + r * 0.55, r * 1.15, r * 0.4, c, { dither: 0.8 });
+        // drips running down
+        for (let i = 0; i < size + 1; i++) { const x = cx - r * 0.7 + i * (r * 1.4 / Math.max(1, size)); p.tube(x, cy + r * 0.5, x, cy + r * 0.95 + ((i + f) % 2), 1, c); }
+        // bubbles
+        p.ring(cx + r * 0.4, cy - r * 0.45, Math.max(1, size * 0.7), c[4]);
+        p.set(cx - r * 0.55, cy - r * 0.5, c[4]); p.set(cx - r * 0.5, cy - r * 0.55, '#e8f0c0');
+        // face
+        if (size >= 2) {
+          eye(p, Math.round(cx - r * 0.35), Math.round(cy - 2), size === 3 ? 2 : 1.4, 0, 0.4, '#3a3010', '#e0e090');
+          eye(p, Math.round(cx + r * 0.3), Math.round(cy - 1), size === 3 ? 1.6 : 1.2, 0, 0.4, '#3a3010', '#e0e090');
+          p.line(cx - r * 0.35, cy + r * 0.3, cx + r * 0.3, cy + r * 0.25 + wob * 0.5, c[0]);
+          if (size === 3) for (let x = -2; x <= 2; x += 2) p.set(cx + x, cy + r * 0.3, '#d8d0a0');
+        } else { p.set(cx - 1, cy - 1, '#e0e090'); p.set(cx + 1, cy - 1, '#e0e090'); }
       }, r * 2 + 4),
     }),
     init(e) { e.anim = 'idle'; },

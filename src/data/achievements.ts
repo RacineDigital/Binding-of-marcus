@@ -30,11 +30,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ch_twins', name: 'Twins Challenge', desc: 'Complete "Double Trouble".', unlocks: 'Unlocks the Mirror Twin.' },
   { id: 'ch_ink', name: 'Ink Challenge', desc: 'Complete "Inkstorm".', unlocks: 'Unlocks the Fountain Pen.' },
 ];
-export interface ChallengeDef { id: string; name: string; desc: string; char: string; rules: string[]; unlock?: string }
+export interface ChallengeDef { id: string; name: string; desc: string; char: string; rules: string[]; unlock?: string; goal: number }
 export const CHALLENGES: ChallengeDef[] = [
-  { id: 'glass', name: 'Magnifying Glass', desc: 'One fragile heart and a burning beam.', char: 'marcus', rules: ['Start with the Burning Glass', 'Only one heart container', 'Reach the Chapel'], unlock: 'beat_final' },
-  { id: 'swarm', name: 'The Menagerie', desc: 'Let the little ones fight for you.', char: 'marcus', rules: ['Start with three familiars', 'Your own shots are weakened'], unlock: 'beat_final' },
-  { id: 'darkness', name: 'Lights Out', desc: 'Every floor is unlit.', char: 'wren', rules: ['Permanent Blight of the Unlit'], unlock: 'beat_final' },
-  { id: 'twins', name: 'Double Trouble', desc: 'Every boss arrives with a sibling.', char: 'edda', rules: ['Bosses come in pairs'], unlock: 'beat_final' },
-  { id: 'ink', name: 'Inkstorm', desc: 'Split ink everywhere.', char: 'blot', rules: ['Start with Split Nib and Inkwell Heart'], unlock: 'win_blot' },
+  { id: 'glass', name: 'Magnifying Glass', desc: 'One fragile heart and a burning beam.', char: 'marcus', rules: ['Start with the Burning Glass', 'Only one heart container', 'Close Chapter V'], unlock: 'beat_final', goal: 4 },
+  { id: 'swarm', name: 'The Menagerie', desc: 'Let the little ones fight for you.', char: 'marcus', rules: ['Start with three familiars', 'Your own shots deal half damage', 'Close Chapter VI'], unlock: 'beat_final', goal: 5 },
+  { id: 'darkness', name: 'Lights Out', desc: 'Every floor is unlit.', char: 'wren', rules: ['Every floor is unlit', 'Close Chapter VII'], unlock: 'beat_final', goal: 6 },
+  { id: 'twins', name: 'Double Trouble', desc: 'Every boss arrives with a sibling.', char: 'edda', rules: ['Bosses come in pairs', 'Close Chapter V'], unlock: 'beat_final', goal: 4 },
+  { id: 'ink', name: 'Inkstorm', desc: 'Split ink everywhere.', char: 'blot', rules: ['Start with Split Nib and Inkwell Heart', 'Finish the story'], unlock: 'win_blot', goal: 7 },
 ];
