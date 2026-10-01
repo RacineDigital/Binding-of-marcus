@@ -10,6 +10,7 @@ import { TAU, dist2 } from '../../core/math';
 import { Beam } from '../../projectiles/weapons';
 import { getItem } from '../registry';
 import type { RoomType } from '../../rooms/room';
+import { markDie } from './dice';
 
 export function poolForRoom(t: RoomType): PoolId {
   switch (t) {
@@ -34,7 +35,7 @@ export function reroll(w: World): boolean {
 
 export const ACTIVES: ItemDef[] = [
   { id: 'old_dice', name: 'The D6', kind: 'active', quality: 4, pools: { treasure: 0.5, secret: 1 }, tags: ['dice'],
-    pickup: 'Reroll your fate', effect: ['Rerolls every item pedestal in the room into a new item.'], active: { charge: 6, type: 'room', use: reroll },
+    pickup: 'Reroll your fate', effect: ['Rerolls every item pedestal in the room into a new item.'], active: { charge: 6, type: 'room', use: (w) => { const ok = reroll(w); if (ok) markDie(w, 'old_dice'); return ok; } },
     icon: (p) => { const c = ramp('#e8dcc0'); p.rect(3, 4, 12, 12, c[2]); p.rect(3, 4, 12, 2, c[4]); p.rect(14, 5, 1, 11, c[0]); for (const [x, y] of [[5, 7], [9, 10], [12, 13], [12, 7], [5, 13]]) p.set(x, y, '#1a1010'); } },
   { id: 'stopped_watch', name: 'Stopped Watch', kind: 'active', quality: 3, pools: { treasure: 0.8 }, tags: ['clock'], unlock: 'transform_clock',
     pickup: 'Hold the second hand', effect: ['Enemies and their shots move at half speed for 8 seconds.'], active: { charge: 3, type: 'room', use: (w) => { w.slowT = 8; w.audio.play('chime'); w.whiteFlash = 0.2; } },

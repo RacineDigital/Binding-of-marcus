@@ -120,7 +120,8 @@ Menus also work with the mouse: hover, click and scroll.
   Big Boy Diaper, Nose Pencil and Blue Bike Helmet.
 - **The dice.** Every die from Isaac: D1, D4, the D6, D7, D8, D10, D12, D20, D100, Eternal D6,
   Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
-  charms.
+  charms. The strongest ones are earned: the D4 (two transformations at once), D8 (15 damage),
+  Spindown Dice (three challenges), D100 (beat the Author) and D Infinity (roll every other die).
 - **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
   thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look. Jeffy
   throws a tantrum of pencils whenever he gets hit.

@@ -1,5 +1,9 @@
 ## What's new in 2.7 (beta)
 
+**2.7.2:** the strongest dice have to be earned. D4: have two transformations at once. D8: reach
+15 damage. Spindown Dice: complete three challenges. D100: beat the Author. D Infinity: roll every
+other die (D1, D4, D6, D7, D8, D9, D10, D12, D20) at least once.
+
 **2.7.1:** the four newest characters are hard to earn now. Ozzie: beat It Remembers holding a die.
 Nell: beat the Unwritten. Bram: beat three chapter bosses in one run without any of them hitting
 you. Wick: finish the story as Mothkin.

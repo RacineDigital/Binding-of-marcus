@@ -64,6 +64,9 @@ export function checkProgress(w: World): void {
   at('shop_10', (st.purchases ?? 0) >= 10);
   at('items_15', pl.itemOrder.length >= 15);
   at('dmg_20', pl.stats.damage >= 20);
+  at('dmg_15', pl.stats.damage >= 15);
+  at('two_transforms', pl.transformations.size >= 2);
+  at('challenges_3', save.data.challengesDone.length >= 3);
   const bossIds = BOSSES.filter((b) => !['snipB', 'ratprince', 'blottedhalf', 'bilgeseg'].includes(b.id)).map((b) => b.id);
   at('all_bosses', bossIds.every((id) => save.data.bossesBeaten.includes(id)));
 }
