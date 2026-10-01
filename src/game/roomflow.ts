@@ -534,7 +534,10 @@ export function updateSpecial(w: World, dt: number): void {
   freeSealedEnemies(w, dt);
   if (w.trapdoor) {
     const t = w.trapdoor; t.t += dt;
-    if (t.t > 0.8 && dist2(pl.x, pl.y, t.x, t.y) < 11 * 11 && !w.transition && w.deathT < 0 && !w.game.fading) {
+    // a trapdoor that opens under your feet waits until you've stepped off it
+    const d2 = dist2(pl.x, pl.y, t.x, t.y);
+    if (d2 > 18 * 18) t.armed = true;
+    if (t.t > 0.8 && t.armed && d2 < 11 * 11 && !w.transition && w.deathT < 0 && !w.game.fading) {
       pl.controlLock = 1.5; pl.vx = pl.vy = 0;
       w.audio.play('fall');
       w.game.fadeTo(() => nextFloor(w), 0.7);

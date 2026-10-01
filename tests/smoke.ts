@@ -43,7 +43,7 @@ const floors = Number(process.argv[3] || 8);
     if (f < floors - 1) {
       const hasTrap = await page.evaluate(`!!${D}.world.trapdoor`);
       console.log('  trapdoor', hasTrap, 'scene', await page.evaluate(`${D}.game.scene`));
-      await page.evaluate(`(() => { const w = ${D}.world; if (w.trapdoor) { w.player.x = w.trapdoor.x; w.player.y = w.trapdoor.y; } else ${D}.nextFloor(); })()`);
+      await page.evaluate(`(() => { const w = ${D}.world; if (w.trapdoor) { w.trapdoor.armed = true; w.player.x = w.trapdoor.x; w.player.y = w.trapdoor.y; } else ${D}.nextFloor(); })()`);
       await page.waitForTimeout(2500);
     } else {
       console.log('  final scene', await page.evaluate(`${D}.game.scene`));
