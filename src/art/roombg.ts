@@ -20,7 +20,7 @@ function floorFlag(c: Ctx): void {
   // Irregular flagstones: stretched Voronoi slabs with bevelled edges, grime and damp.
   const { p, x0, y0, w, h } = c;
   const base = hex(c.t.pal.floor), alt = hex(c.t.pal.floor2), grout = hex(c.t.pal.grout);
-  const SX = 22, SY = 16;
+  const SX = 28, SY = 20;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const gx0 = Math.floor(x / SX), gy0 = Math.floor(y / SY);
     let d1 = 1e9, d2 = 1e9, id = 0, fx1 = 0, fy1 = 0;
@@ -36,16 +36,16 @@ function floorFlag(c: Ctx): void {
     const n = fbm(x * 0.12, y * 0.12, c.seed + id, 2);
     if (n > 0.6) v = darken(v, 0.07); else if (n < 0.32) v = lighten(v, 0.04);
     if (edge < 1.1) v = grout;
-    else if (edge < 2.1) v = (y < fy1 || x < fx1) ? lighten(v, 0.1) : darken(v, 0.22);
+    else if (edge < 2.1) v = (y < fy1 || x < fx1) ? lighten(v, 0.07) : darken(v, 0.14);
     else if (edge < 3.2 && (y > fy1)) v = darken(v, 0.06);
     const grime = fbm(x * 0.03, y * 0.03, c.seed + 5, 3);
     if (grime > 0.56) v = mix(v, hex('#1a1412'), Math.min(0.55, (grime - 0.56) * 2.2));
     const damp = fbm(x * 0.05 + 40, y * 0.05, c.seed + 9, 3);
     if (damp > 0.64 && edge >= 1.1) v = mix(v, hex(c.t.pal.stain), Math.min(0.5, (damp - 0.64) * 3));
-    if (hash2(x, y, c.seed + 77) < 0.035) v = darken(v, 0.18);
+    if (hash2(x, y, c.seed + 77) < 0.012) v = darken(v, 0.12);
     p.set(x0 + x, y0 + y, v);
   }
-  cracks(c, 6 + c.rng.int(0, 5), darken(grout, 0.1));
+  cracks(c, 3 + c.rng.int(0, 3), darken(grout, 0.05));
 }
 function floorBrick(c: Ctx): void {
   const { p, x0, y0, w, h } = c;
@@ -676,10 +676,27 @@ export function paintRoomBackground(room: RoomData, theme: FloorTheme): HTMLCanv
     case 'void': floorVoid(c); break;
     case 'pages': floorPages(c); break;
   }
+  calmFloor(c);
   decor(c);
   specialFloor(c);
   ambientOcclusion(c);
   return p.toCanvas();
+}
+
+/**
+ * Readability pass: compress the floor's contrast toward its average colour and lift it a touch,
+ * so characters, shots and pickups always stand out from the ground.
+ */
+function calmFloor(c: Ctx): void {
+  const { p, x0, y0, w, h } = c;
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) { const v = p.get(x0 + x, y0 + y); r += v & 255; g += (v >>> 8) & 255; b += (v >>> 16) & 255; n++; }
+  const mean = pack(r / n, g / n, b / n);
+  const k = c.t.floor === 'void' || c.t.floor === 'pages' ? 0.2 : 0.34;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const v = p.get(x0 + x, y0 + y);
+    p.set(x0 + x, y0 + y, lighten(mix(v, mean, k), 0.05));
+  }
 }
 
 /** Room-type specific floor treatments (rugs, glyph circles...). */
