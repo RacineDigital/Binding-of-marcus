@@ -161,8 +161,7 @@ Menus also work with the mouse: hover, click and scroll.
   faster and have a bullet-hell last stand. The Unwritten and the Author are the Delirium fight:
   ten times the health, eight phases, layered bullet patterns and constant shape changes into any
   boss you've beaten. Every boss opens with an Isaac-style VS screen.
-- **Announcer.** Transformations get a title card, a sound and a voice reading the name out; the
-  voice also reads sweets and pages (Options → Announcer voice).
+- **Transformations announce themselves** with a big title card and a sound.
 - **Echoes.** Where your last run died, your echo waits next time: a ghost of the reader you
   died as, in a room of its own, fighting the way you did. Lay it to rest and it leaves one of the
   items it carried. Chapter bosses are sometimes **champions** (Crimson, Gilded or Inked).

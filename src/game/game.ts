@@ -8,7 +8,6 @@ import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
 import { recordScore, checkProgress, RunMode } from './progress';
 import { endingFor } from '../data/endings';
-import { announce } from '../audio/announcer';
 import { updatePresence } from './presence';
 import { Run } from './run';
 import { Player } from '../player/player';
@@ -341,8 +340,6 @@ export class Game {
   }
   fullCharge(): void { if (this.world) flow.fullCharge(this.world); }
 
-  /** The announcer reads a name out (Options → Announcer voice). */
-  announce(name: string): void { if (name && this.save.data.settings.announcer !== false) announce(name, this.save.data.settings.sfx); }
   useConsumable(): void {
     const w = this.world; if (!w) return;
     const pl = w.player;
@@ -350,7 +347,6 @@ export class Game {
     if (c.kind === 'page') {
       const d = getConsumable(c.id);
       w.hud.banner(d?.name ?? 'Page', d?.effect[0] ?? '');
-      this.announce(d?.name ?? '');
       this.audio.play('pageUse');
       d?.use?.(w);
       this.save.stat('pagesUsed', 1);
@@ -358,7 +354,6 @@ export class Game {
       const eff = SWEET_EFFECTS[w.run.sweetMap[Number(c.id) % 12]];
       w.run.identified.add(eff.id);
       w.hud.banner(eff.name, eff.desc);
-      this.announce(eff.name);
       this.audio.play(eff.good ? 'sweetGood' : 'sweetBad');
       eff.use(w);
       pl.happyT = eff.good ? 0.8 : 0; if (!eff.good) pl.hurtT = 0.3;

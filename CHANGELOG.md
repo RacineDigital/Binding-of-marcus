@@ -2,6 +2,11 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.0.2
+
+- **The announcer voice is gone.** Sweets, pages and transformations are no longer read out loud
+  (transformations still get their title card and sound).
+
 ## What's new in 3.0.1
 
 - **Homing lasers always hit.** A laser is instant, so with any homing item it now locks onto the

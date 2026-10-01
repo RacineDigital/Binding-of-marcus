@@ -16,8 +16,6 @@ export interface Settings {
   timer?: boolean;
   /** Show what you're playing in Discord (desktop). */
   discord?: boolean;
-  /** A voice reads out transformations, sweets and pages. */
-  announcer?: boolean;
 }
 export interface SaveData {
   version: number;

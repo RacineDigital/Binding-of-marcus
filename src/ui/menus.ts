@@ -680,7 +680,6 @@ export class MenuSystem {
       { label: 'Fullscreen', value: () => (document.fullscreenElement ? 'On' : 'Off'), ok: () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); } },
       { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
       ...((window as any).bomDesktop?.setPresence ? [{ label: 'Discord status', value: () => (st().discord !== false ? 'On' : 'Off'), ok: () => { st().discord = st().discord === false; g.save.markDirty(); } }] : []),
-      { label: 'Announcer voice', value: () => (st().announcer !== false ? 'On' : 'Off'), ok: () => { st().announcer = st().announcer === false; g.save.markDirty(); if (st().announcer) g.announce('Announcer'); } },
       { label: 'Run timer', value: () => (st().timer ? 'On' : 'Off'), ok: () => { st().timer = !st().timer; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },

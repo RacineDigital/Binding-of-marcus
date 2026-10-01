@@ -1,9 +1,7 @@
-## What's new in 3.0.1
+## What's new in 3.0.2
 
-- **Homing lasers always hit.** A laser is instant, so with any homing item it now locks onto the
-  enemy nearest your aim and bends in a smooth curve that ends right on its body. Before, it
-  aimed at enemies' feet and turned too slowly, so about one homing laser in four missed. The
-  Burning Glass beam uses the same targeting and holds onto its target instead of flickering.
+- **The announcer voice is gone.** Sweets, pages and transformations are no longer read out loud
+  (transformations still get their title card and sound).
 
 ## Download and play
 

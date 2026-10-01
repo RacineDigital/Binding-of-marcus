@@ -1055,7 +1055,6 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
       w.after(0.9, () => {
         w.hud.transformCard(T.name, T.desc); w.audio.stinger('transform'); w.audio.play('choir', { vol: 0.6 });
         w.whiteFlash = 0.6; w.shake(3); w.fx.ring(pl.x, pl.y - 10, 6, 70, '#c890ff', 0.6);
-        w.game.announce(T.name);
       }, true);
       w.game.save.unlock('transform_' + t);
     }
