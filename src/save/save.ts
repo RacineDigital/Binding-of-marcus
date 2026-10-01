@@ -12,6 +12,8 @@ export interface Settings {
   descStyle: 'eid' | 'card';
   /** Frame-rate cap; 0 = match the display refresh rate. */
   fpsCap: number;
+  /** Show a run timer on the HUD. */
+  timer?: boolean;
 }
 export interface SaveData {
   version: number;

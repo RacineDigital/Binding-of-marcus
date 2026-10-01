@@ -55,6 +55,14 @@ export class Hud {
   panelFade = 0; panelInfo: InspectInfo | null = null; panelPickup: Pickup | null = null;
   constructor(w: World) { this.w = w; }
 
+  /** Speedrun-style run clock under the map. */
+  private drawTimer(ctx: CanvasRenderingContext2D): void {
+    const t = this.w.run.stats.time;
+    const m = Math.floor(t / 60), s = t % 60;
+    const str = `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(VIEW_W - 50, 63, 44, 11);
+    text(ctx, str, VIEW_W - 8, 71, 7, this.w.run.won ? '#ffd060' : '#e8e0d0', 'right');
+  }
   banner(title: string, sub: string, icon: HTMLCanvasElement | null = null): void { this.banners = [{ title, sub, t: 0, icon }]; }
   toast(s: string, dur = 2.4): void { this.toasts.push({ text: s, t: 0, dur }); if (this.toasts.length > 3) this.toasts.shift(); }
   floorCard(title: string, sub: string, curse: string | null): void { this.floorCardT = 3.2; this.floorTitle = title; this.floorSub = sub; this.floorCurse = curse; }
@@ -101,8 +109,9 @@ export class Hud {
     if (w.game.save.data.settings.showStats && !(eid && this.panelFade > 0.05)) this.drawStats(ctx);
     this.drawConsumables(ctx);
     if (w.floor.curse !== 'lost') this.drawMinimap(ctx, this.fullMap);
-    if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     else text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right');
+    if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
+    if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);
     if (eid) this.drawEID(ctx); else this.drawItemPanel(ctx);
     this.drawBanners(ctx);

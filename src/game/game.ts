@@ -51,8 +51,21 @@ export class Game {
     window.addEventListener('keydown', unlockAudio);
     window.addEventListener('pointerdown', unlockAudio);
     window.addEventListener('gamepadconnected', unlockAudio);
+    // F9 (or F12) saves a screenshot: to Pictures/Binding of Marcus on desktop, a download in the browser
+    window.addEventListener('keydown', (e) => { if (e.code === 'F9' || e.code === 'F12') { e.preventDefault(); this.screenshot(cv); } });
     // closing the window mid-run keeps your exact spot
     window.addEventListener('beforeunload', () => { if (this.scene === 'run' && this.world && !this.world.player.dead && this.world.deathT < 0) this.saveSnapshot(); this.save.flush(); });
+  }
+
+  screenshot(cv: HTMLCanvasElement): void {
+    const url = cv.toDataURL('image/png');
+    const say = (msg: string) => this.world?.hud.toast(msg, 2);
+    this.audio.play('coinDrop', { vol: 0.6, pitch: 1.8 });
+    const desk = (window as any).bomDesktop;
+    if (desk?.screenshot) { desk.screenshot(url).then((file: string) => say('Screenshot saved: ' + file.split(/[\\/]/).pop()), () => say('Could not save the screenshot.')); return; }
+    const a = document.createElement('a');
+    a.href = url; a.download = `marcus-${new Date().toISOString().replace(/[:.]/g, '-')}.png`; a.click();
+    say('Screenshot saved.');
   }
 
   applySettings(): void {
@@ -247,10 +260,17 @@ export class Game {
     this.menus.openDeath(this.world);
     this.audio.setMusic('death');
   }
+  /** Count the Binding as beaten (endless runs credit the win and keep going). */
+  creditWin(): void {
+    const w = this.world; if (!w || w.run.flags.credited) return;
+    w.run.flags.credited = true; w.run.won = true;
+    if (!w.run.challenge) { this.save.stat('wins', 1); this.save.unlock('beat_final'); }
+    if (w.run.charId !== 'marcus' && !w.run.challenge) this.save.unlock('win_' + w.run.charId);
+  }
   onVictory(): void {
     const w = this.world; if (!w) return;
     w.run.won = true;
-    if (!w.run.challenge) { this.save.stat('wins', 1); this.save.unlock('beat_final'); }
+    if (!w.run.challenge && !w.run.flags.credited) { this.save.stat('wins', 1); this.save.unlock('beat_final'); }
     if (w.run.charId !== 'marcus' && !w.run.challenge) this.save.unlock('win_' + w.run.charId);
     if (w.run.challenge) { if (!this.save.data.challengesDone.includes(w.run.challenge)) this.save.data.challengesDone.push(w.run.challenge); this.save.unlock('ch_' + w.run.challenge); }
     const t = w.run.stats.time;

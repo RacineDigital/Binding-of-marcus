@@ -12,12 +12,15 @@ import { itemIconCanvas } from '../art/items';
 import { describeItem } from '../items/describe';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
 import { formatSeed, normalizeSeed, RNG } from '../core/rng';
-import { dailySeed, todayKey, runScore } from '../game/progress';
+import { dailySeed, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
 import { INTRO_STORY, ENDING_STORY } from '../data/lore';
 import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
 import { renderMenuScene, mainMenuScreen } from './mainmenu';
+import { ALL_ENEMY_DEFS } from '../enemies/registry';
+import { getSprites, EnemyDef } from '../enemies/enemy';
+import type { Sprite } from '../render/sprite';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -244,8 +247,14 @@ export class MenuSystem {
     let ci = forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0;
     let row = 0; // 0 = character, 1 = mode, 2 = seed, 3 = start
     let seed = presetSeed ?? ''; let editing = false;
-    const hardOpen = g.save.isUnlocked('beat_final') && !challenge;
-    let hard = false;
+    // Hard and Endless open up after the first win
+    const modes: RunMode[] = g.save.isUnlocked('beat_final') && !challenge ? ['normal', 'hard', 'endless'] : ['normal'];
+    const hardOpen = modes.length > 1;
+    let mi = 0;
+    const MODE_DESC: Partial<Record<RunMode, string>> = {
+      hard: 'Tougher enemies, harsher hits, more champions; better treasure. Score x1.5.',
+      endless: 'After the Binding the story keeps going: chapters loop, harder each time.',
+    };
     const unlocked = (c: CharacterDef) => !c.unlock || g.save.isUnlocked(c.unlock);
     const scr: Screen = {
       t: 0,
@@ -256,7 +265,7 @@ export class MenuSystem {
           if (k === 'up') { row = (row + 3) % 4; if (row === 1 && !hardOpen) row = 0; self.sfxMove(); }
           if (k === 'down') { row = (row + 1) % 4; if (row === 1 && !hardOpen) row = 2; self.sfxMove(); }
           if ((k === 'left' || k === 'right') && row === 0 && !forceChar) { ci = (ci + (k === 'left' ? -1 : 1) + CHARACTERS.length) % CHARACTERS.length; self.sfxMove(); }
-          if ((k === 'left' || k === 'right' || k === 'confirm') && row === 1) { hard = !hard; self.sfxMove(); continue; }
+          if ((k === 'left' || k === 'right' || k === 'confirm') && row === 1) { mi = (mi + (k === 'left' ? modes.length - 1 : 1)) % modes.length; self.sfxMove(); continue; }
           if (k === 'confirm') {
             if (row === 2) {
               editing = true; g.input.textCapture = (key) => {
@@ -269,7 +278,7 @@ export class MenuSystem {
             const c = CHARACTERS[ci];
             if (!unlocked(c)) { g.audio.play('deny'); continue; }
             g.audio.play('itemGet', { vol: 0.5 });
-            g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, hard ? 'hard' : 'normal'); }, 0.5);
+            g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, modes[mi]); }, 0.5);
           }
         }
       },
@@ -312,14 +321,14 @@ export class MenuSystem {
           text(ctx, c.passive, x0, hy + 20, 7, '#4a3a6a', 'left', FONT_BODY, 600, false);
         }
         // seed & start
-        const opts = [hardOpen ? `Mode: ${hard ? 'Second Edition (Hard)' : 'Normal'}` : 'Mode: Normal', `Seed: ${editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random'}`, 'Begin'];
+        const opts = [`Mode: ${MODE_NAMES[modes[mi]]}`, `Seed: ${editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random'}`, 'Begin'];
         [1, 2, 3].forEach((r) => {
           const y = 192 + (r - 1) * 13;
           const on = row === r;
           if (on) inkBlot(ctx, 300, y - 3, 150, 12, self.time, 'rgba(40,30,60,0.2)');
-          text(ctx, opts[r - 1], 300, y, on ? 9 : 8, r === 1 && !hardOpen ? 'rgba(90,70,54,0.5)' : on ? (r === 1 && hard ? '#8a1a1a' : INK) : INK2, 'center', FONT_TITLE, 400, false);
+          text(ctx, opts[r - 1], 300, y, on ? 9 : 8, r === 1 && !hardOpen ? 'rgba(90,70,54,0.5)' : on ? (r === 1 && modes[mi] !== 'normal' ? '#8a1a1a' : INK) : INK2, 'center', FONT_TITLE, 400, false);
         });
-        if (row === 1 && hard) text(ctx, 'Tougher enemies, harsher hits, more champions; better treasure. Score x1.5.', 300, 233, 6.5, '#8a2a2a', 'center', FONT_BODY, 600, false);
+        if (row === 1 && MODE_DESC[modes[mi]]) text(ctx, MODE_DESC[modes[mi]]!, 300, 233, 6.5, '#8a2a2a', 'center', FONT_BODY, 600, false);
         if (row === 0) text(ctx, '— character —', 110, 186, 7, INK2, 'center', FONT_BODY, 600, false);
         hint(ctx, editing ? 'Type an 8-character seed · Enter to confirm' : '←/→ character · ↑/↓ options · Enter to begin · Esc back');
       },
@@ -402,25 +411,73 @@ export class MenuSystem {
     const self = this, g = this.g;
     const all = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev');
     let sel = 0; const cols = 16;
+    // Enter flips between curios and the bestiary
+    let tab: 'items' | 'beasts' = 'items';
+    const beasts = ALL_ENEMY_DEFS().filter((d) => !['snipA', 'snipB', 'ratprince', 'blottedhalf'].includes(d.id))
+      .sort((a, b) => Number(!!a.boss) - Number(!!b.boss));
+    let bsel = 0; const bcols = 10;
+    const beastScreen = (keys: MenuKey[]) => {
+      for (const k of keys) {
+        if (k === 'back') { self.pop(); return; }
+        if (k === 'confirm' || k === 'tabL' || k === 'tabR') { tab = 'items'; self.sfxMove(); continue; }
+        if (k === 'left') bsel = Math.max(0, bsel - 1);
+        if (k === 'right') bsel = Math.min(beasts.length - 1, bsel + 1);
+        if (k === 'up') bsel = Math.max(0, bsel - bcols);
+        if (k === 'down') bsel = Math.min(beasts.length - 1, bsel + bcols);
+        self.sfxMove();
+      }
+    };
+    const renderBeasts = (ctx: CanvasRenderingContext2D) => {
+      const kills = g.save.data.kills ?? {};
+      const met = beasts.filter((d) => kills[d.id]).length;
+      text(ctx, 'Bestiary', 30, 30, 16, INK, 'left', FONT_TITLE, 400, false);
+      text(ctx, `${met} / ${beasts.length} creatures recorded · Enter for curios`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
+      const rowsVisible = 6, box = 29;
+      const selRow = Math.floor(bsel / bcols);
+      const firstRow = clamp(selRow - 2, 0, Math.max(0, Math.ceil(beasts.length / bcols) - rowsVisible));
+      for (let i = firstRow * bcols; i < Math.min(beasts.length, (firstRow + rowsVisible) * bcols); i++) {
+        const d = beasts[i];
+        const cx = 28 + (i % bcols) * box, cy = 48 + (Math.floor(i / bcols) - firstRow) * box;
+        ctx.fillStyle = i === bsel ? 'rgba(60,30,30,0.35)' : d.boss ? 'rgba(120,40,30,0.14)' : 'rgba(60,40,30,0.1)'; ctx.fillRect(cx, cy, box - 2, box - 2);
+        drawBeast(ctx, d, cx + 1, cy + 1, box - 4, !kills[d.id]);
+      }
+      const d = beasts[bsel];
+      const dx = 330, dy = 50, n = kills[d.id] ?? 0;
+      ctx.fillStyle = 'rgba(60,40,30,0.15)'; ctx.fillRect(dx - 6, dy - 6, 130, 196);
+      drawBeast(ctx, d, dx + 20, dy, 76, !n);
+      if (n) {
+        let y = dy + 92;
+        for (const l of wrap(ctx, d.name, 11, 118, FONT_TITLE)) { text(ctx, l, dx, y, 11, d.boss ? '#8a1a1a' : INK, 'left', FONT_TITLE, 400, false); y += 11; }
+        text(ctx, d.boss ? `Boss · defeated ${n}×` : `Slain: ${n}`, dx, y, 7, '#8a3a2a', 'left', FONT_BODY, 600, false); y += 11;
+        for (const s of wrap(ctx, d.desc || 'Small, fast and best ignored.', 7, 116)) { text(ctx, s, dx, y, 7, INK2, 'left', FONT_BODY, 600, false); y += 8.5; }
+      } else {
+        text(ctx, '???', dx, dy + 100, 14, INK2, 'left', FONT_TITLE, 400, false);
+        text(ctx, d.boss ? 'Not yet defeated.' : 'Not yet met.', dx, dy + 114, 7.5, INK2, 'left', FONT_BODY, 600, false);
+      }
+      hint(ctx, 'Arrows to browse · Enter: curios · Esc back');
+    };
     return {
       t: 0,
       update(keys) {
+        if (tab === 'beasts') { beastScreen(keys); return; }
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
+          if (k === 'confirm' || k === 'tabL' || k === 'tabR') { tab = 'beasts'; self.sfxMove(); return; }
           if (k === 'left') sel = Math.max(0, sel - 1);
           if (k === 'right') sel = Math.min(all.length - 1, sel + 1);
           if (k === 'up') sel = Math.max(0, sel - cols);
           if (k === 'down') sel = Math.min(all.length - 1, sel + cols);
-          if (k !== 'confirm') self.sfxMove();
+          self.sfxMove();
         }
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 14, 10, 452, 250, 1, 5);
+        if (tab === 'beasts') { renderBeasts(ctx); return; }
         const seen = new Set(g.save.data.itemsSeen);
         const found = all.filter((i) => seen.has(i.id)).length;
         text(ctx, 'Collection', 30, 30, 16, INK, 'left', FONT_TITLE, 400, false);
-        text(ctx, `${found} / ${all.length} curios found`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
+        text(ctx, `${found} / ${all.length} curios found · Enter for the bestiary`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
         const rowsVisible = 8;
         const selRow = Math.floor(sel / cols);
         const firstRow = clamp(selRow - 3, 0, Math.max(0, Math.ceil(all.length / cols) - rowsVisible));
@@ -450,7 +507,7 @@ export class MenuSystem {
           if (a && !g.save.isUnlocked(a.id)) wrap(ctx, 'Locked: ' + a.desc, 7.5, 108).forEach((l, i) => text(ctx, l, dx, dy + 62 + i * 9, 7.5, '#8a3a2a', 'left', FONT_BODY, 600, false));
           else text(ctx, 'Not yet found.', dx, dy + 62, 7.5, INK2, 'left', FONT_BODY, 600, false);
         }
-        hint(ctx, 'Arrows to browse · Esc back');
+        hint(ctx, 'Arrows to browse · Enter: bestiary · Esc back');
       },
     };
   }
@@ -544,6 +601,7 @@ export class MenuSystem {
       { label: 'Scaling', value: () => ({ sharp: 'Sharp (fit)', integer: 'Pixel perfect', stretch: 'Nearest (fit)' } as any)[st().scale], ok: () => { const m = ['sharp', 'integer', 'stretch'] as const; st().scale = m[(m.indexOf(st().scale) + 1) % 3]; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fullscreen', value: () => (document.fullscreenElement ? 'On' : 'Off'), ok: () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {}); } },
       { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
+      { label: 'Run timer', value: () => (st().timer ? 'On' : 'Off'), ok: () => { st().timer = !st().timer; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },
       { label: 'Motion smoothing', value: () => (st().interpolate !== false ? 'On' : 'Off'), ok: () => { st().interpolate = st().interpolate === false; g.save.markDirty(); } },
@@ -791,3 +849,17 @@ export class MenuSystem {
   }
 }
 void CONSUMABLES; void getItem; void measure;
+
+/** Draw an enemy's first idle frame fitted into a square (black silhouette if unknown). */
+function drawBeast(ctx: CanvasRenderingContext2D, d: EnemyDef, x: number, y: number, size: number, hidden: boolean): void {
+  let spr: Sprite | undefined;
+  try { const set = getSprites(d); spr = (set.idle ?? Object.values(set)[0])?.[0]; } catch { spr = undefined; }
+  if (!spr) return;
+  const c = spr.canvas, k = Math.min(size / c.width, size / c.height, 2);
+  const w = Math.round(c.width * k), h = Math.round(c.height * k);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if (hidden) { ctx.filter = 'brightness(0)'; ctx.globalAlpha = 0.3; }
+  ctx.drawImage(c, Math.round(x + (size - w) / 2), Math.round(y + (size - h) / 2), w, h);
+  ctx.restore();
+}

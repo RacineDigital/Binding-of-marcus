@@ -316,6 +316,7 @@ export class World {
   killEnemy(e: Enemy, quiet = false): void {
     if (e.dead) return;
     e.dead = true; e.hp = 0;
+    if (!e.friendly && !quiet) { const k = (this.game.save.data.kills ??= {}); k[e.def.id] = (k[e.def.id] ?? 0) + 1; }
     const gore = e.def.gore ?? '#7a1a2a';
     if (e.isBoss && !quiet && this.room.type === 'boss') { this.corpses.push({ e, t: 0, dur: 1.3 }); }
     else if (!quiet) {

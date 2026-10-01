@@ -225,8 +225,14 @@ export const DEPTH_BUDGET = [0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3];
 const BOSS_TIER_HP = [240, 290, 300, 320, 380, 380, 400, 900];
 export function enemyHpMul(depth: number, tier: number, boss: boolean): number {
   const d = Math.min(DEPTH_HP.length - 1, depth), t = Math.min(7, tier);
-  if (boss) return DEPTH_HP[d] * Math.min(1.25, Math.max(0.6, BOSS_TIER_HP[d] / BOSS_TIER_HP[t]));
-  return DEPTH_HP[d] * Math.min(1.5, Math.max(0.65, (1 + 0.12 * d) / (1 + 0.12 * t)));
+  const loop = 1 + 0.3 * Math.max(0, depth - FINAL_FLOOR); // endless: every chapter past the Binding is tougher
+  if (boss) return loop * DEPTH_HP[d] * Math.min(1.25, Math.max(0.6, BOSS_TIER_HP[d] / BOSS_TIER_HP[t]));
+  return loop * DEPTH_HP[d] * Math.min(1.5, Math.max(0.65, (1 + 0.12 * d) / (1 + 0.12 * t)));
 }
 export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-export function chapterLabel(depth: number): string { return depth >= FINAL_FLOOR ? 'Final Chapter' : `Chapter ${ROMAN[depth] ?? depth + 1}`; }
+export function roman(n: number): string {
+  let out = '';
+  for (const [v, r] of [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']] as [number, string][]) while (n >= v) { out += r; n -= v; }
+  return out;
+}
+export function chapterLabel(depth: number): string { return depth === FINAL_FLOOR ? 'Final Chapter' : `Chapter ${roman(depth + 1)}`; }

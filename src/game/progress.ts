@@ -5,8 +5,8 @@ import type { SaveManager } from '../save/save';
 import { RNG } from '../core/rng';
 import { BOSSES } from '../bosses/registry';
 
-export type RunMode = 'normal' | 'hard' | 'daily';
-export const MODE_NAMES: Record<RunMode, string> = { normal: 'Normal', hard: 'Second Edition (Hard)', daily: 'Daily Run' };
+export type RunMode = 'normal' | 'hard' | 'daily' | 'endless';
+export const MODE_NAMES: Record<RunMode, string> = { normal: 'Normal', hard: 'Second Edition (Hard)', daily: 'Daily Run', endless: 'Endless' };
 
 /** Score for a finished (or ended) run. Shown on the death and ending screens. */
 export function runScore(run: Run, won: boolean): { total: number; parts: [string, number][] } {

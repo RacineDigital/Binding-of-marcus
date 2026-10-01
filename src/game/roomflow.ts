@@ -43,7 +43,7 @@ export function startFloor(w: World): void {
   w.floorIntroT = 2.6;
   w.hud.floorCard(floor.label, floor.theme.subtitle, floor.curse);
   w.audio.setMusic(floor.theme.music);
-  w.audio.prepareMusic(w.run.floorIndex >= FINAL_FLOOR ? 'bossFinal' : w.run.floorIndex >= 4 ? 'boss2' : 'boss');
+  w.audio.prepareMusic(w.run.floorIndex === FINAL_FLOOR ? 'bossFinal' : w.run.floorIndex >= 4 ? 'boss2' : 'boss');
   const nextTheme = pickTheme(w.run, w.run.floorIndex + 1);
   if (nextTheme) w.audio.prepareMusic(nextTheme.music);
   if (w.run.floorIndex === 0) w.audio.prepareMusic('death');
@@ -86,14 +86,14 @@ export function restoreFloor(w: World, st: any): void {
   w.floorIntroT = 0.8;
   w.hud.roomName('Continued · ' + floor.label);
   w.audio.setMusic(floor.theme.music);
-  w.audio.prepareMusic(run.floorIndex >= FINAL_FLOOR ? 'bossFinal' : run.floorIndex >= 4 ? 'boss2' : 'boss');
+  w.audio.prepareMusic(run.floorIndex === FINAL_FLOOR ? 'bossFinal' : run.floorIndex >= 4 ? 'boss2' : 'boss');
   w.audio.setIntensity(w.enemies.length ? 1 : 0);
 }
 
 export function nextFloor(w: World): void {
   const run = w.run;
   run.stats.floorsCleared++;
-  if (run.floorIndex >= FINAL_FLOOR) { w.game.onVictory(); return; }
+  if (run.floorIndex >= FINAL_FLOOR && run.mode !== 'endless') { w.game.onVictory(); return; }
   run.floorIndex++;
   w.game.save.stat('floorsCleared', 1);
   onChapterCleared(w);
@@ -262,7 +262,7 @@ function startBoss(w: World, room: RoomData): void {
     const def = introDef ?? w.bossList[0]?.def;
     w.hud.bossIntro(def?.name ?? 'Boss', def?.desc ?? '', w.bossList[0]);
     w.audio.stinger('bossIntro');
-    w.audio.setMusic('boss' + (w.run.floorIndex >= FINAL_FLOOR ? 'Final' : w.run.floorIndex >= 4 ? '2' : ''));
+    w.audio.setMusic('boss' + (w.run.floorIndex === FINAL_FLOOR ? 'Final' : w.run.floorIndex >= 4 ? '2' : ''));
   } else {
     w.hud.roomName(w.bossList[0]?.def.name ?? 'Lurker');
   }
@@ -479,7 +479,9 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
   if (!w.run.flags.bossHit) w.game.save.unlock('flawless_boss');
-  const goal = w.run.challenge ? CHALLENGES.find((c) => c.id === w.run.challenge)?.goal ?? FINAL_FLOOR : FINAL_FLOOR;
+  const endless = w.run.mode === 'endless' && !w.run.challenge;
+  const goal = endless ? Infinity : w.run.challenge ? CHALLENGES.find((c) => c.id === w.run.challenge)?.goal ?? FINAL_FLOOR : FINAL_FLOOR;
+  if (endless && fi === FINAL_FLOOR) { w.game.creditWin(); w.hud.banner('The story goes on', 'Endless: the chapters loop, and they bite harder'); }
   w.after(1.3, () => {
     if (w.room !== room) return;
     const c = room.center();

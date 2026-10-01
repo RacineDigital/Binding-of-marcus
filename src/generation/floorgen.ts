@@ -65,7 +65,7 @@ export function pickTheme(run: Run, fi: number): FloorTheme { return themeAt(run
 export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const theme = pickTheme(run, fi);
   const base = new RNG(`${run.seed}:floor${fi}`);
-  const isFinal = fi >= FINAL_FLOOR;
+  const isFinal = fi === FINAL_FLOOR;
   const target = isFinal ? 7 : Math.min(19, 7 + Math.floor(fi * 1.5) + base.int(0, 2));
   let c: Ctx | null = null;
   for (let attempt = 0; attempt < 200; attempt++) {
@@ -148,7 +148,7 @@ function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean): boolean
   const specials: RoomType[] = [];
   if (!isFinal) {
     specials.push('treasure');
-    if (fi < FINAL_FLOOR - 1) specials.push('shop');
+    if (fi < FINAL_FLOOR - 1 || fi > FINAL_FLOOR) specials.push('shop');
     const optional: RoomType[] = [];
     if (fi >= 1 && rng.chance(0.55)) optional.push('challenge');
     if (rng.chance(0.4)) optional.push('sacrifice');
