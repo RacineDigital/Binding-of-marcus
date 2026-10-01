@@ -7,49 +7,6 @@ import { telegraph } from '../bosses/boss';
 
 const bone = () => ramp('#e0d6c0');
 
-const boneknight: EnemyDef = {
-  id: 'boneknight', name: 'Bone Knight', desc: 'Its shield turns your shots aside. It raises its blade before it swings.', hp: 26, r: 9, speed: 32, role: 'heavy', cost: 2.2, hitY: 14, mass: 3,
-  gore: '#e0d6c0',
-  sprites: () => {
-    const paint = (p: any, f: number, raise: number) => {
-      const b = bone(), ar = ramp('#5a5a66');
-      const st = [0, 1, 0, -1][f % 4];
-      p.tube(9 + st, 24, 9 + st, 30, 1.2, b); p.tube(15 - st, 24, 15 - st, 30, 1.2, b);
-      p.ball(12, 18, 6.5, 7, ar, { dither: 0.6 });
-      p.ball(12, 8, 5, 5, b); p.rect(8, 6, 8, 2, ar[3]);
-      p.set(10, 9, '#1a0a0a'); p.set(14, 9, '#1a0a0a'); p.rect(10, 11, 4, 1, b[1]);
-      // shield on the left
-      p.poly([2, 13, 8, 12, 8, 24, 5, 27, 2, 24], hex('#6a2a2a')); p.line(5, 14, 5, 24, hex('#c8a04a'));
-      // sword on the right
-      const sy = 20 - raise * 14;
-      p.line(19, 20, 22, sy - 8, hex('#d8d8e0')); p.line(20, 20, 23, sy - 8, hex('#a8a8b0')); p.rect(17, 19, 5, 1, hex('#8a6a3a'));
-    };
-    return { walk: frames(26, 32, 4, (p, f) => paint(p, f, 0)), raise: frames(26, 32, 1, (p) => paint(p, 0, 1)), swing: frames(26, 32, 1, (p) => paint(p, 0, -0.3)) };
-  },
-  init(e) { e.anim = 'walk'; e.cd = 1; },
-  update(e, w, dt) {
-    e.data.face = angleTo(e.x, e.y, w.player.x, w.player.y);
-    if (e.state === 'idle') {
-      chase(e, w, e.def.speed, dt); e.setAnim('walk'); e.animate(dt, 5);
-      e.cd -= dt;
-      if (distToPlayer(e, w) < 50 && e.cd <= 0) { e.setState('raise'); e.setAnim('raise'); w.audio.play('creak', { x: e.x, vol: 0.3, pitch: 1.5 }); }
-    } else if (e.state === 'raise') {
-      if (e.st > 0.45) {
-        e.setAnim('swing'); e.setState('swing');
-        const a = e.data.face;
-        e.kvx = Math.cos(a) * 120; e.kvy = Math.sin(a) * 120;
-        spreadShot(e, w, 5, a, 1.2, 140, { shape: 'bone', range: 60, r: 3 });
-        w.audio.play('swing', { x: e.x });
-      }
-    } else if (e.state === 'swing') { if (e.st > 0.6) { e.setState('idle'); e.cd = 1.2; } }
-  },
-  onHurt(e, w, dmg, info) {
-    const toward = Math.abs(angleDiff(info.ang + Math.PI, e.data.face ?? 0));
-    if (info.source === 'shot' && toward < 0.8 && e.state !== 'swing') return 0;
-    return dmg;
-  },
-};
-
 const skullmote: EnemyDef = {
   id: 'skullmote', name: 'Skull Mote', desc: '', hp: 6, r: 4, speed: 0, flying: true, role: 'swarm', cost: 0.5, hitY: 10, gore: '#e0d6c0', noSeparate: true,
   sprites: () => ({ idle: frames(12, 12, 1, (p) => { p.ball(6, 6, 4, 3.6, bone()); p.set(4, 6, '#1a0a0a'); p.set(7, 6, '#1a0a0a'); p.rect(5, 9, 3, 1, ramp('#c8b8a0')[1]); }) }),
@@ -180,5 +137,5 @@ const marrowmaw: EnemyDef = {
   },
 };
 
-export const DEPTHS_ENEMIES: EnemyDef[] = [boneknight, skullorbit, skullmote, gravedigger, ossspider, marrowmaw];
+export const DEPTHS_ENEMIES: EnemyDef[] = [skullorbit, skullmote, gravedigger, ossspider, marrowmaw];
 void eye; void teeth; void ringShot; void hasLOS;

@@ -118,6 +118,18 @@ for (const f of [...FLOORS, ...Object.values(ALT_FLOORS), ...CHAPTER_POOL]) {
   }
   ok(firsts.size >= 6, `second chapter varies between runs (${firsts.size} distinct)`);
 }
+{
+  // no regular enemy may shrug off a shot to the face while idle (that makes it bomb-only: a soft-lock risk)
+  const noop: any = new Proxy(() => noop, { get: () => noop });
+  for (const d of ENEMY_DEFS) {
+    if (d.boss || !d.onHurt) continue;
+    const e: any = { state: 'idle', data: { face: 0 }, x: 0, y: 0, t: 0 };
+    for (const ang of [Math.PI, 0, Math.PI / 2]) {
+      const r = d.onHurt(e, noop, 10, { ang, knock: 1, source: 'shot' });
+      ok(r === undefined || (r as number) > 0, `enemy ${d.id} can be hurt by shots (angle ${ang.toFixed(2)})`);
+    }
+  }
+}
 for (const t of TEMPLATES) { ok(t.rows.length === 9 && t.rows.every((r) => r.length === 15), `template ${t.name} is 15x9`); }
 {
   const rng = new RNG('layouts');

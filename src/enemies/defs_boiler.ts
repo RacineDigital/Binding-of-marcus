@@ -92,27 +92,6 @@ const stoker: EnemyDef = {
   },
 };
 
-const rustcrab: EnemyDef = {
-  id: 'rustcrab', name: 'Rust Crab', desc: 'Its iron shell faces you. Hit it from the side or behind.', hp: 18, r: 8, speed: 40, role: 'heavy', cost: 1.6, hitY: 8, mass: 2,
-  gore: '#8a4a2a',
-  sprites: () => ({ idle: gridFrames(H.CRAB, H.CRAB_PAL) }),
-  init(e) { e.cd = 2 + Math.random(); },
-  update(e, w, dt) {
-    keepDistance(e, w, 60, 110, e.def.speed, dt);
-    e.animate(dt, 8);
-    e.data.face = angleTo(e.x, e.y, w.player.x, w.player.y);
-    e.cd -= dt;
-    if (e.cd < 0.4 && e.cd + dt >= 0.4) { e.sx = 1.15; e.sy = 0.9; }
-    if (e.cd <= 0) { e.cd = 2.6; spreadShot(e, w, 2, aimAngle(e, w), 0.35, 120); w.audio.play('snip', { x: e.x, vol: 0.5 }); }
-  },
-  onHurt(e, w, dmg, info) {
-    // shot travelling toward the crab's face is blocked
-    const towardFace = Math.abs(angleDiff(info.ang + Math.PI, e.data.face ?? 0));
-    if (info.source === 'shot' && towardFace < 0.9) return 0;
-    return dmg;
-  },
-};
-
 const cinderhopper: EnemyDef = {
   id: 'cinderhopper', name: 'Cinder Toad', desc: 'Hops after you, leaving smouldering patches where it lands.', hp: 13, r: 7, speed: 0, role: 'melee', cost: 1.4, hitY: 7,
   gore: '#3a2a22', light: [30, '#ff6a2a'],
@@ -178,5 +157,5 @@ const pipeworm: EnemyDef = {
   },
 };
 
-export const BOILER_ENEMIES: EnemyDef[] = [sootsprite, valvehead, stoker, rustcrab, cinderhopper, pipeworm];
+export const BOILER_ENEMIES: EnemyDef[] = [sootsprite, valvehead, stoker, cinderhopper, pipeworm];
 void eye; void teeth; void pack; void buzz; void wander;

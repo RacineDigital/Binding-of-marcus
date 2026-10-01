@@ -227,8 +227,10 @@ function unstick(w: World): void {
   }
 }
 
+/** Enemies that were removed (shot-proof from the front, so effectively bomb-only), mapped to stand-ins for old saves. */
+const RETIRED: Record<string, string> = { rustcrab: 'stoker', boneknight: 'gravedigger' };
 export function spawnEnemy(w: World, id: string, x: number, y: number, quick: boolean): Enemy | null {
-  const def = getEnemy(id);
+  const def = getEnemy(RETIRED[id] ?? id);
   if (!def) { console.warn('unknown enemy', id); return null; }
   const e = new Enemy(def, x, y, enemyHpMul(w.run.floorIndex, w.theme.tier ?? 0, !!def.boss) * (w.run.challenge === 'hard' || w.run.mode === 'hard' ? 1.3 : 1));
   e.spawnT = quick ? 0.25 : 0.55;
