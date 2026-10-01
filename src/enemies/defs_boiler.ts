@@ -1,6 +1,7 @@
 // Chapter II enemies: soot, steam, rust and cinders.
 import type { EnemyDef } from './enemy';
-import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle, pack } from '../art/creature';
+import { frames, eye, teeth, ramp, hex, glowEye, sprinkle, pack, gridFrames, scaledFrames } from '../art/creature';
+import * as H from '../art/hand/boiler';
 import { chase, buzz, wander, aimAngle, shoot, spreadShot, ringShot, hasLOS, aligned, distToPlayer, randomFloorPoint, keepDistance } from './ai';
 import { TAU, angleTo, angleDiff, clamp } from '../core/math';
 import { telegraph } from '../bosses/boss';
@@ -8,15 +9,7 @@ import { telegraph } from '../bosses/boss';
 const sootsprite: EnemyDef = {
   id: 'sootsprite', name: 'Soot Sprite', desc: 'Circles you, flares, then dives.', hp: 8, r: 5, speed: 70, flying: true, role: 'flyer', cost: 1, hitY: 12,
   gore: '#2a2224', light: [40, '#ff7a2a'],
-  sprites: () => ({
-    idle: frames(16, 18, 4, (p, f) => {
-      const fl = ramp('#f07a2a');
-      for (let i = 0; i < 4; i++) p.tube(5 + i * 2, 8, 4 + i * 2 + Math.sin(f + i) * 1.5, 2 + (i % 2) * 2, 1, fl);
-      p.ball(8, 10, 4.5, 4, ramp('#2a2426'), { dither: 0.8 });
-      p.set(6, 10, '#ffb040'); p.set(9, 10, '#ffb040');
-      p.poly([4, 11, 0, 8 + (f % 2) * 3, 3, 13], hex('#4a3a3a')); p.poly([12, 11, 16, 8 + (f % 2) * 3, 13, 13], hex('#4a3a3a'));
-    }, 17),
-  }),
+  sprites: () => ({ idle: gridFrames(H.SOOT, H.SOOT_PAL) }),
   init(e) { e.data.a = Math.random() * TAU; e.cd = 2 + Math.random(); },
   update(e, w, dt) {
     e.animate(dt, 12);
@@ -43,19 +36,7 @@ const sootsprite: EnemyDef = {
 const valvehead: EnemyDef = {
   id: 'valvehead', name: 'Valvehead', desc: 'A pressure valve with opinions. Its gauge spins before it vents.', hp: 18, r: 8, speed: 0, role: 'turret', cost: 1.5, hitY: 10, mass: 99, noKnock: true,
   gore: '#8a6a3a',
-  sprites: () => ({
-    idle: frames(22, 24, 4, (p, f) => {
-      const br = ramp('#b8863a'), ir = ramp('#4a4448');
-      p.rect(8, 15, 6, 8, ir[2]); p.rect(3, 19, 16, 4, ir[1]); p.rect(3, 19, 16, 1, ir[3]);
-      p.ball(11, 10, 8, 7.5, br, { dither: 0.5 });
-      p.ball(11, 10, 5, 5, ramp('#e8e0c8'));
-      const a = (f / 4) * TAU;
-      p.line(11, 10, 11 + Math.cos(a) * 4, 10 + Math.sin(a) * 4, hex('#c83a3a'));
-      p.set(11, 10, '#1a1010');
-      p.rect(9, 1, 4, 3, ir[3]); p.rect(6, 2, 10, 1, br[1]);
-      glowEye(p, 6, 8, '#1a1010'); p.set(16, 8, '#1a1010');
-    }, 23),
-  }),
+  sprites: () => ({ idle: gridFrames(H.VALVE, H.VALVE_PAL) }),
   init(e) { e.cd = 1 + Math.random() * 1.5; e.data.x = false; },
   update(e, w, dt) {
     e.cd -= dt;
@@ -114,18 +95,7 @@ const stoker: EnemyDef = {
 const rustcrab: EnemyDef = {
   id: 'rustcrab', name: 'Rust Crab', desc: 'Its iron shell faces you. Hit it from the side or behind.', hp: 18, r: 8, speed: 40, role: 'heavy', cost: 1.6, hitY: 8, mass: 2,
   gore: '#8a4a2a',
-  sprites: () => ({
-    idle: frames(26, 20, 4, (p, f) => {
-      const sh = ramp('#8a4a2a'), cl = ramp('#a8582a');
-      legs(p, 13, 13, 6, 0.5, 8, f * 1.5, hex('#5a2a1a'));
-      p.ball(13, 10, 10, 7, sh, { dither: 0.6 });
-      for (let i = -6; i <= 6; i += 4) p.line(13 + i, 5, 13 + i, 15, sh[1]);
-      sprinkle(p, '#c87a3a', 10, 2 + f);
-      p.ball(3, 8 - (f % 2), 3, 2.5, cl); p.ball(23, 8 + (f % 2), 3, 2.5, cl);
-      p.set(2, 6, '#1a0a0a'); p.set(24, 6, '#1a0a0a');
-      glowEye(p, 10, 4, '#f0e040'); p.set(16, 4, '#f0e040');
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.CRAB, H.CRAB_PAL) }),
   init(e) { e.cd = 2 + Math.random(); },
   update(e, w, dt) {
     keepDistance(e, w, 60, 110, e.def.speed, dt);
@@ -146,17 +116,11 @@ const rustcrab: EnemyDef = {
 const cinderhopper: EnemyDef = {
   id: 'cinderhopper', name: 'Cinder Toad', desc: 'Hops after you, leaving smouldering patches where it lands.', hp: 13, r: 7, speed: 0, role: 'melee', cost: 1.4, hitY: 7,
   gore: '#3a2a22', light: [30, '#ff6a2a'],
-  sprites: () => {
-    const paint = (p: any, sq: number) => {
-      const c = ramp('#3a3032'), g = ramp('#f06a2a');
-      const ry = 6 - sq * 2;
-      p.ball(10, 15 - ry, 8 + sq * 1.5, ry, c, { dither: 0.7 });
-      p.tube(3, 15, 1, 17, 1.5, c); p.tube(17, 15, 19, 17, 1.5, c);
-      for (const [x, y] of [[6, 12], [12, 10], [14, 14], [8, 15]]) p.paint(x, y - sq, g[3]);
-      p.ball(6, 8 + sq, 2, 2, ramp('#f0c040')); p.ball(14, 8 + sq, 2, 2, ramp('#f0c040')); p.set(6, 8 + sq, '#1a0a0a'); p.set(14, 8 + sq, '#1a0a0a');
-    };
-    return { idle: frames(20, 18, 1, (p) => paint(p, 0)), crouch: frames(20, 18, 1, (p) => paint(p, 1)), air: frames(20, 18, 1, (p) => paint(p, -0.7)) };
-  },
+  sprites: () => ({
+    idle: scaledFrames(H.TOAD, H.TOAD_PAL, [[1, 1]]),
+    crouch: scaledFrames(H.TOAD, H.TOAD_PAL, [[1.15, 0.8]]),
+    air: scaledFrames(H.TOAD, H.TOAD_PAL, [[0.9, 1.12]]),
+  }),
   init(e) { e.cd = 0.6 + Math.random(); e.anim = 'idle'; },
   update(e, w, dt) {
     if (e.state === 'idle') { e.cd -= dt; if (e.cd <= 0) { e.setState('crouch'); e.setAnim('crouch'); } }
