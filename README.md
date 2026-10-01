@@ -7,7 +7,12 @@ unbound. He has to fight through eight chapters and bind the story again.
 Every sprite, room, sound effect and piece of music is generated in code at runtime. There are no
 image or audio asset files.
 
-## Running
+## Download and play
+
+Download the latest zip from the repository's **Releases** page, unzip it, and double-click
+**Binding of Marcus.html**. It is a single self-contained file that runs offline in any modern browser.
+
+## Running from source
 
 ```bash
 npm install
@@ -15,7 +20,13 @@ npm run dev        # http://localhost:5173
 npm run build      # production build in dist/
 npm test           # seeded-generation determinism + content validation (Node)
 npm run smoke      # automated full playthrough in headless Chromium (needs the dev server running)
+npm run build:single               # the whole game as one self-contained HTML file in dist-single/
+bash scripts/package-release.sh    # build the release zips into release/
 ```
+
+To publish a new release, push a version tag (for example `git tag v1.1.0 && git push origin v1.1.0`).
+The **Release** GitHub Actions workflow tests, builds and packages the game, then attaches the files to a
+new GitHub Release.
 
 URL options: `?play` skips the menu and starts a run, `&seed=ABCD2345` starts from a fixed seed,
 `&char=wren` picks a character. `?art=player|items|bosses|enemies0..3|props0..7|familiars` opens the

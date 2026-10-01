@@ -1,7 +1,7 @@
 {
   "name": "binding-of-marcus",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "tsx tests/run.ts",
-    "smoke": "tsx tests/smoke.ts"
+    "smoke": "tsx tests/smoke.ts",
+    "build:single": "tsc --noEmit && vite build --mode single"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",

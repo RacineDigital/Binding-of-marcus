@@ -1,0 +1,31 @@
+name: Release
+
+# Push a tag like v1.0.0 to build the game and publish it as a GitHub Release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build and package
+        run: bash scripts/package-release.sh "$GITHUB_REF_NAME"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sed "s/VERSION/$GITHUB_REF_NAME/g" .github/release/notes.md > release-notes.md
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --title "Binding of Marcus $GITHUB_REF_NAME" \
+            --notes-file release-notes.md
