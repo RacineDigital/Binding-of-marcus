@@ -280,7 +280,7 @@ const bilgeBrain: BossBrain = {
           e.data.ls = 'wait'; e.data.lt = t;
           return false;
         }
-        if (st === 'wait') { if (t - e.data.lt > 0.8) { e.x = e.data.from.x; e.y = e.data.from.y; e.hidden = false; e.invuln = false; e.data.ls = 'go'; e.data.lt = t; e.data.face = angleTo(e.x, e.y, e.data.to.x, e.data.to.y); w.audio.play('splash', { x: e.x }); } return false; }
+        if (st === 'wait') { if (t - e.data.lt > 0.8) { e.x = e.data.from.x; e.y = e.data.from.y; e.hidden = false; e.invuln = false; e.data.ls = 'go'; e.data.lt = t; e.data.face = angleTo(e.x, e.y, e.data.to.x, e.data.to.y); e.data.snap = (e.data.snap ?? 0) + 1; w.audio.play('splash', { x: e.x }); } return false; }
         if (st === 'go') {
           const a = angleTo(e.x, e.y, e.data.to.x, e.data.to.y);
           e.x += Math.cos(a) * 330 * dt; e.y += Math.sin(a) * 330 * dt;
@@ -316,6 +316,8 @@ const bilgeBrain: BossBrain = {
       } },
   ],
 };
+const BILGE_SEGS = 5, BILGE_GAP = 13;
+const paintBilgeSeg = (p: any) => { const c = ramp('#4a6a5a'); for (let i = 0; i < 3; i++) p.line(5 + i * 5, 6, 7 + i * 5, 1, c[3]); p.tube(3, 11, 20, 11, 6.5, c, { dither: 0.6 }); p.ball(12, 15, 7, 2, ramp('#a8b890')); };
 const bilgemaw: EnemyDef = {
   id: 'bilgemaw', name: 'Bilgemaw', desc: 'Everything drains down. It waits at the bottom with its mouth open.', boss: true,
   hp: 290, r: 13, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 10, noKnock: true, gore: '#3a5a4a', goreDecal: '#1a2a22', ghost: true, noSeparate: true,
@@ -337,24 +339,66 @@ const bilgemaw: EnemyDef = {
       p.line(10, 20, 5, 27, c[1]); p.line(12, 21, 9, 28, c[1]);
       sprinkle(p, '#8ab08a', 12, 2);
     }),
-    seg: frames(24, 20, 1, (p) => { const c = ramp('#4a6a5a'); for (let i = 0; i < 3; i++) p.line(5 + i * 5, 6, 7 + i * 5, 1, c[3]); p.tube(3, 11, 20, 11, 6.5, c, { dither: 0.6 }); p.ball(12, 15, 7, 2, ramp('#a8b890')); }),
   }),
-  init(e) { e.anim = 'idle'; e.data.idleT = 1; e.data.trail = []; e.mode = 'ghost'; },
+  init(e) { e.anim = 'idle'; e.data.idleT = 1; e.data.snap = 0; e.mode = 'ghost'; },
   update(e, w, dt) {
-    const tr = e.data.trail as { x: number; y: number }[];
-    if (!tr.length || dist(tr[0].x, tr[0].y, e.x, e.y) > 5) { tr.unshift({ x: e.x, y: e.y }); if (tr.length > 40) tr.pop(); }
+    // the body is made of real segments (separate enemies) that follow the head
+    if (!e.data.segs) {
+      e.data.segs = [];
+      for (let i = 0; i < BILGE_SEGS; i++) {
+        const k = w.spawnEnemy('bilgeseg', e.x, e.y, false);
+        if (!k) continue;
+        k.parent = e; k.data.i = i; k.spawnT = e.spawnT; k.noDrop = true;
+        e.data.segs.push(k);
+      }
+    }
     e.animate(dt, 4);
     bossUpdate(e, w, dt, bilgeBrain);
   },
   draw(e, ctx, w, sx, sy) {
     if (e.hidden) { ctx.strokeStyle = 'rgba(120,170,180,0.4)'; ctx.beginPath(); ctx.ellipse(sx, sy, 14, 6, 0, 0, TAU); ctx.stroke(); return; }
-    const tr = e.data.trail as { x: number; y: number }[];
-    for (let i = 5; i >= 1; i--) {
-      const p = tr[Math.min(tr.length - 1, i * 4)]; if (!p) continue;
-      e.sprites.seg[0].draw(ctx, p.x - w.camX, p.y - w.camY + 4, { sx: 1 - i * 0.1, sy: 1 - i * 0.1, flash: e.flash > 0 ? 0.6 : 0 });
-    }
     e.flip = Math.cos(e.data.face ?? 0) < 0;
     drawBoss(e, ctx, sx, sy, { yoff: 4 });
+  },
+};
+/**
+ * One body segment of the Bilgemaw. It is a real enemy, so shots, beams, explosions and chain lightning
+ * all find it; damage it takes is passed on to the head, which holds the shared health bar.
+ */
+const bilgeseg: EnemyDef = {
+  id: 'bilgeseg', name: 'Bilgemaw', desc: '', hp: 1e7, r: 8, speed: 0, role: 'boss', cost: 0, hitY: 8, mass: 10, noKnock: true,
+  gore: '#3a5a4a', goreDecal: '#1a2a22', ghost: true, noSeparate: true, contact: 1,
+  sprites: () => ({ idle: frames(24, 20, 1, paintBilgeSeg) }),
+  init(e) { e.anim = 'idle'; e.mode = 'ghost'; e.data.snap = -1; },
+  onHurt(e, w, dmg, info) {
+    const head = e.parent as Enemy | null;
+    if (!head || head.dead || head.invuln || head.hidden) return 0;
+    w.damageEnemy(head, dmg * 0.7, { ang: info.ang, knock: 0, source: 'link', crit: false, prof: null });
+    e.hp = e.maxHp; // segments never die on their own
+    return dmg;
+  },
+  update(e, w) {
+    const head = e.parent as Enemy | null;
+    if (!head || head.dead) { w.killEnemy(e); return; }
+    e.hidden = head.hidden; e.invuln = head.invuln || head.hidden; e.spawnT = Math.min(e.spawnT, head.spawnT);
+    const i = e.data.i as number;
+    const prev: Enemy = i === 0 ? head : (head.data.segs[i - 1] ?? head);
+    if (e.data.snap !== head.data.snap) {
+      // the head just surfaced somewhere new: lay the body out straight behind it
+      e.data.snap = head.data.snap;
+      const a = (head.data.face ?? 0) + Math.PI;
+      e.x = head.x + Math.cos(a) * BILGE_GAP * (i + 1); e.y = head.y + Math.sin(a) * BILGE_GAP * (i + 1);
+    } else {
+      // follow the segment in front, keeping a fixed gap so the body never comes apart
+      const d = dist(e.x, e.y, prev.x, prev.y);
+      if (d > BILGE_GAP) { e.x = prev.x + ((e.x - prev.x) / d) * BILGE_GAP; e.y = prev.y + ((e.y - prev.y) / d) * BILGE_GAP; }
+    }
+    e.data.face = angleTo(e.x, e.y, prev.x, prev.y);
+  },
+  draw(e, ctx, w, sx, sy) {
+    if (e.hidden) return;
+    const k = 1 - (e.data.i ?? 0) * 0.09;
+    e.sprites.idle[0].draw(ctx, sx, sy + 4, { sx: k, sy: k, flip: Math.cos(e.data.face ?? 0) < 0, flash: e.flash > 0 ? 0.7 : 0 });
   },
 };
 
@@ -504,5 +548,5 @@ const sleepwalker: EnemyDef = {
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { alpha: e.data.phase ? 1 : 0.9 }); w.r.addGlow(sx, sy - 24, 30, '#c0c8ff', 0.12); },
 };
 
-export const BOSSES_B: EnemyDef[] = [furnaceheart, oldstoker, ratking, ratprince, bilgemaw, matron, sleepwalker];
+export const BOSSES_B: EnemyDef[] = [furnaceheart, oldstoker, ratking, ratprince, bilgemaw, bilgeseg, matron, sleepwalker];
 void eye; void teeth; void legs; void (null as unknown as Enemy);

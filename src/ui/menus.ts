@@ -413,7 +413,7 @@ export class MenuSystem {
     let sel = 0; const cols = 16;
     // Enter flips between curios and the bestiary
     let tab: 'items' | 'beasts' = 'items';
-    const beasts = ALL_ENEMY_DEFS().filter((d) => !['snipA', 'snipB', 'ratprince', 'blottedhalf'].includes(d.id))
+    const beasts = ALL_ENEMY_DEFS().filter((d) => !['snipA', 'snipB', 'ratprince', 'blottedhalf', 'bilgeseg'].includes(d.id))
       .sort((a, b) => Number(!!a.boss) - Number(!!b.boss));
     let bsel = 0; const bcols = 10;
     const beastScreen = (keys: MenuKey[]) => {

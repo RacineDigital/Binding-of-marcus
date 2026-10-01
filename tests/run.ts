@@ -144,7 +144,7 @@ for (const c of CHARACTERS) for (const id of c.items) ok(ids.has(id), `character
 const counts = {
   items: ALL_ITEMS.length, passives: ALL_ITEMS.filter((i) => i.kind === 'passive').length, actives: ALL_ITEMS.filter((i) => i.kind === 'active').length,
   familiars: ALL_ITEMS.filter((i) => i.kind === 'familiar').length, consumables: CONSUMABLES.length, enemies: ENEMY_DEFS.length,
-  bosses: BOSSES.filter((b) => !['snipA', 'snipB', 'ratprince', 'blottedhalf'].includes(b.id)).length, floors: FLOORS.length, characters: CHARACTERS.length,
+  bosses: BOSSES.filter((b) => !['snipA', 'snipB', 'ratprince', 'blottedhalf', 'bilgeseg'].includes(b.id)).length, floors: FLOORS.length, characters: CHARACTERS.length,
 };
 console.log('content:', JSON.stringify(counts));
 console.log(`${checks - failures}/${checks} checks passed`);
