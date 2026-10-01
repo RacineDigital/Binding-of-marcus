@@ -22,6 +22,7 @@ import { splashScreen } from './splash';
 import { ALL_ENEMY_DEFS } from '../enemies/registry';
 import { getSprites, EnemyDef } from '../enemies/enemy';
 import type { Sprite } from '../render/sprite';
+import { TRANSFORM_EFFECTS } from '../player/player';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -448,40 +449,45 @@ export class MenuSystem {
   collectionScreen(): Screen {
     const self = this, g = this.g;
     const all = ALL_ITEMS.filter((i) => i.id !== 'moth_wings_rev');
-    let sel = 0; const cols = 16;
-    // Enter flips between curios and the bestiary
+    const seen = new Set(g.save.data.itemsSeen);
+    // What you've found comes first, gathered into sets (a transformation's items, then actives,
+    // familiars and the rest); everything still missing waits at the end as silhouettes.
+    const SET_TAGS = ['vamp', 'drain', 'moth', 'ink', 'clock', 'wax', 'thread', 'bone', 'void'];
+    const setOf = (it: typeof all[number]) => SET_TAGS.find((t) => it.tags?.includes(t)) ?? (it.kind === 'active' ? 'active' : it.kind === 'familiar' ? 'familiar' : 'curio');
+    const SET_NAME = (k: string) => k === 'active' ? 'Active items' : k === 'familiar' ? 'Familiars' : k === 'curio' ? 'Curios' : `${TRANSFORM_EFFECTS[k]?.name ?? k} set`;
+    const itemGroups: GridGroup[] = [];
+    for (const k of [...SET_TAGS, 'active', 'familiar', 'curio']) {
+      const inSet = all.filter((it) => setOf(it) === k);
+      const got = inSet.filter((it) => seen.has(it.id));
+      if (got.length) itemGroups.push({ label: SET_NAME(k), note: `${got.length} / ${inSet.length}`, color: SET_TAGS.includes(k) ? '#6a3a8a' : INK, ids: got.map((it) => all.indexOf(it)) });
+    }
+    const missing = all.filter((it) => !seen.has(it.id));
+    if (missing.length) itemGroups.push({ label: 'Undiscovered', note: `${missing.length} left`, color: '#8a7a6a', ids: missing.map((it) => all.indexOf(it)) });
+    const items = new GridView(itemGroups, 15, 19, 30, 52, 196);
+
+    const kills = g.save.data.kills ?? {};
+    const beasts = ALL_ENEMY_DEFS().filter((d) => !['snipA', 'snipB', 'ratprince', 'blottedhalf', 'bilgeseg'].includes(d.id));
+    const beastGroups: GridGroup[] = [];
+    const metC = beasts.filter((d) => !d.boss && kills[d.id]), metB = beasts.filter((d) => d.boss && kills[d.id]), unmet = beasts.filter((d) => !kills[d.id]);
+    if (metC.length) beastGroups.push({ label: 'Creatures', note: `${metC.length} / ${beasts.filter((d) => !d.boss).length}`, color: INK, ids: metC.map((d) => beasts.indexOf(d)) });
+    if (metB.length) beastGroups.push({ label: 'Bosses', note: `${metB.length} / ${beasts.filter((d) => d.boss).length}`, color: '#8a1a1a', ids: metB.map((d) => beasts.indexOf(d)) });
+    if (unmet.length) beastGroups.push({ label: 'Not yet met', note: `${unmet.length} left`, color: '#8a7a6a', ids: unmet.map((d) => beasts.indexOf(d)) });
+    const bview = new GridView(beastGroups, 10, 29, 28, 52, 196);
+
     let tab: 'items' | 'beasts' = 'items';
-    const beasts = ALL_ENEMY_DEFS().filter((d) => !['snipA', 'snipB', 'ratprince', 'blottedhalf', 'bilgeseg'].includes(d.id))
-      .sort((a, b) => Number(!!a.boss) - Number(!!b.boss));
-    let bsel = 0; const bcols = 10;
-    const beastScreen = (keys: MenuKey[]) => {
-      for (const k of keys) {
-        if (k === 'back') { self.pop(); return; }
-        if (k === 'confirm' || k === 'tabL' || k === 'tabR') { tab = 'items'; self.sfxMove(); continue; }
-        if (k === 'left') bsel = Math.max(0, bsel - 1);
-        if (k === 'right') bsel = Math.min(beasts.length - 1, bsel + 1);
-        if (k === 'up') bsel = Math.max(0, bsel - bcols);
-        if (k === 'down') bsel = Math.min(beasts.length - 1, bsel + bcols);
-        self.sfxMove();
-      }
-    };
+    const view = () => (tab === 'items' ? items : bview);
+    const swapTab = () => { tab = tab === 'items' ? 'beasts' : 'items'; self.sfxMove(); };
+
     const renderBeasts = (ctx: CanvasRenderingContext2D) => {
-      const kills = g.save.data.kills ?? {};
-      const met = beasts.filter((d) => kills[d.id]).length;
-      heading(ctx, 'Bestiary', 30, 31, 12, INK, 'left');
-      text(ctx, `${met} / ${beasts.length} creatures recorded · Enter for curios`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
-      const rowsVisible = 6, box = 29;
-      const selRow = Math.floor(bsel / bcols);
-      const firstRow = clamp(selRow - 2, 0, Math.max(0, Math.ceil(beasts.length / bcols) - rowsVisible));
-      for (let i = firstRow * bcols; i < Math.min(beasts.length, (firstRow + rowsVisible) * bcols); i++) {
+      bview.render(ctx, (ctx, i, x, y, size, on) => {
         const d = beasts[i];
-        const cx = 28 + (i % bcols) * box, cy = 48 + (Math.floor(i / bcols) - firstRow) * box;
-        ctx.fillStyle = i === bsel ? 'rgba(60,30,30,0.35)' : d.boss ? 'rgba(120,40,30,0.14)' : 'rgba(60,40,30,0.1)'; ctx.fillRect(cx, cy, box - 2, box - 2);
-        drawBeast(ctx, d, cx + 1, cy + 1, box - 4, !kills[d.id]);
-      }
-      const d = beasts[bsel];
-      const dx = 330, dy = 50, n = kills[d.id] ?? 0;
-      ctx.fillStyle = 'rgba(60,40,30,0.15)'; ctx.fillRect(dx - 6, dy - 6, 130, 196);
+        ctx.fillStyle = on ? 'rgba(60,30,30,0.35)' : d.boss ? 'rgba(120,40,30,0.14)' : 'rgba(60,40,30,0.1)'; ctx.fillRect(x, y, size - 2, size - 2);
+        drawBeast(ctx, d, x + 1, y + 1, size - 4, !kills[d.id]);
+      });
+      const d = beasts[bview.selected()];
+      const dx = 338, dy = 50, n = d ? kills[d.id] ?? 0 : 0;
+      ctx.fillStyle = 'rgba(60,40,30,0.15)'; ctx.fillRect(dx - 6, dy - 6, 124, 196);
+      if (!d) return;
       drawBeast(ctx, d, dx + 20, dy, 76, !n);
       if (n) {
         let y = dy + 92;
@@ -492,60 +498,58 @@ export class MenuSystem {
         text(ctx, '???', dx, dy + 100, 14, INK2, 'left', FONT_TITLE, 400, false);
         text(ctx, d.boss ? 'Not yet defeated.' : 'Not yet met.', dx, dy + 114, 7.5, INK2, 'left', FONT_BODY, 600, false);
       }
-      hint(ctx, 'Arrows to browse · Enter: curios · Esc back');
     };
+    const renderItems = (ctx: CanvasRenderingContext2D) => {
+      items.render(ctx, (ctx, i, x, y, size, on) => {
+        const it = all[i];
+        const known = seen.has(it.id);
+        const locked = it.unlock && !g.save.isUnlocked(it.unlock);
+        ctx.fillStyle = on ? 'rgba(60,30,30,0.35)' : 'rgba(60,40,30,0.1)'; ctx.fillRect(x - 1, y - 1, 18, 18);
+        if (known) ctx.drawImage(itemIconCanvas(it.id), x - 1, y - 1);
+        else { ctx.globalAlpha = 0.25; ctx.filter = 'brightness(0)'; ctx.drawImage(itemIconCanvas(it.id), x - 1, y - 1); ctx.filter = 'none'; ctx.globalAlpha = 1; if (locked) text(ctx, '×', x + 8, y + 12, 9, '#8a3a2a', 'center', FONT_BODY, 600, false); }
+      });
+      const it = all[items.selected()];
+      const dx = 340, dy = 50;
+      ctx.fillStyle = 'rgba(60,40,30,0.15)'; ctx.fillRect(dx - 6, dy - 6, 120, 196);
+      if (!it) return;
+      if (seen.has(it.id)) {
+        ctx.drawImage(itemIconCanvas(it.id), dx, dy, 32, 32);
+        wrap(ctx, it.name, 11, 110, FONT_TITLE).forEach((l, i) => text(ctx, l, dx, dy + 46 + i * 11, 11, INK, 'left', FONT_TITLE, 400, false));
+        let y = dy + 62 + (wrap(ctx, it.name, 11, 110, FONT_TITLE).length - 1) * 11;
+        text(ctx, `"${it.pickup}"`, dx, y, 7, '#8a3a2a', 'left', FONT_BODY, 600, false); y += 11;
+        for (const l of describeItem(it)) for (const s of wrap(ctx, l.text, 7, 108)) { text(ctx, s, dx, y, 7, l.color === 'up' ? '#2a6a2a' : l.color === 'down' ? '#8a2a2a' : INK2, 'left', FONT_BODY, 600, false); y += 8.5; }
+        text(ctx, `${SET_NAME(setOf(it))}  ·  ${it.kind}`, dx, 236, 6.5, INK2, 'left', FONT_BODY, 600, false);
+      } else {
+        text(ctx, '???', dx, dy + 46, 14, INK2, 'left', FONT_TITLE, 400, false);
+        const a = it.unlock ? ACHIEVEMENTS.find((x) => x.id === it.unlock) : null;
+        if (a && !g.save.isUnlocked(a.id)) wrap(ctx, 'Locked: ' + a.desc, 7.5, 108).forEach((l, i) => text(ctx, l, dx, dy + 62 + i * 9, 7.5, '#8a3a2a', 'left', FONT_BODY, 600, false));
+        else text(ctx, 'Not yet found.', dx, dy + 62, 7.5, INK2, 'left', FONT_BODY, 600, false);
+      }
+    };
+    // tab labels double as buttons
+    const TABS: ['items' | 'beasts', string, number][] = [['items', 'Collection', 30], ['beasts', 'Bestiary', 150]];
     return {
       t: 0,
       update(keys) {
-        if (tab === 'beasts') { beastScreen(keys); return; }
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
-          if (k === 'confirm' || k === 'tabL' || k === 'tabR') { tab = 'beasts'; self.sfxMove(); return; }
-          if (k === 'left') sel = Math.max(0, sel - 1);
-          if (k === 'right') sel = Math.min(all.length - 1, sel + 1);
-          if (k === 'up') sel = Math.max(0, sel - cols);
-          if (k === 'down') sel = Math.min(all.length - 1, sel + cols);
-          self.sfxMove();
+          if (k === 'confirm' || k === 'tabL' || k === 'tabR') { swapTab(); continue; }
+          if (k === 'left' || k === 'right' || k === 'up' || k === 'down') { view().move(k); self.sfxMove(); }
         }
+      },
+      pointer(x, y, click, moved, wheel) {
+        if (wheel) { view().wheel(wheel); return; }
+        if (click && y >= 22 && y <= 34) for (const [t, , tx] of TABS) if (x >= tx - 2 && x <= tx + 110 && t !== tab) { swapTab(); return; }
+        if (view().pointer(x, y, click, moved)) self.sfxMove();
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 14, 10, 452, 250, 1, 5);
-        if (tab === 'beasts') { renderBeasts(ctx); return; }
-        const seen = new Set(g.save.data.itemsSeen);
-        const found = all.filter((i) => seen.has(i.id)).length;
-        heading(ctx, 'Collection', 30, 31, 12, INK, 'left');
-        text(ctx, `${found} / ${all.length} curios found · Enter for the bestiary`, 30, 40, 7, INK2, 'left', FONT_BODY, 600, false);
-        const rowsVisible = 8;
-        const selRow = Math.floor(sel / cols);
-        const firstRow = clamp(selRow - 3, 0, Math.max(0, Math.ceil(all.length / cols) - rowsVisible));
-        for (let i = firstRow * cols; i < Math.min(all.length, (firstRow + rowsVisible) * cols); i++) {
-          const it = all[i];
-          const cx = 30 + (i % cols) * 19, cy = 48 + (Math.floor(i / cols) - firstRow) * 19;
-          const known = seen.has(it.id);
-          const locked = it.unlock && !g.save.isUnlocked(it.unlock);
-          ctx.fillStyle = i === sel ? 'rgba(60,30,30,0.35)' : 'rgba(60,40,30,0.1)'; ctx.fillRect(cx - 1, cy - 1, 18, 18);
-          if (known) ctx.drawImage(itemIconCanvas(it.id), cx - 1, cy - 1);
-          else { ctx.globalAlpha = 0.25; ctx.filter = 'brightness(0)'; ctx.drawImage(itemIconCanvas(it.id), cx - 1, cy - 1); ctx.filter = 'none'; ctx.globalAlpha = 1; if (locked) text(ctx, '×', cx + 8, cy + 12, 9, '#8a3a2a', 'center', FONT_BODY, 600, false); }
-        }
-        // details
-        const it = all[sel];
-        const dx = 340, dy = 50;
-        ctx.fillStyle = 'rgba(60,40,30,0.15)'; ctx.fillRect(dx - 6, dy - 6, 120, 196);
-        if (seen.has(it.id)) {
-          ctx.drawImage(itemIconCanvas(it.id), dx, dy, 32, 32);
-          wrap(ctx, it.name, 11, 110, FONT_TITLE).forEach((l, i) => text(ctx, l, dx, dy + 46 + i * 11, 11, INK, 'left', FONT_TITLE, 400, false));
-          let y = dy + 62 + (wrap(ctx, it.name, 11, 110, FONT_TITLE).length - 1) * 11;
-          text(ctx, `"${it.pickup}"`, dx, y, 7, '#8a3a2a', 'left', FONT_BODY, 600, false); y += 11;
-          for (const l of describeItem(it)) for (const s of wrap(ctx, l.text, 7, 108)) { text(ctx, s, dx, y, 7, l.color === 'up' ? '#2a6a2a' : l.color === 'down' ? '#8a2a2a' : INK2, 'left', FONT_BODY, 600, false); y += 8.5; }
-          text(ctx, `Kind: ${it.kind}`, dx, 236, 6.5, INK2, 'left', FONT_BODY, 600, false);
-        } else {
-          text(ctx, '???', dx, dy + 46, 14, INK2, 'left', FONT_TITLE, 400, false);
-          const a = it.unlock ? ACHIEVEMENTS.find((x) => x.id === it.unlock) : null;
-          if (a && !g.save.isUnlocked(a.id)) wrap(ctx, 'Locked: ' + a.desc, 7.5, 108).forEach((l, i) => text(ctx, l, dx, dy + 62 + i * 9, 7.5, '#8a3a2a', 'left', FONT_BODY, 600, false));
-          else text(ctx, 'Not yet found.', dx, dy + 62, 7.5, INK2, 'left', FONT_BODY, 600, false);
-        }
-        hint(ctx, 'Arrows to browse · Enter: bestiary · Esc back');
+        for (const [t, label, tx] of TABS) heading(ctx, label, tx, 31, t === tab ? 12 : 9, t === tab ? INK : '#9a8a7a', 'left');
+        const found = all.filter((i) => seen.has(i.id)).length, met = beasts.filter((d) => kills[d.id]).length;
+        text(ctx, tab === 'items' ? `${found} / ${all.length} curios found` : `${met} / ${beasts.length} creatures recorded`, 450, 31, 7, INK2, 'right', FONT_BODY, 600, false);
+        if (tab === 'beasts') renderBeasts(ctx); else renderItems(ctx);
+        hint(ctx, `Arrows or mouse to browse · wheel to scroll · Enter or click a tab: ${tab === 'items' ? 'bestiary' : 'curios'} · Esc back`);
       },
     };
   }
@@ -599,6 +603,11 @@ export class MenuSystem {
     return {
       t: 0,
       update(keys) { for (const k of keys) { if (k === 'back' || k === 'confirm') { self.pop(); return; } if (k === 'down') scroll = Math.min(ACHIEVEMENTS.length - 10, scroll + 1); if (k === 'up') scroll = Math.max(0, scroll - 1); } },
+      pointer(x, y, click, _m, wheel) {
+        if (wheel) { scroll = clamp(scroll + wheel, 0, ACHIEVEMENTS.length - 10); return; }
+        // click the scrollbar track to jump
+        if (click && x >= 440 && x <= 452 && y >= 46 && y <= 240) scroll = clamp(Math.round(((y - 46) / 194) * ACHIEVEMENTS.length - 5), 0, ACHIEVEMENTS.length - 10);
+      },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 20, 14, 440, 244, 1, 9);
@@ -620,7 +629,13 @@ export class MenuSystem {
           text(ctx, (got ? '◆ ' : '◇ ') + (got || !a.hidden ? a.name : '???'), 230, y, 8.5, got ? INK : '#8a7a6a', 'left', FONT_TITLE, 400, false);
           text(ctx, got ? a.unlocks : (a.hidden ? 'A hidden achievement.' : a.desc), 238, y + 8, 6.5, INK2, 'left', FONT_BODY, 600, false);
         });
-        hint(ctx, '↑/↓ scroll achievements · Esc back');
+        // scrollbar
+        const max = ACHIEVEMENTS.length - 10, th = Math.max(16, 194 * 10 / ACHIEVEMENTS.length), ty = 46 + (scroll / max) * (194 - th);
+        ctx.fillStyle = 'rgba(90,60,40,0.18)'; ctx.fillRect(444, 46, 4, 194);
+        ctx.fillStyle = 'rgba(110,50,40,0.75)'; ctx.fillRect(444, ty, 4, th);
+        if (scroll > 0) text(ctx, '▲', 446, 44, 6, '#8a3a2a', 'center', FONT_BODY, 700, false);
+        if (scroll < max) text(ctx, '▼ more', 448, 248, 6, '#8a3a2a', 'right', FONT_BODY, 700, false);
+        hint(ctx, '↑/↓ or mouse wheel to scroll achievements · Esc back');
       },
     };
   }
@@ -940,6 +955,106 @@ export class MenuSystem {
 void CONSUMABLES; void getItem; void measure;
 
 /** Draw an enemy's first idle frame fitted into a square (black silhouette if unknown). */
+/** A group of cells in a GridView, drawn under its own heading. */
+interface GridGroup { label: string; note: string; color: string; ids: number[] }
+
+/**
+ * A scrolling grid of icons split into labelled groups, with a visible scrollbar, fades at the edges
+ * when there's more to see, mouse-wheel scrolling and hover/click selection.
+ */
+class GridView {
+  cells: { id: number; x: number; y: number }[] = [];
+  heads: { g: GridGroup; y: number }[] = [];
+  height = 0; scroll = 0; sel = 0;
+  constructor(groups: GridGroup[], public cols: number, public size: number, public x0: number, public top: number, public viewH: number) {
+    let y = 0;
+    for (const g of groups) {
+      this.heads.push({ g, y }); y += 12;
+      g.ids.forEach((id, i) => { this.cells.push({ id, x: x0 + (i % cols) * size, y: y + Math.floor(i / cols) * size }); });
+      y += Math.ceil(g.ids.length / cols) * size + 4;
+    }
+    this.height = y;
+  }
+  selected(): number { return this.cells[this.sel]?.id ?? 0; }
+  private maxScroll(): number { return Math.max(0, this.height - this.viewH); }
+  private reveal(): void {
+    const c = this.cells[this.sel]; if (!c) return;
+    const head = this.heads.find((h) => h.y + 12 === c.y);
+    const top = head ? head.y : c.y - 2;
+    if (top < this.scroll) this.scroll = top;
+    if (c.y + this.size > this.scroll + this.viewH) this.scroll = c.y + this.size - this.viewH;
+    this.scroll = clamp(this.scroll, 0, this.maxScroll());
+  }
+  move(k: MenuKey): void {
+    const c = this.cells[this.sel]; if (!c) return;
+    if (k === 'left') this.sel = Math.max(0, this.sel - 1);
+    else if (k === 'right') this.sel = Math.min(this.cells.length - 1, this.sel + 1);
+    else {
+      // the nearest cell in the next row up or down, even across a group heading
+      const rows = this.cells.filter((o) => (k === 'up' ? o.y < c.y : o.y > c.y));
+      if (rows.length) {
+        const ry = k === 'up' ? Math.max(...rows.map((o) => o.y)) : Math.min(...rows.map((o) => o.y));
+        let best = -1, bd = 1e9;
+        this.cells.forEach((o, i) => { if (o.y === ry && Math.abs(o.x - c.x) < bd) { bd = Math.abs(o.x - c.x); best = i; } });
+        if (best >= 0) this.sel = best;
+      }
+    }
+    this.reveal();
+  }
+  wheel(n: number): void { this.scroll = clamp(this.scroll + n * this.size * 1.5, 0, this.maxScroll()); }
+  /** Returns true when the selection changed. */
+  pointer(x: number, y: number, click: boolean, moved: boolean): boolean {
+    // scrollbar: click or hover-drag along the track
+    const bx = this.x0 + this.cols * this.size + 4;
+    if (click && x >= bx - 3 && x <= bx + 8 && y >= this.top && y <= this.top + this.viewH && this.maxScroll() > 0) {
+      this.scroll = clamp(((y - this.top) / this.viewH) * this.height - this.viewH / 2, 0, this.maxScroll()); return false;
+    }
+    if (!moved && !click) return false;
+    if (y < this.top || y > this.top + this.viewH) return false;
+    const vy = y - this.top + this.scroll;
+    const i = this.cells.findIndex((c) => x >= c.x - 1 && x < c.x - 1 + this.size && vy >= c.y - 1 && vy < c.y - 1 + this.size);
+    if (i >= 0 && i !== this.sel) { this.sel = i; return true; }
+    return false;
+  }
+  render(ctx: CanvasRenderingContext2D, cell: (ctx: CanvasRenderingContext2D, id: number, x: number, y: number, size: number, on: boolean) => void): void {
+    const right = this.x0 + this.cols * this.size;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(this.x0 - 4, this.top - 2, right - this.x0 + 6, this.viewH + 2); ctx.clip();
+    for (const h of this.heads) {
+      const y = this.top + h.y - this.scroll;
+      if (y < this.top - 14 || y > this.top + this.viewH) continue;
+      text(ctx, h.g.label, this.x0, y + 8, 7.5, h.g.color, 'left', FONT_TITLE, 400, false);
+      const lw = measure(ctx, h.g.label, 7.5, FONT_TITLE, 400);
+      text(ctx, h.g.note, right - 2, y + 8, 6, INK2, 'right', FONT_BODY, 600, false);
+      ctx.fillStyle = 'rgba(90,60,40,0.25)'; ctx.fillRect(this.x0 + lw + 5, y + 5.5, right - this.x0 - lw - 5 - measure(ctx, h.g.note, 6) - 8, 0.6);
+    }
+    this.cells.forEach((c, i) => {
+      const y = this.top + c.y - this.scroll;
+      if (y < this.top - this.size || y > this.top + this.viewH) return;
+      cell(ctx, c.id, c.x, y, this.size, i === this.sel);
+    });
+    ctx.restore();
+    // fades and a scrollbar make it obvious there's more below (or above)
+    const max = this.maxScroll();
+    if (max <= 0) return;
+    const fade = (y: number, up: boolean) => {
+      const gr = ctx.createLinearGradient(0, y, 0, y + (up ? 12 : -12));
+      gr.addColorStop(0, 'rgba(230,218,189,0.95)'); gr.addColorStop(1, 'rgba(230,218,189,0)');
+      ctx.fillStyle = gr; ctx.fillRect(this.x0 - 4, up ? y : y - 12, right - this.x0 + 6, 12);
+    };
+    if (this.scroll > 1) fade(this.top - 2, true);
+    if (this.scroll < max - 1) fade(this.top + this.viewH, false);
+    const bx = right + 4, th = Math.max(16, (this.viewH * this.viewH) / this.height), ty = this.top + (this.scroll / max) * (this.viewH - th);
+    ctx.fillStyle = 'rgba(90,60,40,0.18)'; ctx.fillRect(bx, this.top, 4, this.viewH);
+    ctx.fillStyle = 'rgba(110,50,40,0.75)'; ctx.fillRect(bx, ty, 4, th);
+    if (this.scroll > 1) text(ctx, '▲', bx + 2, this.top - 3, 6, '#8a3a2a', 'center', FONT_BODY, 700, false);
+    if (this.scroll < max - 1) {
+      text(ctx, '▼', bx + 2, this.top + this.viewH + 7, 6, '#8a3a2a', 'center', FONT_BODY, 700, false);
+      text(ctx, 'scroll for more', right - 2, this.top + this.viewH + 7, 6, '#8a3a2a', 'right', FONT_BODY, 700, false);
+    }
+  }
+}
+
 function drawBeast(ctx: CanvasRenderingContext2D, d: EnemyDef, x: number, y: number, size: number, hidden: boolean): void {
   let spr: Sprite | undefined;
   try { const set = getSprites(d); spr = (set.idle ?? Object.values(set)[0])?.[0]; } catch { spr = undefined; }
