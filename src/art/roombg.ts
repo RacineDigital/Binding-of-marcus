@@ -362,6 +362,155 @@ function wallTexel(style: string, side: number, u: number, d: number, x: number,
   }
 }
 
+// ---------------------------------------------------------------- wall decor
+const WALL_DECOR: Record<string, string[]> = {
+  cellar: ['sconce', 'shelf', 'crack', 'chain', 'sconce', 'moss'],
+  rootcellar: ['roots', 'roots', 'sconce', 'moss', 'crack'],
+  boiler: ['pipe', 'gauge', 'pipe', 'sconce', 'valve'],
+  coalchute: ['pipe', 'chain', 'sconce', 'crack'],
+  underworks: ['grate', 'moss', 'pipe', 'sconce', 'grate'],
+  flooded: ['grate', 'grate', 'moss', 'sconce'],
+  ward: ['frame', 'lamp', 'frame', 'crack', 'chart'],
+  morgue: ['lamp', 'chart', 'frame', 'crack'],
+  depths: ['sconce', 'banner', 'skullniche', 'chain', 'crack'],
+  catacombs: ['skullniche', 'skullniche', 'sconce', 'banner'],
+  chapel: ['window', 'sconce', 'banner', 'window', 'candles'],
+  belfry: ['window', 'candles', 'chain', 'sconce'],
+  hollow: ['pages', 'eye', 'pages', 'crack'],
+  inkwell: ['pages', 'eye', 'crack'],
+  binding: ['pages', 'sconce', 'pages', 'window'],
+};
+function wallDecor(c: Ctx): void {
+  const { p, M, room, rng, t } = c;
+  const list = WALL_DECOR[t.id] ?? WALL_DECOR.cellar;
+  const wallTop = M + 2, wallBottom = room.oy + M - 3;
+  const h = wallBottom - wallTop;
+  // slots along each top-wall segment, avoiding door columns
+  const doorXs = room.doors.filter((d) => d.side === 0).map((d) => room.doorPos(d.side, d.slot).x + M);
+  const cols = room.cols;
+  const lights: { x: number; y: number; c?: string; r?: number }[] = (room.flags.lights = room.flags.lights ?? []);
+  for (let i = 0; i < cols; i += 1) {
+    const x = room.ox + M + i * 24 + 12;
+    if (doorXs.some((dx) => Math.abs(dx - x) < 30)) continue;
+    if (rng.next() > 0.32) continue;
+    const kind = rng.pick(list);
+    const y = wallTop + h * 0.5;
+    paintWallThing(p, kind, x, y, h, rng, t, lights, M);
+    i += 1;
+  }
+}
+function paintWallThing(p: PixelArt, kind: string, x: number, y: number, h: number, rng: RNG, t: FloorTheme, lights: { x: number; y: number; c?: string; r?: number }[], M: number): void {
+  const iron = ramp('#3a3434');
+  switch (kind) {
+    case 'sconce': {
+      p.rect(x - 1, y + 2, 3, 5, iron[2]); p.rect(x - 3, y + 6, 7, 2, iron[3]); p.set(x - 3, y + 7, iron[1]);
+      const w = ramp('#e8dcc0'); p.rect(x - 1, y - 2, 3, 5, w[2]); p.set(x - 1, y - 2, w[4]);
+      p.set(x, y - 3, '#2a1a10'); p.set(x, y - 4, '#ffb040'); p.set(x, y - 5, '#ffe0a0');
+      lights.push({ x: x - M, y: y - 4 - M });
+      break;
+    }
+    case 'candles': {
+      const w = ramp('#e8dcc0');
+      for (let k = -1; k <= 1; k++) { const hh = 4 + (k === 0 ? 2 : 0); p.rect(x + k * 4 - 1, y + 4 - hh, 2, hh, w[2]); p.set(x + k * 4, y + 3 - hh, '#ffb040'); }
+      p.rect(x - 6, y + 4, 13, 1, iron[3]);
+      lights.push({ x: x - M, y: y - 2 - M });
+      break;
+    }
+    case 'shelf': {
+      const wd = ramp('#5a3a24');
+      p.rect(x - 9, y + 3, 19, 2, wd[3]); p.rect(x - 9, y + 5, 19, 1, wd[0]);
+      const jars = ['#6a8a4a', '#8a4a3a', '#4a6a8a', '#c8a050'];
+      for (let k = 0; k < 4; k++) { const jh = rng.int(3, 6); const jc = ramp(rng.pick(jars)); p.rect(x - 8 + k * 5, y + 3 - jh, 3, jh, jc[2]); p.set(x - 8 + k * 5, y + 3 - jh, jc[4]); }
+      break;
+    }
+    case 'crack': {
+      let cx = x + rng.int(-6, 6), cy = y - h * 0.4;
+      for (let k = 0; k < h * 0.8; k++) { p.set(cx, cy, darken(hex(t.pal.mortar), 0.3)); cx += rng.int(-1, 1); cy += 1; }
+      break;
+    }
+    case 'moss': case 'roots': {
+      const m = ramp(kind === 'moss' ? '#4a6a2e' : '#6a4a2a');
+      for (let k = 0; k < 18; k++) { const dx = rng.int(-7, 7), dy = rng.int(-Math.floor(h * 0.4), Math.floor(h * 0.45)); p.set(x + dx, y + dy, m[rng.int(1, 3)]); }
+      if (kind === 'roots') for (let k = 0; k < 3; k++) { let rx = x + rng.int(-6, 6); for (let ry = y - h * 0.5; ry < y + h * 0.5; ry++) { p.set(rx, ry, m[1]); if (rng.chance(0.3)) rx += rng.int(-1, 1); } }
+      break;
+    }
+    case 'chain': {
+      const ch = ramp('#6a6a72');
+      for (let yy = y - h * 0.5; yy < y + h * 0.35; yy += 2) { p.set(x, yy, ch[3]); p.set(x + ((yy | 0) % 4 === 0 ? 1 : -1), yy + 1, ch[1]); }
+      p.ring(x, y + h * 0.4, 2, ch[2]);
+      break;
+    }
+    case 'pipe': {
+      const pc = ramp(rng.chance(0.5) ? '#8a5a3a' : '#5a5a62');
+      p.rect(x - 12, y - 1, 25, 4, pc[2]); p.rect(x - 12, y - 1, 25, 1, pc[4]); p.rect(x - 12, y + 2, 25, 1, pc[0]);
+      p.rect(x - 4, y - 3, 3, 8, pc[3]); p.rect(x + 5, y - 3, 3, 8, pc[3]);
+      if (rng.chance(0.4)) p.set(x + 9, y + 4, '#c8d8e0');
+      break;
+    }
+    case 'gauge': case 'valve': {
+      const br = ramp('#b8863a');
+      p.ball(x, y, 4, 4, br); p.ball(x, y, 2.6, 2.6, ramp(kind === 'gauge' ? '#e8e0c8' : '#8a3a2a'));
+      if (kind === 'gauge') p.line(x, y, x + 2, y - 1, hex('#c83a3a')); else { p.line(x - 3, y, x + 3, y, br[4]); p.line(x, y - 3, x, y + 3, br[4]); }
+      break;
+    }
+    case 'grate': {
+      const ir = ramp('#3a3c3a');
+      p.rect(x - 6, y - 4, 12, 9, hex('#0a0c0a')); for (let k = -5; k <= 5; k += 2) p.rect(x + k, y - 4, 1, 9, ir[3]);
+      p.rect(x - 6, y - 4, 12, 1, ir[4]);
+      const sl = ramp('#5a7a2a'); for (let k = 0; k < 3; k++) { const sx2 = x + rng.int(-4, 4); for (let yy = y + 5; yy < y + 5 + rng.int(2, 6); yy++) p.set(sx2, yy, sl[2]); }
+      break;
+    }
+    case 'frame': {
+      const fr = ramp('#6a5a3a');
+      p.rect(x - 6, y - 5, 12, 10, fr[2]); p.rect(x - 5, y - 4, 10, 8, hex('#2a2a30'));
+      p.ball(x, y - 1, 2, 2.2, ramp('#8a8070')); p.rect(x - 3, y + 1, 6, 3, ramp('#4a4a50')[2]);
+      if (rng.chance(0.5)) p.line(x - 5, y - 4, x + 4, y + 3, hex('#5a5a60'));
+      break;
+    }
+    case 'lamp': {
+      p.line(x, y - h * 0.5, x, y - 3, iron[2]); p.ball(x, y - 1, 4, 2.5, ramp('#8a9a8a')); p.rect(x - 1, y + 1, 3, 1, hex('#e0f0d0'));
+      lights.push({ x: x - M, y: y + 2 - M });
+      break;
+    }
+    case 'chart': {
+      p.rect(x - 4, y - 5, 9, 11, hex('#d8d0c0')); for (let k = 0; k < 4; k++) p.line(x - 3, y - 3 + k * 2, x + 3 - (k % 2) * 2, y - 3 + k * 2, hex('#6a6a70'));
+      p.line(x - 3, y + 3, x + 3, y + 1, hex('#c83a3a'));
+      break;
+    }
+    case 'banner': {
+      const bc = ramp(rng.pick(['#6a1e24', '#2a3a5a', '#4a3a1a']));
+      p.rect(x - 6, y - h * 0.5, 13, 2, iron[3]);
+      p.poly([x - 5, y - h * 0.5 + 2, x + 6, y - h * 0.5 + 2, x + 6, y + 5, x, y + 2, x - 5, y + 5], bc[2]);
+      p.line(x - 5, y - h * 0.5 + 2, x - 5, y + 5, bc[3]); p.ball(x, y - 2, 2, 2, ramp('#c8a04a'));
+      break;
+    }
+    case 'skullniche': {
+      p.ellipse(x, y, 7, 5, hex('#120c0a')); p.ball(x, y + 1, 3, 2.6, ramp('#d8ccb0')); p.set(x - 1, y + 1, '#1a1010'); p.set(x + 1, y + 1, '#1a1010');
+      break;
+    }
+    case 'window': {
+      const cols = ['#c83a4a', '#3a6ac8', '#e0b040', '#4a9a5a'];
+      for (let yy = -6; yy <= 6; yy++) for (let xx = -5; xx <= 5; xx++) {
+        const inside = yy >= -2 ? true : xx * xx / 25 + (yy + 2) * (yy + 2) / 16 <= 1;
+        if (!inside) continue;
+        const edge = Math.abs(xx) === 5 || yy === 6 || (yy < -1 && xx * xx / 25 + (yy + 2) * (yy + 2) / 16 > 0.6);
+        p.set(x + xx, y + yy, edge ? hex('#2a2224') : (xx === 0 || yy === 1) ? hex('#3a3034') : hex(cols[((xx > 0 ? 1 : 0) + (yy > 1 ? 2 : 0)) % 4]));
+      }
+      lights.push({ x: x - M, y: y - M, c: rng.pick(cols), r: 60 });
+      break;
+    }
+    case 'pages': {
+      for (let k = 0; k < 3; k++) { const px = x - 8 + k * 6 + rng.int(-1, 1), py = y - 4 + rng.int(-2, 2); p.rect(px, py, 5, 7, hex('#e6dcc0')); p.line(px + 1, py + 2, px + 3, py + 2, hex('#5a4a3a')); p.line(px + 1, py + 4, px + 3, py + 4, hex('#5a4a3a')); p.set(px + 2, py, '#8a8a92'); }
+      break;
+    }
+    case 'eye': {
+      p.ellipse(x, y, 6, 3, hex('#e8e0f0')); p.ball(x, y, 2.4, 2.4, ramp('#6a3ad0')); p.set(x, y, '#0a0614');
+      lights.push({ x: x - M, y: y - M, c: '#8a5aff', r: 30 });
+      break;
+    }
+  }
+}
+
 // ---------------------------------------------------------------- decor
 function decor(c: Ctx): void {
   const { p, x0, y0, w, h, rng, t } = c;
@@ -512,9 +661,11 @@ export function paintRoomBackground(room: RoomData, theme: FloorTheme): HTMLCanv
   const M = BG_MARGIN;
   const p = new PixelArt(room.pxW + M * 2, room.pxH + M * 2);
   const rng = new RNG(room.seed + ':bg');
+  room.flags.lights = [];
   const seed = rng.int(0, 1e6);
   const c: Ctx = { p, M, x0: room.ox + M, y0: room.oy + M, w: room.cols * TILE, h: room.rows * TILE, rng, seed, t: theme, room };
   paintWalls(c);
+  wallDecor(c);
   switch (theme.floor) {
     case 'flag': floorFlag(c); break;
     case 'brick': floorBrick(c); break;

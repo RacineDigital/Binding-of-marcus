@@ -127,10 +127,11 @@ export function renderWorld(w: World): void {
     r.addLight(p.x - camX, p.y - 8 - camY, 70 * fl * (0.5 + 0.5 * Math.min(1, room.ghp[i] / 12)), 0.9);
     r.addGlow(p.x - camX, p.y - 10 - camY, 34 * fl, col, 0.3);
   }
-  if (room.flags.lights) for (const L of room.flags.lights as { x: number; y: number }[]) {
-    const fl = 0.9 + Math.sin(w.time * 9 + L.x) * 0.06;
-    r.addLight(L.x - camX, L.y - camY, 46 * fl, 0.85); r.addGlow(L.x - camX + 1, L.y - 2 - camY, 12 * fl, '#ffb050', 0.4);
-    if (Math.random() < 0.02) w.fx.embers(L.x + 1, L.y - 3, 1, '#ffc060', 1);
+  if (room.flags.lights) for (const L of room.flags.lights as { x: number; y: number; c?: string; r?: number }[]) {
+    const fl = L.c ? 1 : 0.9 + Math.sin(w.time * 9 + L.x) * 0.06 + Math.sin(w.time * 23 + L.y) * 0.03;
+    r.addLight(L.x - camX, L.y - camY, (L.r ?? 46) * fl, 0.85);
+    r.addGlow(L.x - camX + 1, L.y - 2 - camY, (L.c ? 26 : 12) * fl, L.c ?? '#ffb050', L.c ? 0.22 : 0.4);
+    if (!L.c && Math.random() < 0.02) w.fx.embers(L.x + 1, L.y - 3, 1, '#ffc060', 1);
   }
   for (const e of w.enemies) if (e.def.light) { r.addLight(e.x - camX, e.y - e.hitY - camY, e.def.light[0], 0.7); r.addGlow(e.x - camX, e.y - e.hitY - camY, e.def.light[0] * 0.5, e.def.light[1], 0.25); }
   // --------------------------------------------------------------- transition slide
