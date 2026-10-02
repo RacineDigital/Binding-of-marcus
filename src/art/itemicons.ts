@@ -548,4 +548,52 @@ export const ICONS: Record<string, (p: P) => void> = {
     for (const [x, y] of [[4, 5], [7, 4], [11, 4], [14, 5], [3, 9], [15, 9], [6, 12], [12, 12], [9, 15]]) { p.set(x, y, '#5a5a64'); }
     p.set(4, 6, W); p.set(5, 5, t[4]);
   },
+
+  // ------------------------------------------------------------------ the laser family
+  arc_lamp(p) {
+    // a carbon arc lamp: two rods in a brass yoke with a crackling blue-white arc across the gap
+    const br = ramp('#c8a04a'), c = ramp('#3a3a44');
+    p.rect(3, 1, 12, 2, br[2]); p.rect(3, 1, 12, 1, br[4]); p.rect(3, 15, 12, 2, br[2]); p.rect(3, 16, 12, 1, br[0]);
+    p.rect(3, 1, 2, 16, br[1]); p.rect(3, 1, 1, 16, br[3]);
+    p.rect(9, 3, 3, 4, c[2]); p.rect(9, 3, 1, 4, c[4]); p.rect(9, 11, 3, 4, c[2]); p.rect(9, 11, 1, 4, c[4]);
+    for (const [x, y] of [[9, 7], [12, 8], [8, 9], [11, 10], [13, 9], [7, 8]]) p.set(x, y, '#7ad8ff');
+    p.line(10, 7, 12, 8, hex('#ffffff')); p.line(12, 8, 9, 9, hex('#ffffff')); p.line(9, 9, 11, 10, hex('#ffffff'));
+    spark(p, 15, 6, '#a0e8ff'); sh(p, 15, 12, '#a0e8ff');
+  },
+  jewellers_loupe(p) {
+    // a black eyepiece with a bright lens, focusing a pinpoint of red heat below it
+    const b = ramp('#2e2a34'), g = ramp('#a8d8f0');
+    p.tube(3, 3, 9, 9, 3.4, b); p.ring(3.5, 3.5, 2.6, '#4a4450');
+    p.ball(11, 11, 4.2, 4.2, g); p.ring(11, 11, 4.2, '#c8a04a', 1);
+    sh(p, 9, 9); sh(p, 10, 9);
+    p.line(12, 13, 15, 16, hex('#ff6a5a')); p.set(16, 17, '#ffffff'); p.set(15, 17, '#ff3a3a'); p.set(17, 16, '#ff3a3a');
+  },
+  mirror_shard(p) {
+    // a jagged shard of mirror, a red laser glancing off it
+    const m = ramp('#b8d0e4');
+    p.poly([7, 1, 16, 5, 10, 17, 5, 9], m[2]); p.poly([7, 1, 16, 5, 9, 7], m[4]); p.poly([5, 9, 9, 7, 10, 17], m[1]);
+    p.line(7, 1, 16, 5, hex('#ffffff'));
+    p.line(0, 13, 7, 10, hex('#ff4a5a')); p.line(7, 10, 2, 17, hex('#ff4a5a')); p.set(7, 10, '#ffffff'); p.set(6, 10, '#ffd0d0');
+  },
+  stained_glass(p) {
+    // an arched church window: red, blue, green and gold panes in black lead
+    const lead = '#1e181c', panes = ['#d83a3a', '#3a6ad8', '#3aa84a', '#e8c040'];
+    for (let y = 1; y <= 17; y++) for (let x = 2; x <= 16; x++) {
+      const inside = y >= 8 ? Math.abs(x - 9) <= 6 : (x - 9) ** 2 + (y - 8) ** 2 <= 42;
+      if (!inside) continue;
+      const edge = y >= 8 ? Math.abs(x - 9) === 6 || y === 17 : (x - 9) ** 2 + (y - 8) ** 2 > 30;
+      const q = (x < 9 ? 0 : 1) + (y < 11 ? 0 : 2);
+      p.set(x, y, edge || x === 9 || y === 11 || y === 6 ? lead : panes[q]);
+    }
+    for (const [x, y] of [[6, 8], [11, 9], [6, 13], [12, 14]]) p.set(x, y, '#ffffff');
+  },
+  lighthouse_lens(p) {
+    // a lighthouse lantern throwing its beam out to the right
+    for (let y = 10; y <= 17; y++) p.rect(5, y, 6, 1, hex(Math.floor((y - 10) / 2) % 2 ? '#e8e4dc' : '#c83a3a'));
+    p.rect(5, 10, 1, 8, hex('#7a1a1a')); p.rect(4, 9, 8, 1, hex('#2a2428'));
+    p.ball(8, 7, 2.6, 2.2, ramp('#ffe070')); p.rect(6, 5, 4, 4, hex('#ffe890')); p.rect(7, 6, 2, 2, hex('#ffffff'));
+    p.poly([5, 5, 11, 5, 8, 1], hex('#a82a2a')); p.set(8, 1, '#ffd060');
+    p.poly([10, 5, 17, 2, 17, 10, 10, 8], hex('#fff2b0'));
+    for (let x = 12; x <= 17; x += 2) for (let y = 4; y <= 8; y += 2) p.set(x, y, '#ffffff');
+  },
 };

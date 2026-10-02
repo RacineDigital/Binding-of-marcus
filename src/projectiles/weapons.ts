@@ -50,12 +50,47 @@ export function beamScale(size: number): number { return Math.max(0.6, Math.min(
 /** Lasers are thin, so size widens them a little faster than beams. */
 export function laserScale(size: number): number { return beamScale(size) ** 1.5; }
 
+/**
+ * Laser items feed each other. Every one past the first overcharges all your lasers and beams a tier:
+ * hotter colour, more damage, wider; tier 1 adds a twin ray, tier 2 sets things alight, tier 3 throws
+ * a giant ray every fifth pull.
+ */
+export const LASER_TIERS: { name: string; color: string | null; perk: string }[] = [
+  { name: '', color: null, perk: '' },
+  { name: 'Overcharged', color: '#ffa040', perk: 'twin rays, damage +20%' },
+  { name: 'Searing', color: '#fff0a0', perk: 'lasers set enemies alight, damage +40%' },
+  { name: 'White-hot', color: '#d8f4ff', perk: 'a giant ray every fifth pull, damage +60%' },
+];
+export function overcharge(prof: AttackProfile | null): number { return prof ? Math.max(0, Math.min(3, prof.lasers - 1)) : 0; }
+/** Damage and width multipliers from overcharge. */
+export function overchargeMul(prof: AttackProfile | null): { dmg: number; width: number } { const o = overcharge(prof); return { dmg: 1 + 0.2 * o, width: 1 + 0.25 * o }; }
+/** A laser's colour: your tint if you have one, else the overcharge tier's, else the base colour. */
+export function laserColor(prof: AttackProfile | null, base: string, w?: World): string {
+  if (prof?.rainbow && w) return `hsl(${Math.floor((w.time * 240) % 360)},95%,65%)`;
+  return prof?.tint ?? LASER_TIERS[overcharge(prof)].color ?? base;
+}
+
+/** A laser that starts somewhere other than your hands (a refraction, an arc, a bomb, a boomerang). */
+export function childLaser(w: World, prof: AttackProfile, x: number, y: number, ang: number, dmg: number, width: number, maxLen: number, color: string, status: string | null = null): Beam {
+  const b = new Beam(prof);
+  b.laser = true; b.child = true; b.followPlayer = false; b.x = x; b.y = y; b.ang = ang; b.dur = 0.14;
+  b.dmg = dmg; b.width = width; b.maxLen = maxLen; b.color = color; b.status = status;
+  w.beams.push(b);
+  return b;
+}
+
 export class Beam {
   active = true; t = 0; dur = 0.5; ang = 0; width = 7; dmg = 1; tick = 0; prof: AttackProfile; offset = 0;
   pts: number[] = []; followPlayer = true; x = 0; y = 0; laser = false; hitOnce = new Set<number>(); color = '#6a58ff';
   enemyBeam = false; warmup = 0; rot = 0; baseWidth = 0; phase = Math.random() * TAU; sweep = 0;
   /** What a homing beam is locked onto. */
   target: Enemy | null = null;
+  /** Spawned off another laser: doesn't refract, arc or return again. */
+  child = false; maxLen = 0; status: string | null = null;
+  /** Each ray throws one Arc Lamp chain, from the first enemy it hits. */
+  arced = false;
+  /** Wiggle makes a laser linger and lash side to side; a searchlight sweeps this far each way. */
+  lash = 0; sweepSpan = 0;
   constructor(prof: AttackProfile) { this.prof = prof; }
 }
 
@@ -161,10 +196,14 @@ export function updateBeams(w: World, dt: number): void {
       if (prof.boomerang) b.sweep = Math.sin(b.t * 7) * 0.45;
       if (prof.grow) b.width = b.baseWidth * Math.min(2.4, 1 + prof.grow * b.t * 2.2);
     }
+    if (b.sweepSpan) b.sweep = -b.sweepSpan + 2 * b.sweepSpan * Math.min(1, b.t / b.dur);
+    if (b.lash) b.sweep = Math.sin(b.t * 30 + b.phase) * b.lash;
     const a = b.ang + b.offset + b.sweep + (prof.wiggle && !b.laser ? Math.sin(b.t * 14 + b.phase) * 0.12 * Math.min(2, prof.wiggle) : 0);
-    const ox = b.x + Math.cos(a) * (prof.short ? 2 : 6), oy = b.y + Math.sin(a) * (prof.short ? 1 : 4), maxLen = b.laser ? Math.max(120, pl.stats.range * 1.3) : prof.short ? Math.max(64, pl.stats.range * 0.45) : 900;
+    const lead = b.child ? 0 : 1;
+    const ox = b.x + Math.cos(a) * (prof.short ? 2 : 6) * lead, oy = b.y + Math.sin(a) * (prof.short ? 1 : 4) * lead;
+    const maxLen = b.maxLen || (b.laser ? Math.max(120, pl.stats.range * 1.3) : prof.short ? Math.max(64, pl.stats.range * 0.45) : 900);
     // homing: lock onto the enemy nearest the aim (lasers once, when they fire; beams keep their target)
-    if (prof.homing > 0 && (!b.laser || b.t <= dt * 1.5)) { b.target = homingTarget(w, ox, oy, a, prof.homing, maxLen, b.target && !b.target.dead ? b.target : null); }
+    if (prof.homing > 0 && !b.child && (!b.laser || b.t <= dt * 1.5)) { b.target = homingTarget(w, ox, oy, a, prof.homing, maxLen, b.target && !b.target.dead ? b.target : null); }
     b.pts = traceBeam(w, ox, oy, a, prof, maxLen, true, b.target);
     const half = b.width / 2;
     const pathFx = () => alongBeam(b.pts, 10, (x, y) => {
@@ -173,12 +212,16 @@ export function updateBeams(w: World, dt: number): void {
       if (prof.shatter) { const [c, r] = w.room.cellAt(x, y); if (w.room.inGrid(c, r)) w.hitObstacle(c, r, b.dmg, true, x, y); }
     });
     if (b.laser) {
-      if (b.t <= dt * 1.5) {
+      const first = b.t <= dt * 1.5;
+      // a lashing laser keeps cutting as it sweeps, but still hits each enemy only once
+      if (first || b.lash) {
         beamHits(w, b, half, (e) => { if (!b.hitOnce.has(e.id)) { b.hitOnce.add(e.id); beamDamage(w, b, e, b.dmg); } });
-        beamObstacles(w, b, b.dmg);
-        pathFx();
+        if (first) { beamObstacles(w, b, b.dmg); pathFx(); }
+      }
+      if (first) {
         const ex = b.pts[b.pts.length - 2], ey = b.pts[b.pts.length - 1];
         if (prof.creep) w.addCreep(ex, ey, 8, 'player', b.dmg * 0.35, 1.8);
+        if (!b.child) laserLanding(w, b, ex, ey, a, maxLen);
       }
     } else {
       b.tick -= dt;
@@ -222,15 +265,72 @@ function beamDamage(w: World, b: Beam, e: Enemy, dmg: number): void {
   const prof = b.prof, luck = w.player.stats.luck;
   const tick = !b.laser;
   const crit = prof.crit > 0 && Math.random() < luckChance(prof.crit, luck) * (tick ? 0.3 : 1);
+  // Rocket Nib and friends: a laser hits harder the further it has reached
+  if (b.laser && prof.accel > 0 && b.pts.length >= 2) dmg *= 1 + Math.min(1, prof.accel * 0.4) * Math.min(1, Math.hypot(e.x - b.pts[0], e.y - b.pts[1]) / 200);
+  // the Jeweller's Loupe: whatever you keep burning heats up, up to nearly double damage
+  if (prof.focus > 0) {
+    const fresh = (e.data.heatT ?? -9) > w.time - 0.6;
+    e.data.heat = Math.min(1, (fresh ? e.data.heat ?? 0 : 0) + (tick ? 0.04 : 0.15) * prof.focus); e.data.heatT = w.time;
+    dmg *= 1 + e.data.heat * 0.9;
+    if (e.data.heat > 0.6 && Math.random() < 0.3) w.fx.sparks(e.x, e.y - e.hitY, 2, '#ffb060', 60);
+  }
   const d = dmg * (crit ? 3 : 1);
-  const status = prof.rainbow && Math.random() < (tick ? 0.12 : 1) ? RAINBOW[Math.floor(Math.random() * RAINBOW.length)] : null;
+  let status = b.status ?? (prof.rainbow && Math.random() < (tick ? 0.12 : 1) ? RAINBOW[Math.floor(Math.random() * RAINBOW.length)] : null);
+  // overcharged to Searing and past: lasers set things alight
+  if (!status && overcharge(prof) >= 2 && Math.random() < (tick ? 0.1 : 0.35)) status = 'burn';
   w.damageEnemy(e, d, { ang: b.ang, knock: (tick ? 0.25 : 1) * prof.knock * (crit ? 2 : 1), source: 'beam', prof, crit, status, procMul: tick ? 0.35 : 1 });
   if (prof.chain > 0 && Math.random() < luckChance(prof.chainChance * (tick ? 0.35 : 1), luck)) w.chainLightning(e, prof.chain, dmg * 1.5, prof);
-  if (prof.explode > 0 && Math.random() < (tick ? 0.1 : 1)) w.explode(e.x, e.y, prof.explode, Math.max(4, d * (tick ? 2 : 1.4)), { friendly: true, small: true });
+  if (prof.explode > 0 && Math.random() < (tick ? 0.1 : b.child ? 0.3 : 1)) w.explode(e.x, e.y, prof.explode, Math.max(4, d * (tick ? 2 : 1.4)), { friendly: true, small: true });
   if (prof.lifesteal > 0 && Math.random() < prof.lifesteal * 0.05 * (tick ? 0.15 : 1)) w.player.healRed(1, true);
   if (prof.creep && Math.random() < (tick ? 0.08 : 0.6)) w.addCreep(e.x, e.y, 8, 'player', dmg * 0.35, 1.8);
-  if (prof.split > 0 && Math.random() < (tick ? 0.08 : 0.4)) {
+  // the Arc Lamp: a laser hit leaps on to the nearest enemies it hasn't touched
+  if (b.laser && prof.laserArc > 0 && !b.child && !b.arced) { b.arced = true; arcFrom(w, b, e, prof.laserArc, dmg * 0.6); }
+  if (prof.split > 0 && !b.laser && Math.random() < (tick ? 0.08 : 0.4)) {
     for (let k = 0; k < Math.min(4, prof.split); k++) w.proj.player(w, prof, e.x, e.y - 6, 8, Math.random() * TAU, w.player.stats.damage * 0.5, 220, 90, 0.7, 1);
+  }
+}
+
+/**
+ * Where a laser lands, the items you carry play out: Powder Ink blows the spot up, Prism and the splits
+ * refract it into smaller rays, a boomerang sends it back, fire scorches its whole path.
+ */
+function laserLanding(w: World, b: Beam, ex: number, ey: number, a: number, maxLen: number): void {
+  const prof = b.prof, len = Math.hypot(ex - b.pts[0], ey - b.pts[1]);
+  const wall = len < maxLen - 8;
+  if (prof.explode > 0 && wall) w.explode(ex, ey, prof.explode * 0.8, Math.max(4, b.dmg * 1.2), { friendly: true, small: true });
+  // refraction: split items break a landing laser into a fan of smaller rays
+  if (prof.split > 0) {
+    const n = Math.min(4, prof.split), back = wall ? a + Math.PI : a;
+    for (let k = 0; k < n; k++) {
+      const da = (k - (n - 1) / 2) * (wall ? 0.55 : 0.4);
+      childLaser(w, prof, ex - Math.cos(a) * 3, ey - Math.sin(a) * 3, back + da, b.dmg * 0.45, Math.max(1, b.width * 0.6), 90, b.color);
+    }
+  }
+  // boomerang: the laser comes back to you a beat later and cuts through everything again
+  if (prof.boomerang) w.after(0.1, () => {
+    const pl = w.player;
+    childLaser(w, prof, ex, ey, Math.atan2(pl.y - 11 - ey, pl.x - ex), b.dmg * 0.7, b.width, Math.hypot(pl.x - ex, pl.y - 11 - ey), b.color);
+  });
+  // fire: a laser that can burn leaves a scorched line of embers behind it
+  if (prof.burn > 0) alongBeam(b.pts, 34, (x, y) => { if (Math.random() < Math.min(0.7, prof.burn * 1.6)) w.addCreep(x, y + 10, 7, 'player', Math.max(2, b.dmg * 0.3), 1.4, '#c8501a'); });
+}
+
+/** One arc of the Arc Lamp: hop from enemy to enemy with thin blue rays. */
+function arcFrom(w: World, b: Beam, from: Enemy, jumps: number, dmg: number): void {
+  let cur = from;
+  const seen = new Set<number>(b.hitOnce); seen.add(from.id);
+  for (let j = 0; j < jumps; j++) {
+    let best: Enemy | null = null, bd = 110 * 110;
+    for (const e of w.enemies) {
+      if (e.dead || e.friendly || e.hidden || e.spawnT > 0 || seen.has(e.id)) continue;
+      const d2 = (e.x - cur.x) ** 2 + (e.y - cur.y) ** 2;
+      if (d2 < bd) { bd = d2; best = e; }
+    }
+    if (!best) return;
+    seen.add(best.id); b.hitOnce.add(best.id);
+    const x = cur.x, y = cur.y - cur.hitY, tx = best.x, ty = best.y - best.hitY;
+    childLaser(w, b.prof, x, y, Math.atan2(ty - y, tx - x), dmg, 1.5, Math.hypot(tx - x, ty - y) + 6, '#a0e8ff');
+    cur = best;
   }
 }
 

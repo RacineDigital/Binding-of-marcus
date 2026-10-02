@@ -4,6 +4,27 @@
 import type { World } from '../game/world';
 import type { DescLine } from './describe';
 import { getItem } from './registry';
+import type { AttackProfile } from '../projectiles/profile';
+import { LASER_TIERS, overcharge } from '../projectiles/weapons';
+
+/** What each shot effect turns into on a laser, for "with your lasers" lines. */
+export const LASER_NOTES: [keyof AttackProfile, string][] = [
+  ['bounce', 'ricochet off walls'], ['homing', 'bend onto enemies'], ['split', 'refract into a fan of smaller rays where they land'],
+  ['explode', 'blow up the spot they land on'], ['burn', 'scorch a line of embers along their path'], ['wiggle', 'linger and lash side to side, cutting through more'],
+  ['spiral', 'also fire a ray that spins round you'], ['boomerang', 'come back to you, cutting through everything again'],
+  ['grow', 'come out much wider'], ['accel', 'hit harder the further they reach'], ['orbit', 'also fire from a point circling you'],
+  ['chain', 'throw lightning off what they hit'], ['laserArc', 'leap on to nearby enemies'], ['focus', 'heat up whatever they keep hitting'],
+  ['prismRays', 'come with a red burning ray and a blue chilling ray'], ['searchlight', 'sweep a searchlight every fourth pull'],
+  ['rear', 'also fire behind you'], ['sides', 'also fire to your sides'], ['crit', 'sometimes land bold, triple hits'],
+  ['creep', 'leave ink where they end'], ['magnet', 'erase enemy shots they cross'], ['rainbow', 'shift colour, with a new status every pull'],
+  ['lifesteal', 'drink blood'], ['mark', 'hex what they hit'], ['freeze', 'freeze what they hit'], ['poison', 'poison what they hit'],
+];
+const gained = (b: AttackProfile, a: AttackProfile, k: keyof AttackProfile) => {
+  const x = b[k] as unknown, y = a[k] as unknown;
+  return typeof y === 'boolean' ? y && !x : typeof y === 'number' ? y > (x as number) + 1e-6 : false;
+};
+const has = (p: AttackProfile, k: keyof AttackProfile) => { const v = p[k] as unknown; return typeof v === 'boolean' ? v : typeof v === 'number' ? v > 0 : false; };
+const isLaser = (p: AttackProfile) => p.modes.has('laser') || p.lasers > 0;
 
 const MODE_NAME: Record<string, string> = {
   shot: 'shots', charge: 'a charged shot (hold, release)', burst: 'a charged spray (hold, release)', beam: 'a charged beam (hold, release)',
@@ -35,9 +56,9 @@ export function previewLines(w: World, id: string): DescLine[] {
   if (!it || it.kind === 'active') return [];
   const key = id + '|' + pl.itemOrder.join(',') + '|' + [...pl.items.values()].join(',') + '|' + pl.temp.map((t) => t.id).join(',') + '|' + [...pl.transformations].join(',');
   const hit = cache.get(key); if (hit) return hit;
-  const b = { ...pl.stats }, bMode = pl.mode, bShots = pl.prof.shots, bFlight = pl.flight, bModes = new Set(pl.prof.modes);
+  const b = { ...pl.stats }, bMode = pl.mode, bShots = pl.prof.shots, bFlight = pl.flight, bModes = new Set(pl.prof.modes), bProf = pl.prof;
   pl.items.set(id, (pl.items.get(id) ?? 0) + 1); pl.recompute();
-  const a = { ...pl.stats }, aMode = pl.mode, aShots = pl.prof.shots, aFlight = pl.flight, aModes = new Set(pl.prof.modes);
+  const a = { ...pl.stats }, aMode = pl.mode, aShots = pl.prof.shots, aFlight = pl.flight, aModes = new Set(pl.prof.modes), aProf = pl.prof;
   const n = (pl.items.get(id) ?? 1) - 1; if (n <= 0) pl.items.delete(id); else pl.items.set(id, n);
   pl.recompute();
 
@@ -56,6 +77,16 @@ export function previewLines(w: World, id: string): DescLine[] {
     const c = COMBOS[[m, o].sort().join('+')]; if (c) out.push({ text: c, color: 'note' });
   }
   if (aFlight && !bFlight) out.push({ text: 'You will fly: over pits, rocks and spikes.', color: 'note' });
+  // lasers: another laser item overcharges them; anything else says what it does to them
+  if (aProf.lasers > bProf.lasers && aProf.lasers >= 2) {
+    const t = LASER_TIERS[overcharge(aProf)];
+    out.push({ text: `Lasers \u00d7${aProf.lasers}: ${t.name} (${t.perk}).`, color: 'up' });
+  }
+  if (isLaser(aProf)) {
+    // already a laser build: what this item adds to them. Becoming one: what you already carry does to them
+    const keys = LASER_NOTES.filter(([k]) => isLaser(bProf) ? gained(bProf, aProf, k) : has(aProf, k));
+    if (keys.length) out.push({ text: `Your lasers will ${keys.slice(0, 4).map(([, t]) => t).join('; ')}.`, color: 'note' });
+  }
   if (out.length) out.unshift({ text: 'With your build:', color: 'plain' });
   cache.set(key, out);
   if (cache.size > 64) cache.delete(cache.keys().next().value!);

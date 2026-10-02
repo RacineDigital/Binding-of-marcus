@@ -16,7 +16,7 @@ import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
 import { ACHIEVEMENTS } from '../src/data/achievements';
 import { MAP_SIZE, TILE } from '../src/core/constants';
-import { beamScale, laserScale } from '../src/projectiles/weapons';
+import { beamScale, laserScale, overcharge, LASER_TIERS } from '../src/projectiles/weapons';
 import { Side, Ob } from '../src/rooms/room';
 import { ALL_SET_PIECES } from '../src/generation/setpieces';
 import * as fs from 'fs';
@@ -394,6 +394,18 @@ console.log('content:', JSON.stringify(counts));
   ok(beamScale(1) === 1 && laserScale(1) === 1, 'beams and lasers are their normal width at normal shot size');
   ok(beamScale(2.6) > beamScale(2) && beamScale(2) > beamScale(1.4) && laserScale(2.6) > laserScale(2), 'bigger shots keep widening beams and lasers (no early cap)');
   ok(beamScale(0.4) > 0 && laserScale(9) <= 3 ** 1.5, 'beam and laser width stay within sane bounds');
+}
+// ------------------------------------------------------------ the laser family
+{
+  const fam = ALL_ITEMS.filter((i) => i.tags?.includes('laser'));
+  ok(fam.length >= 8, `there is a family of laser items (${fam.length})`);
+  // the tag (Live Wire progress) and the overcharge count must always agree
+  for (const it of fam) ok((it.attack as any)?.lasers === 1, `${it.id} counts once toward overcharge`);
+  for (const it of ALL_ITEMS) if ((it.attack as any)?.lasers) ok(!!it.tags?.includes('laser'), `${it.id} overcharges lasers so it is tagged laser`);
+  const p = (n: number) => ({ lasers: n } as any);
+  ok(overcharge(p(0)) === 0 && overcharge(p(1)) === 0 && overcharge(p(2)) === 1 && overcharge(p(4)) === 3 && overcharge(p(9)) === 3, 'overcharge tiers: one per extra laser item, up to three');
+  ok(LASER_TIERS.length === 4 && LASER_TIERS.slice(1).every((t) => t.name && t.color && t.perk), 'every overcharge tier has a name, a colour and a perk');
+  ok(!!TRANSFORM_EFFECTS.laser, 'three laser items make Live Wire');
 }
 // ------------------------------------------------------------ every sound a script asks for exists
 {

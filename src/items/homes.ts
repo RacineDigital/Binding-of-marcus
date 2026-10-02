@@ -1,6 +1,6 @@
 // Where every item comes from. Each item lives in exactly one pool, and every item of a
 // transformation shares its pool, so you learn where to look:
-//   The Curio (treasure)   Mothkin, Needleworker, The Boys, and most shot changers
+//   The Curio (treasure)   Mothkin, Needleworker, Live Wire (lasers), The Boys, and most shot changers
 //   Mott's Wares (shop)    Clockwork, Jeffy, the dice, keys, bombs and pocket things
 //   The Inkwell (deal)     Inkblooded and every pact: the devil's pool, paid in hearts
 //   Wax Chapel (blessing)  Waxen Saint and Drainer: the angels' pool

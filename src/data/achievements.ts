@@ -71,6 +71,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'transform_drain', name: 'Drainer', desc: 'Become the Drainer.', unlocks: 'Unlocks the Drain Butterfly.', hidden: true },
   { id: 'transform_crew', name: 'The Boys', desc: 'Hold Crug\'s Pen, Ewen\'s Bike, Gavyn\'s Pouch and Sam\'s Beer at the same time.', unlocks: 'Unlocks Grandad\'s Radio.', hidden: true },
   { id: 'transform_jeffy', name: 'Jeffy', desc: 'Become Jeffy.', unlocks: 'A pencil, permanently, in your heart.', hidden: true },
+  { id: 'transform_laser', name: 'Live Wire', desc: 'Carry three laser items at once.', unlocks: 'Nothing but the hum.', hidden: true },
   { id: 'transform_vamp', name: 'King Vamp', desc: 'Become King Vamp.', unlocks: 'Unlocks Whole Lotta Red.', hidden: true },
   { id: 'tainted_marcus', name: 'The Smudged', desc: 'Earn all five marks as Marcus.', unlocks: 'Unlocks Mirrored Marcus.', hidden: true },
   { id: 'tainted_wren', name: 'The Runaway', desc: 'Earn all five marks as Wren.', unlocks: 'Unlocks Mirrored Wren.', hidden: true },

@@ -87,6 +87,10 @@ export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
     S: '#3a2a5a', s: '#2a1e48', d: '#1e1438', W: '#4a3a70', r: '#3a2a5a', m: '#0a0614', k: '#c8a8ff',
     K: '#06040c', h: '#0a0814', H: '#0e0a1a', L: '#2a1e48', l: '#4a3a80',
     c: '#0a0814', C: '#120e22', D: '#1e1836', E: '#2e2650', R: '#6a4ab8', q: '#3a2a70', t: '#c8a8ff' } },
+  // Live Wire: welding goggles, copper-wired coat, eyes glowing red
+  laser: { id: 'laser', name: 'Live Wire', acc: ['goggles'], pal: {
+    e: '#ffd0d0', w: '#ffd0d0', v: '#ff3a4a', k: '#ff8a8a',
+    c: '#1e1a20', C: '#2c262e', D: '#3e3640', E: '#544a56', R: '#d0702a', q: '#8a4418', t: '#ffb060' } },
   drain: { id: 'drain', name: 'Drainer', acc: ['wingsAngel', 'haloWhite'], pal: {
     K: '#8a8478', h: '#b8b0a0', H: '#d8d0c0', L: '#f0ead8', l: '#ffffff',
     c: '#8aa4c0', C: '#bcd0e4', D: '#dce8f4', E: '#ffffff', R: '#7ab8e8', q: '#4a7aa8', t: '#ffffff', j: '#8aa0c0', J: '#aac0e0' } },

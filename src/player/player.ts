@@ -9,7 +9,7 @@ import { CharacterDef } from './characters';
 import { buildOutfitSprites, PlayerSprites, HeadDir, HeadState } from '../art/marcus';
 import { costumeFor, Costume, drawCostume, Frame } from '../art/costume';
 import { LOOKS } from '../art/look';
-import { volley, Beam, meleeSwing, Swing, SHOT_PX, beamScale, laserScale } from '../projectiles/weapons';
+import { volley, Beam, meleeSwing, Swing, SHOT_PX, beamScale, laserScale, overcharge, overchargeMul, laserColor } from '../projectiles/weapons';
 import { clamp, TAU } from '../core/math';
 import { moveBody } from '../rooms/collide';
 import { getItem } from '../items/registry';
@@ -43,6 +43,8 @@ export class Player {
   pickupT = 0; pickupSprite: HTMLCanvasElement | null = null;
   aimAng = Math.PI / 2; aiming = false; lastAim = { x: 0, y: 1 };
   fireCd = 0; wcharge = 0; wasAiming = false; altHand = 1;
+  /** Laser pulls so far (the giant ray and the searchlight count them) and the spinning ray's angle. */
+  laserPulls = 0; spiralAng = 0;
   /** The Blot's chest: how far the wound is torn open (0..1). */
   chest = 0;
   swing: Swing | null = null;
@@ -282,11 +284,28 @@ export class Player {
     if (mode === 'laser') {
       const n = Math.max(1, Math.min(5, prof.shots));
       const heavy = prof.modes.has('charge');
+      const oc = overcharge(prof);
+      this.laserPulls++;
+      // White-hot: every fifth pull is a giant ray
+      const giant = oc >= 3 && this.laserPulls % 5 === 0;
       for (const base of this.fireAngles(ang)) {
-        for (let i = 0; i < n; i++) this.fireLaser(w, base, n === 1 ? 0 : (i - (n - 1) / 2) * 0.14, st.damage * (heavy ? 1.3 : 1), heavy ? 1 : 0);
+        for (let i = 0; i < n; i++) {
+          const off = n === 1 ? 0 : (i - (n - 1) / 2) * 0.14;
+          this.fireLaser(w, base, off, st.damage * (heavy ? 1.3 : 1) * (giant ? 2.5 : 1), (heavy ? 1 : 0) + (giant ? 6 : 0));
+          // Overcharged: every ray has a twin
+          if (oc >= 1) this.fireLaser(w, base, off + 0.05, st.damage * 0.5, 0);
+        }
         // burst: each pull also scatters a pair of weaker stray lasers
         if (prof.modes.has('burst')) for (const o of [-0.3, 0.3]) this.fireLaser(w, base, o + (Math.random() - 0.5) * 0.2, st.damage * 0.55, 0);
+        // Stained Glass: a red ray that burns and a blue ray that chills, either side of yours
+        if (prof.prismRays) { this.fireLaser(w, base, -0.11, st.damage * 0.5, 0, { color: '#ff4a4a', status: 'burn' }); this.fireLaser(w, base, 0.11, st.damage * 0.5, 0, { color: '#4aa8ff', status: 'slow' }); }
       }
+      // spiral items: a ray that spins round you, a little further each pull
+      if (prof.spiral) { this.spiralAng += 0.9; this.fireLaser(w, this.spiralAng, 0, st.damage * 0.6, 0); }
+      // orbiting items: a second ray from a point circling you
+      if (prof.orbit) this.fireLaser(w, ang, 0, st.damage * 0.6, 0, { orbit: true });
+      if (giant) { w.shake(4); w.audio.play('beam', { pitch: 0.7, vol: 0.6 }); }
+      this.searchlight(w, ang);
       this.onFired(w, ang, 'laser');
       return;
     }
@@ -310,12 +329,14 @@ export class Player {
       for (const base of this.fireAngles(ang)) for (let i = 0; i < n; i++) {
         const b = new Beam(prof);
         b.ang = base; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
-        b.dur = (prof.short ? 0.7 : 0.5) * (0.5 + part * 0.5); b.width = (prof.short ? 9 : 7) * beamScale(st.size) * (heavy ? 1.25 : 1) * (0.6 + part * 0.4); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1) * part;
-        b.color = prof.tint ?? (prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff');
+        const oc = overchargeMul(prof);
+        b.dur = (prof.short ? 0.7 : 0.5) * (0.5 + part * 0.5); b.width = (prof.short ? 9 : 7) * beamScale(st.size) * oc.width * (heavy ? 1.25 : 1) * (0.6 + part * 0.4); b.dmg = st.damage * 0.55 * oc.dmg * (heavy ? 1.35 : 1) * part;
+        b.color = laserColor(prof, prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff', w);
         w.beams.push(b);
       }
       // burst: the beam goes off with a spray of shots
       if (prof.modes.has('burst') && part >= 1) this.spray(w, ang, 6 + prof.shots * 2, 0.8);
+      if (part >= 1) this.searchlight(w, ang);
       w.shake(part >= 1 ? 2.5 : 1);
       this.onFired(w, ang, 'beam');
       return;
@@ -340,12 +361,28 @@ export class Player {
     if (this.prof.sides) a.push(ang + Math.PI / 2, ang - Math.PI / 2);
     return a;
   }
-  private fireLaser(w: World, ang: number, offset: number, dmg: number, extraW: number): void {
-    const b = new Beam(this.prof);
+  private fireLaser(w: World, ang: number, offset: number, dmg: number, extraW: number, o: { color?: string; status?: string; orbit?: boolean } = {}): void {
+    const prof = this.prof, oc = overchargeMul(prof);
+    const b = new Beam(prof);
     b.ang = ang; b.offset = offset; b.laser = true; b.dur = 0.12;
-    b.width = (2 + extraW) * laserScale(this.stats.size); b.dmg = dmg; b.color = this.prof.tint ?? '#ff5a6a';
+    // shot size, overcharge and Growing Pains all widen it
+    b.width = (2 + extraW) * laserScale(this.stats.size) * oc.width * (1 + Math.min(1.5, prof.grow));
+    b.dmg = dmg * oc.dmg; b.color = o.color ?? laserColor(prof, '#ff5a6a', w); b.status = o.status ?? null;
+    // wiggly items: the laser lingers a moment and lashes side to side
+    if (prof.wiggle) { b.lash = 0.22 * Math.min(2, prof.wiggle); b.dur = 0.24; }
+    if (o.orbit) { const t = w.time * 4; b.followPlayer = false; b.x = this.x + Math.cos(t) * 18; b.y = this.y - 11 + Math.sin(t) * 10; }
     w.beams.push(b);
   }
+  /** The Lighthouse Lens: every fourth pull, a wide searchlight sweeps across in front of you. */
+  private searchlight(w: World, ang: number): void {
+    const prof = this.prof;
+    if (!prof.searchlight || ++this.lightPulls % 4 !== 0) return;
+    const oc = overchargeMul(prof), b = new Beam(prof);
+    b.ang = ang; b.sweepSpan = 0.75; b.dur = 0.7; b.width = 10 * beamScale(this.stats.size) * oc.width; b.dmg = this.stats.damage * 0.45 * oc.dmg;
+    b.color = laserColor(prof, '#fff2b0', w);
+    w.beams.push(b); w.audio.play('beam', { pitch: 1.3, vol: 0.4 });
+  }
+  private lightPulls = 0;
   /** A burst-style spray of shots carrying the full profile. */
   private spray(w: World, ang: number, n: number, dmgMul: number): void {
     const m = this.muzzle(ang), st = this.stats;
@@ -364,7 +401,8 @@ export class Player {
     if (m.has('beam') && charged) {
       for (const base of this.fireAngles(ang)) {
         const b = new Beam(this.prof);
-        b.ang = base; b.dur = 0.45; b.width = 7 * beamScale(st.size); b.dmg = st.damage * 0.5; b.color = this.prof.tint ?? '#6a58ff';
+        const oc = overchargeMul(this.prof);
+        b.ang = base; b.dur = 0.45; b.width = 7 * beamScale(st.size) * oc.width; b.dmg = st.damage * 0.5 * oc.dmg; b.color = laserColor(this.prof, '#6a58ff', w);
         w.beams.push(b);
       }
     }
@@ -557,5 +595,6 @@ export const TRANSFORM_EFFECTS: Record<string, { name: string; desc: string; sta
   void: { name: 'Hollowed', desc: 'Spectral homing shots.', attack: { spectral: true, homing: 0.4 } },
   drain: { name: 'Drainer', desc: 'Flight. Speed up. Every shot can chill.', stats: { speed: 0.2, tears: 0.3 }, attack: { slow: 0.25, tint: '#a8dcff' }, flight: true },
   vamp: { name: 'King Vamp', desc: 'Damage up. Your shots drink blood.', stats: { damage: 1.5 }, attack: { lifesteal: 0.35, tint: '#d01828', shape: 'blood' } },
+  laser: { name: 'Live Wire', desc: 'Damage up. Every laser leaps on to another enemy.', stats: { damage: 1 }, attack: { laserArc: 1 } },
   jeffy: { name: 'Jeffy', desc: 'Speed and damage up. Getting hit throws a tantrum of pencils.', stats: { damage: 1, speed: 0.2 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' } },
 };

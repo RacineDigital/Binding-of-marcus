@@ -6,6 +6,7 @@ import type { BombMods } from '../items/types';
 import { pickupSprites } from '../art/pickups';
 import { getItem } from '../items/registry';
 import type { Enemy } from '../enemies/enemy';
+import { childLaser, laserColor, laserScale, overcharge, overchargeMul } from '../projectiles/weapons';
 
 export class Bomb {
   x: number; y: number; z = 0; vx = 0; vy = 0; vz = 0; r = 6;
@@ -72,6 +73,12 @@ export function detonate(w: World, b: Bomb): void {
   const r = (b.mini ? 30 : 44) + (m.big ? 16 : 0) + (m.radiusAdd ?? 0);
   const dmg = (b.mini ? 25 : 60) + (m.big ? 40 : 0) + (m.damageAdd ?? 0);
   w.explode(b.x, b.y, r, dmg, { bomb: true, mods: m, friendly: w.player.has('blast_apron') });
+  // with lasers, a bomb goes off as a burst of rays
+  const prof = w.player.prof;
+  if (prof.modes.has('laser') || prof.lasers > 0) {
+    const n = 6 + overcharge(prof) * 2, off = Math.random() * TAU;
+    for (let i = 0; i < n; i++) childLaser(w, prof, b.x, b.y - 6, off + (i / n) * TAU, Math.max(8, w.player.stats.damage * 2) * overchargeMul(prof).dmg, 3 * laserScale(w.player.stats.size), 150, laserColor(prof, '#ff5a6a', w));
+  }
   if (m.fire) for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; w.addCreep(b.x + Math.cos(a) * 18, b.y + Math.sin(a) * 12, 12, 'player', 18, 4, '#a0401a'); }
   if (m.poison) { w.fx.smoke(b.x, b.y, 16, 'rgba(90,150,40,', 10, 2.5, 6); for (const e of w.enemies) if (dist2(e.x, e.y, b.x, b.y) < (r * 1.6) ** 2) { e.poison = 5; e.poisonDmg = 6; } }
   if (m.ink) for (let i = 0; i < 5; i++) w.addCreep(b.x + (Math.random() - 0.5) * 40, b.y + (Math.random() - 0.5) * 30, 14, 'player', 12, 5);

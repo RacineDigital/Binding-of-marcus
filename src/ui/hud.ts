@@ -4,6 +4,7 @@ import type { Pickup } from '../game/pickups';
 import type { World } from '../game/world';
 import { pickupSprites } from '../art/pickups';
 import { TRANSFORM_EFFECTS } from '../player/player';
+import { LASER_TIERS, overcharge } from '../projectiles/weapons';
 import { itemIconCanvas } from '../art/items';
 import { getItem, getConsumable } from '../items/registry';
 import { describeItem, DescLine } from '../items/describe';
@@ -107,6 +108,16 @@ const STAT_ICON_MAPS: Record<string, string[]> = {
     'lLLLlLLLl',
     'lLLl.lLLl',
     '.ll.G.ll.'],
+  laser: [   // a red ray with a white-hot core
+    '.........',
+    '.......xx',
+    '.....xxXx',
+    '...xxXXx.',
+    '.xxXXxx..',
+    'xXXxx....',
+    'xxx......',
+    '.........',
+    '.........'],
   wing: [    // a white wing, for flight
     '......ww.',
     '....wwWw.',
@@ -132,7 +143,7 @@ const STAT_NAMES: Record<string, string> = { speed: 'Speed', damage: 'Damage', r
 const STAT_ICON_PAL: Record<string, string> = {
   y: '#e8b830', Y: '#ffe890', w: '#e8e4f4', b: '#7a4a2a', R: '#e0283a', s: '#c8ccd8', S: '#ffffff',
   k: '#3a7ae8', K: '#a8d0ff', o: '#f08a30', t: '#c8a868', c: '#40d0e0', C: '#d8fcff', l: '#3a9a3a', L: '#7ae06a', G: '#2a5a20',
-  m: '#4a4ab8', M: '#9a9aff', d: '#8a7560', p: '#3a2e7a', P: '#efe6d2', W: '#ffffff', u: '#8ab8e8',
+  m: '#4a4ab8', M: '#9a9aff', x: '#ff4a5a', X: '#fff0e0', d: '#8a7560', p: '#3a2e7a', P: '#efe6d2', W: '#ffffff', u: '#8ab8e8',
 };
 let statIcons: Record<string, HTMLCanvasElement> | null = null;
 function statIcon(k: string): HTMLCanvasElement {
@@ -439,6 +450,7 @@ export class Hud {
     this.doorPrev = odds;
     this.doorFlash = Math.max(0, this.doorFlash - dt);
     this.trackFlight(dt);
+    this.trackLasers(dt);
   }
 
   private drawStats(ctx: CanvasRenderingContext2D): void {
@@ -471,8 +483,29 @@ export class Hud {
       ctx.drawImage(statIcon('wing'), x, fy - 7 + Math.round(Math.sin(this.w.time * 4) * 0.8));
       text(ctx, 'Flying', x + 11, fy, 7, glow ? '#ffffff' : '#a8d0ff', 'left');
     }
+    // the laser family: how many you hold and what tier that overcharges them to
+    const L = this.w.player.prof.lasers;
+    if (L > 0) {
+      const ly = y + (this.w.player.flight ? 22 : 11), tier = LASER_TIERS[overcharge(this.w.player.prof)];
+      const glow = this.laserFlash > 0 && Math.floor(this.laserFlash * 8) % 2 === 0;
+      ctx.drawImage(statIcon('laser'), x, ly - 7);
+      const label = `Lasers \u00d7${L}`;
+      text(ctx, label, x + 11, ly, 7, glow ? '#ffffff' : '#ff9a8a', 'left');
+      if (tier.name) text(ctx, tier.name, x + 14 + measure(ctx, label, 7), ly, 6.5, tier.color ?? COL.text, 'left', FONT_BODY, 700);
+    }
   }
   private flyFlash = 0; private flyPrev = false;
+  private laserFlash = 0; private laserPrev = -1;
+  /** A new laser item is announced with what it does to the rest: more of them, hotter tier. */
+  private trackLasers(dt: number): void {
+    const prof = this.w.player.prof, L = prof.lasers;
+    if (this.laserPrev >= 0 && L > this.laserPrev && this.w.time > 1) {
+      this.laserFlash = 2;
+      const t = LASER_TIERS[overcharge(prof)];
+      this.toast(L >= 2 ? `Lasers \u00d7${L}: ${t.name}! ${t.perk[0].toUpperCase()}${t.perk.slice(1)}.` : 'A laser item. Every other one you find will overcharge it.', 3);
+    }
+    this.laserPrev = L; this.laserFlash = Math.max(0, this.laserFlash - dt);
+  }
   /** Getting flight is announced, so it never goes unnoticed. */
   private trackFlight(dt: number): void {
     const fl = this.w.player.flight;

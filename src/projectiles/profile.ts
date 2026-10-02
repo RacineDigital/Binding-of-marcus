@@ -32,6 +32,12 @@ export interface AttackProfile {
   magnet: boolean;        // enemy projectiles near shots are cancelled
   rainbow: boolean;       // random status each shot
   short: boolean;         // beams stop short (the Blot's mouth)
+  // ---- the laser family
+  lasers: number;         // laser and beam items held: more than one overcharges them
+  laserArc: number;       // laser hits leap on to this many nearby enemies
+  focus: number;          // lasers and beams heat up on whatever they keep hitting
+  prismRays: boolean;     // every laser pull also fires a red and a blue ray
+  searchlight: boolean;   // every fourth pull sweeps a wide searchlight beam
 }
 
 export type ProfilePart = Partial<Omit<AttackProfile, 'modes'>> & { mode?: AttackMode };
@@ -43,6 +49,7 @@ export function baseProfile(): AttackProfile {
     wiggle: 0, spiral: false, arc: false, grow: 0, accel: 0, burn: 0, poison: 0, slow: 0, freeze: 0, fear: 0,
     confuse: 0, mark: 0, charm: 0, crit: 0, creep: false, rear: false, sides: false, lifesteal: 0, knock: 1,
     shape: 'ink', tint: null, chargeTime: 1.1, pull: false, shatter: false, magnet: false, rainbow: false, short: false,
+    lasers: 0, laserArc: 0, focus: 0, prismRays: false, searchlight: false,
   };
 }
 
