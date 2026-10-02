@@ -289,7 +289,7 @@ const patient: EnemyDef = {
 // and when it fades it leaves one of the things it had.
 const echo: EnemyDef = {
   id: 'echo', name: 'Your Echo', desc: 'It died here last time. It remembers how.', boss: true,
-  hp: 230, r: 7, speed: 0, role: 'boss', cost: 0, hitY: 12, mass: 4, gore: '#a8c8f0', goreDecal: '#2a3a5a', light: [50, '#a8d0ff'],
+  hp: 115, r: 7, speed: 0, role: 'boss', cost: 0, hitY: 12, mass: 4, gore: '#a8c8f0', goreDecal: '#2a3a5a', light: [50, '#a8d0ff'],
   // (in play it wears your reader's look; this is how the Bestiary remembers it)
   sprites: () => ({ idle: frames(22, 30, 2, (p, f) => {
     const c = ramp('#a8c8f0');
@@ -302,29 +302,30 @@ const echo: EnemyDef = {
     const d = e.data, pl = w.player;
     const power = Math.min(3, (d.items?.length ?? 0) / 6);
     d.t2 = (d.t2 ?? 0) + dt;
-    // strafe around Marcus at a fighting distance, like a player would
+    // circle Marcus at a fighting distance; it only backs off when he's right on top of it, and
+    // dashes now and then rather than constantly darting away
     const dd = dist(e.x, e.y, pl.x, pl.y), a = angleTo(e.x, e.y, pl.x, pl.y);
-    d.side ??= 1; if (Math.random() < dt * 0.5) d.side *= -1;
-    const want = dd > 130 ? 1 : dd < 80 ? -1 : 0;
-    const mx = Math.cos(a) * want + Math.cos(a + Math.PI / 2 * d.side) * 0.8, my = Math.sin(a) * want + Math.sin(a + Math.PI / 2 * d.side) * 0.8;
-    const sp = (d.dash > 0 ? 220 : 62 + power * 10);
+    d.side ??= 1; if (Math.random() < dt * 0.25) d.side *= -1;
+    const want = dd > 105 ? 1 : dd < 42 ? -0.6 : 0;
+    const mx = Math.cos(a) * want + Math.cos(a + Math.PI / 2 * d.side) * 0.45, my = Math.sin(a) * want + Math.sin(a + Math.PI / 2 * d.side) * 0.45;
+    const sp = (d.dash > 0 ? 160 : 48 + power * 8);
     e.move(w, mx * sp * dt, my * sp * dt);
     d.dash = (d.dash ?? 0) - dt;
-    d.dcd = (d.dcd ?? 2.5) - dt;
-    if (d.dcd <= 0) { d.dcd = 2.2 + Math.random() * 1.5; d.dash = 0.22; d.side *= -1; w.fx.smoke(e.x, e.y, 4, 'rgba(160,190,230,', 4, 0.4); }
+    d.dcd = (d.dcd ?? 4) - dt;
+    if (d.dcd <= 0) { d.dcd = 4.5 + Math.random() * 2; d.dash = 0.18; d.side *= -1; w.fx.smoke(e.x, e.y, 4, 'rgba(160,190,230,', 4, 0.4); }
     d.dir = Math.abs(pl.x - e.x) > Math.abs(pl.y - e.y) ? 'side' : pl.y > e.y ? 'down' : 'up';
     e.flip = pl.x < e.x;
     // tears, in bursts, the way it used to shoot
     d.fcd = (d.fcd ?? 1) - dt;
     if (d.fcd <= 0) {
-      d.fcd = Math.max(0.28, 0.55 - power * 0.08);
+      d.fcd = Math.max(0.38, 0.7 - power * 0.08);
       const n = 1 + Math.floor(power), aim = aimAngle(e, w, 0.4, 150);
       for (let i = 0; i < n; i++) shoot(e, w, aim + (i - (n - 1) / 2) * 0.16, 150 + power * 12, { shape: 'water', r: 3.5, z: 10 });
       w.audio.play('shoot', { x: e.x, pitch: 0.7, vol: 0.4 });
     }
     // and now and then everything it had at once
     d.bcd = (d.bcd ?? 4) - dt;
-    if (d.bcd <= 0) { d.bcd = 4.5 - power * 0.5; ringShot(e, w, 10 + Math.floor(power * 3), 105, Math.random(), { shape: 'water', r: 3.5, z: 10 }); w.audio.play('bossSpit', { x: e.x, pitch: 1.3 }); }
+    if (d.bcd <= 0) { d.bcd = 6 - power * 0.5; ringShot(e, w, 8 + Math.floor(power * 2), 95, Math.random(), { shape: 'water', r: 3.5, z: 10 }); w.audio.play('bossSpit', { x: e.x, pitch: 1.3 }); }
     if (Math.random() < dt * 10) w.fx.burst(e.x + (Math.random() - 0.5) * 10, e.y - 6, 4, 2, '#c8e0ff', 16, 0.6);
   },
   draw(e, ctx, w, sx, sy) {

@@ -118,9 +118,11 @@ function touch(w: World, n: Npc): void {
       // one of Grandfather's notes: read it (it goes in the Journal)
       const note = NOTE_BY_ID[n.data.id];
       if (!note) return;
-      n.cd = 4;
+      // you can only read it standing over it: it stays open while you're close and closes when you leave
+      n.cd = 0.3;
+      if (w.hud.readingNote(note.title)) return;
       const fresh = w.game.save.readNote(note.id);
-      w.hud.showNote(note.title, note.text, note.by ?? 'Grandfather');
+      w.hud.showNote(note.title, note.text, note.by ?? 'Grandfather', { x: n.x, y: n.y });
       w.audio.play('pageGet', { x: n.x });
       if (fresh) {
         w.audio.play('secret', { x: n.x, vol: 0.4 }); w.after(0.6, () => w.hud.toast('A new note in the Journal.', 2));

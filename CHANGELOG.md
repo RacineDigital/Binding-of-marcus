@@ -2,6 +2,14 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.2.1
+
+- **Your Echo is fair now.** The ghost of your last death has half the health it had. It circles
+  you instead of constantly darting away (it only backs off if you're right on top of it), dashes
+  far less often, and fires a little slower with smaller rings of shots.
+- **Grandfather's notes are read where they lie.** A note opens when you step on it, stays open
+  while you stand there, and closes as soon as you walk away. Step back on to read it again.
+
 ## What's new in 3.2.0
 
 ### Final boss music

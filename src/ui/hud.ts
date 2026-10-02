@@ -25,6 +25,8 @@ import { mapIcon } from '../art/roomicons';
 
 /** The Blot's heart: pop in, beat, fly to the hearts (seconds). */
 const GIFT_POP = 0.45, GIFT_HOLD = 1.7, GIFT_FLY_END = 2.3;
+/** How close you must stand to a pinned note to keep reading it (world px). */
+const NOTE_READ_RANGE = 34;
 
 interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null }
 
@@ -142,7 +144,8 @@ export class Hud {
   fullMap = false;
   panelFade = 0; panelInfo: InspectInfo | null = null; panelPickup: Pickup | null = null;
   /** A note being read: a page held up at the bottom of the screen for a while. */
-  note: { title: string; text: string; by: string; t: number; dur: number } | null = null;
+  /** A note or letter on screen. `at` pins it to a spot in the room: it can only be read standing there. */
+  note: { title: string; text: string; by: string; t: number; dur: number; at?: { x: number; y: number } } | null = null;
   constructor(w: World) { this.w = w; }
   /** A transformation: its name, big, in the middle of the screen. */
   tcard: { name: string; desc: string; t: number } | null = null;
@@ -150,7 +153,13 @@ export class Hud {
   /** The Blot's heart: pops up mid-screen, beats, then flies to your hearts and becomes a red container. */
   gift: { t: number; landed: boolean } | null = null;
   giftHeart(): void { this.gift = { t: 0, landed: false }; this.w.audio.play('chime', { pitch: 0.8 }); this.w.audio.play('heal', { vol: 0.6 }); }
-  showNote(title: string, body: string, by: string): void { this.note = { title, text: body, by, t: 0, dur: 3.5 + body.length * 0.03 }; }
+  showNote(title: string, body: string, by: string, at?: { x: number; y: number }): void {
+    // touching a pinned note you're already reading just keeps it open
+    if (at && this.note?.at && this.note.title === title) { this.note.at = at; return; }
+    this.note = { title, text: body, by, t: 0, dur: at ? 1e9 : 3.5 + body.length * 0.03, at };
+  }
+  /** Is this pinned note the one on screen? */
+  readingNote(title: string): boolean { return !!this.note?.at && this.note.title === title && this.note.dur > this.note.t + 0.3; }
 
   /** Speedrun-style run clock under the map. */
   private drawTimer(ctx: CanvasRenderingContext2D): void {
@@ -172,6 +181,11 @@ export class Hud {
     for (const b of this.banners) b.t += dt;
     this.banners = this.banners.filter((b) => b.t < 3);
     if (this.note && (this.note.t += dt) > this.note.dur) this.note = null;
+    // a pinned note stays open while you stand by it, and fades the moment you walk away
+    if (this.note?.at && this.note.dur > 1e8) {
+      const pl = this.w.player, far = Math.hypot(pl.x - this.note.at.x, pl.y - this.note.at.y) > NOTE_READ_RANGE;
+      if (far) this.note.dur = this.note.t + 0.35;
+    }
     if (this.tcard && (this.tcard.t += dt) > 3) this.tcard = null;
     if (this.gift) {
       const g = this.gift; g.t += dt;
