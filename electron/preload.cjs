@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld('bomDesktop', {
   openSaveFolder: () => ipcRenderer.invoke('save:folder'),
   screenshot: (dataUrl) => ipcRenderer.invoke('screenshot', dataUrl),
   toggleFullscreen: () => ipcRenderer.send('win:fullscreen'),
+  // window fullscreen, which Esc doesn't leave (Esc is pause in the game)
+  isFullscreen: () => ipcRenderer.sendSync('win:isfs'),
+  setFullscreen: (on) => ipcRenderer.send('win:setfs', !!on),
+  onFullscreen: (fn) => ipcRenderer.on('fullscreen', (_e, on) => fn(!!on)),
   quit: () => ipcRenderer.send('win:quit'),
   setPresence: (p) => ipcRenderer.send('presence', p),
   // auto-update: told when a new version is downloading / ready; restart to install it now

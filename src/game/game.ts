@@ -6,6 +6,7 @@ import { SaveManager } from '../save/save';
 import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
 import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
+import { setFullscreen, onFullscreenChange } from '../core/fullscreen';
 import { recordScore, checkProgress, RunMode } from './progress';
 import { endingFor } from '../data/endings';
 import { updatePresence } from './presence';
@@ -45,6 +46,9 @@ export class Game {
     this.save = new SaveManager();
     this.applySettings();
     this.menus = new MenuSystem(this);
+    // the desktop app comes back in fullscreen if you left it that way (F11 and Alt+Enter count too)
+    if ((window as any).bomDesktop?.setFullscreen && this.save.data.settings.fullscreen) setFullscreen(true);
+    onFullscreenChange((on) => { if (this.save.data.settings.fullscreen !== on) { this.save.data.settings.fullscreen = on; this.save.markSettings(); } });
     this.save.onUnlock = (id) => {
       const a = ACHIEVEMENTS.find((x) => x.id === id);
       if (a) { this.unlockQueue.push({ name: a.name, t: 0 }); this.audio.stinger('unlock'); }
@@ -198,6 +202,7 @@ export class Game {
     pl.recompute();
     this.save.data.lastSeed = run.seed;
     this.save.stat('runs', 1);
+    this.menus.stack = [];
     this.scene = 'run'; this.paused = false;
     this.world.startFloor();
   }
@@ -239,6 +244,7 @@ export class Game {
       pl.recompute();
       this.world = new World(this, run, pl);
       this.world.syncFamiliars();
+      this.menus.stack = [];   // the main menu must not linger under the pause menu
       this.scene = 'run'; this.paused = false;
       if (s.floorState && s.floorState.floor === s.floor) flow.restoreFloor(this.world, s.floorState);
       else this.world.startFloor();

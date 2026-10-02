@@ -61,6 +61,8 @@ ipcMain.handle('screenshot', async (_e, dataUrl) => {
   return file;
 });
 ipcMain.on('win:fullscreen', () => { if (win) win.setFullScreen(!win.isFullScreen()); });
+ipcMain.on('win:setfs', (_e, on) => { if (win) win.setFullScreen(!!on); });
+ipcMain.on('win:isfs', (e) => { e.returnValue = !!win && win.isFullScreen(); });
 ipcMain.on('win:quit', () => app.quit());
 
 const discord = new DiscordPresence(SMOKE ? '' : DISCORD_CLIENT_ID);
@@ -84,6 +86,9 @@ function create() {
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
   });
   win.removeMenu();
+  // tell the game whenever fullscreen changes (F11 included) so it can remember it for next time
+  win.on('enter-full-screen', () => win.webContents.send('fullscreen', true));
+  win.on('leave-full-screen', () => win.webContents.send('fullscreen', false));
   win.once('ready-to-show', () => { if (!SMOKE) win.show(); });
   win.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown') return;

@@ -2,6 +2,16 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.2.3
+
+- **Fixed: the main menu showing through the pause menu.** After you continued a saved run, the
+  main menu stayed behind the scenes and was drawn right over the pause screen. Continuing now
+  clears it, the same way starting a new run does.
+- **Esc no longer knocks you out of fullscreen.** Options → Fullscreen now uses the window's own
+  fullscreen (the same as F11), so Esc just pauses. The game also remembers fullscreen and opens
+  that way next time. In the browser version, a quick tap of Esc pauses; hold Esc to leave
+  fullscreen.
+
 ## What's new in 3.2.2
 
 - **Smooth movement, like Isaac.** The world used to be drawn on a tiny canvas and blown up, so

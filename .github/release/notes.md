@@ -1,13 +1,12 @@
-## What's new in 3.2.2
+## What's new in 3.2.3
 
-- **Smooth movement, like Isaac.** The world used to be drawn on a tiny canvas and blown up, so
-  everything moved in whole chunky pixels and walking looked jittery (one pixel, then two, then
-  one). Now positions are drawn at your screen's real resolution: Marcus, enemies, shots and the
-  camera glide a screen pixel at a time, while the art stays just as crisp and chunky.
-- **Softer starts and stops.** Marcus eases up to speed and glides a moment when you let go,
-  instead of snapping on and off.
-- **Weathered menu pages.** Every menu page is now old, handled paper: torn and nicked edges, a
-  scorched rim, foxing and water stains, creases, a dog-eared corner and the odd ink smudge.
+- **Fixed: the main menu showing through the pause menu.** After you continued a saved run, the
+  main menu stayed behind the scenes and was drawn right over the pause screen. Continuing now
+  clears it, the same way starting a new run does.
+- **Esc no longer knocks you out of fullscreen.** Options → Fullscreen now uses the window's own
+  fullscreen (the same as F11), so Esc just pauses. The game also remembers fullscreen and opens
+  that way next time. In the browser version, a quick tap of Esc pauses; hold Esc to leave
+  fullscreen.
 
 ## Download and play
 
