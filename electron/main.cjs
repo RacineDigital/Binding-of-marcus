@@ -74,6 +74,8 @@ ipcMain.on('presence', (_e, p) => {
     details: clip(p.details), state: clip(p.state),
     timestamps: p.start ? { start: Math.floor(p.start) } : undefined,
     assets: { large_image: 'logo', large_text: 'Lost Marcus (Beta)', ...(p.small ? { small_image: p.small, small_text: clip(p.smallText) } : {}) },
+    // a button at the bottom of the card, so anyone who sees you playing can find the game
+    buttons: [{ label: 'Lost Marcus on GitHub', url: 'https://github.com/RacineDigital/Binding-of-marcus' }],
     instance: false,
   });
 });

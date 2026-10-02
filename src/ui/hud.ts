@@ -283,114 +283,37 @@ export class Hud {
   }
 
   /**
-   * Held map key: the full map on the right, and on the left what everything in your hands does
-   * (active item, charms, pocket pages and sweets) plus how the bargain door odds are made up.
+   * Held map key: kept simple on purpose. Where you are (chapter, floor, curse), what you carry as a
+   * grid of icons, and the map, zoomed in to fill the rest of the screen.
    */
   private drawTabScreen(ctx: CanvasRenderingContext2D): void {
-    const w = this.w, pl = w.player;
+    const w = this.w, pl = w.player, f = w.floor, th = f.theme;
     ctx.save();
     ctx.fillStyle = 'rgba(6,4,10,0.9)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    if (w.floor.curse !== 'lost') this.drawMinimap(ctx, true);
-    else text(ctx, CURSE_NAMES.lost, VIEW_W * 0.72, VIEW_H / 2, 9, COL.dim, 'center');
-    const X = 10, W = 196;
-    let y = 14;
-    const head = (s: string) => { text(ctx, s, X, y + 6, 6, COL.dim, 'left', FONT_BODY, 700); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(X + measure(ctx, s, 6, FONT_BODY, 700) + 4, y + 3.5, W - measure(ctx, s, 6, FONT_BODY, 700) - 4, 0.6); y += 10; };
-    const entry = (icon: CanvasImageSource | null, title: string, sub: string, lines: DescLine[]) => {
-      if (y > VIEW_H - 24) return;
-      ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(X, y, 16, 16);
-      if (icon) { ctx.imageSmoothingEnabled = false; ctx.drawImage(icon, X, y, 16, 16); }
-      text(ctx, title, X + 21, y + 7, 8, COL.text, 'left', FONT_BODY, 700);
-      if (sub) text(ctx, sub, X + 21, y + 15, 6, COL.dim, 'left', FONT_BODY, 600);
-      y += sub ? 19 : 13;
-      for (const l of lines) {
-        const c = l.color === 'up' ? COL.up : l.color === 'down' ? COL.down : l.color === 'note' ? COL.note : COL.text;
-        for (const s of wrap(ctx, fmtKeys(l.text), 6.5, W - 21)) { if (y > VIEW_H - 14) break; text(ctx, s, X + 21, y + 5, 6.5, c, 'left', FONT_BODY, 600); y += 8; }
-      }
-      y += 4;
-    };
-    const plain = (arr: string[]): DescLine[] => arr.map((t) => ({ text: t, color: 'plain' as const }));
-    // your stats, named, in two columns
-    head('YOUR STATS');
-    this.statRows().forEach(([k, v], i) => {
-      const cx = X + (i % 2) * 100, cy = y + Math.floor(i / 2) * 11;
-      ctx.drawImage(statIcon(k), cx, cy);
-      text(ctx, STAT_NAMES[k], cx + 12, cy + 7.5, 7, COL.dim, 'left', FONT_BODY, 600);
-      text(ctx, v, cx + 92, cy + 7.5, 7.5, COL.text, 'right', FONT_BODY, 700);
+    // where you are
+    const where = [th?.chapter, th?.name].filter(Boolean).join('  ·  ');
+    text(ctx, where || 'The Cellar', VIEW_W / 2, 20, 12, COL.text, 'center', FONT_TITLE, 400);
+    const sub = [`Floor ${w.run.floorIndex + 1}`, f.curse ? CURSE_NAMES[f.curse] ?? '' : ''].filter(Boolean).join('  ·  ');
+    text(ctx, sub, VIEW_W / 2, 31, 7, f.curse ? '#c090ff' : COL.dim, 'center', FONT_BODY, 600);
+    // your items: the active first, then everything you've picked up, then charms
+    const X = 12, Y = 46, colW = 150;
+    const ids = [...(pl.active ? [pl.active] : []), ...pl.itemOrder.filter((id) => (pl.items.get(id) ?? 0) > 0 && id !== pl.active), ...pl.charms];
+    text(ctx, `YOUR ITEMS  ·  ${ids.length}`, X, Y - 4, 6.5, COL.dim, 'left', FONT_BODY, 700);
+    if (!ids.length) text(ctx, 'Nothing yet.', X, Y + 10, 7, COL.dim, 'left');
+    let cell = 18;
+    while (cell > 10 && Math.ceil(ids.length / Math.floor(colW / cell)) * cell > VIEW_H - Y - 10) cell -= 1;
+    const per = Math.floor(colW / cell);
+    ctx.imageSmoothingEnabled = false;
+    ids.forEach((id, i) => {
+      const x = X + (i % per) * cell, y = Y + Math.floor(i / per) * cell;
+      ctx.fillStyle = id === pl.active ? 'rgba(255,220,120,0.14)' : 'rgba(255,255,255,0.05)'; ctx.fillRect(x, y, cell - 2, cell - 2);
+      ctx.drawImage(itemIconCanvas(id), x, y, cell - 2, cell - 2);
+      const n = pl.items.get(id) ?? 1;
+      if (n > 1) text(ctx, `x${n}`, x + cell - 2, y + cell - 3, 5.5, COL.gold, 'right', FONT_BODY, 700);
     });
-    y += Math.ceil(this.statRows().length / 2) * 11 + 4;
-    // active item
-    if (pl.active) {
-      const it = getItem(pl.active);
-      if (it) {
-        head(`ACTIVE  ·  ${bindLabel('active')}`);
-        const ch = (it.active ? `charge ${Math.min(pl.charge, it.active.charge)}/${it.active.charge}` : '') + (it.id === 'd_infinity' ? `  ·  showing ${diceFace(w)}` : '');
-        entry(itemIconCanvas(it.id), it.name, [it.pickup, ch].filter(Boolean).join('  ·  '), describeItem(it));
-      }
-    }
-    // charms
-    if (pl.charms.length) {
-      head(`CHARM${pl.charms.length > 1 ? 'S' : ''}  ·  hold ${bindLabel('drop')} to drop`);
-      for (const id of pl.charms) {
-        // charms: their own effect text (their stat lines would only repeat it)
-        const it = getItem(id), c = getConsumable(id) as any;
-        if (c) entry(itemIconCanvas(id), c.name, c.desc ?? '', plain(c.effect ?? []));
-        else if (it) entry(itemIconCanvas(id), it.name, it.pickup, describeItem(it));
-      }
-    }
-    // pocket: pages and sweets
-    if (pl.consumables.length) {
-      head(`POCKET  ·  ${bindLabel('consumable')} to use${pl.consumables.length > 1 ? `, ${bindLabel('swap')} to swap` : ''}`);
-      const S = pickupSprites();
-      for (const c of pl.consumables) {
-        if (c.kind === 'page') { const d = getConsumable(c.id); if (d) entry(S.page.canvas, d.name, d.desc, plain(d.effect)); }
-        else {
-          const col = Number(c.id), eff = SWEET_EFFECTS[w.run.sweetMap[col % 12]];
-          const known = !!eff && w.run.identified.has(eff.id);
-          entry(S.sweets[col % S.sweets.length].canvas, known ? eff.name : 'Unmarked Sweet', known ? 'Identified' : 'Who knows what it does', plain([known ? eff.desc : 'A random effect. Eat it to find out.']));
-        }
-      }
-    }
-    if (!pl.active && !pl.charms.length && !pl.consumables.length) { text(ctx, 'Nothing in your hands yet.', X, y + 8, 7, COL.dim, 'left'); y += 16; }
-    // bargain door odds
-    if (y < VIEW_H - 40) {
-      const odds = doorOdds(w);
-      head(`BARGAIN DOOR  ·  ${Math.round(odds.total * 100)}% after the boss`);
-      for (const part of odds.parts) {
-        text(ctx, part.label, X + 4, y + 5, 6.5, part.good ? COL.text : COL.dim, 'left', FONT_BODY, 600);
-        text(ctx, part.value, X + W, y + 5, 6.5, part.good ? COL.up : COL.down, 'right', FONT_BODY, 700);
-        y += 8;
-      }
-      const sp = odds.split;
-      const names: [keyof typeof sp, string, string][] = [['deal', 'Inkwell', '#8a80e0'], ['blessing', 'Wax Chapel', '#f0e0b0'], ['lostfound', 'Lost & Found', '#e0a860']];
-      let xx = X + 4;
-      for (const [k, n, c] of names) {
-        const s = `${n} ${Math.round(sp[k] * 100)}%`;
-        text(ctx, s, xx, y + 6, 6, sp[k] > 0 ? c : COL.dim, 'left', FONT_BODY, 600);
-        xx += measure(ctx, s, 6, FONT_BODY, 600) + 8;
-      }
-      y += 12;
-    }
-    // transformations in progress: how many pieces of each you're carrying
-    const started = Object.keys(TRANSFORM_EFFECTS).filter((t) => pl.tagCount(t) > 0 || pl.transformations.has(t));
-    if (started.length && y < VIEW_H - 24) {
-      head('TRANSFORMATIONS');
-      for (const t of started) {
-        if (y > VIEW_H - 12) break;
-        const done = pl.transformations.has(t), n = done ? 3 : Math.min(3, pl.tagCount(t));
-        text(ctx, TRANSFORM_EFFECTS[t].name, X + 4, y + 5, 6.5, done ? '#d0a8ff' : COL.text, 'left', FONT_BODY, 600);
-        for (let k = 0; k < 3; k++) { ctx.fillStyle = k < n ? (done ? '#c890ff' : '#9a70e0') : 'rgba(255,255,255,0.12)'; ctx.fillRect(X + 110 + k * 18, y + 1, 15, 5); }
-        text(ctx, done ? 'done' : `${n}/3`, X + W, y + 5, 6.5, done ? '#d0a8ff' : COL.dim, 'right', FONT_BODY, 700);
-        y += 9;
-      }
-      y += 3;
-    }
-    // up the back stair: how the letter is coming along
-    if (w.run.flags.hospital && !w.run.flags.room4 && y < VIEW_H - 30) {
-      head('ST. AGNES  ·  ROOM 4');
-      const whole = pl.has('grandfathers_letter');
-      const rows: [string, boolean][] = whole ? [['Grandfather\'s letter, whole', true]] : [['Top half (lost property)', pl.has('letter_top')], ['Bottom half (somewhere deep)', pl.has('letter_bottom')]];
-      for (const [label, got] of rows) { text(ctx, (got ? '◆ ' : '◇ ') + label, X + 4, y + 5, 6.5, got ? COL.up : COL.dim, 'left', FONT_BODY, 600); y += 8; }
-    }
+    // the map, as big as it fits
+    if (f.curse !== 'lost') this.drawMinimap(ctx, true, { x: X + colW + 16, y: 42, w: VIEW_W - (X + colW + 16) - 12, h: VIEW_H - 52 });
+    else text(ctx, CURSE_NAMES.lost, VIEW_W * 0.66, VIEW_H / 2, 9, COL.dim, 'center');
     ctx.restore();
   }
 
@@ -604,9 +527,10 @@ export class Hud {
     pl.charms.forEach((id, i) => { ctx.drawImage(itemIconCanvas(id), 6 + i * 20, VIEW_H - 24); });
   }
 
-  drawMinimap(ctx: CanvasRenderingContext2D, full: boolean): void {
+  drawMinimap(ctx: CanvasRenderingContext2D, full: boolean, box?: { x: number; y: number; w: number; h: number }): void {
     const w = this.w, f = w.floor;
-    const cw = full ? 15 : 10, ch = full ? 11 : 8, gap = 1;
+    let cw = full ? 15 : 10, ch = full ? 11 : 8, k = 1;
+    const gap = 1;
     // bounds of known rooms
     let minx = 99, miny = 99, maxx = -1, maxy = -1;
     for (const r of f.rooms) {
@@ -614,9 +538,15 @@ export class Hud {
       minx = Math.min(minx, r.gx); miny = Math.min(miny, r.gy); maxx = Math.max(maxx, r.gx + r.cw - 1); maxy = Math.max(maxy, r.gy + r.ch - 1);
     }
     if (maxx < 0) return;
+    // zoomed to fill the box it's given (up to 2.5x), so a small floor reads big
+    if (box) {
+      k = Math.min(2.5, (box.w - 16) / ((maxx - minx + 1) * (cw + gap)), (box.h - 16) / ((maxy - miny + 1) * (ch + gap)));
+      cw *= k; ch *= k;
+    }
     const mw = (maxx - minx + 1) * (cw + gap), mh = (maxy - miny + 1) * (ch + gap);
     let ox: number, oy: number;
-    if (full) { ox = Math.max(216, Math.min(VIEW_W - 14 - mw, VIEW_W * 0.71 - mw / 2)); oy = VIEW_H / 2 - mh / 2; panel(ctx, ox - 8, oy - 8, mw + 16, mh + 16, 0.95); }
+    if (box) { ox = box.x + box.w / 2 - mw / 2; oy = box.y + box.h / 2 - mh / 2; panel(ctx, ox - 8, oy - 8, mw + 16, mh + 16, 0.95); }
+    else if (full) { ox = Math.max(216, Math.min(VIEW_W - 14 - mw, VIEW_W * 0.71 - mw / 2)); oy = VIEW_H / 2 - mh / 2; panel(ctx, ox - 8, oy - 8, mw + 16, mh + 16, 0.95); }
     else {
       // centre on the current room within a fixed window
       const winW = 72, winH = 52;
@@ -629,7 +559,7 @@ export class Hud {
       ctx.beginPath(); ctx.rect(VIEW_W - 8 - winW, 6, winW, winH); ctx.clip();
     }
     // icons are painted at the screen's real pixel size, so they are as sharp as the text
-    const dens = ctx.getTransform().a || 1, isz = full ? 9 : 7;
+    const dens = ctx.getTransform().a || 1, isz = full ? Math.min(18, Math.round(9 * Math.max(1, k * 0.8))) : 7;
     for (const r of f.rooms) {
       const secret = r.type === 'secret' || r.type === 'supersecret';
       if (!(r.seen || r.visited)) continue;
