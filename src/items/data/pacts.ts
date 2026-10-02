@@ -1,7 +1,7 @@
 // The 3.1 pacts and hexes. Inkwell items are the devil's: horns, signatures and black wings, paid
 // for in hearts. Hexed items are cursed things that do something wonderful and something awful.
 import type { ItemDef } from '../types';
-import { ramp, hex, P } from './kit';
+import { ramp, hex, P, directHit } from './kit';
 
 
 function horns(p: P): void {
@@ -56,7 +56,7 @@ export const PACT_ITEMS: ItemDef[] = [
   { id: 'ink_horns', name: 'Ink Horns', kind: 'passive', quality: 3, pools: { deal: 1 },
     pickup: 'Damage up, gore first', effect: ['Your first hit on each enemy gores it for 50% more damage.'],
     stats: { damage: 1.5 }, icon: horns,
-    hooks: { onHitEnemy(w, e, dmg) { if (e.data.gored || e.dead) return; e.data.gored = true; e.hp -= dmg * 0.5; w.fx.sparks(e.x, e.y - e.hitY, 4, '#5a2a6a', 60); } },
+    hooks: { onHitEnemy(w, e, dmg) { if (!directHit(w) || e.data.gored || e.dead) return; e.data.gored = true; e.hp -= dmg * 0.5; w.fx.sparks(e.x, e.y - e.hitY, 4, '#5a2a6a', 60); } },
     lore: 'They grow on anyone who signs enough. They itch.' },
   { id: 'the_signature', name: 'The Signature', kind: 'passive', quality: 4, pools: { deal: 0.6 },
     pickup: 'Sign here', effect: ['Damage +1.5, speed +0.2.', 'Every red heart container you have turns into ink hearts.', 'Shots sometimes terrify enemies.'],

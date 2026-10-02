@@ -109,6 +109,8 @@ export function aimAngle(e: Enemy, w: World, lead = 0, spd = 150): number {
 /** How long a regular enemy shows that it's about to shoot. */
 export const TELL = 0.24;
 export function shoot(e: Enemy, w: World, ang: number, speed: number, o: Parameters<World['proj']['enemy']>[4] = {}): void {
+  // walking in is never a free hit: nothing but a boss fires in your first second in a room
+  if (!e.def.boss && w.roomTime < 1) return;
   // Regular enemies tell you first: the opening shot of a burst waits a beat while the enemy swells
   // and glints, then everything queued in that beat fires together, at the angles it showed you.
   // (Shots inside a running stream flow on without a fresh tell, so turrets don't strobe.)

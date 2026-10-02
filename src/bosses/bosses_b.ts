@@ -63,8 +63,12 @@ function paintFurnace(p: any, f: number, hot: number, open: number, n = 2): void
   crack(p, 39, 17, 3, '#ffffff', 41, 0.9, 0.4);
   sprinkle(p, '#2a2224', 34, 5);
 }
+// Rhythm: it turns its fire jets, lobs coals at marked spots, then vents a ring of steam with one
+// gap and has to cool with its grate hanging open: that open grate is the weak spot. Overheated
+// (below 45%) it moves, jets twice, and vents more often.
 const furnaceBrain: BossBrain = {
   idleTime: [0.8, 1.3], phases: [0.45],
+  sequence: [['jets', 'coal', 'vent'], ['jets', 'vent', 'coal', 'jets', 'vent']],
   idle(e, w, dt) {
     const c = w.room.center();
     if (e.data.phase) chase(e, w, 30, dt);
@@ -80,8 +84,9 @@ const furnaceBrain: BossBrain = {
         e.data.ja += dt * (e.data.phase ? 1.5 : 1.1);
         e.data.jt -= dt;
         if (e.data.jt <= 0) {
-          e.data.jt = 0.075;
-          const arms = e.data.phase ? 6 : 4;
+          // three arms (120 degree lanes) at first, five once overheated: always room to walk between
+          e.data.jt = 0.09;
+          const arms = e.data.phase ? 5 : 3;
           for (let i = 0; i < arms; i++) shoot(e, w, e.data.ja + (i / arms) * TAU, 120, { shape: 'ember', r: 3.5 });
         }
         if (t > 3) { e.setAnim('idle'); return true; }
@@ -107,18 +112,30 @@ const furnaceBrain: BossBrain = {
         if (t < 0.6) { if (Math.random() < 0.6) w.fx.smoke(e.x, e.y - 30, 1, 'rgba(230,230,240,', 3, 0.5, 30); return false; }
         if (!e.data.v) { e.data.v = true; gapRing(e, w, 28, 5, 95, angleTo(e.x, e.y, w.player.x, w.player.y) + (Math.random() - 0.5) * 2, { shape: 'holy', r: 4 }); w.audio.play('extinguish', { x: e.x }); w.shake(2); }
         if (t > 1.2 && e.data.phase && !e.data.v2) { e.data.v2 = true; gapRing(e, w, 28, 5, 95, Math.random() * TAU, { shape: 'holy', r: 4 }); }
-        if (t > 1.6) { e.data.v = e.data.v2 = false; return true; }
+        if (t > 1.6) { e.data.v = e.data.v2 = false; e.setAnim('open'); return true; }
         return false;
-      } },
+      }, recover: 1.5 },
   ],
   onPhase(e, w) { w.hud.toast('The furnace overheats!'); },
 };
 const furnaceheart: EnemyDef = {
   id: 'furnaceheart', name: 'Furnace Heart', desc: 'It has been burning since before the house was built.', boss: true,
-  hp: 300, r: 20, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 20, noKnock: true, gore: '#2a2224', goreDecal: '#1a1416', light: [110, '#ff6a2a'], contact: 1,
+  hp: 270, r: 20, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 20, noKnock: true, gore: '#2a2224', goreDecal: '#1a1416', light: [110, '#ff6a2a'], contact: 1,
   sprites: () => ({ idle: frames(56, 58, 6, (p, f, n) => paintFurnace(p, f, 0, 0, n)), open: frames(56, 58, 6, (p, f, n) => paintFurnace(p, f, 0, 1, n)), hot: frames(56, 58, 6, (p, f, n) => paintFurnace(p, f, 1, 1, n)) }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
-  update(e, w, dt) { bossUpdate(e, w, dt, furnaceBrain); if (e.data.phase && e.anim === 'idle') e.anim = 'hot'; },
+  update(e, w, dt) {
+    bossUpdate(e, w, dt, furnaceBrain);
+    if (e.state === 'idle' && e.anim === 'open') e.anim = 'idle';
+    if (e.data.phase && e.anim === 'idle') e.anim = 'hot';
+    // cooling with the grate open: steam pours off it
+    if (e.state === 'recover' && Math.random() < dt * 14) w.fx.smoke(e.x + (Math.random() - 0.5) * 16, e.y - 30, 1, 'rgba(230,230,240,', 4, 0.6, 26);
+  },
+  // the iron casing turns most of a hit; through the open grate it all goes in
+  onHurt(e, w, dmg, info) {
+    if (e.data.exposed || e.anim === 'open') return dmg;
+    if (info.source !== 'burn' && info.source !== 'poison' && w.time - (e.data.clangT ?? -9) > 0.15) { e.data.clangT = w.time; w.audio.play('clang', { x: e.x, vol: 0.4 }); }
+    return dmg * 0.6;
+  },
   draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, e.data.phase ? { tint: '#ff2010', tintAmt: 0.15 + Math.sin(w.time * 8) * 0.08 } : {}); },
 };
 
@@ -158,8 +175,12 @@ function paintStoker(p: any, f: number, raise: number, n = 4): void {
   for (let i = 0; i < 4; i++) p.ball(44 + i * 2, sy - 9 - (i % 2) * 2, 1.6, 1.4, ramp(i % 2 ? '#ff8a2a' : '#ffd040'));
   sprinkle(p, '#1a1214', 44, 3);
 }
+// Rhythm: three waves of coal from the shovel, then the charge. If he hits a wall he's dazed and
+// the coals fall around the room (step between the marks); then he stomps where you stood. Below
+// half he charges twice and whirls his shovel between.
 const stokerBrain: BossBrain = {
   idleTime: [0.7, 1.2], phases: [0.5],
+  sequence: [['shovel', 'charge', 'stomp'], ['charge', 'stomp', 'charge', 'whirl', 'shovel']],
   idle(e, w, dt) { chase(e, w, e.data.phase ? 48 : 36, dt); e.setAnim('walk'); e.animate(dt, 6); },
   attacks: [
     { id: 'charge', weight: 3,
@@ -170,28 +191,42 @@ const stokerBrain: BossBrain = {
         const h = e.move(w, Math.cos(e.data.ca) * 240 * dt, Math.sin(e.data.ca) * 240 * dt);
         e.flip = Math.cos(e.data.ca) < 0;
         if (h.hx || h.hy || t > 2.2) {
-          w.shake(6); w.audio.play('slam', { x: e.x });
-          for (let i = 0; i < (e.data.phase ? 9 : 6); i++) { const p = randomFloorPoint(w); telegraph(w, p.x, p.y, 10, 0.9, '#ff6a2a'); w.proj.enemy(p.x, p.y, 0, 0, { drop: 200 + Math.random() * 40, shape: 'ember', r: 5, creep: '#a03a1a' }); }
+          e.data.dazed = !!(h.hx || h.hy);
+          w.shake(e.data.dazed ? 6 : 3); w.audio.play('slam', { x: e.x });
+          // the coals land on marked spots, never right on top of you or him, so there's always room
+          for (let i = 0, n = 0; i < 30 && n < (e.data.phase ? 9 : 6); i++) {
+            const p = randomFloorPoint(w);
+            if (dist(p.x, p.y, w.player.x, w.player.y) < 34 || dist(p.x, p.y, e.x, e.y) < 30) continue;
+            n++; telegraph(w, p.x, p.y, 10, 0.9, '#ff6a2a'); w.proj.enemy(p.x, p.y, 0, 0, { drop: 200 + Math.random() * 40, shape: 'ember', r: 5, creep: '#a03a1a' });
+          }
           return true;
         }
         return false;
-      } },
+      }, recover: (e) => (e.data.dazed ? 1.3 : 0.3) },
     { id: 'shovel', weight: 3,
       start(e) { e.setAnim('raise'); },
       run(e, w, t) {
-        if (t > 0.5 && !e.data.s) { e.data.s = true; e.setAnim('walk'); const a = aimAngle(e, w); for (let i = 0; i < (e.data.phase ? 16 : 12); i++) shoot(e, w, a + (Math.random() - 0.5) * 1.1, 100 + Math.random() * 90, { shape: 'ember', r: 3 + Math.random() * 2 }); w.audio.play('swing', { x: e.x }); }
-        if (t > 1.1) { e.data.s = false; return true; }
+        // three swings, each a fan of five with the gaps shifted half a step: a lane opens, then moves
+        const wave = Math.floor((t - 0.5) / 0.38);
+        if (t > 0.5 && wave > (e.data.sw ?? -1) && wave < 3) {
+          e.data.sw = wave; e.setAnim(wave % 2 ? 'raise' : 'walk');
+          const a = e.data.sa ??= aimAngle(e, w), n = 5, off = wave % 2 ? 0.5 : 0;
+          for (let i = 0; i < n; i++) shoot(e, w, a + (i - (n - 1) / 2 + off) * 0.26, 125, { shape: 'ember', r: 3.6 });
+          if (e.data.phase) shoot(e, w, a, 90, { shape: 'ember', r: 4.5 });
+          w.audio.play('swing', { x: e.x, pitch: 1 + wave * 0.08 }); e.sx = 1.12; e.sy = 0.9;
+        }
+        if (t > 0.5 + 3 * 0.38 + 0.2) { e.data.sw = -1; e.data.sa = undefined; e.setAnim('walk'); return true; }
         return false;
-      } },
+      }, recover: 0.45 },
     { id: 'stomp', weight: 2,
       start(e, w) { e.data.tx = w.player.x; e.data.ty = w.player.y; e.data.sx0 = e.x; e.data.sy0 = e.y; telegraph(w, e.data.tx, e.data.ty, 22, 0.9); e.mode = 'fly'; },
       run(e, w, t) {
         const k = clamp((t - 0.2) / 0.7, 0, 1);
         e.x = e.data.sx0 + (e.data.tx - e.data.sx0) * k; e.y = e.data.sy0 + (e.data.ty - e.data.sy0) * k; e.z = Math.sin(k * Math.PI) * 60;
         if (k >= 1 && !e.data.land) { e.data.land = true; e.z = 0; e.mode = 'walk'; ringShot(e, w, e.data.phase ? 16 : 12, 120, Math.random(), { shape: 'ember' }); w.shake(7); w.audio.play('slam', { x: e.x }); e.sx = 1.3; e.sy = 0.75; }
-        if (t > 1.4) { e.data.land = false; return true; }
+        if (t > 1.3) { e.data.land = false; return true; }
         return false;
-      } },
+      }, recover: 0.7 },
     { id: 'whirl', weight: 2, phases: [1],
       run(e, w, t, dt) {
         e.data.wa = (e.data.wa ?? 0) + dt * 6; e.flip = Math.sin(e.data.wa) < 0;
@@ -204,7 +239,7 @@ const stokerBrain: BossBrain = {
 };
 const oldstoker: EnemyDef = {
   id: 'oldstoker', name: 'Old Stoker', desc: 'He kept the house warm. He never stopped.', boss: true,
-  hp: 310, r: 16, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 12, noKnock: true, gore: '#3e3230', goreDecal: '#1a1416', light: [60, '#ff8a3a'],
+  hp: 290, r: 16, speed: 0, role: 'boss', cost: 0, hitY: 22, mass: 12, noKnock: true, gore: '#3e3230', goreDecal: '#1a1416', light: [60, '#ff8a3a'],
   sprites: () => ({ walk: frames(56, 54, 8, (p, f, n) => paintStoker(p, f, 0, n)), raise: frames(56, 54, 1, (p) => paintStoker(p, 0, 1)) }),
   init(e) { e.anim = 'walk'; e.data.idleT = 1; },
   update(e, w, dt) { bossUpdate(e, w, dt, stokerBrain); },

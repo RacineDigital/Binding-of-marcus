@@ -67,3 +67,6 @@ export function conditional(w: World, id: string, cond: boolean, eff: Omit<TempE
 export function counter(w: World, id: string, add = 1): number {
   const f = w.run.flags; f['c_' + id] = (f['c_' + id] ?? 0) + add; return f['c_' + id];
 }
+
+/** True when the hit an onHitEnemy hook sees was a real hit, not a burn, poison or creep tick. */
+export function directHit(w: World): boolean { return w.hitSource !== 'burn' && w.hitSource !== 'poison' && w.hitSource !== 'creep'; }

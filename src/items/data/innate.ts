@@ -1,7 +1,7 @@
 // Each reader's signature: the thing only they do, like Azazel's stubby brimstone. These are never
 // found in a pool, can't be rerolled or traded away, and show in the tracker so you can read them.
 import type { ItemDef } from '../types';
-import { ramp, hex, P, conditional } from './kit';
+import { ramp, hex, P, conditional, directHit } from './kit';
 import { TAU } from '../../core/math';
 
 const SIG = ['quest', 'innate'];
@@ -48,7 +48,7 @@ export const INNATE_ITEMS: ItemDef[] = [
   { id: 'lamplight', name: 'Lamplight', kind: 'passive', quality: 0, pools: {}, tags: SIG,
     pickup: 'Embers, not ink', effect: ['Your shots are embers: about a third of them set what they hit alight.', 'Fan the flames: your hits on burning enemies deal 25% more.'],
     attack: { shape: 'fire', burn: 0.33, tint: '#ffb050' },
-    hooks: { onHitEnemy(w, e, dmg) { if (e.burn > 0 && !e.dead) e.hp -= dmg * 0.25; } },
+    hooks: { onHitEnemy(w, e, dmg) { if (directHit(w) && e.burn > 0 && !e.dead) e.hp -= dmg * 0.25; } },
     icon: (p: P) => { p.ball(9, 11, 4, 5, ramp('#ff9030')); p.ball(9, 10, 2, 3, ramp('#ffe080')); p.set(8, 5, '#ffd060'); p.set(11, 4, '#ff9030'); p.set(6, 7, '#ff9030'); },
     lore: 'Nell lit Grandad\'s lamp every evening. She brought the flame down with her.' },
 ];

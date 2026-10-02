@@ -124,7 +124,9 @@ export class Player {
     const m = this.prof.modes;
     // a laser filament focuses the Burning Glass; Held Breath steadies every charged attack
     const k = (this.mode === 'beam' && m.has('laser') ? 0.65 : 1) * (this.mode !== 'charge' && m.has('charge') ? 0.85 : 1);
-    return clamp(this.prof.chargeTime * k * (2.73 / this.stats.fireRate), 0.25, 3.2);
+    // capped at 2s: stacking multishot items (which slow your fire rate) must never make a charged
+    // attack unusable
+    return clamp(this.prof.chargeTime * k * (2.73 / this.stats.fireRate), 0.25, 2);
   }
 
   /** Where the Blot's beam pours from: the middle of the chest, wherever the body is floating. */
@@ -300,19 +302,21 @@ export class Player {
     const c = this.wcharge, prof = this.prof, st = this.stats, ang = this.aimAng;
     const m = this.muzzle(ang);
     if (mode === 'beam') {
-      if (c < 1) return;
+      // let go early (past 60%) and a thinner, shorter beam still goes out
+      if (c < 0.6) return;
+      const part = c >= 1 ? 1 : 0.4 + (c - 0.6);
       const n = Math.max(1, Math.min(5, prof.shots));
       const heavy = prof.modes.has('charge');
       for (const base of this.fireAngles(ang)) for (let i = 0; i < n; i++) {
         const b = new Beam(prof);
         b.ang = base; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
-        b.dur = prof.short ? 0.7 : 0.5; b.width = (prof.short ? 9 : 7) * Math.min(2.2, st.size) * (heavy ? 1.25 : 1); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1);
+        b.dur = (prof.short ? 0.7 : 0.5) * (0.5 + part * 0.5); b.width = (prof.short ? 9 : 7) * Math.min(2.2, st.size) * (heavy ? 1.25 : 1) * (0.6 + part * 0.4); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1) * part;
         b.color = prof.tint ?? (prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff');
         w.beams.push(b);
       }
       // burst: the beam goes off with a spray of shots
-      if (prof.modes.has('burst')) this.spray(w, ang, 6 + prof.shots * 2, 0.8);
-      w.shake(2.5);
+      if (prof.modes.has('burst') && part >= 1) this.spray(w, ang, 6 + prof.shots * 2, 0.8);
+      w.shake(part >= 1 ? 2.5 : 1);
       this.onFired(w, ang, 'beam');
       return;
     }

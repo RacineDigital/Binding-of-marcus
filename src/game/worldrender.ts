@@ -12,6 +12,7 @@ import { renderPickup, Pickup } from './pickups';
 import { renderBomb, Bomb } from './bombs';
 import { renderNpc, Npc } from './npc';
 import { renderFamiliar, Familiar } from '../items/familiar_rt';
+import { Team } from '../projectiles/projectiles';
 import { renderBeams } from '../projectiles/weapons';
 import { Enemy } from '../enemies/enemy';
 import { hex, darken, toCss, ramp } from '../render/color';
@@ -117,9 +118,10 @@ export function renderWorld(w: World): void {
     }
   }
   // --------------------------------------------------------------- projectiles, beams, particles
-  w.proj.render(ctx, camX, camY, w);
+  w.proj.render(ctx, camX, camY, w, Team.Player);
   renderBeams(w, ctx, camX, camY);
   w.fx.render(ctx, camX, camY, (x, y, rr, c, a) => r.addGlow(x, y, rr, c, a));
+  w.proj.render(ctx, camX, camY, w, Team.Enemy);   // what can hurt you goes on top of everything
   renderAmbient(w, ctx, camX, camY);
   // --------------------------------------------------------------- lights
   const pl = w.player;

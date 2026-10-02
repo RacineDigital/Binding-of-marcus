@@ -655,7 +655,9 @@ export class Hud {
     ctx.save(); ctx.globalAlpha = alpha;
     ctx.fillStyle = '#0a060a'; ctx.fillRect(bx - 2, by - 2, bw + 4, 8);
     ctx.fillStyle = '#5a1a20'; ctx.fillRect(bx, by, bw * this.bossTrail, 4);
-    ctx.fillStyle = '#c8283a'; ctx.fillRect(bx, by, bw * f, 4);
+    // gold while it's spent and open: the bar itself says 'now'
+    const open = w.bossList.some((b) => !b.dead && b.data.exposed);
+    ctx.fillStyle = open ? (Math.sin(w.time * 16) > -0.3 ? '#f0c040' : '#c89020') : '#c8283a'; ctx.fillRect(bx, by, bw * f, 4);
     ctx.fillStyle = 'rgba(255,200,200,0.35)'; ctx.fillRect(bx, by, bw * f, 1);
     ctx.strokeStyle = '#8a7560'; ctx.lineWidth = 0.6; ctx.strokeRect(bx - 2, by - 2, bw + 4, 8);
     text(ctx, (w.room.type === 'boss' || w.room.type === 'echo') && this.bossName ? this.bossName : w.bossList[0].def.name, VIEW_W / 2, by - 4, 8, COL.text, 'center', FONT_TITLE, 400);

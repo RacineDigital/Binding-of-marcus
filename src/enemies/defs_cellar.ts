@@ -2,8 +2,8 @@
 import { EnemyDef, Enemy } from './enemy';
 import { gridFrames, scaledFrames, glowEye } from '../art/creature';
 import * as H from '../art/hand/cellar';
-import { chase, buzz, wander, aimAngle, shoot, spreadShot, hasLOS, aligned, distToPlayer, ringShot } from './ai';
-import { TAU, angleTo, clamp } from '../core/math';
+import { chase, buzz, wander, aimAngle, shoot, spreadShot, hasLOS, aligned, distToPlayer, ringShot, keepDistance } from './ai';
+import { TAU, angleTo, clamp, dist2 } from '../core/math';
 import type { World } from '../game/world';
 
 const mite: EnemyDef = {
@@ -15,29 +15,56 @@ const mite: EnemyDef = {
 };
 
 const moth: EnemyDef = {
-  id: 'moth', name: 'Dust Moth', desc: 'Flutters after you in lazy waves. Sheds choking dust when struck.', hp: 9, r: 6, speed: 42, flying: true, role: 'flyer', cost: 1, hitY: 12,
+  id: 'moth', name: 'Dust Moth', desc: 'Loops round to your side, shivers, then dives. Sheds choking dust when struck.', hp: 9, r: 6, speed: 42, flying: true, role: 'flyer', cost: 1, hitY: 12,
   gore: '#a89a7a',
   sprites: () => { const [up, dn] = gridFrames(H.MOTH, H.MOTH_PAL, 19); return { idle: [up, up, dn, dn] }; },
+  // a flanker: it picks a side and loops round to it, then dives in, then peels away and loops again
   update(e, w, dt) {
-    const a = angleTo(e.x, e.y, w.player.x, w.player.y) + Math.sin(e.t * 2.2 + e.id) * 0.9;
-    const s = e.def.speed * e.spd() * (e.fear > 0 ? -1 : 1);
+    const P = w.player, side = (e.data.side ??= e.id % 2 ? 1 : -1);
+    const ap = angleTo(P.x, P.y, e.x, e.y), dP = distToPlayer(e, w);
+    let tx: number, ty: number, sp = e.def.speed;
+    if (e.state === 'dive') {
+      tx = e.data.dx; ty = e.data.dy; sp *= 1.9;
+      if (e.st > 0.9 || dist2(e.x, e.y, tx, ty) < 64) { e.setState('idle'); e.data.side = -side; }
+    } else {
+      // the flank point: beside you, a little behind your line to it
+      tx = P.x + Math.cos(ap + side * 1.3) * 58; ty = P.y + Math.sin(ap + side * 1.3) * 58;
+      if ((dP < 70 && e.st > 1.2) || e.st > 3.5) {
+        // the tell: a quick shiver of the wings, then the dive (aimed where you were)
+        e.setState('dive'); e.data.dx = P.x; e.data.dy = P.y; e.sx = 0.8; e.sy = 1.2; w.audio.play('chitter', { x: e.x, vol: 0.25, pitch: 1.5 });
+      }
+    }
+    const a = angleTo(e.x, e.y, tx, ty) + Math.sin(e.t * 2.2 + e.id) * 0.25;
+    const s = sp * e.spd() * (e.fear > 0 ? -1 : 1);
     e.move(w, Math.cos(a) * s * dt, Math.sin(a) * s * dt);
-    e.z = 4 + Math.sin(e.t * 5) * 2;
-    e.flip = w.player.x < e.x;
-    e.animate(dt, 10);
+    e.z = (e.state === 'dive' ? 2 : 5) + Math.sin(e.t * 5) * 2;
+    e.flip = P.x < e.x;
+    e.animate(dt, e.state === 'dive' ? 22 : 10);
   },
   onHurt(e, w) { if (Math.random() < 0.5) w.fx.smoke(e.x, e.y - 10, 2, 'rgba(180,165,130,', 4, 0.6, 4); },
 };
 
 const ragcrawler: EnemyDef = {
-  id: 'ragcrawler', name: 'Rag Crawler', desc: 'A bundle of rags that learned to pull itself along. Lurches in bursts.', hp: 11, r: 7, speed: 44, role: 'melee', cost: 1, hitY: 8,
+  id: 'ragcrawler', name: 'Rag Crawler', desc: 'A bundle of rags that learned to pull itself along. Bunches up, then lurches straight at you: step aside.', hp: 11, r: 7, speed: 44, role: 'melee', cost: 1, hitY: 8,
   gore: '#6a4a3a',
   sprites: () => ({ walk: gridFrames(H.RAG, H.RAG_PAL) }),
-  init(e) { e.anim = 'walk'; },
+  init(e) { e.anim = 'walk'; e.cd = 0.4 + Math.random() * 0.6; },
+  // a chaser: it drags itself after you, gathers (a squash, a beat of stillness), then lurches in a
+  // straight line where you were. Step sideways when it bunches up.
   update(e, w, dt) {
-    const pulse = 0.35 + Math.max(0, Math.sin(e.t * 5.5)) * 1.3;
-    chase(e, w, e.def.speed * pulse, dt);
-    e.animate(dt, 6 + pulse * 4);
+    if (e.state === 'idle') {
+      chase(e, w, e.def.speed * 0.45, dt); e.animate(dt, 5);
+      e.cd -= dt;
+      if (e.cd <= 0 && distToPlayer(e, w) < 150) e.setState('gather');
+    } else if (e.state === 'gather') {
+      e.sx = 1.22; e.sy = 0.8;
+      if (e.st > 0.32) { e.data.la = angleTo(e.x, e.y, w.player.x, w.player.y); e.setState('lurch'); w.audio.play('hop', { x: e.x, vol: 0.25, pitch: 0.7 }); }
+    } else if (e.state === 'lurch') {
+      const s = e.def.speed * 3.4 * e.spd() * (e.fear > 0 ? -1 : 1);
+      const h = e.move(w, Math.cos(e.data.la) * s * dt, Math.sin(e.data.la) * s * dt);
+      e.flip = Math.cos(e.data.la) < 0; e.sx = 0.85; e.sy = 1.12; e.animate(dt, 16);
+      if (h.hx || h.hy || e.st > 0.45) { e.setState('idle'); e.cd = 0.6 + Math.random() * 0.5; }
+    }
   },
 };
 
@@ -52,7 +79,8 @@ const gasper: EnemyDef = {
   init(e) { e.anim = 'idle'; e.cd = 1 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
-      wander(e, w, e.def.speed, dt, 1.6);
+      // ranged: it backs off if you crowd it and edges in if you're out of reach
+      keepDistance(e, w, 85, 150, e.def.speed, dt);
       e.animate(dt, 4);
       e.cd -= dt;
       if (e.cd <= 0 && distToPlayer(e, w) < 200 && hasLOS(e, w)) { e.setState('charge'); e.setAnim('charge'); }
@@ -110,13 +138,20 @@ const dripling: EnemyDef = {
 };
 
 const pillbug: EnemyDef = {
-  id: 'pillbug', name: 'Pillbug', desc: 'Trundles about until you line up with it, then rears and rolls. Stunned by walls.', hp: 15, r: 7, speed: 26, role: 'melee', cost: 1.5, hitY: 7, mass: 1.5,
+  id: 'pillbug', name: 'Pillbug', desc: 'Guards whatever shoots at you. Rears and rolls when you line up with it; its shell turns shots, but a wall flips it on its back.', hp: 15, r: 7, speed: 26, role: 'melee', cost: 1.5, hitY: 7, mass: 1.5,
   gore: '#5a5a6a',
   sprites: () => ({ walk: gridFrames(H.PILL_WALK, H.PILL_PAL), rear: gridFrames(H.PILL_REAR, H.PILL_PAL), roll: gridFrames(H.PILL_ROLL, H.PILL_PAL) }),
   init(e) { e.anim = 'walk'; e.cd = 1; },
   update(e, w, dt) {
     if (e.state === 'idle') {
-      wander(e, w, e.def.speed, dt, 2);
+      // a defender: it plants itself between you and the nearest shooter or nest it can find
+      const ward = w.enemies.find((x) => x !== e && !x.dead && !x.isBoss && (x.def.role === 'shooter' || x.def.role === 'turret') && dist2(x.x, x.y, e.x, e.y) < 160 * 160);
+      if (ward) {
+        const a = angleTo(ward.x, ward.y, w.player.x, w.player.y);
+        const gx = ward.x + Math.cos(a) * (ward.r + e.r + 10), gy = ward.y + Math.sin(a) * (ward.r + e.r + 10);
+        if (dist2(e.x, e.y, gx, gy) > 16) chase(e, w, e.def.speed * 1.4, dt, gx, gy);
+        e.flip = w.player.x < e.x;
+      } else wander(e, w, e.def.speed, dt, 2);
       e.animate(dt, 6);
       e.cd -= dt;
       const al = aligned(e, w, 12);
@@ -131,24 +166,42 @@ const pillbug: EnemyDef = {
       const h = e.move(w, Math.cos(e.data.dir) * s * dt, Math.sin(e.data.dir) * s * dt);
       e.flip = Math.cos(e.data.dir) < 0;
       if (h.hx || h.hy || e.st > 2.2) {
-        e.setState('stun'); e.setAnim('walk'); w.shake(1); w.audio.play('thud', { x: e.x });
+        e.setState('stun'); e.setAnim('rear'); w.shake(1); w.audio.play('thud', { x: e.x });
         w.fx.burst(e.x, e.y, 4, 6, '#8a8a9a', 60, 0.4);
         e.sx = 0.7; e.sy = 1.3;
       }
     } else if (e.state === 'stun') {
-      if (e.st > 0.9) { e.setState('idle'); e.cd = 0.8; }
+      // flipped on its back, legs going: that's the opening
+      e.animate(dt, 18); e.x += Math.sin(e.st * 40) * 0.3;
+      if (e.st > 1.1) { e.setState('idle'); e.setAnim('walk'); e.cd = 0.8; }
     }
   },
-  onHurt(e, w, dmg) { return e.state === 'roll' ? dmg * 0.4 : dmg; },
+  // the rolling shell shrugs most of a hit off; flipped over and stunned, its soft belly takes more
+  onHurt(e, w, dmg, info) {
+    if (e.state === 'stun') return dmg * 1.5;
+    if (e.state === 'roll' || e.state === 'rear') {
+      if (info.source !== 'burn' && info.source !== 'poison' && w.time - (e.data.clangT ?? -9) > 0.2) { e.data.clangT = w.time; w.audio.play('clang', { x: e.x, vol: 0.3, pitch: 1.4 }); }
+      return dmg * 0.4;
+    }
+    return dmg;
+  },
 };
 
 const mitenest: EnemyDef = {
-  id: 'mitenest', name: 'Mite Nest', desc: 'A papery hive stuck to the floor. Pulses before each mite hatches.', hp: 22, r: 9, speed: 0, role: 'turret', cost: 2, hitY: 10, mass: 99,
+  id: 'mitenest', name: 'Mite Nest', desc: 'A papery hive stuck to the floor. Pulses before each mite hatches, and feeds the wounded around it.', hp: 22, r: 9, speed: 0, role: 'turret', cost: 2, hitY: 10, mass: 99,
   gore: '#b8a888', noKnock: true,
   sprites: () => ({ idle: gridFrames(H.NEST, H.NEST_PAL) }),
   init(e) { e.cd = 1.5 + Math.random(); e.data.kids = []; },
   update(e, w, dt) {
     e.data.kids = (e.data.kids as Enemy[]).filter((k) => !k.dead);
+    // support: every few seconds it feeds the wounded around it, with a visible green thread to each
+    e.data.feedT = (e.data.feedT ?? 2.5) - dt;
+    if (e.data.feedT <= 0) {
+      e.data.feedT = 3.5;
+      const hurt = w.enemies.filter((x) => x !== e && !x.dead && !x.isBoss && x.hp < x.maxHp && dist2(x.x, x.y, e.x, e.y) < 80 * 80);
+      for (const x of hurt.slice(0, 3)) { x.hp = Math.min(x.maxHp, x.hp + 3); w.fx.bolt(e.x, e.y - 10, x.x, x.y - x.hitY, '#8ae070', 0.3); w.fx.stars(x.x, x.y - x.hitY - 6, 2, '#8ae070'); }
+      if (hurt.length) { e.sx = 1.15; e.sy = 0.9; w.fx.ring(e.x, e.y - 6, 4, 22, '#8ae070', 0.3); w.audio.play('heal', { x: e.x, vol: 0.25, pitch: 1.4 }); }
+    }
     e.cd -= dt;
     e.frame = e.cd < 0.5 ? (Math.floor(e.t * 12) % 2) + 1 : 0;
     if (e.cd <= 0) {

@@ -328,11 +328,16 @@ export class Projectiles {
     this.kill(p);
   }
 
-  render(ctx: CanvasRenderingContext2D, camX: number, camY: number, w: World): void {
+  /**
+   * Draw one side's shots (or both). The world draws yours, then beams and effects, then the enemy's
+   * on top of everything, so an explosion or a beam can never hide what's about to hit you.
+   */
+  render(ctx: CanvasRenderingContext2D, camX: number, camY: number, w: World, only?: Team): void {
     // shadows first
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     for (const p of this.list) {
       if (!p.active || p.delay > 0 && p.team === Team.Player) continue;
+      if (only !== undefined && (p.team === Team.Enemy) !== (only === Team.Enemy)) continue;
       const sx = snap(p.x - camX), sy = snap(p.y - camY);
       const rw = Math.max(1, Math.round(p.r * 0.8));
       ctx.fillRect(sx - rw, sy, rw * 2, 1 + (p.r > 5 ? 1 : 0));
@@ -340,8 +345,9 @@ export class Projectiles {
     // player shots first, enemy shots last and on top: what can hurt you is never hidden
     let mine = 0;
     for (const p of this.list) if (p.active && p.team === Team.Player) mine++;
-    const busy = mine > 40;
-    for (const pass of [Team.Player, Team.Enemy]) for (const p of this.list) {
+    // the busier your side of the screen, the quieter your shots get, so the enemy's still stand out
+    const busy = mine > 40, swarm = mine > 140;
+    for (const pass of only !== undefined ? [only] : [Team.Player, Team.Enemy]) for (const p of this.list) {
       if (!p.active || (p.team === Team.Enemy) !== (pass === Team.Enemy)) continue;
       const sx = p.x - camX, sy = p.y - p.z - camY;
       const glowC = GLOW_SHAPES.has(p.shape);
@@ -356,12 +362,12 @@ export class Projectiles {
       const spr = shotSprite(p.shape, p.r, p.tint);
       if (p.team === Team.Player) {
         // a short smear behind every one of your shots, so they read as moving ink on any floor
-        if (p.delay <= 0 && p.spd > 60) {
+        if (p.delay <= 0 && p.spd > 60 && !swarm) {
           ctx.globalAlpha = busy ? 0.12 : 0.22;
           spr.draw(ctx, sx - p.vx * 0.03, sy - p.vy * 0.03);
           if (p.spd > 250) spr.draw(ctx, sx - p.vx * 0.016, sy - p.vy * 0.016);
         }
-        ctx.globalAlpha = busy ? 0.8 : 1;
+        ctx.globalAlpha = swarm ? 0.6 : busy ? 0.8 : 1;
         if (p.delay > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(p.t * 30);
         spr.draw(ctx, sx, sy);
         ctx.globalAlpha = 1;

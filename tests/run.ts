@@ -18,6 +18,8 @@ import { ACHIEVEMENTS } from '../src/data/achievements';
 import { MAP_SIZE } from '../src/core/constants';
 import { Side, Ob } from '../src/rooms/room';
 import { ALL_SET_PIECES } from '../src/generation/setpieces';
+import * as fs from 'fs';
+import * as path from 'path';
 
 let failures = 0, checks = 0;
 function ok(cond: boolean, msg: string): void { checks++; if (!cond) { failures++; console.error('FAIL:', msg); } }
@@ -363,5 +365,33 @@ console.log('content:', JSON.stringify(counts));
   ok(withPiece >= floors * 0.95, `chapters have their set piece (${withPiece}/${floors})`);
 }
 
+// ------------------------------------------------------------ room entrances
+{
+  let near = 0, total = 0;
+  for (let i = 0; i < 30; i++) {
+    const run = new Run('E' + i.toString(36).toUpperCase().padStart(7, '6'), 'marcus', () => true);
+    for (let f = 0; f < 8; f++) { run.floorIndex = f; const fl = generateFloor(run, f);
+      for (const r of fl.rooms) if (r.type === 'normal') for (const s of r.spawns) { total++;
+        if (r.doors.some((d) => { const [dc, dr] = r.doorInner(d.side, d.slot); return Math.abs(dc - Math.round(s.c)) + Math.abs(dr - Math.round(s.r)) < 3; })) near++; } }
+  }
+  ok(near === 0, `no enemy starts within 2 tiles of a door (${near} of ${total})`);
+}
+// ------------------------------------------------------------ every sound a script asks for exists
+{
+  const sfx = fs.readFileSync('src/audio/sfx.ts', 'utf8');
+  const have = new Set([...sfx.matchAll(/^  ([a-zA-Z]+): \{ dur/gm)].map((m: RegExpMatchArray) => m[1]));
+  const walk = (d: string): string[] => fs.readdirSync(d).flatMap((f: string) => { const p = path.join(d, f); return fs.statSync(p).isDirectory() ? walk(p) : p.endsWith('.ts') ? [p] : []; });
+  const missing = new Set<string>();
+  for (const f of walk('src')) for (const m of fs.readFileSync(f, 'utf8').matchAll(/audio\.play\('([a-zA-Z]+)'/g)) if (!have.has(m[1])) missing.add(m[1]);
+  ok(missing.size === 0, `every sound played exists (${[...missing].join(', ')})`);
+}
+// ------------------------------------------------------------ boss extra patterns (a hang in 3.5-3.7)
+{
+  const { patternsFor } = await import('../src/bosses/patterns');
+  for (const b of BOSSES) {
+    const t0 = Date.now(), ps = patternsFor(b.id);
+    ok(ps.length === 3 && new Set(ps).size === 3 && Date.now() - t0 < 50, `${b.id} is dealt three different extra patterns`);
+  }
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

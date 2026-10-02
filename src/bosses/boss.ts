@@ -6,6 +6,8 @@ import { PATTERNS, patternsFor, shapeFor } from './patterns';
 /** Bosses that keep only the fight they were written with (the final forms are their own bullet hell). */
 const OWN_FIGHT = new Set(['unwritten', 'author', 'echo', 'patient']);
 const dealt = new WeakSet<BossBrain>();
+/** Attacks that throw the whole body somewhere: the boss is spent for a moment after any of them. */
+const COMMITTED = new Set(['charge', 'dash', 'lunge', 'stomp', 'leap', 'dive', 'roll', 'slam', 'bash', 'uproot']);
 /**
  * Every boss gets its own pair of extra patterns once it's hurt (and a third for its last phase),
  * and at least one phase change, so no fight stays the same from start to finish.
@@ -13,7 +15,8 @@ const dealt = new WeakSet<BossBrain>();
 function deal(e: Enemy, brain: BossBrain): void {
   if (dealt.has(brain)) return;
   dealt.add(brain);
-  if (OWN_FIGHT.has(e.def.id)) return;
+  // bosses with an authored rhythm fight only with their own moves
+  if (OWN_FIGHT.has(e.def.id) || brain.sequence) return;
   const shape = shapeFor(e.def.id), picks = patternsFor(e.def.id);
   picks.forEach((name, i) => {
     const a = PATTERNS[name](shape);
@@ -33,6 +36,11 @@ export interface BossAttack {
   start?(e: Enemy, w: World): void;
   /** Return true when the attack is finished. t = seconds since start. */
   run(e: Enemy, w: World, t: number, dt: number): boolean;
+  /**
+   * Seconds the boss is left spent after this attack: it pants in place and takes 50% more damage.
+   * This is the punish window the fight teaches: dodge the attack, then hit back.
+   */
+  recover?: number | ((e: Enemy) => number);
 }
 export interface BossBrain {
   attacks: BossAttack[];
@@ -40,6 +48,11 @@ export interface BossBrain {
   idleTime: [number, number];
   phases?: number[];            // hp fractions that trigger phases, descending e.g. [0.5]
   onPhase?(e: Enemy, w: World, phase: number): void;
+  /**
+   * An authored rhythm: the attack ids for each phase, played in order and looped. A boss with a
+   * sequence always fights the same way, so its fight can be learned.
+   */
+  sequence?: string[][];
 }
 
 export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): void {
@@ -58,7 +71,7 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
   // phase change
   const thresholds = brain.phases ?? [];
   if (d.phase < thresholds.length && e.hpFrac() <= thresholds[d.phase] && e.state !== 'phase') {
-    d.phase++;
+    d.phase++; d.seqI = 0; d.exposed = false;
     e.setState('phase'); e.invuln = true;
     w.shake(6); w.audio.play('bossRoar', { x: e.x }); w.hitstop(0.12);
     w.fx.ring(e.x, e.y - e.hitY, 10, 90, '#ff4060', 0.5);
@@ -118,6 +131,9 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
       let tot = 0; for (const a of pool) tot += a.weight;
       let r = Math.random() * tot; let pick = pool[0];
       for (const a of pool) { r -= a.weight; if (r <= 0) { pick = a; break; } }
+      // an authored rhythm overrides the dice: the next attack in this phase's sequence
+      const seq = brain.sequence?.[Math.min(d.phase, brain.sequence.length - 1)];
+      if (seq?.length) { d.seqI ??= 0; const next = brain.attacks.find((a) => a.id === seq[d.seqI % seq.length]); d.seqI++; if (next) pick = next; }
       d.attack = pick; d.lastAttack = pick.id; d.lastUsed[pick.id] = now;
       // a short tell (shorter as the fight goes on), with a flash of the boss's colour on the floor
       d.windT = OWN_FIGHT.has(e.def.id) ? 0 : Math.max(0.16, 0.34 - Math.max(d.phase, d.tier) * 0.07);
@@ -131,7 +147,25 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
   }
   if (e.state === 'attack') {
     const a: BossAttack = d.attack;
-    if (a.run(e, w, e.st, dt)) { e.setState('idle'); d.idleT = rand(brain.idleTime) * (d.phase > 0 ? 0.7 : 1); }
+    if (a.run(e, w, e.st, dt)) {
+      d.idleT = rand(brain.idleTime) * (d.phase > 0 ? 0.7 : 1);
+      // spent: a window to hit back, a little shorter once it's cornered
+      // the rule the reworked fights teach carries over: any boss that commits its whole body to a move
+      // is briefly spent after it, even ones without an authored rhythm
+      const rec = typeof a.recover === 'function' ? a.recover(e) : a.recover ?? (!OWN_FIGHT.has(e.def.id) && COMMITTED.has(a.id) ? 0.6 : 0);
+      if (rec > 0) { e.setState('recover'); d.recoverT = rec * (d.cornered ? 0.7 : 1); d.exposed = true; w.audio.play('bossPant', { x: e.x, vol: 0.5 }); }
+      else { e.setState('idle'); d.exposed = false; }
+    }
+    return;
+  }
+  if (e.state === 'recover') {
+    // heaving in place: slow, wide breaths so it reads as tired, not as winding up
+    e.sx = 1 + Math.sin(e.st * 9) * 0.07; e.sy = 1 - Math.sin(e.st * 9) * 0.06;
+    if (Math.random() < dt * 6) w.fx.smoke(e.x + (Math.random() - 0.5) * e.r, e.y - e.hitY - e.r * 0.6, 1, 'rgba(230,220,200,', 3, 0.5, 8);
+    // a gold ring pulsing on the floor under it: open to attack
+    d.ringT = (d.ringT ?? 0) - dt;
+    if (d.ringT <= 0) { d.ringT = 0.3; w.fx.ring(e.x, e.y, e.r * 0.8, e.r + 10, '#ffd860', 0.3, false); }
+    if (e.st >= d.recoverT) { e.setState('idle'); d.exposed = false; e.sx = e.sy = 1; }
   }
 }
 function rand([a, b]: [number, number]): number { return a + Math.random() * (b - a); }

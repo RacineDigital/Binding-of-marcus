@@ -132,6 +132,12 @@ export const RECIPES: Record<string, Recipe> = {
     const s = c.createOscillator(); s.type = 'sawtooth'; s.frequency.value = R(85); const lfo = c.createOscillator(); lfo.frequency.value = 23; const lg = c.createGain(); lg.gain.value = 30; lfo.connect(lg); lg.connect(s.frequency);
     const bp = filter(c, 'bandpass', 900, 5, o); const g = c.createGain(); env(g.gain, 0, 0.1, 0.6, 0.5); s.connect(g); g.connect(bp); s.start(0); lfo.start(0); s.stop(0.8); lfo.stop(0.8);
   } },
+  // a spent boss heaving for breath (the window to hit back)
+  bossPant: { dur: 0.9, variants: 2, vol: 0.5, render: (c, o) => { hiss(c, o, 'bandpass', R(700), 2, 0.35, 0.6, 0.12); formantVoice(c, o, 95, 80, 0.3, 0.25, [600, 1000], 0.08); hiss(c, o, 'bandpass', R(600), 2, 0.3, 0.45, 0.5); } },
+  // a hit on a weak spot: bright, short, satisfying
+  weakHit: { dur: 0.35, variants: 3, vol: 0.45, limit: 2, render: (c, o) => { fm(c, R(1500), 2.01, 2, 0, 0.18, o, 0.45); osc(c, 'triangle', R(1100), 900, 0, 0.12, o, 0.3); } },
+  // a hit the armour takes: dull, wooden or iron
+  clang: { dur: 0.3, variants: 3, vol: 0.4, limit: 2, render: (c, o) => { fm(c, R(420), 1.73, 3, 0, 0.12, filter(c, 'lowpass', 1800, 1, o), 0.5); thump(c, o, 160, 90, 0.08, 0.4); } },
   snip: { dur: 0.3, variants: 3, vol: 0.5, render: (c, o) => { fm(c, R(3200), 1.41, 1.5, 0, 0.05, o, 0.4); fm(c, R(2800), 1.41, 1.5, 0.07, 0.06, o, 0.4); hiss(c, o, 'highpass', 5000, 1, 0.1, 0.3); } },
   bossRoar: { dur: 1.4, variants: 2, vol: 0.8, render: (c, o) => { const d = dist(c, 6, o); formantVoice(c, d, R(90), 55, 1.1, 0.8, [450, 850], 0.08); formantVoice(c, d, R(135), 80, 1.0, 0.4, [600, 1100], 0.1); hiss(c, o, 'lowpass', 600, 1, 1, 0.4, 0.1); } },
   bossDie: { dur: 2.5, vol: 0.85, render: (c, o) => { const d = dist(c, 6, o); formantVoice(c, d, 110, 40, 1.8, 0.7, [500, 900], 0.05); thump(c, d, 80, 20, 1.5, 1); const lp = filter(c, 'lowpass', 3000, 1, d); sweep(lp.frequency, 0.2, 3000, 150, 1.6); noise(c, 0.2, 1.8, lp, 1, 0.01, 2); } },

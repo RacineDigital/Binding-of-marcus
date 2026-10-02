@@ -77,6 +77,7 @@ const D = 'window.__bomDebug';
   console.log('item combinations');
   for (const build of [['printing_plate', 'creasing_iron', 'marrow', 'spectacles'], ['grandpas_pipe', 'marginalia', 'copper_filament', 'red_thread'], ['spilt_inkwell', 'ink_pact', 'bookends', 'paper_cut', 'overdue_notice', 'gilt_edge', 'reading_lamp', 'running_shoes', 'hot_cocoa', 'four_leaf']]) {
     await ev(page, `(() => { const d = ${D}, w = d.world; d.god(); for (const e of w.enemies) e.hp = 0; for (const id of ${JSON.stringify(build)}) d.give(id); w.player.buttons = 25; for (let i = 0; i < 6; i++) d.spawn('valvehead'); })()`);
+    await page.waitForFunction(`!${D}.world.inputLocked() && !${D}.world.transition`, null, { timeout: 8000 }).catch(() => {});
     const hp0 = await ev<number>(page, `${D}.world.enemies.filter((e) => !e.dead).reduce((s, e) => s + e.hp, 0)`);
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');
     await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowLeft');
@@ -92,12 +93,13 @@ const D = 'window.__bomDebug';
     const ids = ['valvehead', 'moth', 'mite', 'gasper', 'cinderhopper'];
     for (let i = 0; i < 18; i++) d.spawn(ids[i % ids.length], undefined, undefined);
     for (const id of ['triple_seam', 'twin_wick', 'rubber_band', 'powder_ink', 'copper_filament']) d.give(id);
-    const t0 = performance.now(); let frames = 0, worst = 0, last = t0;
-    await new Promise((res) => { const f = () => { const n = performance.now(); worst = Math.max(worst, n - last); last = n; frames++; if (n - t0 < 4000) requestAnimationFrame(f); else res(0); }; requestAnimationFrame(f); });
-    return { fps: frames / 4, worst: Math.round(worst), proj: w.proj.count() };
+    const t0 = performance.now(); let frames = 0, worst = 0, last = t0, upd = 0, ren = 0;
+    await new Promise((res) => { const f = () => { const n = performance.now(); worst = Math.max(worst, n - last); last = n; frames++; upd += d.game.perf.update; ren += d.game.perf.render; if (n - t0 < 4000) requestAnimationFrame(f); else res(0); }; requestAnimationFrame(f); });
+    return { fps: frames / 4, worst: Math.round(worst), proj: w.proj.count(), updateMs: +(upd / frames).toFixed(2), renderMs: +(ren / frames).toFixed(2) };
   })()`);
   console.log('   ', JSON.stringify(perf));
-  ok(perf.fps > 20, `busy fight keeps a playable frame rate in headless software rendering (${perf.fps.toFixed(1)} fps)`);
+  // the game's own work per frame (headless software GL adds a large, machine-dependent cost on top)
+  ok(perf.updateMs < 6 && perf.renderMs < 16, `busy fight: game logic ${perf.updateMs} ms and drawing ${perf.renderMs} ms a frame`);
 
   console.log('death & restart');
   await ev(page, `(() => { const w = ${D}.world; w.player.iframes = 0; w.player.health.red = 1; w.player.health.extra = []; w.player.health.brass = 0; w.hurtPlayer(2, 'test', { ignoreIframes: true }); })()`);

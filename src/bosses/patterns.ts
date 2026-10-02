@@ -136,8 +136,10 @@ export const shapeFor = (id: string) => SHAPES[id] ?? 'dark';
 function hashOf(s: string): number { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 /** The patterns a boss is dealt: two once it's hurt, a third for its last phase. */
 export function patternsFor(id: string): string[] {
-  const names = Object.keys(PATTERNS), h = hashOf(id), out: string[] = [];
-  for (let k = 0; out.length < 3; k++) { const n = names[(h + k * 7 + Math.floor(h / 97) * k) % names.length]; if (!out.includes(n)) out.push(n); }
-  return out;
+  // rank every pattern by a hash of (boss, pattern) and take the top three: always three different
+  // ones, always the same for a boss, and no loop that can fail to finish. (The old stepping version
+  // could cycle through fewer than three patterns for some boss names and hang the game: Snap and
+  // Old Stoker did.)
+  return Object.keys(PATTERNS).sort((a, b) => hashOf(id + ':' + a) - hashOf(id + ':' + b)).slice(0, 3);
 }
 void angleTo;

@@ -1,6 +1,6 @@
 // Passive items that change stats and attack behaviour.
 import type { ItemDef } from '../types';
-import { I, ramp, hex, P, conditional, counter } from './kit';
+import { I, ramp, hex, P, conditional, counter, directHit } from './kit';
 import { TAU, dist2 } from '../../core/math';
 import { luckChance } from '../../projectiles/profile';
 
@@ -54,7 +54,7 @@ export const PASSIVES_A: ItemDef[] = [
     icon: (p) => { const m = ramp('#c8c8d8'); p.rect(4, 7, 9, 9, m[2]); p.rect(4, 7, 9, 1, m[4]); p.ring(14, 11, 2.5, m[2]); p.rect(5, 8, 7, 2, hex('#6a3a1e')); p.line(7, 2, 8, 5, hex('#e8e8f0')); p.line(10, 3, 9, 6, hex('#e8e8f0')); } },
   { id: 'spectacles', name: 'Grandfather\'s Spectacles', kind: 'passive', quality: 2, pools: { shop: 1 },
     pickup: 'See far, hit far', effect: ['Enemies more than 5 tiles away take 35% more damage.'], stats: { range: 60, shotSpeed: 0.15, size: 0.1 },
-    hooks: { onHitEnemy(w, e, dmg) { if (dist2(e.x, e.y, w.player.x, w.player.y) > 120 * 120 && !e.dead) { e.hp -= dmg * 0.35; if (Math.random() < 0.3) w.fx.text(e.x, e.y - e.hitY - 10, 'far!', '#c8e0ff'); } } },
+    hooks: { onHitEnemy(w, e, dmg) { if (directHit(w) && dist2(e.x, e.y, w.player.x, w.player.y) > 120 * 120 && !e.dead) { e.hp -= dmg * 0.35; if (Math.random() < 0.3) w.fx.text(e.x, e.y - e.hitY - 10, 'far!', '#c8e0ff'); } } },
     icon: (p) => { p.ring(5, 9, 3.5, '#c8a04a', 1.2); p.ring(13, 9, 3.5, '#c8a04a', 1.2); p.line(8, 9, 10, 9, hex('#c8a04a')); p.set(4, 8, '#e0f0ff'); p.set(12, 8, '#e0f0ff'); } },
   { id: 'tin_heart', name: 'Tin Heart', kind: 'passive', quality: 2, pools: { boss: 1.5 },
     pickup: 'Health and speed up', effect: [], health: { containers: 1, heal: 2 }, stats: { speed: 0.1 },

@@ -365,6 +365,12 @@ export function meleeSwing(w: World, prof: AttackProfile, st: FinalStats, x: num
       for (let k = 0; k < Math.min(4, prof.split); k++) w.proj.player(w, prof, e.x, e.y - 6, 8, Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.6, st.damage * 0.6, 220, 100, 0.7, 1);
     }
   }
+  // a swing that connects lands with weight: a beat of hit pause, a thump, a jolt (more for a full spin)
+  if (hitSet.size) {
+    w.hitstop(charged ? 0.07 : 0.035);
+    w.shake(charged ? 3 : 1.2);
+    w.audio.play('thud', { x, vol: charged ? 0.6 : 0.4, pitch: charged ? 0.8 : 1.1 });
+  }
   if (prof.pull) w.pullPickups(x, y, radius * 1.6);
   // swat enemy projectiles out of the air
   for (const p of w.proj.list) {

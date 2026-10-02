@@ -54,7 +54,7 @@ const valvehead: EnemyDef = {
 };
 
 const stoker: EnemyDef = {
-  id: 'stoker', name: 'Stoker', desc: 'Lifts its shovel when you line up, then barrels across the room.', hp: 22, r: 9, speed: 34, role: 'heavy', cost: 2, hitY: 12, mass: 3,
+  id: 'stoker', name: 'Stoker', desc: 'Lifts its shovel when you line up, then barrels across the room. Dazed and open if it hits a wall.', hp: 22, r: 9, speed: 34, role: 'heavy', cost: 2, hitY: 12, mass: 3,
   gore: '#3a2a22',
   sprites: () => {
     const paint = (p: any, f: number, raise: number) => {
@@ -88,8 +88,10 @@ const stoker: EnemyDef = {
       e.flip = Math.cos(e.data.dir) < 0;
       if (Math.random() < 0.4) w.fx.embers(e.x, e.y - 6, 1, '#ff8a30');
       if (h.hx || h.hy || e.st > 2) { e.setState('stun'); e.setAnim('walk'); w.shake(2); w.audio.play('slam', { x: e.x, vol: 0.6 }); e.sx = 0.75; e.sy = 1.25; if (w.run.floorIndex >= 2) spreadShot(e, w, 5, e.data.dir + Math.PI, 1.4, 100, { shape: 'ember' }); }
-    } else if (e.state === 'stun') { if (e.st > 1) { e.setState('idle'); e.cd = 1; } }
+    } else if (e.state === 'stun') { e.x += Math.sin(e.st * 36) * 0.25; if (e.st > 1) { e.setState('idle'); e.cd = 1; } }
   },
+  // a charger that hits a wall is dazed and open: the same rule as the pillbug
+  onHurt(e, w, dmg) { return e.state === 'stun' ? dmg * 1.5 : dmg; },
 };
 
 const cinderhopper: EnemyDef = {

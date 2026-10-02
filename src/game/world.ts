@@ -105,6 +105,7 @@ export class World {
       return;
     }
     if (this.floorIntroT > 0) this.floorIntroT -= dtReal;
+    this.hitstopBudget = Math.min(0.15, this.hitstopBudget + dtReal * 0.15);
     if (this.hitstopT > 0) { this.hitstopT -= dtReal; this.trauma = Math.max(0, this.trauma - dtReal * 1.5); return; }
     if (this.slowT > 0) { this.slowT -= dtReal; this.timeScale = 0.5; } else this.timeScale = 1;
     const dt = dtReal * this.timeScale;
@@ -273,7 +274,7 @@ export class World {
   nearestEnemy(x: number, y: number, maxD: number, exclude?: number[]): Enemy | null {
     let best: Enemy | null = null, bd = maxD * maxD;
     for (const e of this.enemies) {
-      if (e.dead || e.hidden || e.spawnT > 0 || e.friendly) continue;
+      if (e.dead || e.hidden || e.spawnT > 0 || e.friendly || e.invuln) continue;
       if (exclude && exclude.includes(e.id)) continue;
       const d = dist2(x, y, e.x, e.y);
       if (d < bd) { bd = d; best = e; }
@@ -304,6 +305,15 @@ export class World {
     let d = dmg;
     if (e.mark > 0) d *= 1.5;
     if (e.champion === 'armored') d *= 0.6;
+    // a boss caught spent (or opened up) takes more; say so, but not on every tick of a beam
+    if (e.isBoss && e.data.exposed && info.source !== 'burn' && info.source !== 'poison') {
+      d *= 1.5;
+      if (this.time - (e.data.weakFxT ?? -9) > 0.12) {
+        e.data.weakFxT = this.time;
+        this.fx.sparks(e.x - Math.cos(info.ang) * e.r * 0.7, e.y - e.hitY, 5, '#ffd860', 110, 0.22);
+        this.audio.play('weakHit', { x: e.x, vol: 0.4 });
+      }
+    }
     if (e.def.onHurt) { const r = e.def.onHurt(e, this, d, info); if (typeof r === 'number') d = r; }
     if (d <= 0) {
       if (info.source === 'shot' || info.source === 'melee') { this.fx.sparks(e.x - Math.cos(info.ang) * e.r, e.y - e.hitY, 3, '#e0e0f0', 70); this.audio.play('tink', { vol: 0.35, x: e.x }); }
@@ -344,6 +354,7 @@ export class World {
       if (info.status === 'poison') { e.poison = 3; e.poisonDmg = Math.max(1, this.player.stats.damage * 0.3); }
       if (info.status === 'slow') e.slow = 2.5; if (info.status === 'fear') e.fear = 2; if (info.status === 'confuse') e.confuse = 2;
     }
+    this.hitSource = info.source;
     this.itemHook('onHitEnemy', e, d);
     if (e.hp <= 0) this.killEnemy(e);
   }
@@ -705,7 +716,19 @@ export class World {
     for (const p of this.pickups) if (!p.pedestal && !p.isChest() && dist2(p.x, p.y, x, y) < r * r) { p.vx += (x - p.x) * 0.5; p.vy += (y - p.y) * 0.5; }
   }
   shake(amt: number): void { this.trauma = Math.min(1, this.trauma + amt * 0.08 * (this.game.save.data.settings.shake ?? 1)); }
-  hitstop(t: number): void { this.hitstopT = Math.max(this.hitstopT, t); }
+  /**
+   * A short freeze on impact. Scaled by the Hit pause setting, and drawn from a budget that refills at
+   * 0.15s per second: a big hit always lands, but a hail of small ones never makes the controls stick.
+   */
+  hitstop(t: number): void {
+    const k = this.game.save.data.settings.hitPause ?? 1;
+    const want = Math.min(t * k, this.hitstopBudget);
+    if (want <= this.hitstopT) return;
+    this.hitstopBudget -= want - this.hitstopT; this.hitstopT = want;
+  }
+  hitstopBudget = 0.15;
+  /** What dealt the hit an onHitEnemy hook is looking at (so 'on hit' items ignore burn and poison ticks). */
+  hitSource = '';
   itemHook<K extends keyof ItemHooks>(name: K, ...args: any[]): void {
     const pl = this.player;
     const fire = (id: string, n: number) => {

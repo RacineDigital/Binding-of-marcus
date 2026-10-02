@@ -3,7 +3,7 @@
 import type { ItemDef } from '../types';
 import type { World } from '../../game/world';
 import type { StatMods } from '../../player/stats';
-import { ramp, hex, P, counter } from './kit';
+import { ramp, hex, P, counter, directHit } from './kit';
 import { spawnInkling } from '../familiar_rt';
 import { TAU, dist2 } from '../../core/math';
 import { luckChance } from '../../projectiles/profile';
@@ -63,7 +63,7 @@ export const BINDERY_ITEMS: ItemDef[] = [
     icon: (p: P) => { const b = ramp('#e8e0cc'); p.poly([4, 15, 12, 3, 15, 5, 7, 16], b[2]); p.line(5, 15, 13, 4, b[4]); p.set(14, 4, '#ffffff'); } },
   { id: 'reading_lamp', name: 'Reading Lamp', kind: 'passive', quality: 2, pools: { blessing: 0.9 }, tags: ['wax'],
     pickup: 'Up close, everything is clearer', effect: ['Enemies within 3 tiles of you take 60% more damage.'],
-    hooks: { onHitEnemy(w, e, dmg) { if (!e.dead && dist2(e.x, e.y, w.player.x, w.player.y) < 72 * 72) e.hp -= dmg * 0.6; } },
+    hooks: { onHitEnemy(w, e, dmg) { if (directHit(w) && !e.dead && dist2(e.x, e.y, w.player.x, w.player.y) < 72 * 72) e.hp -= dmg * 0.6; } },
     icon: (p: P) => { p.poly([5, 4, 13, 4, 15, 9, 3, 9], hex('#3a6a4a')); p.rect(8, 9, 2, 6, hex('#8a7a5a')); p.rect(5, 15, 8, 2, hex('#5a4a3a')); p.rect(6, 9, 6, 1, hex('#fff0b0')); } },
   { id: 'overdue_notice', name: 'Overdue Notice', kind: 'passive', quality: 2, pools: { curse: 1 },
     pickup: 'Clean record, sharp teeth', effect: ['Each room you clear without being hit adds damage +0.4 (up to +2.4).', 'Getting hit wipes it all.'],
