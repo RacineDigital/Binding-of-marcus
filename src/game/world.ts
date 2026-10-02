@@ -12,7 +12,7 @@ import { Projectiles, Proj } from '../projectiles/projectiles';
 import { Beam, updateBeams } from '../projectiles/weapons';
 import { Pickup, popPickup, updatePickups } from './pickups';
 import { FX } from '../effects/fx';
-import { FlowField } from '../enemies/ai';
+import { FlowField, flushTell, TELL } from '../enemies/ai';
 import { OpenDoor } from '../rooms/collide';
 import { TILE } from '../core/constants';
 import { TAU, clamp, dist, dist2 } from '../core/math';
@@ -185,6 +185,12 @@ export class World {
     if (e.freeze > 0) return;
     e.st += dt;
     e.def.update(e, this, dt);
+    if (e.data.tellAt !== undefined) {
+      // the tell: a swell and a white pulse while the shot is held
+      const k = 1 - (e.data.tellAt - e.t) / TELL;
+      e.sx = 1 + k * 0.14; e.sy = 1 - k * 0.1; e.flash = Math.max(e.flash, Math.sin(k * Math.PI * 3) > 0 ? 0.05 : 0);
+      flushTell(e, this);
+    }
     if (e.def.boss) loopBossFrames(e, dt);
   }
 

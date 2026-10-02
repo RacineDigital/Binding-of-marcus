@@ -278,6 +278,25 @@ console.log('content:', JSON.stringify(counts));
   for (let k = 0; k < 40; k++) for (let f = 0; f < 8; f++) { const run = new Run('TREASURE' + k, 'marcus', () => true); run.floorIndex = f; for (const r of generateFloor(run, f).rooms) if (r.type === 'treasure' && r.doors.length !== 1) bad++; }
   ok(bad === 0, 'every treasure room has exactly one entrance');
 }
+// no room makes you walk over spikes to get from one door to another
+{
+  const { Run } = await import('../src/game/run');
+  const { generateFloor } = await import('../src/generation/floorgen');
+  const { Ob } = await import('../src/rooms/room');
+  let bad = 0;
+  for (let k = 0; k < 30; k++) for (let f = 0; f < 8; f++) {
+    const run = new Run('SPIKES' + k, 'marcus', () => true); run.floorIndex = f;
+    for (const room of generateFloor(run, f).rooms) {
+      if (room.type === 'sacrifice' || room.doors.length < 2) continue;
+      const walk = (x: number) => x === Ob.None || x === Ob.TimedSpikes || x === Ob.Web || x === Ob.Button;
+      const ds = room.doors.map((d) => room.doorInner(d.side, d.slot));
+      const seen = new Uint8Array(room.cols * room.rows); const q = [ds[0]]; seen[room.idx(ds[0][0], ds[0][1])] = 1;
+      while (q.length) { const [c, r] = q.pop()!; for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = r + dr; if (!room.inGrid(nc, nr) || seen[room.idx(nc, nr)] || !walk(room.at(nc, nr))) continue; seen[room.idx(nc, nr)] = 1; q.push([nc, nr]); } }
+      if (ds.some(([c, r]) => !seen[room.idx(c, r)])) bad++;
+    }
+  }
+  ok(bad === 0, 'every door can be reached from every other without stepping on spikes');
+}
 // every boss has its own sting, and the card slams its name on the sting's hit
 {
   const { bossStingRecipe, STING_HIT } = await import('../src/audio/bossting');

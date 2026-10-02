@@ -106,9 +106,33 @@ export function aimAngle(e: Enemy, w: World, lead = 0, spd = 150): number {
   return angleTo(e.x, e.y, p.x + p.vx * t, p.y - (HURT_TOP + HURT_BOT) / 2 + z + p.vy * t);
 }
 
+/** How long a regular enemy shows that it's about to shoot. */
+export const TELL = 0.24;
 export function shoot(e: Enemy, w: World, ang: number, speed: number, o: Parameters<World['proj']['enemy']>[4] = {}): void {
+  // Regular enemies tell you first: the opening shot of a burst waits a beat while the enemy swells
+  // and glints, then everything queued in that beat fires together, at the angles it showed you.
+  // (Shots inside a running stream flow on without a fresh tell, so turrets don't strobe.)
+  if (!e.def.boss) {
+    const d = e.data;
+    if (d.tellAt !== undefined && e.t < d.tellAt) { d.tellQ.push([ang, speed, o]); return; }
+    if (e.t - (d.lastShotT ?? -9) > 0.6) { d.tellAt = e.t + TELL; d.tellQ = [[ang, speed, o]]; return; }
+  }
+  fireNow(e, w, ang, speed, o);
+}
+function fireNow(e: Enemy, w: World, ang: number, speed: number, o: Parameters<World['proj']['enemy']>[4] = {}): void {
   // the shadow starts under the enemy; the shot itself leaves from its body
   w.proj.enemy(e.x + Math.cos(ang) * e.r * 0.6, e.y + Math.sin(ang) * e.r * 0.4, ang, speed, { z: e.hitY * 0.8 + e.z, ...o });
+  e.data.lastShotT = e.t;
+}
+/** Release a tell whose beat is up (called every frame after the enemy acts). */
+export function flushTell(e: Enemy, w: World): void {
+  const d = e.data;
+  if (d.tellAt === undefined || e.t < d.tellAt) return;
+  const q = d.tellQ as [number, number, Parameters<World['proj']['enemy']>[4]][];
+  d.tellAt = undefined; d.tellQ = null;
+  if (e.dead || e.hidden) return;
+  for (const [a, sp, o] of q) fireNow(e, w, a, sp, o);
+  e.sx = 0.86; e.sy = 1.14;
 }
 export function ringShot(e: Enemy, w: World, n: number, speed: number, off = 0, o: Parameters<World['proj']['enemy']>[4] = {}): void {
   for (let i = 0; i < n; i++) shoot(e, w, off + (i / n) * TAU, speed, o);

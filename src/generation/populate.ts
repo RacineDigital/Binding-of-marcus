@@ -61,7 +61,8 @@ function ensurePaths(room: RoomData): void {
     const [c2, r2] = inward(d); if (room.at(c2, r2) !== Ob.Pit) room.setOb(c2, r2, Ob.None);
   }
   if (doors.length < 1) return;
-  const walk = (k: number) => k === Ob.None || k === Ob.Spikes || k === Ob.TimedSpikes || k === Ob.Web || k === Ob.Button;
+  // every door must be reachable without stepping on spikes (timed spikes can be timed, so they count)
+  const walk = (k: number) => k === Ob.None || k === Ob.TimedSpikes || k === Ob.Web || k === Ob.Button;
   const reach = () => {
     const seen = new Uint8Array(room.cols * room.rows);
     const [sc, sr] = doors[0]; const q = [[sc, sr]]; seen[room.idx(sc, sr)] = 1;
@@ -87,7 +88,7 @@ function ensurePaths(room: RoomData): void {
 function carve(room: RoomData, c0: number, r0: number, c1: number, r1: number): void {
   let c = c0, r = r0;
   while (c !== c1 || r !== r1) {
-    if (room.at(c, r) !== Ob.None && room.at(c, r) !== Ob.Spikes) room.setOb(c, r, Ob.None);
+    if (room.at(c, r) !== Ob.None && room.at(c, r) !== Ob.TimedSpikes) room.setOb(c, r, Ob.None);
     if (c !== c1 && (r === r1 || Math.abs(c - c1) > Math.abs(r - r1))) c += Math.sign(c1 - c); else r += Math.sign(r1 - r);
   }
   room.setOb(c, r, Ob.None);
