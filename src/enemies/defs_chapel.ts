@@ -1,5 +1,6 @@
 // Chapter VI enemies: choir, censers, penitents and cherub moths.
 import type { EnemyDef } from './enemy';
+import { snap } from '../render/snap';
 import { frames, ramp, hex, glowEye, eye } from '../art/creature';
 import { chase, aimAngle, shoot, spreadShot, ringShot, distToPlayer, keepDistance, buzz } from './ai';
 import { TAU, angleTo } from '../core/math';
@@ -58,7 +59,7 @@ const censer: EnemyDef = {
   draw(e, ctx, w, sx, sy) {
     const ay = sy - e.z;
     ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(Math.round(e.data.ax - w.camX), Math.round(e.data.ay - w.camY - 80)); ctx.lineTo(sx, ay - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(snap(e.data.ax - w.camX), snap(e.data.ay - w.camY - 80)); ctx.lineTo(sx, ay - 20); ctx.stroke();
     e.sprites.idle[0].draw(ctx, sx, ay, { flash: e.flash > 0 ? 1 : 0 });
   },
 };

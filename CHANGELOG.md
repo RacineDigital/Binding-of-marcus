@@ -2,6 +2,17 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.2.2
+
+- **Smooth movement, like Isaac.** The world used to be drawn on a tiny canvas and blown up, so
+  everything moved in whole chunky pixels and walking looked jittery (one pixel, then two, then
+  one). Now positions are drawn at your screen's real resolution: Marcus, enemies, shots and the
+  camera glide a screen pixel at a time, while the art stays just as crisp and chunky.
+- **Softer starts and stops.** Marcus eases up to speed and glides a moment when you let go,
+  instead of snapping on and off.
+- **Weathered menu pages.** Every menu page is now old, handled paper: torn and nicked edges, a
+  scorched rim, foxing and water stains, creases, a dog-eared corner and the odd ink smudge.
+
 ## What's new in 3.2.1
 
 - **Your Echo is fair now.** The ghost of your last death has half the health it had. It circles

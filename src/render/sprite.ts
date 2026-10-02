@@ -1,4 +1,5 @@
 import { PixelArt } from './pixel';
+import { snap } from './snap';
 
 export interface DrawOpts {
   flip?: boolean; flash?: number; alpha?: number; sx?: number; sy?: number; rot?: number; tint?: string; tintAmt?: number;
@@ -44,12 +45,12 @@ export class Sprite {
     const ox = flip ? this.w - this.ox : this.ox;
     const simple = !o || (!o.sx && !o.sy && !o.rot && o.alpha === undefined);
     if (simple && !o?.flash && !o?.tint) {
-      ctx.drawImage(img, Math.round(x - ox), Math.round(y - this.oy));
+      ctx.drawImage(img, snap(x - ox), snap(y - this.oy));
       return;
     }
     ctx.save();
     if (o?.alpha !== undefined) ctx.globalAlpha *= o.alpha;
-    ctx.translate(Math.round(x), Math.round(y));
+    ctx.translate(snap(x), snap(y));
     if (o?.rot) ctx.rotate(o.rot);
     if (o?.sx || o?.sy) ctx.scale(o.sx ?? 1, o.sy ?? 1);
     ctx.drawImage(img, -ox, -this.oy);

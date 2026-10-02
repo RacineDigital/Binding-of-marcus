@@ -1,5 +1,6 @@
 // Per-boss life layers and idle loops (see bosslife.ts). Coordinates are in sprite pixels.
 import { life, loops, L_ } from './bosslife';
+import { snap } from '../render/snap';
 const { px, glow, motes, orbit, eyes, puffs } = L_;
 
 // ---------------------------------------------------------------- Chapter I
@@ -119,8 +120,8 @@ life(['unbound', 'itremembers'], (L) => {
     const x = 44 + Math.cos(a) * 52, y = 34 + Math.sin(a) * 18 + Math.sin(L.t * 3 + i) * 3;
     ctx.globalAlpha = 0.85; ctx.fillStyle = '#e6dcc0';
     const w2 = 2 + Math.abs(Math.cos(L.t * 4 + i)) * 3;
-    ctx.fillRect(Math.round(L_.X(L, x) - w2 / 2), Math.round(L_.Y(L, y)), Math.round(w2), 5);
-    ctx.fillStyle = flesh ? '#8a2a2a' : '#5a4a3a'; ctx.fillRect(Math.round(L_.X(L, x) - w2 / 2), Math.round(L_.Y(L, y)) + 2, Math.max(1, Math.round(w2 - 1)), 1);
+    ctx.fillRect(snap(L_.X(L, x) - w2 / 2), snap(L_.Y(L, y)), snap(w2), 5);
+    ctx.fillStyle = flesh ? '#8a2a2a' : '#5a4a3a'; ctx.fillRect(snap(L_.X(L, x) - w2 / 2), snap(L_.Y(L, y)) + 2, Math.max(1, snap(w2 - 1)), 1);
   }
   if (L.e.anim === 'idle') eyes(L, [[42, 34]], flesh ? '#60ff60' : '#ff3040', 18, 0.3);
   else eyes(L, [[41, 28], [46, 28]], flesh ? '#60ff60' : '#ff3040', 9, 0.4);

@@ -1,6 +1,7 @@
 // Attack delivery: volleys, charge shots, bursts, beams, lasers and melee swings.
 // Everything reads the same AttackProfile so modifiers carry across attack modes.
 import type { World } from '../game/world';
+import { snap } from '../render/snap';
 import { AttackProfile, luckChance } from './profile';
 import type { FinalStats } from '../player/stats';
 import { TAU, angleDiff, clamp, dist2, pointSegDist2 } from '../core/math';
@@ -302,7 +303,7 @@ function renderInkBeam(w: World, ctx: CanvasRenderingContext2D, b: Beam, camX: n
   // streaks of ink rushing down the beam
   for (let i = 0; i < 6; i++) {
     const k = ((t * 3.2 + i / 6) % 1) * len, off = Math.sin(i * 2.7) * W * 0.3;
-    ctx.fillStyle = '#4a3a9a'; ctx.fillRect(Math.round(x0 + ux * k + nx * off), Math.round(y0 + uy * k + ny * off), 2, 1);
+    ctx.fillStyle = '#4a3a9a'; ctx.fillRect(snap(x0 + ux * k + nx * off), snap(y0 + uy * k + ny * off), 2, 1);
   }
   // droplets flung off the sides
   for (let i = 0; i < 14; i++) {
@@ -310,14 +311,14 @@ function renderInkBeam(w: World, ctx: CanvasRenderingContext2D, b: Beam, camX: n
     const out = W * 0.5 + ph * 14, fall = ph * ph * 6;
     ctx.globalAlpha = 1 - ph; ctx.fillStyle = i % 3 ? '#14102a' : '#3a2a7a';
     const s = i % 4 === 0 ? 2 : 1;
-    ctx.fillRect(Math.round(x0 + ux * d + nx * side * out), Math.round(y0 + uy * d + ny * side * out + fall), s, s);
+    ctx.fillRect(snap(x0 + ux * d + nx * side * out), snap(y0 + uy * d + ny * side * out + fall), s, s);
   }
   ctx.globalAlpha = 1;
   // the splash where it lands
   for (let i = 0; i < 9; i++) {
     const a = Math.atan2(-uy, -ux) + (i - 4) * 0.35, k = (t * 4 + i * 0.21) % 1, r = 3 + k * 10;
     ctx.globalAlpha = 1 - k; ctx.fillStyle = i % 2 ? '#14102a' : '#2a1f5a';
-    ctx.fillRect(Math.round(x1 + Math.cos(a) * r), Math.round(y1 + Math.sin(a) * r + k * k * 4), 2, 2);
+    ctx.fillRect(snap(x1 + Math.cos(a) * r), snap(y1 + Math.sin(a) * r + k * k * 4), 2, 2);
   }
   ctx.globalAlpha = 1;
   ctx.fillStyle = '#0a0616'; ctx.beginPath(); ctx.ellipse(x1, y1, W * 0.7, W * 0.5, 0, 0, Math.PI * 2); ctx.fill();

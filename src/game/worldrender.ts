@@ -1,5 +1,6 @@
 // Draws the current room: background, obstacles, doors, entities (y-sorted), projectiles, particles, lights.
 import type { World } from './world';
+import { snap } from '../render/snap';
 import { drawBossLife } from '../bosses/bosslife';
 import { doorIcon } from '../art/roomicons';
 import { BG_MARGIN } from '../art/roombg';
@@ -19,18 +20,18 @@ import { CHAMPIONS, ChampKind } from './roomflow';
 
 type Drawable = { y: number; kind: number; ref: any };
 const drawables: Drawable[] = [];
-let scratch: HTMLCanvasElement | null = null;
+const scratch = new Map<number, HTMLCanvasElement>();
 
 export function renderWorld(w: World): void {
   const r = w.r, ctx = r.ctx, room = w.room, theme = w.theme;
   const shakeAmt = w.trauma * w.trauma * 7;
   const shx = shakeAmt ? (Math.random() * 2 - 1) * shakeAmt : 0, shy = shakeAmt ? (Math.random() * 2 - 1) * shakeAmt : 0;
-  const camX = Math.round(w.renderCamX + shx), camY = Math.round(w.renderCamY + shy);
+  const camX = snap(w.renderCamX + shx), camY = snap(w.renderCamY + shy);
   let darkness = theme.darkness * 0.85 + (w.floor.curse === 'dark' ? 0.25 : 0) + (w.run.challenge === 'darkness' ? 0.3 : 0);
   if (room.type === 'treasure' || room.type === 'shop' || room.type === 'blessing' || room.type === 'lostfound') darkness *= 0.75;
   if (room.flags.variant === 'dark' && !room.cleared) darkness += 0.3;
   r.beginFrame(theme.ambient, Math.min(0.9, darkness));
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  r.worldBegin();
   ctx.globalAlpha = 1;
   ctx.fillStyle = '#050307'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   if (room.bgCache) ctx.drawImage(room.bgCache, -BG_MARGIN - camX, -BG_MARGIN - camY);
@@ -38,9 +39,9 @@ export function renderWorld(w: World): void {
   for (const c of w.creep) {
     const a = Math.min(1, c.life / 0.6) * 0.75;
     ctx.globalAlpha = a; ctx.fillStyle = c.color;
-    ctx.beginPath(); ctx.ellipse(Math.round(c.x - camX), Math.round(c.y - camY), c.r, c.r * 0.6, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(snap(c.x - camX), snap(c.y - camY), c.r, c.r * 0.6, 0, 0, TAU); ctx.fill();
     ctx.globalAlpha = a * 0.5; ctx.fillStyle = '#ffffff';
-    ctx.fillRect(Math.round(c.x - camX - c.r * 0.3), Math.round(c.y - camY - c.r * 0.25), 2, 1);
+    ctx.fillRect(snap(c.x - camX - c.r * 0.3), snap(c.y - camY - c.r * 0.25), 2, 1);
   }
   ctx.globalAlpha = 1;
   // --------------------------------------------------------------- obstacles (cached layer)
@@ -54,9 +55,9 @@ export function renderWorld(w: World): void {
     const pulse = 0.5 + 0.5 * Math.sin(t.t * 22);
     ctx.globalAlpha = 0.25 + 0.35 * pulse * (0.5 + k * 0.5);
     ctx.strokeStyle = t.color; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(Math.round(t.x - camX), Math.round(t.y - camY), t.r, t.r * 0.62, 0, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(snap(t.x - camX), snap(t.y - camY), t.r, t.r * 0.62, 0, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 0.12 + 0.2 * k; ctx.fillStyle = t.color;
-    ctx.beginPath(); ctx.ellipse(Math.round(t.x - camX), Math.round(t.y - camY), t.r * k, t.r * 0.62 * k, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(snap(t.x - camX), snap(t.y - camY), t.r * k, t.r * 0.62 * k, 0, 0, TAU); ctx.fill();
     ctx.globalAlpha = 1;
   }
   // trapdoor
@@ -89,11 +90,11 @@ export function renderWorld(w: World): void {
   for (const d of drawables) {
     switch (d.kind) {
       case 0: drawEnemy(w, ctx, d.ref as Enemy, camX, camY); break;
-      case 1: w.player.render(ctx, w, Math.round(w.player.x - camX), Math.round(w.player.y - camY)); break;
-      case 2: renderPickup(w, ctx, d.ref as Pickup, Math.round((d.ref as Pickup).x - camX), Math.round((d.ref as Pickup).y - camY)); break;
-      case 3: renderBomb(w, ctx, d.ref as Bomb, Math.round((d.ref as Bomb).x - camX), Math.round((d.ref as Bomb).y - camY)); break;
-      case 4: renderNpc(w, ctx, d.ref as Npc, Math.round((d.ref as Npc).x - camX), Math.round((d.ref as Npc).y - camY)); break;
-      case 5: renderFamiliar(w, ctx, d.ref as Familiar, Math.round((d.ref as Familiar).x - camX), Math.round((d.ref as Familiar).y - camY)); break;
+      case 1: w.player.render(ctx, w, snap(w.player.x - camX), snap(w.player.y - camY)); break;
+      case 2: renderPickup(w, ctx, d.ref as Pickup, snap((d.ref as Pickup).x - camX), snap((d.ref as Pickup).y - camY)); break;
+      case 3: renderBomb(w, ctx, d.ref as Bomb, snap((d.ref as Bomb).x - camX), snap((d.ref as Bomb).y - camY)); break;
+      case 4: renderNpc(w, ctx, d.ref as Npc, snap((d.ref as Npc).x - camX), snap((d.ref as Npc).y - camY)); break;
+      case 5: renderFamiliar(w, ctx, d.ref as Familiar, snap((d.ref as Familiar).x - camX), snap((d.ref as Familiar).y - camY)); break;
       case 6: drawDynamicObstacle(w, ctx, d.ref as number, camX, camY); break;
       case 7: {
         const c = d.ref as { e: Enemy; t: number; dur: number };
@@ -101,7 +102,7 @@ export function renderWorld(w: World): void {
         const jx = (Math.random() - 0.5) * 3 * (1 + k * 2);
         ctx.save(); ctx.globalAlpha = 1 - Math.max(0, k - 0.85) * 6;
         e.flash = Math.random() < 0.3 ? 1 : 0; e.sx = 1 + k * 0.15; e.sy = 1 - k * 0.25; e.dead = false;
-        drawEnemyBody(w, ctx, e, Math.round(e.x - camX + jx), Math.round(e.y - camY));
+        drawEnemyBody(w, ctx, e, snap(e.x - camX + jx), snap(e.y - camY));
         e.dead = true;
         ctx.restore();
         break;
@@ -150,25 +151,28 @@ export function renderWorld(w: World): void {
 function applyTransition(w: World): void {
   const t = w.transition!;
   const k = ease.inOutCubic(Math.min(1, t.t / t.dur));
-  const nx = Math.round((1 - k) * t.dx * VIEW_W), ny = Math.round((1 - k) * t.dy * VIEW_H);
-  const ox = Math.round(-k * t.dx * VIEW_W), oy = Math.round(-k * t.dy * VIEW_H);
   const r = w.r;
-  if (!scratch) { scratch = document.createElement('canvas'); scratch.width = VIEW_W; scratch.height = VIEW_H; }
-  const sc = scratch.getContext('2d')!;
+  // each buffer slides in its own pixels (the world's are finer than the light's)
   for (const cv of [r.world, r.light, r.glow]) {
-    sc.clearRect(0, 0, VIEW_W, VIEW_H); sc.drawImage(cv, 0, 0);
+    const s = cv.width / VIEW_W, W = cv.width, H = cv.height;
+    const nx = Math.round((1 - k) * t.dx * W), ny = Math.round((1 - k) * t.dy * H);
+    const ox = Math.round(-k * t.dx * W), oy = Math.round(-k * t.dy * H);
+    let sc = scratch.get(W);
+    if (!sc) { sc = document.createElement('canvas'); sc.width = W; sc.height = H; scratch.set(W, sc); }
+    const sx = sc.getContext('2d')!;
+    sx.clearRect(0, 0, W, H); sx.drawImage(cv, 0, 0);
     const c = cv.getContext('2d')!;
     c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
-    c.clearRect(0, 0, VIEW_W, VIEW_H);
-    if (cv === r.world) { c.fillStyle = '#050307'; c.fillRect(0, 0, VIEW_W, VIEW_H); }
-    c.drawImage(scratch, nx, ny);
-    if (cv === r.world) c.drawImage(t.snap, ox, oy);
+    c.clearRect(0, 0, W, H);
+    if (cv === r.world) { c.fillStyle = '#050307'; c.fillRect(0, 0, W, H); }
+    c.drawImage(sc, nx, ny);
+    if (cv === r.world) { c.imageSmoothingEnabled = false; c.drawImage(t.snap, ox, oy, VIEW_W * s, VIEW_H * s); }
     c.restore();
   }
 }
 
 function drawEnemy(w: World, ctx: CanvasRenderingContext2D, e: Enemy, camX: number, camY: number): void {
-  const sx = Math.round(e.x - camX), sy = Math.round(e.y - camY);
+  const sx = snap(e.x - camX), sy = snap(e.y - camY);
   if (e.hidden && !e.def.draw) return;
   // spawn-in: rise out of an ink pool
   if (e.spawnT > 0 && !e.def.spawnQuiet) {
@@ -179,7 +183,7 @@ function drawEnemy(w: World, ctx: CanvasRenderingContext2D, e: Enemy, camX: numb
     ctx.save();
     ctx.beginPath(); ctx.rect(sx - 60, sy - 200, 120, 200 + 1); ctx.clip();
     ctx.globalAlpha = k;
-    drawEnemyBody(w, ctx, e, sx, sy + Math.round((1 - k) * (e.hitY * 2 + 6)));
+    drawEnemyBody(w, ctx, e, sx, sy + snap((1 - k) * (e.hitY * 2 + 6)));
     ctx.restore();
     return;
   }
@@ -233,7 +237,7 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
   if (e.fear > 0 || e.confuse > 0) {
     ctx.fillStyle = e.fear > 0 ? '#c060ff' : '#ffe060';
     const a = w.time * 6;
-    for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(sx + Math.cos(a + i * 2.1) * 6), Math.round(sy - e.hitY * 2 - 6 + Math.sin(a + i * 2.1) * 2), 1, 1);
+    for (let i = 0; i < 3; i++) ctx.fillRect(snap(sx + Math.cos(a + i * 2.1) * 6), snap(sy - e.hitY * 2 - 6 + Math.sin(a + i * 2.1) * 2), 1, 1);
   }
 }
 
@@ -305,7 +309,7 @@ function drawDoor(w: World, ctx: CanvasRenderingContext2D, d: import('./world').
   if (d.def.hidden && !d.revealed) return;
   const kind = d.def.kind === 'normal' && w.room.type !== 'normal' && w.room.type !== 'start' ? (w.room.type as any) : d.def.kind;
   const ds = doorSprites(kind === 'secret' || kind === 'supersecret' ? 'secret' : kind, w.theme);
-  const x = Math.round(d.x - camX), y = Math.round(d.y - camY);
+  const x = snap(d.x - camX), y = snap(d.y - camY);
   ctx.save();
   ctx.translate(x, y);
   const rot = d.def.side === Side.N ? 0 : d.def.side === Side.S ? Math.PI : d.def.side === Side.W ? -Math.PI / 2 : Math.PI / 2;
@@ -367,7 +371,7 @@ function drawLightBeam(w: World, ctx: CanvasRenderingContext2D, x: number, y: nu
   ctx.fillStyle = g; ctx.fillRect(x - wd, y - 140, wd * 2, 140);
   ctx.fillStyle = `rgba(255,255,240,${0.6 * k})`; ctx.fillRect(x - wd * 0.35, y - 140, wd * 0.7, 140);
   ctx.fillStyle = `rgba(255,240,190,${0.5 * k})`; ctx.beginPath(); ctx.ellipse(x, y, wd * 1.3, wd * 0.5, 0, 0, TAU); ctx.fill();
-  for (let i = 0; i < 6; i++) { const m = (w.time * 0.6 + i / 6) % 1; ctx.fillStyle = `rgba(255,255,255,${0.8 * (1 - m) * k})`; ctx.fillRect(Math.round(x + Math.sin(i * 7 + w.time * 2) * wd * 0.6), Math.round(y - m * 120), 1, 1); }
+  for (let i = 0; i < 6; i++) { const m = (w.time * 0.6 + i / 6) % 1; ctx.fillStyle = `rgba(255,255,255,${0.8 * (1 - m) * k})`; ctx.fillRect(snap(x + Math.sin(i * 7 + w.time * 2) * wd * 0.6), snap(y - m * 120), 1, 1); }
   ctx.restore();
   w.r.addGlow(x, y - 30, 60, '#fff0c0', 0.5 * k);
   w.r.addLight(x, y - 20, 70, 0.8 * k);
@@ -376,7 +380,7 @@ function drawLightBeam(w: World, ctx: CanvasRenderingContext2D, x: number, y: nu
 /** The way out: a plain door standing in the boss room, with a lit EXIT sign over it. */
 function drawExitDoor(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
   const k = Math.min(1, t / 0.6);
-  const rise = Math.round((1 - k) * 34);
+  const rise = snap((1 - k) * 34);
   ctx.save();
   ctx.beginPath(); ctx.rect(x - 20, y - 64, 40, 64); ctx.clip();
   const by = y + rise;
@@ -400,7 +404,7 @@ function drawExitDoor(w: World, ctx: CanvasRenderingContext2D, x: number, y: num
 
 /** A hospital door with a little wired window and a 4 on it. It glows when the letter will open it. */
 function drawRoom4Door(w: World, ctx: CanvasRenderingContext2D, x: number, y: number, t: number): void {
-  const k = Math.min(1, t / 0.6), rise = Math.round((1 - k) * 34);
+  const k = Math.min(1, t / 0.6), rise = snap((1 - k) * 34);
   const open = w.player.has('grandfathers_letter');
   ctx.save();
   ctx.beginPath(); ctx.rect(x - 20, y - 64, 40, 64); ctx.clip();
@@ -498,7 +502,7 @@ function renderAmbient(w: World, ctx: CanvasRenderingContext2D, camX: number, ca
     if (kind === 'drips') {
       if (p.life > 2.5) { p.vy += 500 * dt; p.y += p.vy * dt; }
       if (p.y > VIEW_H || p.life > 5) { if (p.life > 2.5) w.fx.ring(p.x + camX, p.y + camY, 1, 5, 'rgba(160,190,210,0.6)', 0.3, false); A.splice(i, 1); continue; }
-      ctx.fillStyle = 'rgba(150,180,200,0.8)'; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, p.life > 2.5 ? 3 : 1);
+      ctx.fillStyle = 'rgba(150,180,200,0.8)'; ctx.fillRect(snap(p.x), snap(p.y), 1, p.life > 2.5 ? 3 : 1);
       continue;
     }
     p.x += p.vx * dt; p.y += p.vy * dt;
@@ -506,13 +510,13 @@ function renderAmbient(w: World, ctx: CanvasRenderingContext2D, camX: number, ca
     if (p.x < -10 || p.x > VIEW_W + 10 || p.y < -10 || p.y > VIEW_H + 10 || p.life > 12) { A.splice(i, 1); continue; }
     const tw = 0.5 + 0.5 * Math.sin(p.life * 2 + i);
     switch (kind) {
-      case 'dust': ctx.fillStyle = `rgba(210,200,180,${0.25 * tw})`; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); break;
-      case 'motes': ctx.fillStyle = `rgba(200,230,220,${0.35 * tw})`; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); w.r.addGlow(p.x, p.y, 4, '#c0f0e0', 0.15 * tw); break;
-      case 'embers': ctx.fillStyle = `rgba(255,${140 + Math.floor(tw * 80)},60,${0.8 * tw})`; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); w.r.addGlow(p.x, p.y, 5, '#ff8030', 0.3 * tw); break;
-      case 'ash': ctx.fillStyle = `rgba(160,150,150,${0.5})`; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1 + (i % 2), 1); break;
-      case 'ink': ctx.fillStyle = 'rgba(40,36,90,0.55)'; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 3); break;
-      case 'pages': ctx.fillStyle = `rgba(230,220,190,${0.35 + 0.2 * tw})`; ctx.fillRect(Math.round(p.x), Math.round(p.y), 2 + p.kind, 2); break;
-      case 'glass': w.r.addGlow(p.x, p.y, 10, glassCols[p.kind], 0.12 * tw); ctx.fillStyle = glassCols[p.kind]; ctx.globalAlpha = 0.4 * tw; ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); ctx.globalAlpha = 1; break;
+      case 'dust': ctx.fillStyle = `rgba(210,200,180,${0.25 * tw})`; ctx.fillRect(snap(p.x), snap(p.y), 1, 1); break;
+      case 'motes': ctx.fillStyle = `rgba(200,230,220,${0.35 * tw})`; ctx.fillRect(snap(p.x), snap(p.y), 1, 1); w.r.addGlow(p.x, p.y, 4, '#c0f0e0', 0.15 * tw); break;
+      case 'embers': ctx.fillStyle = `rgba(255,${140 + Math.floor(tw * 80)},60,${0.8 * tw})`; ctx.fillRect(snap(p.x), snap(p.y), 1, 1); w.r.addGlow(p.x, p.y, 5, '#ff8030', 0.3 * tw); break;
+      case 'ash': ctx.fillStyle = `rgba(160,150,150,${0.5})`; ctx.fillRect(snap(p.x), snap(p.y), 1 + (i % 2), 1); break;
+      case 'ink': ctx.fillStyle = 'rgba(40,36,90,0.55)'; ctx.fillRect(snap(p.x), snap(p.y), 1, 3); break;
+      case 'pages': ctx.fillStyle = `rgba(230,220,190,${0.35 + 0.2 * tw})`; ctx.fillRect(snap(p.x), snap(p.y), 2 + p.kind, 2); break;
+      case 'glass': w.r.addGlow(p.x, p.y, 10, glassCols[p.kind], 0.12 * tw); ctx.fillStyle = glassCols[p.kind]; ctx.globalAlpha = 0.4 * tw; ctx.fillRect(snap(p.x), snap(p.y), 1, 1); ctx.globalAlpha = 1; break;
     }
   }
 }

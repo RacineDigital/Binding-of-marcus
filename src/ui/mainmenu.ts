@@ -113,7 +113,7 @@ export function renderMenuScene(ms: MenuSystem, dt: number): void {
   const t = ms.time;
   const mx = g.input.mouse.active && g.input.mouse.x >= 0 ? clamp((g.input.mouse.x / VIEW_W) * 2 - 1, -1, 1) : Math.sin(t * 0.2) * 0.4;
   r.beginFrame('#05030a', 0.78);
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
+  r.worldBegin(); ctx.globalAlpha = 1;
   const par = (k: number) => -12 - mx * k;
   ctx.drawImage(layers.far, par(3), 0);
   // moonbeam

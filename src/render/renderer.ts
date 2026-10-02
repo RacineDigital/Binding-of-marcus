@@ -1,8 +1,13 @@
 import { VIEW_W, VIEW_H } from '../core/constants';
+import { SUB, setSub } from './snap';
 
 export type ScaleMode = 'sharp' | 'integer' | 'stretch';
 
-/** Owns the display canvas plus low-res world, light and glow buffers; composites them each frame. */
+/**
+ * Owns the display canvas plus the world, light and glow buffers; composites them each frame. The world
+ * buffer is SUB screen pixels per art pixel, so movement is drawn a screen pixel at a time; light and
+ * glow are soft anyway and stay low-res.
+ */
 export class Renderer {
   display: HTMLCanvasElement;
   dctx: CanvasRenderingContext2D;
@@ -15,6 +20,8 @@ export class Renderer {
   private sharp: HTMLCanvasElement;
   private sctx: CanvasRenderingContext2D;
   scale = 1; offX = 0; offY = 0;
+  /** Screen pixels per art pixel in the world buffer. */
+  sub = 1;
   mode: ScaleMode = 'sharp';
   shakeX = 0; shakeY = 0;
   lightSprite: HTMLCanvasElement;
@@ -31,6 +38,7 @@ export class Renderer {
     this.glow = mk(VIEW_W, VIEW_H);
     this.gctx = this.glow.getContext('2d')!;
     this.sharp = mk(VIEW_W * 2, VIEW_H * 2);
+    this.sub = 1;
     this.sctx = this.sharp.getContext('2d')!;
     this.lightSprite = mk(64, 64);
     const lc = this.lightSprite.getContext('2d')!;
@@ -57,6 +65,20 @@ export class Renderer {
     this.offY = Math.floor((h - VIEW_H * s) / 2);
     const k = Math.max(1, Math.ceil(s));
     if (this.sharp.width !== VIEW_W * k) { this.sharp.width = VIEW_W * k; this.sharp.height = VIEW_H * k; }
+    // the world buffer at (about) screen resolution, capped so 4K screens don't pay for 8x
+    const sub = Math.max(1, Math.min(4, Math.round(s)));
+    if (sub !== this.sub || this.world.width !== VIEW_W * sub) {
+      this.sub = sub; setSub(sub);
+      this.world.width = VIEW_W * sub; this.world.height = VIEW_H * sub;
+      this.ctx.imageSmoothingEnabled = false;
+    }
+  }
+  /** Start drawing the world in art-pixel coordinates (the buffer itself is `sub` times finer). */
+  worldBegin(): CanvasRenderingContext2D {
+    const c = this.ctx;
+    c.setTransform(SUB, 0, 0, SUB, 0, 0);
+    c.imageSmoothingEnabled = false;
+    return c;
   }
 
   /** Begin a new frame: reset light/glow layers. */
@@ -114,11 +136,10 @@ export class Renderer {
     const s = this.scale;
     const x = this.offX + this.shakeX * s, y = this.offY + this.shakeY * s;
     const w = VIEW_W * s, h = VIEW_H * s;
-    if (this.mode === 'sharp' && Math.abs(s - Math.round(s)) > 0.01) {
-      this.sctx.imageSmoothingEnabled = false;
-      this.sctx.drawImage(this.world, 0, 0, this.sharp.width, this.sharp.height);
+    if (this.mode === 'sharp' && Math.abs(s - this.sub) > 0.01) {
+      // the buffer is already near screen size: a smooth resample of the last fraction keeps it crisp
       d.imageSmoothingEnabled = true; d.imageSmoothingQuality = 'high';
-      d.drawImage(this.sharp, x, y, w, h);
+      d.drawImage(this.world, x, y, w, h);
     } else {
       d.imageSmoothingEnabled = false;
       d.drawImage(this.world, x, y, w, h);

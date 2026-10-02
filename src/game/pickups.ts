@@ -1,5 +1,6 @@
 // World pickups: currency, keys, bombs, hearts, consumables, chests and item pedestals.
 import type { World } from './world';
+import { snap } from '../render/snap';
 import { pickupSprites } from '../art/pickups';
 import { moveBody } from '../rooms/collide';
 import { TAU } from '../core/math';
@@ -86,7 +87,7 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
         ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
         ctx.beginPath(); ctx.ellipse(sx, sy - 13, 6, 1.5, 0, 0, TAU); ctx.fill();
         ctx.globalAlpha = 1;
-        ctx.drawImage(icon, Math.round(sx - icon.width / 2), Math.round(sy - 32 + bob));
+        ctx.drawImage(icon, snap(sx - icon.width / 2), snap(sy - 32 + bob));
         w.r.addGlow(sx, sy - 24, 22, home && AURA[home] ? AURA[home]!.glow : (it?.quality ?? 0) >= 3 ? '#ffe090' : '#b0a8ff', home && AURA[home] ? 0.3 : 0.18);
       }
       return;
@@ -113,7 +114,7 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
     case 'charm': {
       const icon = itemIconCanvas(p.data.id, false);
       ctx.globalAlpha = alpha;
-      ctx.drawImage(icon, Math.round(sx - icon.width / 2), Math.round(y - icon.height));
+      ctx.drawImage(icon, snap(sx - icon.width / 2), snap(y - icon.height));
       ctx.globalAlpha = 1;
       break;
     }
@@ -139,7 +140,7 @@ function poolAura(w: World, ctx: CanvasRenderingContext2D, home: PoolId, sx: num
     ctx.globalAlpha = (1 - k) * (home === 'deal' ? 0.75 : 0.85) * Math.min(1, k * 5);
     ctx.fillStyle = home === 'deal' && i % 2 ? '#7a0a14' : a.mote;
     const sz = a.size + (home === 'deal' ? Math.round((1 - k) * 1.5) : 0);
-    ctx.fillRect(Math.round(x - sz / 2), Math.round(y), sz, sz);
+    ctx.fillRect(snap(x - sz / 2), snap(y), sz, sz);
   }
   if (home === 'deal') {
     // a ring of red under the icon, like something watching from the ink

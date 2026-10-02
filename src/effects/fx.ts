@@ -1,5 +1,6 @@
 // Pooled particles and transient effects. All positions are in room (world) pixels.
 import { TAU } from '../core/math';
+import { snap } from '../render/snap';
 
 export const enum PK { Pix = 0, Spark = 1, Smoke = 2, Ring = 3, Flash = 4, Ember = 5, Splat = 6, Star = 7, Bubble = 8, Shard = 9 }
 
@@ -165,14 +166,14 @@ export class FX {
     for (const p of this.parts) {
       if (!p.active) continue;
       const t = p.life / p.max;
-      const sx = Math.round(p.x - camX), sy = Math.round(p.y - p.z - camY);
+      const sx = snap(p.x - camX), sy = snap(p.y - p.z - camY);
       switch (p.kind) {
         case PK.Pix: case PK.Shard: {
           ctx.globalAlpha = t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
           ctx.fillStyle = p.color;
           const s = p.size;
           ctx.fillRect(sx, sy, s, s);
-          if (p.kind === PK.Shard && p.z > 1) { ctx.globalAlpha *= 0.3; ctx.fillStyle = '#000'; ctx.fillRect(Math.round(p.x - camX), Math.round(p.y - camY), s, 1); }
+          if (p.kind === PK.Shard && p.z > 1) { ctx.globalAlpha *= 0.3; ctx.fillStyle = '#000'; ctx.fillRect(snap(p.x - camX), snap(p.y - camY), s, 1); }
           break;
         }
         case PK.Spark: {

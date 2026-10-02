@@ -3,6 +3,7 @@
 // pages drifting off the Unbound, glowing eyes, steam, drips, snow) and makes it read as alive.
 // Everything is a pure function of time, so it costs nothing to keep and never piles up.
 import type { Enemy } from '../enemies/enemy';
+import { snap } from '../render/snap';
 import type { World } from '../game/world';
 import { TAU } from '../core/math';
 
@@ -21,7 +22,7 @@ const Y = (L: Life, y: number) => L.y0 + y;
 
 function px(L: Life, x: number, y: number, c: string, s = 1, a = 1): void {
   const ctx = L.ctx; ctx.globalAlpha = a; ctx.fillStyle = c;
-  ctx.fillRect(Math.round(X(L, x) - s / 2), Math.round(Y(L, y) - s / 2), s, s);
+  ctx.fillRect(snap(X(L, x) - s / 2), snap(Y(L, y) - s / 2), s, s);
 }
 function glow(L: Life, x: number, y: number, r: number, c: string, a: number): void { L.w.r.addGlow(X(L, x), Y(L, y), r, c, a); }
 

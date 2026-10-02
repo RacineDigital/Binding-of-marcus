@@ -1,5 +1,6 @@
 // Marcus (or another character): movement, attacking, animation state and inventory.
 import { WALK_BOB, WALK_FRAMES, WALK_STEP } from '../art/hand/build';
+import { snap } from '../render/snap';
 import type { World } from '../game/world';
 import { Health } from './health';
 import { computeStats, FinalStats, StatMods } from './stats';
@@ -144,7 +145,8 @@ export class Player {
     const focus = !locked && inp.isDown('focus');
     const top = MOVE_PX * this.stats.speed * (focus ? 0.55 : 1);
     const tx = mv.x * top, ty = mv.y * top;
-    const accel = (mv.x || mv.y) ? 30 : 24;
+    // eased in and out like Isaac: a quick but soft start, and a short glide to a stop
+    const accel = (mv.x || mv.y) ? 22 : 15;
     const k = 1 - Math.exp(-accel * dt);
     this.vx += (tx - this.vx) * k; this.vy += (ty - this.vy) * k;
     if (Math.abs(this.vx) < 0.5 && !mv.x) this.vx = 0;
@@ -395,7 +397,7 @@ export class Player {
       } else {
         const blink = Math.floor(t * 2.2) % 5 === 0;
         ctx.fillStyle = '#f2f0ff';
-        if (!blink) { ctx.fillRect(Math.round(sx - 4), Math.round(sy - 2), 2, 2); ctx.fillRect(Math.round(sx + 2), Math.round(sy - 2), 2, 2); }
+        if (!blink) { ctx.fillRect(snap(sx - 4), snap(sy - 2), 2, 2); ctx.fillRect(snap(sx + 2), snap(sy - 2), 2, 2); }
       }
       return;
     }
@@ -455,11 +457,11 @@ export class Player {
     if (facingAway) layer('back');
     if (this.pickupT > 0 && this.pickupSprite) {
       const k = Math.min(1, (1.1 - this.pickupT) * 6);
-      ctx.drawImage(this.pickupSprite, Math.round(sx - 8), Math.round(headY - 34 - k * 4));
+      ctx.drawImage(this.pickupSprite, snap(sx - 8), snap(headY - 34 - k * 4));
     }
     // charge meter
     if (this.wcharge > 0.02 && (this.mode === 'charge' || this.mode === 'burst' || this.mode === 'beam' || this.mode === 'melee')) {
-      const wbar = 16, x0 = Math.round(sx - wbar / 2), y0 = Math.round(headY - 30);
+      const wbar = 16, x0 = snap(sx - wbar / 2), y0 = snap(headY - 30);
       ctx.fillStyle = '#0c0a12'; ctx.fillRect(x0 - 1, y0 - 1, wbar + 2, 4);
       const full = this.wcharge >= 1;
       ctx.fillStyle = full ? (Math.floor(w.time * 12) % 2 ? '#ffffff' : '#c8c0ff') : '#8a7cff';
@@ -502,19 +504,19 @@ export class Player {
     for (let i = 0; i < 5; i++) {
       const a = t * 6 + i * 1.26, r = (0.3 + (i % 3) * 0.25) * Math.min(rx, ry);
       ctx.fillStyle = i % 2 ? '#3a2a8a' : '#6a5ad8';
-      ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.8), 1, 1);
+      ctx.fillRect(snap(cx + Math.cos(a) * r), snap(cy + Math.sin(a) * r * 0.8), 1, 1);
     }
-    if (k > 0.5) { ctx.globalAlpha = (k - 0.5) * 2 * (0.6 + 0.4 * Math.sin(t * 30)); ctx.fillStyle = '#a898ff'; ctx.fillRect(Math.round(cx - 1), Math.round(cy - 0.5), 2, 1); ctx.globalAlpha = 1; }
+    if (k > 0.5) { ctx.globalAlpha = (k - 0.5) * 2 * (0.6 + 0.4 * Math.sin(t * 30)); ctx.fillStyle = '#a898ff'; ctx.fillRect(snap(cx - 1), snap(cy - 0.5), 2, 1); ctx.globalAlpha = 1; }
     // little teeth round the edge once it's wide open
     if (k > 0.45) {
       ctx.fillStyle = '#e8e4ff';
-      for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + 0.2; ctx.fillRect(Math.round(cx + Math.cos(a) * rx * 0.9), Math.round(cy + Math.sin(a) * ry * 0.9), 1, 1); }
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + 0.2; ctx.fillRect(snap(cx + Math.cos(a) * rx * 0.9), snap(cy + Math.sin(a) * ry * 0.9), 1, 1); }
     }
     // ink running down from the wound
     ctx.fillStyle = '#14122a';
     for (let i = 0; i < 3; i++) {
       const l = ((t * 1.6 + i * 0.33) % 1) * (2 + k * 5);
-      ctx.fillRect(Math.round(cx - 2 + i * 2), Math.round(cy + ry), 1, Math.round(1 + l));
+      ctx.fillRect(snap(cx - 2 + i * 2), snap(cy + ry), 1, snap(1 + l));
     }
     ctx.restore();
     w.r.addGlow(cx, cy, 10 + k * 12, '#6a4aff', 0.12 + k * 0.25);
@@ -527,10 +529,10 @@ export class Player {
     const flick = 0.75 + 0.25 * Math.sin(w.time * 40);
     for (const ex of eyes) {
       const x = flip ? x0 + head.w - ex - 2 : x0 + ex;
-      ctx.globalAlpha = Math.min(1, k * 1.6) * flick; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x), Math.round(y0 + 12), 2, 2);
-      ctx.fillStyle = '#c8bcff'; ctx.fillRect(Math.round(x - 1), Math.round(y0 + 13), 1, 1); ctx.fillRect(Math.round(x + 2), Math.round(y0 + 13), 1, 1);
+      ctx.globalAlpha = Math.min(1, k * 1.6) * flick; ctx.fillStyle = '#ffffff'; ctx.fillRect(snap(x), snap(y0 + 12), 2, 2);
+      ctx.fillStyle = '#c8bcff'; ctx.fillRect(snap(x - 1), snap(y0 + 13), 1, 1); ctx.fillRect(snap(x + 2), snap(y0 + 13), 1, 1);
       // streaks of light trailing off the eyes
-      ctx.globalAlpha = k * 0.5 * flick; ctx.fillRect(Math.round(x + (flip ? 2 : -1)), Math.round(y0 + 12 - k * 2), 1, Math.round(1 + k * 2));
+      ctx.globalAlpha = k * 0.5 * flick; ctx.fillRect(snap(x + (flip ? 2 : -1)), snap(y0 + 12 - k * 2), 1, snap(1 + k * 2));
       w.r.addGlow(x + 1, y0 + 13, 8 + k * 10, '#b8a8ff', 0.25 + k * 0.45);
     }
     ctx.globalAlpha = 1;

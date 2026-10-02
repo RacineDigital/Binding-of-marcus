@@ -1,6 +1,7 @@
 // Pooled projectile simulation. Player shots read behaviour from an AttackProfile so every modifier
 // composes with every other; enemy shots use a small set of scripted motions.
 import { resetInterp } from '../game/interp';
+import { snap } from '../render/snap';
 import { TAU, angleDiff, clamp, dist2 } from '../core/math';
 import { AttackProfile, luckChance } from './profile';
 import { pointBlocked } from '../rooms/collide';
@@ -332,7 +333,7 @@ export class Projectiles {
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
     for (const p of this.list) {
       if (!p.active || p.delay > 0 && p.team === Team.Player) continue;
-      const sx = Math.round(p.x - camX), sy = Math.round(p.y - camY);
+      const sx = snap(p.x - camX), sy = snap(p.y - camY);
       const rw = Math.max(1, Math.round(p.r * 0.8));
       ctx.fillRect(sx - rw, sy, rw * 2, 1 + (p.r > 5 ? 1 : 0));
     }

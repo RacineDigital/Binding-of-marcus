@@ -303,11 +303,12 @@ export class Game {
   fadeTo(cb: () => void, dur = 0.5): void { this.fading = true; this.fadeT = 0; this.fadeDur = dur; this.fadeCb = cb; }
 
   snapshotWorld(): HTMLCanvasElement {
-    const c = document.createElement('canvas'); c.width = VIEW_W; c.height = VIEW_H;
+    const W = this.r.world.width, H = this.r.world.height;
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
     const x = c.getContext('2d')!;
     x.drawImage(this.r.world, 0, 0);
-    x.globalCompositeOperation = 'lighter'; x.drawImage(this.r.glow, 0, 0);
-    x.globalCompositeOperation = 'source-over'; x.drawImage(this.r.light, 0, 0);
+    x.globalCompositeOperation = 'lighter'; x.drawImage(this.r.glow, 0, 0, W, H);
+    x.globalCompositeOperation = 'source-over'; x.drawImage(this.r.light, 0, 0, W, H);
     return c;
   }
 
