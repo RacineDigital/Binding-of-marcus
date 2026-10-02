@@ -4,6 +4,7 @@ import { AudioEngine, PlayOpts } from './audio';
 import { RECIPES, STINGERS, Recipe } from './sfx';
 import { impulse } from './dsp';
 import { Music } from './music';
+import { bossStingRecipe, StingKind } from './bossting';
 
 export class SynthAudio extends AudioEngine {
   ctx: AudioContext | null = null;
@@ -94,6 +95,29 @@ export class SynthAudio extends AudioEngine {
     const send = c.createGain(); send.gain.value = 0.35; g.connect(send); send.connect(this.reverbIn);
     src.start();
     this.duck(0.35, (STINGERS[name]?.dur ?? 1.5) * 0.8);
+  }
+  private stings = new Map<string, Promise<AudioBuffer>>();
+  /** Render (once, in a few milliseconds) and play a boss's own sting, ducking the music under it. */
+  bossSting(id: string, kind: StingKind): void {
+    const c = this.ctx; if (!c) return;
+    const key = id + ':' + kind, r = bossStingRecipe(id, kind);
+    let p = this.stings.get(key);
+    if (!p) {
+      const oc = new OfflineAudioContext(1, Math.ceil(44100 * r.dur), 44100);
+      const g = oc.createGain(); g.connect(oc.destination); r.render(oc, g, 0);
+      p = oc.startRendering().then((b) => { const d = b.getChannelData(0); let pk = 0; for (let i = 0; i < d.length; i++) pk = Math.max(pk, Math.abs(d[i])); if (pk > 0.95) for (let i = 0; i < d.length; i++) d[i] *= 0.95 / pk; return b; });
+      this.stings.set(key, p);
+    }
+    const asked = c.currentTime;
+    p.then((buf) => {
+      const late = c.currentTime - asked; if (late > 0.25) return;   // too late to land on the slam
+      const src = c.createBufferSource(); src.buffer = buf;
+      const g = c.createGain(); g.gain.value = r.vol ?? 0.75;
+      src.connect(g); g.connect(this.sfx);
+      const send = c.createGain(); send.gain.value = 0.4; g.connect(send); send.connect(this.reverbIn);
+      src.start(0, late);
+      this.duck(0.25, r.dur * 0.85);
+    }).catch((e) => console.warn('boss sting failed', id, e));
   }
   setMusic(t: string | null): void { this.pendingTrack = t; this.music?.setTrack(t); }
   prepareMusic(t: string): void { if (this.music) this.music.prepare(t); else this.pendingPrepare.push(t); }

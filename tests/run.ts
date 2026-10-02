@@ -270,6 +270,12 @@ console.log('content:', JSON.stringify(counts));
   const fs = await import('fs');
   ok(JSON.parse(fs.readFileSync('package.json', 'utf8')).version === GAME_VERSION, 'GAME_VERSION matches package.json');
 }
+// every boss has its own sting, and the card slams its name on the sting's hit
+{
+  const { bossStingRecipe, STING_HIT } = await import('../src/audio/bossting');
+  ok(STING_HIT > 0.2 && STING_HIT < 0.6, 'sting hit lands early in the card');
+  for (const b of BOSSES) for (const k of ['chapter', 'final', 'echo', 'champion'] as const) { const r = bossStingRecipe(b.id, k); ok(r.dur >= 2.5 && typeof r.render === 'function', `${b.id} ${k} sting`); }
+}
 // the tainted: one per reader, each with a look, real items and an unlock earned by all five marks
 {
   const { TAINTED } = await import('../src/player/characters');

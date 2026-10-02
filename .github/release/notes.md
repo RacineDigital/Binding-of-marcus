@@ -1,49 +1,32 @@
-## What's new in 3.3.0: the chapter soundtrack
+## What's new in 3.4.0: the Tainted, and boss title cards
 
-Every chapter now has its own recorded theme: 30 new tracks of melodic electronic rock, one for each
-chapter, alternate chapter, hidden route and Home. Alternate chapters (the Root Cellar, the Morgue,
-the Belfry and the rest) no longer borrow another chapter's music.
+### The Tainted
+Earn all five ending marks with a reader and their tainted self unlocks: the same person, inked over,
+their gift turned against them. They have their own page in the Readers gallery (press Q/R or walk off
+the edge of the page) once you've finished the story.
 
-- While you explore, the track plays softer and muffled, as if from the next room; when a fight
-  starts it opens up to the full mix, and settles back down after the room is clear.
-- Each track loops seamlessly, and the next chapter's theme is loaded before you reach it.
-- Boss fights keep their own boss music.
-- In the browser version opened straight from disk, browsers don't allow the page to load the
-  music files, so it plays the previous synthesized music instead. The Windows app and hosted
-  web version play the new soundtrack.
+| Tainted | Title | Their twist |
+|---|---|---|
+| Marcus | The Smudged | Every shot flies out and comes back, hitting both ways. Shorter range. |
+| Wren | The Runaway | Pebbles fly in pairs and ricochet more. Very fast, wax hearts only. |
+| Edda | The Unravelled | Needles stitch the enemy they hit to two more. One heart, four bronze shields. |
+| Elias | The Forgotten | Shots circle around him through stone. Flies, wax hearts only. |
+| The Blot | The Spill | A full-length ink beam that leaves burning ink. Flies, ink hearts only. |
+| Ozzie | The Broke | Every new room rolls a die: a curse on one, a blessing on six. Starts broke. |
+| Nell | The Burnt Out | Sets enemies alight; anything she kills bursts into flame. |
+| Bram | The Brute | Huge swings that knock enemies flying and break rocks; kills sometimes heal. |
+| Wick | The Swarm | Moths hunt and split in two when they hit. Flies, wax hearts only. |
+| Ada | The Withered | Thorns poison and slow and leave brambles. Wax hearts only. |
 
-| Chapter | Track |
-|---|---|
-| The Cellar | Under the Floorboards |
-| The Boiler Rooms | Pressure Vessel |
-| The Underworks | Downstream |
-| The Forgotten Ward | Empty Beds |
-| The Depths | Weight of Stone |
-| The Chapel | Wax and Ash |
-| The Hollow | A Tear in the Page |
-| The Binding | Thread Through the Spine |
-| The Root Cellar | Roots in the Dark |
-| The Coal Chute | Black Lung |
-| The Flooded Drains | Below the Waterline |
-| The Morgue | Cold Drawers |
-| The Catacombs | Bone Shelves |
-| The Belfry | The Last Toll |
-| The Inkwell | Blue Black |
-| The Attic | Things We Kept |
-| The Greenhouse | Glass and Thorns |
-| The Print Shop | Red Type |
-| The Frozen Cistern | Ice Holds Its Breath |
-| The Clocktower | Four Minutes Past Four |
-| The Library Stacks | Between the Spines |
-| The Margins | What Was Crossed Out |
-| The Last Page | No More Words |
-| The Dedication | For My Grandson |
-| The Foreword | Before the First Word |
-| The Waiting Room | Visiting Hours |
-| The Night Ward | Footsteps After Eight |
-| Intensive Care | Borrowed Breath |
-| Room 4 | The Good Chair |
-| Home | Morning Through the Window |
+If you already have all five marks with someone, their tainted self unlocks the next time you start
+the game.
+
+### Boss title cards
+Every boss fight now opens with a proper title card and **its own music sting**: each boss has a
+motif of its own, so you'll start to know who's behind the door by ear. Ink sweeps in during the
+riser; on the hit the boss is torn out of silhouette with a flash and a shake while its name stamps
+down letter by letter, and its description types itself out. Ending bosses get a red card with choir
+and organ, champions a gold card with a brass fanfare, and your echo a cold, drowned blue one.
 
 ## Download and play
 

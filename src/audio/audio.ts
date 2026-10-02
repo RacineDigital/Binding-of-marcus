@@ -7,6 +7,8 @@ export class AudioEngine {
   prepareMusic(_t: string): void {}
   setIntensity(_i: number): void {}
   stinger(_n: string): void {}
+  /** A boss's own sting for its title card (see bossting.ts). */
+  bossSting(_id: string, _kind: 'chapter' | 'final' | 'echo' | 'champion'): void {}
   unlock(): void {}
   setVolumes(_m: number, _s: number): void {}
   duck(_amt: number, _t: number): void {}

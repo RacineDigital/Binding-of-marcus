@@ -22,6 +22,10 @@ import { diceFace } from '../items/data/dice';
 import { bindLabel, fmtKeys } from '../core/input';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
+import { STING_HIT, StingKind } from '../audio/bossting';
+
+/** How long a boss title card holds the screen. */
+const BOSS_CARD = 2.9;
 
 /** The Blot's heart: pop in, beat, fly to the hearts (seconds). */
 const GIFT_POP = 0.45, GIFT_HOLD = 1.7, GIFT_FLY_END = 2.3;
@@ -139,6 +143,7 @@ export class Hud {
   floorCardT = 0; floorTitle = ''; floorSub = ''; floorCurse: string | null = null;
   roomNameT = 0; roomNameText = '';
   bossIntroT = 0; bossName = ''; bossSub = ''; bossRef: Enemy | null = null;
+  bossKind: StingKind = 'chapter'; bossChapter = ''; private bossSlammed = false;
   bossTrail = 1;
   activeFlash = 0;
   fullMap = false;
@@ -174,7 +179,14 @@ export class Hud {
   floorCardAlarm = false;
   floorCard(title: string, sub: string, curse: string | null, alarm = false): void { this.floorCardT = 3.2; this.floorTitle = title; this.floorSub = sub; this.floorCurse = curse; this.floorCardAlarm = alarm; }
   roomName(s: string): void { this.roomNameT = 2.2; this.roomNameText = s; }
-  bossIntro(name: string, sub: string, ref: Enemy): void { this.bossIntroT = 2.3; this.bossName = name; this.bossSub = sub; this.bossRef = ref; this.bossTrail = 1; }
+  /** The boss title card, choreographed to the boss's own sting (the name slams on its hit). */
+  bossIntro(name: string, sub: string, ref: Enemy, kind: StingKind = 'chapter', id = name): void {
+    this.bossIntroT = BOSS_CARD; this.bossName = name; this.bossSub = sub; this.bossRef = ref; this.bossTrail = 1;
+    this.bossKind = kind; this.bossSlammed = false;
+    const th = this.w.floor?.theme;
+    this.bossChapter = kind === 'echo' ? 'Where you fell' : kind === 'final' ? (th?.chapter || 'The End') + ' · ' + (th?.name ?? '') : [th?.chapter, th?.name].filter(Boolean).join(' · ');
+    this.w.audio.bossSting(id, kind);
+  }
   flashActive(): void { this.activeFlash = 0.6; }
 
   update(dt: number): void {
@@ -625,7 +637,7 @@ export class Hud {
 
   private drawBossBar(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
-    if (!w.bossList.length || w.bossList.every((b) => b.dead) || this.bossIntroT > 1.4) return;
+    if (!w.bossList.length || w.bossList.every((b) => b.dead) || this.bossIntroT > 0.35) return;
     if (w.room.type !== 'boss' && w.room.type !== 'miniboss' && w.room.type !== 'echo') return;
     const f = this.bossHpFrac();
     const bw = 160, bx = VIEW_W / 2 - bw / 2, by = VIEW_H - 16;
@@ -865,46 +877,101 @@ export class Hud {
     ctx.restore();
   }
   /**
-   * The VS card, Isaac style: your reader on the left, the boss on the right, its name slammed
-   * across the middle. Ending bosses get a red band and a warning.
+   * The boss title card. Ink wedges sweep in during the sting's riser; on the hit the boss is torn out
+   * of silhouette with a white flash and a shake, and its name stamps down letter by letter; the
+   * subtitle types itself out underneath. Your reader faces it from the left across a VS seal.
    */
   private drawBossIntro(ctx: CanvasRenderingContext2D): void {
     if (this.bossIntroT <= 0) return;
-    const w = this.w, t = 2.3 - this.bossIntroT;
-    const a = clamp(Math.min(t * 4, this.bossIntroT * 3), 0, 1);
-    const slide = ease.outCubic(clamp(t * 2.5, 0, 1));
-    const final = !!this.bossRef?.data?.hard;
+    const w = this.w, t = BOSS_CARD - this.bossIntroT, H = STING_HIT;
+    const ACC = { chapter: '#a82230', final: '#e81e34', echo: '#6aa8f0', champion: '#e8b840' }[this.bossKind];
+    const BAND = { chapter: '#0c0508', final: '#1c0306', echo: '#060a14', champion: '#120c04' }[this.bossKind];
+    const out = clamp(this.bossIntroT / 0.35, 0, 1);              // 1 until the last 0.35 s, then 0
+    const inK = ease.outCubic(clamp(t / H, 0, 1)), hit = t >= H;
+    if (hit && !this.bossSlammed) { this.bossSlammed = true; w.trauma = Math.max(w.trauma, 0.55); }
     const cy = VIEW_H / 2;
     ctx.save();
-    ctx.globalAlpha = a * 0.9; ctx.fillStyle = final ? '#1a0306' : '#0a0406';
-    ctx.beginPath(); ctx.moveTo(0, cy - 46); ctx.lineTo(VIEW_W, cy - 58); ctx.lineTo(VIEW_W, cy + 40); ctx.lineTo(0, cy + 52); ctx.fill();
-    ctx.globalAlpha = a;
-    ctx.fillStyle = final ? '#c81e2e' : '#8a1a24'; ctx.fillRect(0, cy + 44, VIEW_W * slide, 1.5); ctx.fillRect(VIEW_W * (1 - slide), cy - 51, VIEW_W, 1.5);
-    // your reader, sliding in from the left
-    const sp = w.game.menus.sprites(charById(w.run.charId));
-    ctx.save(); ctx.translate(-60 + slide * 140, cy + 30); ctx.scale(3, 3);
-    sp.bodyIdle.down[0].draw(ctx, 0, 0); sp.head.down.normal.draw(ctx, 0, -10);
-    ctx.restore();
-    // the boss, sliding in from the right
+    // the room dims behind the card
+    ctx.globalAlpha = 0.55 * Math.min(1, t * 5) * out; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    // two ink wedges meet in a slanted band
+    ctx.globalAlpha = 0.95 * out; ctx.fillStyle = BAND;
+    const L = -VIEW_W + inK * VIEW_W, R = VIEW_W - inK * VIEW_W;
+    ctx.beginPath(); ctx.moveTo(L, cy - 44); ctx.lineTo(L + VIEW_W * 0.62, cy - 52); ctx.lineTo(L + VIEW_W * 0.58, cy + 54); ctx.lineTo(L, cy + 60); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(R + VIEW_W * 0.4, cy - 54); ctx.lineTo(R + VIEW_W, cy - 62); ctx.lineTo(R + VIEW_W, cy + 46); ctx.lineTo(R + VIEW_W * 0.36, cy + 52); ctx.fill();
+    // ink drips off the bottom edge
+    for (let i = 0; i < 14; i++) {
+      const x = (i * 37 + 11) % VIEW_W, len = (4 + (i * 7) % 11) * clamp((t - 0.2 - (i % 5) * 0.06) * 2, 0, 1);
+      ctx.fillRect(x, cy + 52 - (x / VIEW_W) * 8, 2, len); ctx.beginPath(); ctx.arc(x + 1, cy + 52 - (x / VIEW_W) * 8 + len, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+    // accent rules that draw across on the hit
+    const rule = ease.outCubic(clamp((t - H) * 3, 0, 1));
+    ctx.fillStyle = ACC; ctx.fillRect(0, cy + 47, VIEW_W * rule, 1.5); ctx.fillRect(VIEW_W * (1 - rule), cy - 55, VIEW_W, 1.5);
+    // a light behind the boss
+    const bx = VIEW_W - 92, by = cy + 30;
+    if (hit) {
+      const g = ctx.createRadialGradient(bx, by - 30, 4, bx, by - 30, 90);
+      g.addColorStop(0, ACC + '88'); g.addColorStop(1, ACC + '00');
+      ctx.globalAlpha = out * (0.6 + 0.4 * Math.sin(t * 7) * 0.5); ctx.fillStyle = g; ctx.fillRect(bx - 100, by - 130, 200, 200);
+    }
+    ctx.globalAlpha = out;
+    // the boss: a silhouette until the hit, then torn into view with a white flash
     const b = this.bossRef;
     if (b && !b.dead) {
       const set = b.sprites.idle ?? Object.values(b.sprites)[0];
       const spr = set?.[Math.floor(t * 6) % set.length];
       if (spr) {
-        const k = Math.min(1.6, 80 / Math.max(spr.h, 1));
-        ctx.save(); ctx.translate(VIEW_W + 60 - slide * 150, cy + 36); ctx.scale(k, k);
-        spr.draw(ctx, 0, 0, {});
+        const k = Math.min(1.8, 92 / Math.max(spr.h, 1)), sl = ease.outCubic(clamp(t / 0.5, 0, 1));
+        ctx.save(); ctx.translate(VIEW_W + 70 - sl * (VIEW_W + 70 - bx), by + Math.sin(t * 3) * 1.5); ctx.scale(k, k);
+        const flash = hit ? Math.max(0, 1 - (t - H) * 3.5) : 0;
+        spr.draw(ctx, 0, 0, hit ? { flash, tint: this.bossKind === 'echo' ? '#8ab8ff' : undefined, tintAmt: this.bossKind === 'echo' ? 0.35 : 0 } : { tint: '#000000', tintAmt: 1 });
         ctx.restore();
       }
     }
-    // VS, stamped in the middle
-    const vk = 1 + Math.max(0, 0.4 - t) * 2.5;
-    ctx.save(); ctx.translate(VIEW_W / 2 - 66, cy - 18); ctx.scale(vk, vk);
-    text(ctx, 'VS', 0, 0, 14, final ? '#ff4a5a' : '#e0b070', 'center', FONT_TITLE, 400);
+    // your reader, coming in from the left
+    const sp = w.game.menus.sprites(charById(w.run.charId));
+    const rs = ease.outCubic(clamp((t - 0.1) / 0.5, 0, 1));
+    ctx.save(); ctx.translate(-50 + rs * 120, cy + 34); ctx.scale(2.6, 2.6);
+    sp.bodyIdle.down[Math.floor(t * 2) % 2].draw(ctx, 0, 0); sp.head.down.normal.draw(ctx, 0, -10);
     ctx.restore();
-    text(ctx, this.bossName.toUpperCase(), VIEW_W / 2 - 40 + slide * 40, cy + 8, 24, '#f0e0cc', 'center', FONT_TITLE, 400);
-    text(ctx, this.bossSub, VIEW_W / 2 + 40 - slide * 40, cy + 24, 7.5, '#c8a898', 'center', FONT_BODY, 600);
-    if (final) text(ctx, 'THIS IS HOW IT ENDS', VIEW_W / 2, cy + 36, 6.5, '#ff6070', 'center', FONT_BODY, 700);
+    // the VS seal, stamped between them
+    if (hit) {
+      const vk = 1 + Math.max(0, 0.18 - (t - H)) * 6, vx = 132, vy = cy - 22;
+      ctx.save(); ctx.translate(vx, vy); ctx.scale(vk, vk); ctx.rotate(-0.12);
+      ctx.fillStyle = ACC; ctx.beginPath();
+      for (let i = 0; i <= 16; i++) { const a = (i / 16) * Math.PI * 2, r = 11 + ((i * 5) % 3) * 1.4; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+      ctx.fill();
+      text(ctx, 'VS', 0, 4, 12, '#100608', 'center', FONT_TITLE, 400, false);
+      ctx.restore();
+    }
+    // the chapter line, then the name stamped down letter by letter
+    ctx.globalAlpha = out * clamp((t - 0.15) * 4, 0, 1);
+    text(ctx, this.bossChapter.toUpperCase(), VIEW_W / 2 + 14, cy - 30, 7, ACC, 'center', FONT_BODY, 700);
+    ctx.globalAlpha = out;
+    if (hit) {
+      const name = this.bossName.toUpperCase(), size = name.length > 22 ? 18 : 24;
+      ctx.font = `400 ${size}px ${FONT_TITLE}`;
+      const total = ctx.measureText(name).width;
+      let x = VIEW_W / 2 + 14 - total / 2;
+      for (let i = 0; i < name.length; i++) {
+        const ch = name[i], cw = ctx.measureText(ch).width, lt = t - H - i * 0.022;
+        if (lt > 0) {
+          const k = 1 + Math.max(0, 0.12 - lt) * 9, rot = ((i * 7919) % 11 - 5) * 0.004;
+          ctx.save(); ctx.translate(x + cw / 2, cy + 2); ctx.rotate(rot); ctx.scale(k, k);
+          ctx.globalAlpha = out * clamp(lt * 12, 0, 1);
+          text(ctx, ch, 0, 0, size, '#f4e6d0', 'center', FONT_TITLE, 400);
+          ctx.restore();
+        }
+        x += cw;
+      }
+      // the subtitle types itself out
+      const st = clamp((t - H - 0.35) * 55, 0, this.bossSub.length);
+      const lines = wrap(ctx, this.bossSub.slice(0, Math.floor(st)), 7.5, 230);
+      lines.slice(0, 2).forEach((l, i) => text(ctx, l, VIEW_W / 2 + 14, cy + 17 + i * 9, 7.5, '#c8a898', 'center', FONT_BODY, 600));
+      if (this.bossKind === 'final') text(ctx, 'THIS IS HOW IT ENDS', VIEW_W / 2 + 14, cy + 41, 6.5, '#ff6070', 'center', FONT_BODY, 700);
+      if (this.bossKind === 'champion') text(ctx, 'CHAMPION', VIEW_W / 2 + 14, cy + 41, 6.5, ACC, 'center', FONT_BODY, 700);
+    }
+    // the white flash on the hit
+    if (hit && t - H < 0.18) { ctx.globalAlpha = (1 - (t - H) / 0.18) * 0.55; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     ctx.restore();
   }
 }

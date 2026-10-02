@@ -330,15 +330,16 @@ function startBoss(w: World, room: RoomData): void {
       const extra = 1 + Math.min(1.5, ec.items.length * 0.06);
       e.hp *= extra; e.maxHp *= extra; e.spawnT = 2.2;
       const name = charById(ec.char).name;
-      w.hud.bossIntro(`Echo of ${name}`, `You fell in ${ec.chapter} last time, to ${ec.cause}. It remembers how.`, e);
-      w.audio.stinger('bossIntro'); w.audio.setMusic(bossMusic(w.run));
+      w.hud.bossIntro(`Echo of ${name}`, `You fell in ${ec.chapter} last time, to ${ec.cause}. It remembers how.`, e, 'echo', 'echo:' + ec.char);
+      w.audio.setMusic(bossMusic(w.run));
     }
     return;
   }
   if (room.type === 'boss') {
     const def = introDef ?? w.bossList[0]?.def;
-    w.hud.bossIntro((champ ? CHAMPIONS[champ].name + ' ' : '') + (def?.name ?? 'Boss'), champ ? CHAMPIONS[champ].desc : def?.desc ?? '', w.bossList[0]);
-    w.audio.stinger('bossIntro');
+    const e0 = w.bossList[0];
+    w.hud.bossIntro((champ ? CHAMPIONS[champ].name + ' ' : '') + (def?.name ?? 'Boss'), champ ? CHAMPIONS[champ].desc : def?.desc ?? '', e0,
+      e0?.data?.hard ? 'final' : champ ? 'champion' : 'chapter', def?.id ?? 'boss');
     w.audio.setMusic(bossMusic(w.run));
   } else {
     w.hud.roomName(w.bossList[0]?.def.name ?? 'Lurker');
