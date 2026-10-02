@@ -31,4 +31,9 @@ export const INNATE_ITEMS: ItemDef[] = [
     attack: { creep: true },
     icon: (p: P) => { p.tube(4, 15, 13, 5, 1, ramp('#3a7a2a')); for (const [x, y] of [[6, 12], [9, 9], [11, 7]]) p.set(x + 1, y, '#e0e8b0'); p.ball(13, 4, 3, 3, ramp('#c8283a')); p.set(12, 3, '#ff9aa0'); },
     lore: 'Grandmother took cuttings of everything. The rose is from one of them.' },
+  { id: 'lamplight', name: 'Lamplight', kind: 'passive', quality: 0, pools: {}, tags: SIG,
+    pickup: 'Embers, not ink', effect: ['Your shots are embers: about a third of them set what they hit alight.', 'Burning enemies light the room around them.'],
+    attack: { shape: 'fire', burn: 0.33, tint: '#ffb050' },
+    icon: (p: P) => { p.ball(9, 11, 4, 5, ramp('#ff9030')); p.ball(9, 10, 2, 3, ramp('#ffe080')); p.set(8, 5, '#ffd060'); p.set(11, 4, '#ff9030'); p.set(6, 7, '#ff9030'); },
+    lore: 'Nell lit Grandad\'s lamp every evening. She brought the flame down with her.' },
 ];

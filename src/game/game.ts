@@ -53,7 +53,7 @@ export class Game {
       const a = ACHIEVEMENTS.find((x) => x.id === id);
       if (a) { this.unlockQueue.push({ name: a.name, t: 0 }); this.audio.stinger('unlock'); }
     };
-    // readers whose marks were all earned before the tainted existed get theirs now
+    // readers whose marks were all earned before the mirrored existed get theirs now
     this.save.checkTainted();
     const unlockAudio = () => { this.audio.unlock(); };
     window.addEventListener('keydown', unlockAudio);

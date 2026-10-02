@@ -2,7 +2,7 @@
 import type { World } from './world';
 import { snap } from '../render/snap';
 import { drawBossLife } from '../bosses/bosslife';
-import { doorIcon } from '../art/roomicons';
+import { doorSymbol } from '../art/roomicons';
 import { BG_MARGIN } from '../art/roombg';
 import { Ob, Side } from '../rooms/room';
 import { TILE, VIEW_W, VIEW_H } from '../core/constants';
@@ -320,15 +320,14 @@ function drawDoor(w: World, ctx: CanvasRenderingContext2D, d: import('./world').
   ds.leaves[li].draw(ctx, 0, 3);
   if (d.def.locked) ds.lock.draw(ctx, 0, 3);
   ctx.restore();
-  // a plaque over the arch showing what is through it (drawn upright, whichever wall the door is on)
-  const pl = d.def.kind !== 'normal' ? doorIcon(d.def.kind) : null;
-  if (pl) {
-    // N: on the arch's lintel; E/W: above the doorway on the wall; S: over the doorway's room-side edge
-    const sd = d.def.side;
-    const px = x + (sd === Side.E ? 6 : sd === Side.W ? -6 : 0);
-    const py = y + (sd === Side.N ? -13 : sd === Side.S ? -9 : -26);
-    pl.draw(ctx, px, py);
-    if (d.def.kind === 'deal' || d.def.kind === 'blessing' || d.def.kind === 'boss') w.r.addGlow(px, py, 12, d.def.kind === 'deal' ? '#ff2030' : d.def.kind === 'boss' ? '#ff6040' : '#fff0b0', 0.18);
+  // a small symbol just above the top of the doorway, saying what is through it
+  const sym = d.def.kind !== 'normal' ? doorSymbol(d.def.kind) : null;
+  if (sym) {
+    const sd = d.def.side, bob = Math.sin(w.time * 2.2 + x * 0.1) * 0.6;
+    const py = y + (sd === Side.N ? -18 : sd === Side.S ? -15 : -22) + bob;
+    const px = x + (sd === Side.E ? 5 : sd === Side.W ? -5 : 0);
+    sym.draw(ctx, px, py);
+    if (d.def.kind === 'deal' || d.def.kind === 'blessing' || d.def.kind === 'boss') w.r.addGlow(px, py - 5, 7, d.def.kind === 'deal' ? '#ff2030' : d.def.kind === 'boss' ? '#ff6040' : '#fff0b0', 0.16);
   }
 }
 

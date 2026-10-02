@@ -170,7 +170,7 @@ export class SaveManager {
   marksComplete(char: string): boolean {
     return MARKS.every((k) => this.hasMark(char, k) || (k === 'morning' && this.isUnlocked(char === 'marcus' ? 'beat_final' : 'win_' + char)));
   }
-  /** Earning every mark with a reader unlocks their tainted self. */
+  /** Earning every mark with a reader unlocks their mirrored self. */
   checkTainted(): void {
     for (const c of Object.keys(this.data.marks ?? {})) if (!c.endsWith('_t') && this.marksComplete(c)) this.unlock('tainted_' + c);
   }

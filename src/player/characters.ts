@@ -61,10 +61,10 @@ export const CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'nell', name: 'Nell', title: 'The Lamplighter', look: 'nell',
-    desc: 'Marcus\'s older sister, who visited Grandad every day. She came down after Marcus with Grandmother\'s magnifying glass and a lamp, and she is furious about it.',
-    base: { damage: 3.3, tears: 2.5, range: 220, shotSpeed: 1, speed: 1, luck: 0 },
-    health: { red: 3 }, items: ['burning_glass', 'pocket_lantern'], buttons: 0, keys: 1, bombs: 1,
-    unlock: 'beat_unwritten', unlockHint: 'Go through the tear after the Binding and defeat what waits on the Last Page.', passive: 'Starts with the Burning Glass: a long, searing beam. Carries the Pocket Lantern.',
+    desc: 'Marcus\'s older sister, who visited Grandad every day. She came down after Marcus with a lamp, and she is furious about it.',
+    base: { damage: 3.3, tears: 2.8, range: 220, shotSpeed: 1, speed: 1, luck: 0 },
+    health: { red: 3 }, items: ['lamplight', 'pocket_lantern'], buttons: 0, keys: 1, bombs: 1,
+    unlock: 'beat_unwritten', unlockHint: 'Go through the tear after the Binding and defeat what waits on the Last Page.', passive: 'Lamplight: her shots are embers that often set enemies alight. Carries the Pocket Lantern.',
   },
   {
     id: 'bram', name: 'Bram', title: 'The Bruiser', look: 'bram',
@@ -90,12 +90,12 @@ export const CHARACTERS: CharacterDef[] = [
     unlock: 'unlock_ada', unlockHint: 'Finish The Visit while carrying Grandmother\'s Ring.', passive: 'Rose Cuttings: thorns slow what they hit and leave brambles behind. Starts with Grandmother\'s Ring.',
   },
 ];
-// ------------------------------------------------------------------ the tainted
-// Each reader, inked over: their gift turned against them. One unlocks once its reader has earned
+// ------------------------------------------------------------------ the mirrored
+// Each reader's reflection, inked over: their gift turned against them. One unlocks once its reader has earned
 // all five ending marks.
 const T = (base: string, name: string, title: string, desc: string, d: Omit<CharacterDef, 'id' | 'name' | 'title' | 'desc' | 'look' | 'unlock' | 'unlockHint' | 'tainted'>): CharacterDef => {
   const b = CHARACTERS.find((c) => c.id === base)!;
-  return { id: base + '_t', name: 'Tainted ' + name, title, desc, look: base + '_t', unlock: 'tainted_' + base, tainted: base,
+  return { id: base + '_t', name: 'Mirrored ' + name, title, desc, look: base + '_t', unlock: 'tainted_' + base, tainted: base,
     unlockHint: `Earn all five marks as ${b.name}.`, ...d };
 };
 export const TAINTED: CharacterDef[] = [
@@ -118,8 +118,8 @@ export const TAINTED: CharacterDef[] = [
     { base: { damage: 3.3, tears: 2.7, range: 230, shotSpeed: 1, speed: 1.05, luck: 1 }, health: { red: 2 }, items: ['old_dice', 't_fate'], buttons: 0, keys: 1, bombs: 1,
       passive: 'Fate: each new room rolls a die, from a curse on one to a blessing on six. Starts broke.' }),
   T('nell', 'Nell', 'The Burnt Out', 'She kept the lamp lit for him every night, until one night it kept her. Everything she touches catches.',
-    { base: { damage: 3.4, tears: 2.4, range: 220, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 2, brass: 1 }, items: ['burning_glass', 't_burnout'], buttons: 0, keys: 1, bombs: 1,
-      passive: 'Burnt Out: the Burning Glass sets enemies alight, and whatever you kill bursts into flame.' }),
+    { base: { damage: 3.4, tears: 2.4, range: 220, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 2, brass: 1 }, items: ['lamplight', 't_burnout'], buttons: 0, keys: 1, bombs: 1,
+      passive: 'Burnt Out: embers set enemies alight, and whatever you kill bursts into flame.' }),
   T('bram', 'Bram', 'The Brute', 'He stopped going round things. He goes through them: walls, rocks, whatever is in the way.',
     { base: { damage: 4.6, tears: 2.1, range: 200, shotSpeed: 0.95, speed: 0.85, luck: -1 }, health: { red: 5 }, items: ['bone_folder', 't_brute'], buttons: 0, keys: 0, bombs: 1,
       passive: 'Brute: huge swings that knock enemies flying and break rocks; kills sometimes heal.' }),

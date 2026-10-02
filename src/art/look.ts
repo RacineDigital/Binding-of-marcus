@@ -72,8 +72,8 @@ export const LOOKS: Record<string, CharacterLook> = {
     acc: ['antennae'] },
 };
 
-// ------------------------------------------------------------------ the tainted
-// Each tainted reader wears their own colours drained and pushed toward ink, with skin gone grey,
+// ------------------------------------------------------------------ the mirrored
+// Each mirrored reader wears their own colours drained and pushed toward ink, with skin gone grey,
 // hollow black eyes with a red glint, and ink where the blush was.
 function mixHex(a: string, b: string, k: number): string {
   const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));

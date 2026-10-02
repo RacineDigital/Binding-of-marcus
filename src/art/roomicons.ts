@@ -1,6 +1,6 @@
 // Room icons, drawn once at any size: the map uses them at three times the HUD's pixel density, and
-// special doors wear a small version on a brass plaque over the arch (a die over the Button Parlor,
-// a pincushion over the Pincushion, a crown over the Curio).
+// special doors wear a small version just above the doorway (a die over the Button Parlor, a
+// pincushion over the Pincushion, a crown over the Curio).
 import { PixelArt } from '../render/pixel';
 import { ramp, hex } from '../render/color';
 import { Sprite } from '../render/sprite';
@@ -118,22 +118,14 @@ export function mapIcon(kind: string, px = 24): HTMLCanvasElement | null {
   return c;
 }
 
-const doorCache = new Map<string, Sprite | null>();
-/** The plaque over a special door: the room's icon on a small brass plate. */
-export function doorIcon(kind: string): Sprite | null {
-  if (doorCache.has(kind)) return doorCache.get(kind)!;
-  const S = 13, P = S + 4;
-  const ic = new PixelArt(S, S);
+const symCache = new Map<string, Sprite | null>();
+/** The small symbol over a special door: the room's icon alone, outlined so it reads on any wall. */
+export function doorSymbol(kind: string): Sprite | null {
+  if (symCache.has(kind)) return symCache.get(kind)!;
+  const S = 9, p = new PixelArt(S + 2, S + 2), ic = new PixelArt(S, S);
   let s: Sprite | null = null;
-  if (paintRoomIcon(ic, kind, S)) {
-    ic.outline('#0e0a12');
-    const p = new PixelArt(P, P);
-    p.ball(P / 2, P / 2, P / 2 - 0.2, P / 2 - 0.2, ramp('#8a6a30'));
-    p.ball(P / 2, P / 2, P / 2 - 1.6, P / 2 - 1.6, ramp('#2a2026'));
-    p.stamp(ic, 2, 2);
-    p.outline('#0a0608');
-    s = new Sprite(p, Math.floor(P / 2), Math.floor(P / 2));
-  }
-  doorCache.set(kind, s);
+  if (paintRoomIcon(ic, kind, S)) { p.stamp(ic, 1, 1); p.outline('#0a0608'); s = new Sprite(p, Math.floor((S + 2) / 2), S + 2); }
+  symCache.set(kind, s);
   return s;
 }
+

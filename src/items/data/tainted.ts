@@ -1,4 +1,4 @@
-// The tainted readers' signatures: each reader's gift, inked over and turned against itself. Like the
+// The mirrored readers' signatures: each reader's gift, inked over and turned against itself. Like the
 // other signatures these never appear in a pool and can't be rerolled away.
 import type { ItemDef } from '../types';
 import { ramp, hex, P } from './kit';

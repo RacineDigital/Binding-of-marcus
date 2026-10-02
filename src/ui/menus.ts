@@ -289,7 +289,7 @@ export class MenuSystem {
           if (k === 'up') { row = (row + 3) % 4; if (row === 1 && !hardOpen) row = 0; self.sfxMove(); }
           if (k === 'down') { row = (row + 1) % 4; if (row === 1 && !hardOpen) row = 2; self.sfxMove(); }
           if ((k === 'left' || k === 'right') && row === 0 && !forceChar) {
-            // the tainted only join the line-up once they're unlocked
+            // the mirrored only join the line-up once they're unlocked
             do ci = (ci + (k === 'left' ? -1 : 1) + CHARACTERS.length) % CHARACTERS.length; while (CHARACTERS[ci].tainted && !unlocked(CHARACTERS[ci]));
             self.sfxMove();
           }
@@ -405,7 +405,7 @@ export class MenuSystem {
   // ------------------------------------------------------------ characters gallery
   charactersScreen(): Screen {
     const self = this, g = this.g;
-    // two pages of five to a row: the readers, then (once the story is finished) the tainted
+    // two pages of five to a row: the readers, then (once the story is finished) the mirrored
     const PAGES = [CHARACTERS.filter((c) => !c.tainted), CHARACTERS.filter((c) => c.tainted)];
     const pages = g.save.isUnlocked('beat_final') && PAGES[1].length ? 2 : 1;
     let pg = 0, sel = 0;
@@ -443,8 +443,8 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 30, 14, 420, 240, 1, pg ? 13 : 11);
-        heading(ctx, pg ? 'The Tainted' : 'The Readers', 240, 36, 13, pg ? '#5a1a2a' : INK);
-        if (pages > 1) { text(ctx, pg ? '◀ Readers' : '', 64, 36, 7.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, pg ? '' : 'Tainted ▶', 416, 36, 7.5, '#6a1a2a', 'right', FONT_BODY, 600, false); }
+        heading(ctx, pg ? 'The Mirrored' : 'The Readers', 240, 36, 13, pg ? '#5a1a2a' : INK);
+        if (pages > 1) { text(ctx, pg ? '◀ Readers' : '', 64, 36, 7.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, pg ? '' : 'Mirrored ▶', 416, 36, 7.5, '#6a1a2a', 'right', FONT_BODY, 600, false); }
         list().forEach((c, i) => {
           const { x, y } = pos(i);
           const un = isUn(c);
@@ -454,7 +454,7 @@ export class MenuSystem {
           if (!un) ctx.filter = 'brightness(0)';
           sp.bodyIdle.down[Math.floor(self.time * 1.5 + i) % 2].draw(ctx, 0, 0); sp.head.down.normal.draw(ctx, 0, -10);
           ctx.restore();
-          text(ctx, un ? c.name.replace('Tainted ', '') : '???', x, y + 11, 8.5, INK, 'center', FONT_TITLE, 400, false);
+          text(ctx, un ? c.name.replace('Mirrored ', '') : '???', x, y + 11, 8.5, INK, 'center', FONT_TITLE, 400, false);
         });
         const c = list()[sel]; const un = isUn(c);
         const top = 90 + rowsOf(list().length) * 60 - 26;
