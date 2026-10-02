@@ -1,5 +1,5 @@
 // Contact sheets of every item icon, big, with its name, for reviewing how recognizable they are.
-//   npx tsx tests/tools/iconsheet.ts [outDir]  (npm run dev first)
+//   npx tsx tests/tools/iconsheet.ts [outDir] [redrawn | id,id,...]  (npm run dev first)
 import { chromium } from 'playwright-core';
 import * as fs from 'fs';
 const out = process.argv[2] ?? 'test-output/icons', only = process.argv[3] ?? '';
@@ -11,7 +11,7 @@ const out = process.argv[2] ?? 'test-output/icons', only = process.argv[3] ?? ''
   const n: number = await p.evaluate(`(async () => {
     const { ALL_ITEMS } = await import('/src/items/registry.ts'); const { itemIconCanvas } = await import('/src/art/items.ts');
     const only = ${JSON.stringify(only)}; const { ICONS } = await import('/src/art/itemicons.ts');
-    const items = ALL_ITEMS.filter((i) => only === 'redrawn' ? !!ICONS[i.id] : (!(i.tags || []).includes('quest') || (i.tags || []).includes('innate') || (i.tags || []).includes('tainted')));
+    const items = ALL_ITEMS.filter((i) => only.includes(',') ? only.split(',').includes(i.id) : only === 'redrawn' ? !!ICONS[i.id] : (!(i.tags || []).includes('quest') || (i.tags || []).includes('innate') || (i.tags || []).includes('tainted')));
     const per = 48, cols = 8, cell = 170, pages = Math.ceil(items.length / per);
     window.__sheets = [];
     for (let pg = 0; pg < pages; pg++) {

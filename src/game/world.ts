@@ -354,7 +354,7 @@ export class World {
       if (info.status === 'poison') { e.poison = 3; e.poisonDmg = Math.max(1, this.player.stats.damage * 0.3); }
       if (info.status === 'slow') e.slow = 2.5; if (info.status === 'fear') e.fear = 2; if (info.status === 'confuse') e.confuse = 2;
     }
-    this.hitSource = info.source;
+    this.hitSource = info.source; this.hitCrit = !!info.crit;
     this.itemHook('onHitEnemy', e, d);
     if (e.hp <= 0) this.killEnemy(e);
   }
@@ -729,6 +729,8 @@ export class World {
   hitstopBudget = 0.15;
   /** What dealt the hit an onHitEnemy hook is looking at (so 'on hit' items ignore burn and poison ticks). */
   hitSource = '';
+  /** Whether that hit was a crit. */
+  hitCrit = false;
   itemHook<K extends keyof ItemHooks>(name: K, ...args: any[]): void {
     const pl = this.player;
     const fire = (id: string, n: number) => {

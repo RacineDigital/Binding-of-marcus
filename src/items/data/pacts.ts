@@ -3,6 +3,9 @@
 import type { ItemDef } from '../types';
 import { ramp, hex, P, directHit } from './kit';
 
+/** Rooms the Wings of the Well have already beaten their wings in. */
+const gusted = new WeakSet<object>();
+
 
 function horns(p: P): void {
   const k = ramp('#2a1430');
@@ -69,8 +72,16 @@ export const PACT_ITEMS: ItemDef[] = [
     } },
     icon: signature, lore: 'In red, at the bottom, where Grandfather never signed.' },
   { id: 'ink_wings', name: 'Wings of the Well', kind: 'passive', quality: 3, pools: { deal: 0.8 },
-    pickup: 'Flight, damage up', effect: ['You can fly.', 'Damage +0.7.'],
-    stats: { damage: 0.7 }, flight: true, icon: inkWings,
+    pickup: 'Flight, damage up', effect: ['You can fly.', 'Damage +1.', 'Each fight opens with a wingbeat that throws nearby enemies back.'],
+    stats: { damage: 1 }, flight: true, icon: inkWings,
+    hooks: { onTick(w) {
+      if (w.roomTime < 0.6 || w.room.cleared || gusted.has(w.room)) return;
+      const pl = w.player, near = w.enemies.filter((e) => !e.dead && !e.isBoss && (e.x - pl.x) ** 2 + (e.y - pl.y) ** 2 < 110 * 110);
+      gusted.add(w.room);
+      if (!near.length) return;
+      for (const e of near) { const a = Math.atan2(e.y - pl.y, e.x - pl.x); e.kvx += Math.cos(a) * 260; e.kvy += Math.sin(a) * 260; e.slow = Math.max(e.slow, 1); }
+      w.fx.ring(pl.x, pl.y - 6, 8, 110, '#3a3a8a', 0.4); w.audio.play('swing', { pitch: 0.6, vol: 0.6 });
+    } },
     lore: 'Whatever lives at the bottom of the Inkwell lent you these. It will want them back.' },
   { id: 'black_cat', name: 'Black Cat', kind: 'passive', quality: 3, pools: { curse: 1 },
     pickup: 'Damage up... luck down', effect: ['Damage +1.2, fire rate +0.4.', 'Luck -3.', 'Enemies you kill sometimes leave a hex behind that hurts other enemies.'],
@@ -88,7 +99,7 @@ export const PACT_ITEMS: ItemDef[] = [
       onFloor: (w) => { if (w.player.health.totalHalf() > 1) w.hurtPlayer(1, 'the Hex Doll', { ignoreIframes: true }); },
     },
     icon: hexDoll, lore: 'It has Marcus\'s hair sewn on. Somebody else is meant to hold the pins.' },
-  { id: 'cracked_mirror', name: 'Cracked Mirror', kind: 'passive', quality: 2, pools: { curse: 0.9 },
+  { id: 'cracked_mirror', name: 'Cracked Mirror', kind: 'passive', quality: 3, pools: { curse: 0.9 },
     pickup: 'Triple shot... seven years', effect: ['You fire three shots at once.', 'Damage x0.8.', 'Luck -1.'],
     stats: { damageMult: 0.8, luck: -1 }, attack: { shots: 2, spread: 10 }, icon: crackedMirror,
     lore: 'Seven years\' bad luck, or three of everything. Marcus chose three.' },

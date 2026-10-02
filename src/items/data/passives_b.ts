@@ -128,10 +128,19 @@ export const PASSIVES_B: ItemDef[] = [
     pickup: 'Damage up', effect: ['Shots become void-black.'], stats: { damageMult: 1.35, damage: 0.5 }, attack: { shape: 'void' },
     icon: (p) => { const c = ramp('#1a1828'); p.poly([3, 16, 14, 2, 16, 4, 6, 16], c[2]); for (let i = 0; i < 6; i++) p.line(6 + i * 1.6, 13 - i * 2, 9 + i * 1.6, 13 - i * 2.2, c[3]); } },
   { id: 'hollow_eyes', name: 'Hollow Eyes', kind: 'passive', quality: 4, pools: { curse: 0.5 }, tags: ['void'],
-    pickup: 'They see through walls', effect: ['Shots home in on enemies and pass through obstacles.'], stats: { damage: 0.5 }, attack: { homing: 0.6, spectral: true, tint: '#6a3ad0' },
+    pickup: 'They see through walls', effect: ['Shots home in on enemies and pass through obstacles.', 'Damage up.'], stats: { damage: 0.5, damageMult: 1.15 }, attack: { homing: 0.6, spectral: true, tint: '#6a3ad0' },
     icon: (p) => { p.ball(9, 9, 6.5, 5, ramp('#e8e0d0')); p.ball(9, 9, 3.5, 3.5, ramp('#0a0814')); p.set(8, 8, '#8a6aff'); } },
   { id: 'soot_wings', name: 'Soot Wings', kind: 'passive', quality: 3, pools: { treasure: 1 }, tags: ['moth'], flight: true,
-    pickup: 'Flight, damage up', effect: [], stats: { damage: 1 },
+    pickup: 'Flight, smouldering', effect: ['Flight. Damage +0.5.', 'Enemies that come close catch fire from your wings.'], stats: { damage: 0.5 },
+    hooks: { onTick(w, dt) {
+      const pl = w.player, f = w.run.flags;
+      f.sootT = (f.sootT ?? 0) - dt; if (f.sootT > 0) return; f.sootT = 0.25;
+      for (const e of w.enemies) if (!e.dead && !e.def.noStatus && (e.x - pl.x) ** 2 + (e.y - pl.y) ** 2 < (e.r + 22) ** 2) {
+        if (e.burn <= 0) w.fx.sparks(e.x, e.y - 8, 4, '#ff6a2a', 50);
+        e.burn = Math.max(e.burn, 2); e.burnDmg = Math.max(e.burnDmg, Math.max(1, pl.stats.damage * 0.4));
+      }
+      if (Math.random() < 0.5) w.fx.smoke(pl.x + (Math.random() - 0.5) * 14, pl.y - 10, 1, 'rgba(40,30,34,', 3, 0.6);
+    } },
     icon: (p) => { const c = ramp('#2a2428'); p.poly([9, 9, 2, 3, 3, 13], c[2]); p.poly([9, 9, 16, 3, 15, 13], c[3]); p.set(5, 7, '#ff6a2a'); p.set(13, 7, '#ff6a2a'); } },
   { id: 'torn_contract', name: 'Torn Contract', kind: 'passive', quality: 2, pools: { deal: 1 },
     pickup: 'Fine print', effect: ['25% chance for each cleared room to leave a crimson box.'], stats: { luck: 1 },
@@ -160,7 +169,7 @@ export const PASSIVES_B: ItemDef[] = [
     pickup: 'Retribution', effect: ['When you are hurt, release a ring of holy shots.'],
     hooks: { onHurt: (w) => { for (let i = 0; i < 10; i++) w.proj.player(w, w.player.prof, w.player.x, w.player.y - 6, 10, (i / 10) * TAU, w.player.stats.damage * 1.5, 220, 140, 1); } },
     icon: (p) => { I.bottle(p, '#8ac8f0'); p.rect(8, 9, 2, 5, hex('#fff8e0')); p.rect(6, 11, 6, 1, hex('#fff8e0')); } },
-  { id: 'wax_wings', name: 'Wax Wings', kind: 'passive', quality: 4, pools: { blessing: 0.7 }, tags: ['wax'], flight: true,
+  { id: 'wax_wings', name: 'Wax Wings', kind: 'passive', quality: 3, pools: { blessing: 0.7 }, tags: ['wax'], flight: true,
     pickup: 'Flight', effect: [], health: { wax: 2 }, stats: { speed: 0.1 },
     icon: (p) => { const c = ramp('#f0e8d0'); p.poly([9, 9, 1, 2, 2, 14], c[3]); p.poly([9, 9, 17, 2, 16, 14], c[2]); for (let i = 0; i < 4; i++) p.set(4 + i, 5 + i * 2, c[1]); } },
   { id: 'ossuary_key', name: 'Ossuary Key', kind: 'passive', quality: 3, pools: { curse: 1 }, tags: ['bone'], unlock: 'beat_ch7',

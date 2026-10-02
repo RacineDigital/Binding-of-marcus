@@ -1,20 +1,37 @@
-## What's new in 3.9.0: curios you can recognise
+## What's new in 3.10.0: every curio pulls its weight
 
-**Sixty-seven item icons redrawn** so you can tell what something is from across the room. Each is
-now one clear object with a bold silhouette that fills its tile:
-- **Lodestone** is a horseshoe magnet. **Copper Filament** is a light bulb with a glowing coil.
-  **Held Breath** is a balloon tied off. **Creasing Iron** is a clothes iron. **Printing Plate** is
-  a rubber stamp over its red mark. **Locksmith's Pick** is a padlock with a pick in it.
-- **Twin Wick** is one candle with two flames. **Rocket Nib** is a pen nib with fins and fire.
-  **Tin Boomerang**, **Burnt Toast**, **Bold Print**, **Gilt Edge**, **Glue Pot**,
-  **Inkpot**, **Button Jar**, **Bookworm**, **Moth Box** and the rest look like what they're called.
-- **No more look-alikes:** Powder Ink is an ink bomb with a lit fuse, Hex Ink a bottle with a
-  glowing eye, Lamp Oil a tin oil can. The Skeleton Key is brass and the Ossuary Key is bone with a
-  skull. Lamp Lure, Pocket Lantern, the hurricane Oil Lantern, the Lantern Wisp and Burnt Out are
-  five different lights. Loaded is a red six with a lead weight, Spindown has a down arrow, D
-  Infinity has the infinity sign, Fate is half black and half white.
-- **Shadow Twin** and **Mirror Twins** are now one shadow and two shadows either side of a mirror.
-- A new test checks that every item icon is drawn large and solid enough to read.
+**Items that did the same thing now do different things:**
+- **Leaky Pen** leaks as you walk: you leave a trail of ink puddles that hurt anything standing in
+  them, so you can lay ink where enemies will chase you. Sam's Beer still owns puddles from shots.
+- **Clock Spring** winds up. Keep firing and its fire rate climbs, up to +1.5 after three seconds
+  (with a tick at each notch). Stop and it runs down. It used to be the same as Gavyn's Pouch.
+- **Bold Print** hits are bold: a crit staggers an ordinary enemy for a moment. Crit chance is now
+  15%. It used to be a smaller Angel 333.
+- **Burnt Toast**: an enemy that dies while burning bursts into four embers, so fire spreads
+  through a crowd. Crug's Pen stays the plain fire-damage item.
+- **Soot Wings** smoulder: enemies that come close catch fire from your wings.
+- **Wings of the Well** open every fight with a wingbeat that throws nearby enemies back. Damage +1.
+
+**Balance:** the items that were clearly too weak or too strong for their quality were brought in line.
+- **Powder Ink** (a 4-star Inkwell deal) no longer cuts your fire rate almost in half: damage +2,
+  fire rate x0.7, bigger blasts.
+- **Drain Butterfly** and **Hollow Eyes** (both 4-star) now raise damage, not just change how shots
+  fly. **Lamp Lure** adds damage +0.5.
+- **Weathervane** no longer slows your fire rate. **Twin Wick** costs a little fire rate, so it isn't
+  a better Triple Seam.
+- **Iron Filings** and **Cracked Mirror** were under-rated for how strong they are; they now count as
+  2-star and 3-star items. **Wax Wings** is 3-star.
+
+**Icons:**
+- **Every die is its own shape:** the D4 is a pyramid, the D8 a diamond, the D10 a kite, the D12 a
+  pentagon, the D20 a faceted gem, the D100 a dimpled ball and the D7 and D9 have seven and nine
+  sides. The Eternal D6 wears a halo.
+- **The library books are no longer six coloured books:** the Atlas is a globe on a stand, the Ledger
+  a green account book beside a stack of coins, the Recipe Book lies open under a wooden spoon, the
+  Almanac carries the sun and moon, the Bestiary is torn by claws and the Hymnal has music rising off it.
+- **Leech Jar** has a fat leech on the glass, **Ember Cherries** have flames for stalks, the
+  **Stopped Watch** has shattered glass and the **Pocket Watch** a chain, the **Tin Heart** is
+  riveted tin and the **Leaky Pen** drips.
 
 ## Download and play
 

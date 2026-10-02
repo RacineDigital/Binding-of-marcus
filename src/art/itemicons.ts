@@ -434,4 +434,118 @@ export const ICONS: Record<string, (p: P) => void> = {
     for (const y of [5, 7, 9]) p.line(1, y, 7, y, hex(y === 7 ? '#e8e0d0' : '#b8b0a0'));
     for (const y of [12, 14]) p.line(1, y, 5, y, hex('#b8b0a0'));
   },
+
+  // ------------------------------------------------------------------ the library (each book carries its own object)
+  atlas(p) {
+    // a globe on a brass stand: it takes you somewhere else
+    const sea = ramp('#3a7ac8'), land = ramp('#5aa04a'), br = ramp('#c8a04a');
+    p.ball(9, 8, 6.2, 6.2, sea);
+    p.ball(7, 6, 2.6, 2, land); p.ball(11, 10, 2.2, 2.6, land); p.ball(12, 5, 1.2, 1, land);
+    for (let a = 0.9; a < 4.6; a += 0.12) p.set(9 + Math.cos(a) * 7.6, 8 + Math.sin(a) * 7.6, br[a < 2.6 ? 3 : 2]);
+    p.rect(8, 15, 3, 1, br[2]); p.rect(5, 16, 9, 2, br[2]); p.rect(5, 16, 9, 1, br[4]); sh(p, 6, 4);
+  },
+  ledger(p) {
+    // a green account book with a stack of buttons-for-money beside it
+    const c = ramp('#3a7a4a'), g = ramp('#e8c040');
+    p.rect(2, 2, 10, 13, c[2]); p.rect(2, 2, 2, 13, c[1]); p.rect(4, 2, 8, 1, c[4]); p.rect(11, 3, 1, 12, hex('#e8dcc0'));
+    p.rect(5, 5, 5, 3, hex('#e8dcc0')); p.line(6, 6, 8, 6, hex('#5a4a3a'));
+    for (const y of [15, 12.5, 10]) { p.ball(13.5, y, 3.6, 1.6, g); p.line(10.5, y + 1, 16.5, y + 1, g[1]); }
+    sh(p, 12, 9);
+  },
+  recipe_book(p) {
+    // an open book with a wooden spoon resting across the pages
+    const pg = ramp('#efe6d0'), cv = ramp('#8a5a2a'), sp = ramp('#c89060');
+    p.poly([1, 6, 9, 8, 17, 6, 17, 15, 9, 17, 1, 15], cv[1]);
+    p.poly([2, 5, 9, 7, 9, 15, 2, 13], pg[3]); p.poly([9, 7, 16, 5, 16, 13, 9, 15], pg[2]);
+    p.line(9, 7, 9, 15, pg[0]);
+    for (const y of [8, 10]) { p.line(3, y, 7, y + 0.6, pg[1]); p.line(11, y + 0.6, 15, y, pg[1]); }
+    p.line(4, 15, 13, 3, sp[1], 2); p.line(4, 14, 12, 3, sp[3]); p.ball(13.5, 2.5, 2, 1.6, sp);
+  },
+  almanac(p) {
+    // a night-blue book with the sun and the moon on its cover
+    const c = ramp('#2a3a7a');
+    p.rect(3, 2, 12, 15, c[2]); p.rect(3, 2, 2, 15, c[1]); p.rect(5, 2, 10, 1, c[4]); p.rect(14, 3, 1, 14, hex('#e8dcc0'));
+    p.rect(3, 16, 12, 1, c[0]);
+    const sun = ramp('#f0c040'); p.ball(8, 7, 2.4, 2.4, sun);
+    for (let a = 0; a < 8; a++) p.set(8 + Math.round(Math.cos(a * 0.785) * 3.6), 7 + Math.round(Math.sin(a * 0.785) * 3.6), sun[3]);
+    // a crescent moon, cut by hand so the cover's own shading doesn't blur it
+    for (let y = 8; y <= 16; y++) for (let x = 7; x <= 14; x++) {
+      const inA = (x - 10.5) ** 2 + (y - 12) ** 2 <= 10.5, inB = (x - 12.3) ** 2 + (y - 10.8) ** 2 <= 8;
+      if (inA && !inB) p.set(x, y, x + y < 21 ? '#ffffff' : '#c8c8d8');
+    }
+    sh(p, 13, 15, '#c8d0ff'); sh(p, 5, 13, '#c8d0ff');
+  },
+  bestiary(p) {
+    // a red book torn by three claw marks
+    const c = ramp('#8a2a2a');
+    p.rect(3, 2, 12, 15, c[2]); p.rect(3, 2, 2, 15, c[1]); p.rect(5, 2, 10, 1, c[4]); p.rect(14, 3, 1, 14, hex('#e8dcc0'));
+    p.rect(3, 16, 12, 1, c[0]);
+    // three claw marks raked across the cover, the pages showing through
+    for (let i = 0; i < 3; i++) { const x = 9 + i * 3; p.line(x, 4, x - 4, 14, hex('#1a0a0a')); p.line(x + 1, 5, x - 3, 13, hex('#e8dcc0')); }
+  },
+  hymnal(p) {
+    // a white book with a gold cross, and the song rising off it
+    const c = ramp('#e8e0d0'), g = hex('#c8a04a');
+    p.rect(2, 5, 11, 12, c[2]); p.rect(2, 5, 2, 12, c[1]); p.rect(4, 5, 9, 1, c[4]); p.rect(2, 16, 11, 1, c[0]);
+    p.rect(7, 7, 2, 8, g); p.rect(5, 9, 6, 2, g);
+    const n = hex('#3a3a6a');
+    p.rect(12, 1, 1, 5, n); p.ball(11, 5.5, 1.4, 1.1, ramp('#3a3a6a')); p.line(12, 1, 14, 2, n);
+    p.rect(16, 4, 1, 4, n); p.ball(15, 7.5, 1.3, 1, ramp('#3a3a6a'));
+  },
+
+  // ------------------------------------------------------------------ look-alikes pulled apart
+  leaky_pen(p) {
+    // a fountain pen dripping a line of puddles behind it: you leave a trail
+    const m = ramp('#2a2a40'), g = hex('#c8a04a'), ink = ramp('#2a2e70');
+    p.tube(8, 9, 16, 1, 2, m); p.line(14, 3, 15, 2, g); p.rect(10, 6, 2, 2, g);
+    p.poly([8, 9, 5, 12, 6, 9, 7, 8], g); p.set(5, 12, '#1a1a2a');
+    p.ball(5, 14.5, 1.4, 1.8, ink);
+    p.ball(10.5, 16, 2.4, 1.1, ink); p.ball(3, 16.5, 2.2, 1, ink); p.ball(15.5, 15.5, 1.6, 0.9, ink);
+    sh(p, 10, 15, '#6a70c8'); sh(p, 13, 3, '#8a8aa8');
+  },
+  leech_jar(p) {
+    // a jar of dark blood with one fat black leech clinging to the glass
+    const g = ramp('#9ab8c8'), b = ramp('#6a1a24');
+    p.rect(4, 5, 10, 12, g[1]); p.rect(5, 6, 8, 10, g[2]); p.rect(5, 10, 8, 6, b[2]); p.rect(5, 10, 8, 1, b[3]);
+    p.rect(3, 3, 12, 3, hex('#5a5a62')); p.rect(3, 3, 12, 1, ramp('#5a5a62')[4]);
+    const l = ramp('#2a2228');
+    p.tube(7, 7, 8, 13, 1.8, l); p.tube(8, 13, 11, 11, 1.6, l); p.ball(7, 6.5, 1.8, 1.6, l);
+    for (const y of [9, 11]) p.set(6, y, '#6a5a64');
+    p.set(7, 5, '#c83a4a'); sh(p, 12, 7);
+  },
+  ember_cherries(p) {
+    // two glowing cherries with flames for stalks
+    const c = ramp('#e0602a');
+    p.ball(5.5, 12.5, 3.6, 3.6, c); p.ball(12.5, 12.5, 3.6, 3.6, c);
+    p.set(4, 11, '#ffe0a0'); p.set(11, 11, '#ffe0a0');
+    flame(p, 5.5, 5.5, 0.9); flame(p, 12.5, 5.5, 0.9);
+  },
+  stopped_watch(p) {
+    // a steel watch with shattered glass, both hands frozen on twelve
+    const m = ramp('#9a9aa8'), f = ramp('#efe6d0');
+    p.ball(9, 10, 6.5, 6.5, m); p.ball(9, 10, 5, 5, f);
+    p.rect(8, 2, 3, 2, m[2]); p.ring(9.5, 2, 1.5, '#9a9aa8');
+    p.line(9, 10, 9, 6, hex('#1a1010')); p.line(10, 10, 10, 7, hex('#3a3434'));
+    const cr = hex('#5a7a9a');
+    p.line(5, 8, 9, 11, cr); p.line(9, 11, 13, 9, cr); p.line(9, 11, 8, 15, cr); p.line(9, 11, 12, 14, cr);
+    p.set(9, 11, W); sh(p, 6, 7);
+  },
+  pocket_watch(p) {
+    // a gold watch on a swinging chain, still ticking
+    const g = ramp('#d8a840'), f = ramp('#efe6d0');
+    for (let i = 0; i < 6; i++) p.set(2 + i, 2 + (i % 2), i % 2 ? '#a07a2a' : '#e8c060');
+    p.line(7, 3, 9, 4, hex('#c8a04a'));
+    p.ball(10, 11, 6.2, 6.2, g); p.ball(10, 11, 4.6, 4.6, f);
+    p.rect(9, 4, 3, 2, g[3]);
+    for (const [x, y] of [[10, 7], [14, 11], [10, 15], [6, 11]]) p.set(x, y, '#8a6a3a');
+    p.line(10, 11, 10, 8, hex('#1a1010')); p.line(10, 11, 12, 12, hex('#1a1010')); sh(p, 7, 8);
+  },
+  tin_heart(p) {
+    // a heart cut from tin and riveted at the seams
+    const t = ramp('#a8a8b4');
+    p.ball(5.5, 7, 4, 4, t); p.ball(12.5, 7, 4, 4, t); p.poly([1.5, 8, 16.5, 8, 9, 17], t[2]);
+    p.line(9, 5, 9, 15, t[1]);
+    for (const [x, y] of [[4, 5], [7, 4], [11, 4], [14, 5], [3, 9], [15, 9], [6, 12], [12, 12], [9, 15]]) { p.set(x, y, '#5a5a64'); }
+    p.set(4, 6, W); p.set(5, 5, t[4]);
+  },
 };

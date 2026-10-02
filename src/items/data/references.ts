@@ -80,8 +80,8 @@ export const REFERENCES: ItemDef[] = [
     stats: { luck: 3 }, attack: { crit: 0.15 },
     icon: (p) => { p.ring(9, 9, 7, '#5a4a8a', 1); digit3(p, 3, 7, '#f0e080'); digit3(p, 7, 7, '#f0e080'); digit3(p, 11, 7, '#f0e080'); sparkle(p, 14, 3, '#fff8c0'); } },
   { id: 'drain_butterfly', name: 'Drain Butterfly', unlock: 'transform_drain', kind: 'passive', quality: 4, pools: { blessing: 1 }, tags: ['drain'],
-    pickup: 'Weightless', effect: ['Flight.', 'Shots flutter and pass through rocks.', 'Speed up.'],
-    flight: true, stats: { speed: 0.1 }, attack: { wiggle: 6, spectral: true, tint: '#c8e0ff' },
+    pickup: 'Weightless', effect: ['Flight.', 'Shots flutter and pass through rocks.', 'Damage up, speed up.'],
+    flight: true, stats: { speed: 0.1, damage: 1, damageMult: 1.2 }, attack: { wiggle: 6, spectral: true, tint: '#c8e0ff' },
     icon: (p) => {
       const a = ramp('#a8d0ff'), b = ramp('#e8f0ff');
       p.ball(5, 6, 4, 4.5, a); p.ball(13, 6, 4, 4.5, a); p.ball(5.5, 12, 3, 3, b); p.ball(12.5, 12, 3, 3, b);

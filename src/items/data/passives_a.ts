@@ -15,16 +15,16 @@ export const PASSIVES_A: ItemDef[] = [
     attack: { split: 2, splitOnHit: true },
     icon: (p) => { const m = ramp('#c8a04a'); p.poly([9, 16, 5, 6, 9, 2, 13, 6], m[2]); p.line(9, 7, 9, 16, hex('#2a1a10')); p.ball(9, 6, 1.2, 1.2, ramp('#2a1a10')); p.line(5, 6, 9, 2, m[4]); } },
   { id: 'lamp_lure', name: 'Lamp Lure', kind: 'passive', quality: 3, pools: { treasure: 1 }, tags: ['moth'],
-    pickup: 'They always find the light', effect: ['Shots steer toward the nearest enemy.'],
-    attack: { homing: 0.8, tint: '#8a6ad8' },
+    pickup: 'They always find the light', effect: ['Shots steer toward the nearest enemy.', 'Damage +0.5.'],
+    stats: { damage: 0.5 }, attack: { homing: 0.8, tint: '#8a6ad8' },
     icon: (p) => { p.rect(6, 4, 6, 10, hex('#3a3434')); p.rect(7, 5, 4, 8, ramp('#f0c060')[3]); p.rect(8, 7, 2, 3, hex('#fff8e0')); p.rect(7, 2, 4, 2, hex('#3a3434')); p.set(3, 6, '#c8b48a'); p.set(14, 8, '#c8b48a'); p.set(4, 12, '#c8b48a'); } },
   { id: 'triple_seam', name: 'Triple Seam', kind: 'passive', quality: 3, pools: { treasure: 1 }, tags: ['thread'],
     pickup: 'Three stitches at once', effect: ['Fire three shots in a fan.', 'Fire rate is reduced.'],
     attack: { shots: 2 }, stats: { tearsMult: 0.72 },
     icon: (p) => { for (let i = 0; i < 3; i++) { p.line(3, 4 + i * 5, 15, 4 + i * 5, hex('#c83a4a')); for (let x = 4; x < 15; x += 3) p.set(x, 3 + i * 5, '#e8e0d0'); } } },
   { id: 'twin_wick', name: 'Twin Wick', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['wax'],
-    pickup: 'Two flames, one candle', effect: ['Fire two parallel shots.'],
-    attack: { shots: 1 },
+    pickup: 'Two flames, one candle', effect: ['Fire two parallel shots.', 'Fire rate is slightly reduced.'],
+    attack: { shots: 1 }, stats: { tearsMult: 0.9 },
     icon: (p) => { const w = ramp('#e8dcc0'); p.rect(5, 8, 8, 8, w[2]); p.rect(5, 8, 8, 1, w[4]); p.ball(7, 5, 1.4, 2.4, ramp('#f0a040')); p.ball(11, 5, 1.4, 2.4, ramp('#f0a040')); p.set(7, 7, '#2a1a10'); p.set(11, 7, '#2a1a10'); } },
   { id: 'rubber_band', name: 'Rubber Band', kind: 'passive', quality: 2, pools: { treasure: 1 },
     pickup: 'Boing', effect: ['Shots ricochet off walls and rocks twice.'],
@@ -32,7 +32,7 @@ export const PASSIVES_A: ItemDef[] = [
     icon: (p) => { p.ring(9, 9, 6, '#c86a3a', 2); p.ring(9, 9, 4, '#a84a2a', 1); } },
   { id: 'powder_ink', name: 'Powder Ink', kind: 'passive', quality: 4, pools: { deal: 0.6 }, 
     pickup: 'Volatile', effect: ['Shots explode on impact. Your explosions cannot hurt you.', 'Fire rate is greatly reduced.'],
-    stats: { damage: 1.5, tearsMult: 0.55 }, attack: { explode: 26, tint: '#e06a2a' },
+    stats: { damage: 2, tearsMult: 0.7 }, attack: { explode: 30, tint: '#e06a2a' },
     icon: (p) => { I.bottle(p, '#2a2440'); p.set(12, 3, '#ffb040'); p.set(13, 2, '#ffe080'); p.line(11, 4, 13, 2, hex('#8a6a4a')); } },
   { id: 'long_needle', name: 'Long Needle', kind: 'passive', quality: 3, pools: { treasure: 1 }, tags: ['thread'],
     pickup: 'Straight through', effect: ['Shots pierce through every enemy.'],
@@ -106,8 +106,14 @@ export const PASSIVES_A: ItemDef[] = [
     stats: { damage: 0.5 }, attack: { mode: 'melee', chargeTime: 1.1 },
     icon: (p) => { const b = ramp('#e8e0d0'); p.poly([4, 15, 6, 13, 15, 3, 13, 2], b[2]); p.line(5, 14, 14, 3, b[4]); p.rect(3, 14, 3, 3, hex('#6a4a2a')); } },
   { id: 'burnt_toast', name: 'Burnt Toast', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['wax'],
-    pickup: 'Fiery shots', effect: ['30% chance for shots to set enemies on fire.'],
+    pickup: 'Fiery shots', effect: ['30% chance for shots to set enemies on fire.', 'Enemies that die burning burst into four embers.'],
     stats: { damage: 0.3 }, attack: { burn: 0.3, shape: 'fire' },
+    hooks: { onKill(w, e) {
+      if (e.burn <= 0) return;
+      const pl = w.player, off = Math.random() * TAU;
+      for (let i = 0; i < 4; i++) w.proj.player(w, pl.prof, e.x, e.y - 6, 8, off + (i / 4) * TAU, pl.stats.damage * 0.6, 150, 70, 0.7, 1);
+      w.fx.sparks(e.x, e.y - 8, 8, '#ff9a3a', 90); w.audio.play('fireSpit', { x: e.x, vol: 0.4 });
+    } },
     icon: (p) => { const t = ramp('#a8763a'); p.rect(4, 5, 10, 10, t[2]); p.ball(6, 5, 2.4, 2.2, t); p.ball(12, 5, 2.4, 2.2, t); p.rect(5, 7, 8, 7, hex('#3a2010')); p.set(7, 9, '#5a3a1a'); p.set(10, 11, '#5a3a1a'); } },
   { id: 'frost_jar', name: 'Frost Jar', kind: 'passive', quality: 2, pools: { treasure: 1 },
     pickup: 'Chilling shots', effect: ['20% chance to slow enemies, 10% chance to freeze them in place.'],
@@ -130,8 +136,9 @@ export const PASSIVES_A: ItemDef[] = [
     attack: { mark: 0.25, tint: '#9a40d0' },
     icon: (p) => { I.bottle(p, '#7a2ab0'); p.set(9, 12, '#e0c0ff'); } },
   { id: 'bold_print', name: 'Bold Print', kind: 'passive', quality: 3, pools: { treasure: 1 },
-    pickup: 'Sometimes it really lands', effect: ['12% chance for a shot to deal triple damage.'],
-    attack: { crit: 0.12 }, stats: { luck: 1 },
+    pickup: 'Sometimes it really lands', effect: ['15% chance for a shot to deal triple damage.', 'A bold hit staggers ordinary enemies for a moment.'],
+    attack: { crit: 0.15 }, stats: { luck: 1 },
+    hooks: { onHitEnemy(w, e) { if (w.hitCrit && !e.isBoss && !e.dead) e.freeze = Math.max(e.freeze, 0.6); } },
     icon: (p) => { p.rect(4, 3, 10, 13, hex('#e8dcc0')); p.rect(6, 5, 2, 9, hex('#1a1010')); p.rect(6, 5, 5, 2, hex('#1a1010')); p.rect(6, 9, 5, 2, hex('#1a1010')); p.rect(6, 12, 6, 2, hex('#1a1010')); p.rect(11, 6, 1, 3, hex('#1a1010')); } },
   { id: 'growing_pains', name: 'Growing Pains', kind: 'passive', quality: 2, pools: { treasure: 1 },
     pickup: 'Shots swell as they fly', effect: ['Shots grow larger and hit harder the further they travel.'],
@@ -142,8 +149,14 @@ export const PASSIVES_A: ItemDef[] = [
     stats: { shotSpeed: -0.25, damage: 0.5 }, attack: { accel: 1.4 },
     icon: (p) => { const m = ramp('#8a8a96'); p.poly([4, 14, 13, 5, 15, 3, 13, 7], m[2]); p.ball(5, 13, 2.4, 2.4, ramp('#f08a30')); p.set(3, 15, '#ffe080'); } },
   { id: 'leaky_pen', name: 'Leaky Pen', kind: 'passive', quality: 2, pools: { deal: 1 }, tags: ['ink'],
-    pickup: 'Drip, drip', effect: ['Shots leave a trail of ink puddles that hurt enemies standing in them.'],
-    stats: { damage: 0.3 }, attack: { creep: true },
+    pickup: 'Drip, drip', effect: ['You leak ink as you walk, leaving puddles that hurt enemies standing in them.', 'Damage +0.3.'],
+    stats: { damage: 0.3 },
+    hooks: { onTick(w, dt) {
+      const pl = w.player, f = w.run.flags;
+      if (Math.hypot(pl.vx, pl.vy) < 40) return;
+      f.leakT = (f.leakT ?? 0) - dt;
+      if (f.leakT <= 0) { f.leakT = 0.22; w.addCreep(pl.x, pl.y + 2, 9, 'player', Math.max(3, pl.stats.damage * 1.2), 2.6, '#2a2e70'); }
+    } },
     icon: (p) => { const m = ramp('#2a2a34'); p.tube(4, 14, 13, 5, 1.8, m); p.poly([13, 5, 16, 2, 14, 6], hex('#c8a04a')); I.drop(p, '#2a2e70', 5, 15, 1.6); } },
   { id: 'rearview', name: 'Rear-view Mirror', kind: 'passive', quality: 1, pools: { shop: 1 },
     pickup: 'Eyes in the back of your head', effect: ['Also fire a shot behind you.'],
@@ -151,7 +164,7 @@ export const PASSIVES_A: ItemDef[] = [
     icon: (p) => { p.rect(3, 6, 12, 7, hex('#3a3434')); p.rect(4, 7, 10, 5, ramp('#a8c8e0')[3]); p.set(5, 8, '#ffffff'); p.rect(8, 13, 2, 4, hex('#3a3434')); } },
   { id: 'weathervane', name: 'Weathervane', kind: 'passive', quality: 2, pools: { treasure: 1 },
     pickup: 'All directions at once', effect: ['Also fire shots to your left and right.'],
-    stats: { tearsMult: 0.85 }, attack: { sides: true },
+    attack: { sides: true },
     icon: (p) => { const m = ramp('#5a5a62'); p.line(9, 2, 9, 16, m[2]); p.line(2, 9, 16, 9, m[2]); p.poly([12, 3, 16, 5, 12, 7], hex('#c8a04a')); p.poly([6, 3, 2, 5, 6, 7], hex('#c8a04a')); p.ball(9, 9, 1.6, 1.6, m); } },
   { id: 'swollen_ink', name: 'Swollen Ink', kind: 'passive', quality: 2, pools: { treasure: 1 },
     pickup: 'Big, heavy shots', effect: ['Shots are much larger and hit harder, but fly slower.', 'They shove enemies back twice as hard.'],
@@ -189,11 +202,21 @@ export const PASSIVES_A: ItemDef[] = [
     pickup: 'Speed up, keep running', effect: ['After a second of running without stopping, damage +1 until you stop.'], stats: { speed: 0.3 },
     hooks: { onTick(w, dt) { const pl = w.player, f = w.run.flags; f.shoesT = Math.hypot(pl.vx, pl.vy) > 70 ? (f.shoesT ?? 0) + dt : 0; conditional(w, 'shoes_run', f.shoesT > 1, { stats: { damage: 1 }, room: true }); } },
     icon: (p) => { const s = ramp('#e8e0d0'); p.poly([2, 14, 3, 8, 8, 8, 15, 12, 15, 15, 2, 15], s[2]); p.rect(2, 14, 14, 2, hex('#6a5a4a')); p.line(5, 9, 8, 12, hex('#3a6ab0')); } },
-  { id: 'iron_filings', name: 'Iron Filings', kind: 'passive', quality: 1, pools: { boss: 1 },
+  { id: 'iron_filings', name: 'Iron Filings', kind: 'passive', quality: 2, pools: { boss: 1 },
     pickup: 'Damage up, drawn to them', effect: ['Shots curve gently toward enemies.'], stats: { damage: 1 }, attack: { homing: 0.25 },
     icon: (p) => { const m = ramp('#5a5a66'); for (let i = 0; i < 14; i++) p.line(3 + (i * 7) % 12, 5 + (i * 5) % 10, 5 + (i * 7) % 12, 6 + (i * 5) % 10, m[2 + (i % 3)]); } },
   { id: 'clock_spring', name: 'Clock Spring', kind: 'passive', quality: 2, pools: { shop: 1 }, tags: ['clock'],
-    pickup: 'Fire rate and speed up', effect: [], stats: { tears: 0.5, speed: 0.1 },
+    pickup: 'Wind it up', effect: ['Fire rate +0.3, speed up.', 'Keep firing to wind it: fire rate climbs to +1.5 after three seconds, and runs down when you stop.'], stats: { tears: 0.3, speed: 0.1 },
+    hooks: { onTick(w, dt) {
+      const pl = w.player, f = w.run.flags;
+      f.windT = pl.aiming ? Math.min(3, (f.windT ?? 0) + dt) : Math.max(0, (f.windT ?? 0) - dt * 2);
+      const tier = f.windT >= 3 ? 3 : f.windT >= 2 ? 2 : f.windT >= 1 ? 1 : 0;
+      if (tier !== (f.windTier ?? 0)) {
+        if (tier > (f.windTier ?? 0)) { w.audio.play('tink', { pitch: 1 + tier * 0.2, vol: 0.4 }); if (tier === 3) w.fx.ring(pl.x, pl.y - 8, 4, 18, '#c8a04a', 0.25); }
+        f.windTier = tier; pl.clearTemp((t) => t.id === 'clock_wind');
+        if (tier) pl.addTemp({ id: 'clock_wind', stats: { tears: tier * 0.4 } });
+      }
+    } },
     icon: (p) => { for (let a = 0; a < 16; a += 0.25) p.set(9 + Math.cos(a) * a * 0.42, 9 + Math.sin(a) * a * 0.42, '#c8a04a'); } },
   { id: 'ricochet_stone', name: 'Ricochet Stone', kind: 'passive', quality: 3, pools: { treasure: 0.7 }, unlock: 'win_wren',
     pickup: 'Bouncing, splitting stones', effect: ['Shots bounce off walls three times and split when they finally break.'],
