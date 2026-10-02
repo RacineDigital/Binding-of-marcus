@@ -46,6 +46,8 @@ export interface SaveData {
   seenUnlocks?: string[];
   /** Readers already played (an unlocked reader not in here shows as NEW). */
   readersMet?: string[];
+  /** Buttons put in shop donation boxes, ever. Every 50 raises the shop a level. */
+  donated?: number;
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 

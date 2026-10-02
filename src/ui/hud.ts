@@ -21,7 +21,7 @@ import { drawHitboxes } from '../game/worldrender';
 import { ticketFor, doorOdds } from '../game/bargain';
 import { diceFace } from '../items/data/dice';
 import { bindLabel, fmtKeys } from '../core/input';
-import { restockCost, shopStock } from '../game/npc';
+import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
 import { STING_HIT, StingKind } from '../audio/bossting';
@@ -752,13 +752,19 @@ export class Hud {
 
   private drawPriceTags(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
-    // Mott's restock: what a fresh lot costs, shown once you walk up to him
+    // the shop's machines say what they do once you walk up: the restock price, the donation progress
     for (const n of w.npcs) {
-      if (n.kind !== 'mott' || !shopStock(w).length || dist2(n.x, n.y, w.player.x, w.player.y) > 46 * 46) continue;
-      const sx = n.x - w.renderCamX, sy = n.y - w.renderCamY - 34, cost = restockCost(w), lean = Math.max(0, Math.min(1, (n.data.lean ?? 0) / 0.7));
-      const label = `Restock ${cost}`, tw = measure(ctx, label, 7.5) + 16;
+      if ((n.kind !== 'restock' && n.kind !== 'donation') || dist2(n.x, n.y, w.player.x, w.player.y) > 50 * 50) continue;
+      if (n.kind === 'restock' && !shopStock(w).length) continue;
+      const sx = n.x - w.renderCamX, sy = n.y - w.renderCamY - 40;
+      const cost = n.kind === 'restock' ? restockCost(w) : 1;
+      const label = n.kind === 'restock' ? `Restock ${cost}` : donationLabel(w), tw = measure(ctx, label, 7.5) + 16;
       ctx.fillStyle = 'rgba(8,6,12,0.82)'; ctx.fillRect(Math.round(sx - tw / 2), sy, tw, 11);
-      if (lean > 0) { ctx.fillStyle = 'rgba(232,192,96,0.35)'; ctx.fillRect(Math.round(sx - tw / 2), sy, tw * lean, 11); }
+      if (n.kind === 'donation') {
+        // a bar filling toward the next shop level
+        const d = w.game.save.data.donated ?? 0, full = d >= 50 * 5 ? 1 : (d % 50) / 50;
+        ctx.fillStyle = 'rgba(232,192,96,0.3)'; ctx.fillRect(Math.round(sx - tw / 2), sy, tw * full, 11);
+      }
       ctx.drawImage(pickupSprites().hud.button.canvas, sx + tw / 2 - 11, sy + 1.5, 8, 8);
       text(ctx, label, sx - tw / 2 + 4, sy + 8.5, 7.5, w.player.buttons >= cost ? COL.gold : COL.down, 'left', FONT_BODY, 700);
     }

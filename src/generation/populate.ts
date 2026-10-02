@@ -9,6 +9,7 @@ import { getEnemy, ENEMY_DEFS } from '../enemies/registry';
 import type { Role } from '../enemies/enemy';
 import { FLOORS, DEPTH_BUDGET } from '../data/floors';
 import { TILE } from '../core/constants';
+import { shopLevelFor, shopPrice, shopCurios } from '../game/shoplevel';
 import type { SaveManager } from '../save/save';
 
 const FALLBACK: Record<string, Role[]> = {
@@ -281,24 +282,32 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'shop': {
-      // Mott stands at the end of his counter, well off the door lines: dead centre he stood right
-      // inside the top door, and walking in pushed you into him and asked for a restock
-      room.npcs.push({ kind: 'mott', x: cx - TILE * 4, y: room.oy + 34 });
+      room.npcs.push({ kind: 'mott', x: cx, y: room.oy + 34 });
+      // the shop's other fixture, at the end of the counter: a donation box (60%), a restock machine
+      // (30%) or a beggar (10%). The donation box's levels (kept in the save) make every shop better.
+      const fixture = rng.next();
+      room.npcs.push({ kind: fixture < 0.6 ? 'donation' : fixture < 0.9 ? 'restock' : 'beggar', x: cx + TILE * 4, y: room.oy + 40 });
+      const lvl = run.mode === 'daily' ? 0 : shopLevelFor(save?.data?.donated ?? 0);
+      const price = (v: number) => shopPrice(v, lvl);
+      let rare = lvl >= 5;
       const y = cy + 18;
       const xs = [-80, -40, 0, 40, 80];
-      const nItems = fi >= 2 ? 3 : 2;
+      const nItems = shopCurios(fi, lvl);
       const itemSlots = rng.shuffle([0, 1, 2, 3, 4]).slice(0, nItems);
       let staple = 0; // the first two pickup slots are always a key and a cherry bomb
       xs.forEach((dx, i) => {
         if (!itemSlots.includes(i) && staple < 2) {
           const kind = staple++ === 0 ? 'key' : 'bomb';
-          pk(kind, cx + dx, y + 6, { price: 4, shop: true });
+          pk(kind, cx + dx, y + 6, { price: price(4), shop: true });
         } else if (itemSlots.includes(i)) {
-          const id = run.pools.roll('shop', prng);
-          pk('item', cx + dx, y, { id, style: 'shop', price: priceFor(id), shop: true });
+          // fully upgraded: the first curio is always a rare (3 or 4 star) one
+          const id = rare ? run.pools.roll('shop', prng, (it) => it.quality >= 3) : run.pools.roll('shop', prng);
+          rare = false;
+          pk('item', cx + dx, y, { id, style: 'shop', price: price(priceFor(id)), shop: true });
         } else {
-          const [kind, price] = rng.pick([['heart', 3], ['key', 5], ['bomb', 5], ['page', 5], ['sweet', 4], ['spark', 6], ['wax', 5], ['chest:locked', 6], ['bomb2', 7]] as [string, number][]);
-          pk(kind, cx + dx, y + 6, kind === 'page' ? { id: null, price, shop: true, rollPage: true } : kind === 'sweet' ? { color: rng.int(0, 11), price, shop: true } : { price, shop: true });
+          const [kind, p0] = rng.pick([['heart', 3], ['key', 5], ['bomb', 5], ['page', 5], ['sweet', 4], ['spark', 6], ['wax', 5], ['chest:locked', 6], ['bomb2', 7]] as [string, number][]);
+          const cost = price(p0);
+          pk(kind, cx + dx, y + 6, kind === 'page' ? { id: null, price: cost, shop: true, rollPage: true } : kind === 'sweet' ? { color: rng.int(0, 11), price: cost, shop: true } : { price: cost, shop: true });
         }
       });
       break;

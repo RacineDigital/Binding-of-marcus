@@ -1,4 +1,5 @@
-// Interactive NPCs and machines: shopkeeper, slot machine, fortune owl, beggar, wishing well, seamstress, clock.
+// Interactive NPCs and machines: shopkeeper, slot machine, fortune owl, beggar, donation box, restock
+// machine, wishing well, seamstress, clock.
 import type { World } from './world';
 import { npcSprites } from '../art/npcs';
 import { dist2, TAU } from '../core/math';
@@ -9,6 +10,7 @@ import { NOTE_BY_ID, NOTES } from '../data/notes';
 import * as flow from './roomflow';
 import { moveBody } from '../rooms/collide';
 import { priceFor } from '../generation/populate';
+import { DONATION_STEP, SHOP_LEVELS, MAX_SHOP_LEVEL, shopLevelFor, shopPrice } from './shoplevel';
 
 export class Npc {
   kind: string; x: number; y: number; r = 9; t = 0; cd = 0; frame = 0; dead = false; data: any = {};
@@ -16,13 +18,17 @@ export class Npc {
   constructor(kind: string, x: number, y: number) { this.kind = kind; this.x = x; this.y = y; }
 }
 
-const PAYOUT: [string, number][] = [['none', 52], ['button', 16], ['heart', 8], ['bomb', 6], ['key', 6], ['page', 4], ['sweet', 4], ['mite', 3], ['item', 1]];
+// items don't come out of a working slot machine any more: only out of one that breaks
+const PAYOUT: [string, number][] = [['none', 52], ['button', 16], ['heart', 8], ['bomb', 6], ['key', 6], ['page', 4], ['sweet', 4], ['mite', 3]];
+/** A slot machine's chance to break on this pull: 5%, and 2% more for every pull before it. */
+export function slotBreakChance(uses: number): number { return Math.min(1, 0.05 + 0.02 * uses); }
 
 export function makeNpc(w: World, kind: string, x: number, y: number): Npc {
   const n = new Npc(kind, x, y);
   n.onBomb = (ww) => npcBombed(ww, n);
   if (kind === 'clock') n.r = 10;
   if (kind === 'well') n.r = 13;
+  if (kind === 'restock') n.r = 11;
   if (kind === 'note') n.r = 6;
   if (kind === 'book') n.r = 10;
   if (kind === 'armchair') n.r = 13;
@@ -50,26 +56,47 @@ function npcBombed(w: World, n: Npc): void {
   }
 }
 
-/** What Mott asks to fetch a fresh lot from under the counter: more each time in the same shop. */
+/** What the restock machine asks for a fresh lot: more each time in the same shop. */
 export function restockCost(w: World): number { return 5 + 4 * (w.room.flags.restocks ?? 0); }
 /** The shop's curios still for sale. */
 export function shopStock(w: World) { return w.pickups.filter((p) => !p.dead && p.shop && p.pedestal && p.price > 0 && p.data.id); }
-/** Lean on Mott and he swaps every curio still for sale for something else. */
+/** The shop level your donations have bought (the Daily Run is always a plain shop). */
+export function currentShopLevel(w: World): number { return w.run.mode === 'daily' ? 0 : shopLevelFor(w.game.save.data.donated ?? 0); }
+/** The restock machine: pay, and every curio still for sale becomes something else. */
 function restock(w: World, n: Npc): void {
   const stock = shopStock(w);
-  if (!stock.length) { w.hud.toast('"Nothing left under the counter, I\'m afraid."', 2); return; }
+  if (!stock.length) { w.hud.toast('The restock machine has nothing left to swap.', 2); n.cd = 1.5; return; }
   const cost = restockCost(w);
-  if (!pay(w, cost)) { w.hud.toast(`"A fresh lot is ${cost} buttons, love."`, 2); return; }
-  const rng = new RNG(Math.random() * 1e9);
+  if (!pay(w, cost)) { w.hud.toast(`A fresh lot costs ${cost} buttons.`, 2); n.cd = 1.5; return; }
+  const rng = new RNG(Math.random() * 1e9), lvl = currentShopLevel(w);
   for (const p of stock) {
     const id = w.run.pools.roll('shop', rng);
-    p.data.id = id; p.price = priceFor(id);
+    p.data.id = id; p.price = shopPrice(priceFor(id), lvl);
     w.fx.smoke(p.x, p.y - 6, 5, 'rgba(200,180,140,', 5, 0.5, 10); w.fx.stars(p.x, p.y - 10, 3, '#ffe0a0');
   }
   w.room.flags.restocks = (w.room.flags.restocks ?? 0) + 1;
-  n.data.rummage = 0.6;
+  n.data.spin = 0.8; n.cd = 1.2;
   w.audio.play('chime', { x: n.x }); w.audio.play('coinBig', { x: n.x, vol: 0.5 });
-  w.hud.toast('Mott rummages under the counter and lays out a fresh lot.', 2);
+  w.hud.toast('Clunk. The machine shuffles a fresh lot onto the counter.', 2);
+}
+/** The donation box: a button at a time, kept forever. Every 50 raises the shop a level. */
+function donate(w: World, n: Npc): void {
+  if (!pay(w, 1)) return;
+  const save = w.game.save, before = shopLevelFor(save.data.donated ?? 0);
+  save.data.donated = (save.data.donated ?? 0) + 1; save.markDirty();
+  n.cd = 0.3; n.data.blink = 0.3;
+  w.fx.stars(n.x, n.y - 22, 2, '#ffe070');
+  const after = shopLevelFor(save.data.donated);
+  if (after > before) {
+    w.audio.play('chime', { x: n.x }); w.audio.play('slotWin', { x: n.x, vol: 0.6 }); w.fx.ring(n.x, n.y - 14, 4, 40, '#ffd860', 0.5);
+    w.hud.toast(`The shop is now level ${after}: ${SHOP_LEVELS[after]}.`, 3.5);
+    if (after >= MAX_SHOP_LEVEL) save.unlock('shop_max');
+  }
+}
+/** What the donation box shows when you stand by it. */
+export function donationLabel(w: World): string {
+  const d = w.game.save.data.donated ?? 0, lvl = shopLevelFor(d);
+  return lvl >= MAX_SHOP_LEVEL ? `Shop level ${lvl} (max)` : `Shop Lv ${lvl}  ·  ${d % DONATION_STEP}/${DONATION_STEP}`;
 }
 
 function pay(w: World, amt: number): boolean {
@@ -83,17 +110,28 @@ function touch(w: World, n: Npc): void {
     case 'slot': {
       if (!pay(w, 1)) return;
       n.data.spin = 0.9; n.cd = 1.0;
+      // every pull wears it: 5% to break on the first, 2% more on each one after
+      const broke = rng.next() < slotBreakChance(n.data.uses ?? 0);
+      n.data.uses = (n.data.uses ?? 0) + 1;
       const res = rng.weighted(PAYOUT, (x) => x[1])![0];
       w.after(0.85, () => {
         if (n.dead || !w.room) return;
+        if (broke) {
+          // it breaks, and half the time there's an item in the wreckage
+          n.dead = true; w.fx.shards(n.x, n.y, 16, '#8a3a4a', 120); w.audio.play('rockBreak', { x: n.x }); w.shake(2);
+          if (rng.next() < 0.5) { flow.spawnPedestal(w, n.x, n.y + 22, w.run.pools.roll('arcade'), 'normal'); w.audio.play('slotWin', { x: n.x }); w.hud.toast('The slot machine breaks, and something falls out.', 2.5); }
+          else w.hud.toast('The slot machine breaks. Nothing inside.', 2);
+          return;
+        }
         if (res === 'none') { w.audio.play('slotLose', { x: n.x }); return; }
         w.audio.play('slotWin', { x: n.x });
         if (res === 'mite') flow.spawnEnemy(w, 'mite', n.x, n.y + 14, true);
-        else if (res === 'item') { flow.spawnPedestal(w, n.x, n.y + 22, w.run.pools.roll('arcade'), 'normal'); n.dead = true; w.fx.shards(n.x, n.y, 16, '#8a3a4a', 120); }
         else { const c = res === 'button' ? rng.int(2, 3) : 1; for (let i = 0; i < c; i++) spawnDrop(w, res, n.x, n.y + 12); }
       });
       break;
     }
+    case 'donation': donate(w, n); break;
+    case 'restock': restock(w, n); break;
     case 'fortune': {
       if (!pay(w, 1)) return;
       n.cd = 1; n.data.blink = 0.5;
@@ -189,18 +227,11 @@ export function updateNpcs(w: World, dt: number): void {
     n.t += dt; n.cd -= dt;
     if (n.data.spin > 0) n.data.spin -= dt;
     if (n.data.blink > 0) n.data.blink -= dt;
+    // a slot machine that's been pulled a lot starts to smoke and rattle: it's close to breaking
+    if (n.kind === 'slot' && (n.data.uses ?? 0) >= 4 && Math.random() < dt * (n.data.uses - 3) * 0.6) w.fx.smoke(n.x + (Math.random() - 0.5) * 10, n.y - 30, 1, 'rgba(60,54,64,', 3, 0.7);
     // solid: push the player out
     const rr = n.r + pl.r;
     const d2 = dist2(pl.x, pl.y, n.x, n.y);
-    // leaning on Mott (pushing into him for a moment) asks for a restock, so a stray bump costs nothing
-    if (n.kind === 'mott') {
-      if (n.data.rummage > 0) n.data.rummage -= dt;
-      // and never in the first moment after walking in, while you're still carried by the doorway
-      if (w.roomTime > 1 && d2 < (rr + 2) * (rr + 2) && (Math.abs(pl.vx) + Math.abs(pl.vy) > 20 || n.data.lean > 0)) {
-        n.data.lean = (n.data.lean ?? 0) + dt;
-        if (n.data.lean > 0.7) { n.data.lean = -99; restock(w, n); }
-      } else if (d2 > (rr + 8) * (rr + 8)) n.data.lean = 0;
-    }
     if (d2 < rr * rr && d2 > 0.01) {
       const d = Math.sqrt(d2);
       moveBody(w.room, pl, ((pl.x - n.x) / d) * (rr - d), ((pl.y - n.y) / d) * (rr - d), pl.flight ? 'fly' : 'walk');
@@ -215,11 +246,13 @@ export function renderNpc(w: World, ctx: CanvasRenderingContext2D, n: Npc, sx: n
   const frames = S[n.kind]; if (!frames) return;
   let f = 0;
   if (n.kind === 'slot') f = n.data.spin > 0 ? Math.floor(n.t * 20) % 4 : 0;
+  else if (n.kind === 'restock') f = n.data.spin > 0 ? Math.floor(n.t * 16) % 2 : 0;
+  else if (n.kind === 'donation') f = n.data.blink > 0 ? 1 : 0;
   else if (n.kind === 'fortune') f = n.data.blink > 0 ? 1 : 0;
   else if (n.kind === 'clock') f = Math.floor(n.t) % 4;
   else f = Math.floor(n.t * 1.5) % frames.length;
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(sx, sy, n.r, 3, 0, 0, TAU); ctx.fill();
   frames[f].draw(ctx, sx, sy + 1);
-  if (n.kind === 'slot' || n.kind === 'fortune') w.r.addGlow(sx, sy - 18, 22, '#ffd080', 0.15);
+  if (n.kind === 'slot' || n.kind === 'fortune' || n.kind === 'restock') w.r.addGlow(sx, sy - 18, 22, n.kind === 'restock' ? '#80ffb0' : '#ffd080', 0.15);
 }

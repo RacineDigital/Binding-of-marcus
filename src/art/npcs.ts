@@ -35,6 +35,34 @@ function slot(f: number): PixelArt {
   p.polish().outline(undefined, false, 0.85);
   return p;
 }
+function donation(f: number): PixelArt {
+  // a church-style poor box on a post: a brass-banded wooden box with a coin slot and a heart
+  const p = new PixelArt(22, 32);
+  const wood = ramp('#7a4a2a'), br = ramp('#c8a04a');
+  p.rect(9, 18, 4, 13, wood[1]); p.rect(9, 18, 1, 13, wood[3]); p.rect(5, 29, 12, 3, wood[1]);
+  p.rect(3, 5, 16, 14, wood[2]); p.shadeV(3, 5, 16, 14, wood);
+  p.rect(3, 5, 16, 2, br[3]); p.rect(3, 12, 16, 1, br[2]); p.rect(3, 17, 16, 2, br[1]);
+  p.rect(7, 7, 8, 2, hex('#0a0606')); p.rect(8, 7, 6, 1, hex('#2a1a12'));
+  p.ball(9.5, 14.5, 1.4, 1.4, ramp('#d83a4a')); p.ball(12.5, 14.5, 1.4, 1.4, ramp('#d83a4a')); p.poly([8, 15, 14, 15, 11, 17.5], hex('#d83a4a'));
+  if (f === 1) { p.ball(11, 3, 2, 2, ramp('#e8c040')); p.set(10, 2, '#ffffff'); }
+  p.polish().outline(undefined, false, 0.85);
+  return p;
+}
+function restockMachine(f: number): PixelArt {
+  // a green tin vending cabinet with a circling-arrows sign: pay it and the counter is restocked
+  const p = new PixelArt(26, 36);
+  const m = ramp('#3a7a5a'), t = ramp('#c8a04a');
+  p.rect(3, 6, 20, 28, m[2]); p.shadeV(3, 6, 20, 28, m);
+  p.rect(3, 6, 20, 2, t[3]); p.rect(3, 32, 20, 2, m[0]);
+  p.rect(6, 10, 14, 10, hex('#10181a'));
+  const lit = f === 1 ? '#c8ffd8' : '#7ae0a0';
+  for (let a = 0.4; a < 5.9; a += 0.25) p.set(13 + Math.cos(a) * 3.6, 15 + Math.sin(a) * 3.6, lit);
+  p.poly([16, 11, 18.5, 12.5, 15.5, 13.5], hex(lit)); p.poly([10, 19, 7.5, 17.5, 10.5, 16.5], hex(lit));
+  p.rect(9, 23, 8, 2, hex('#0a0808')); p.rect(8, 27, 10, 3, t[2]); p.rect(8, 27, 10, 1, t[4]);
+  p.rect(5, 2, 16, 4, t[2]); p.rect(6, 3, 14, 2, hex(f === 1 ? '#ffffff' : '#e0f0d0'));
+  p.polish().outline(undefined, false, 0.85);
+  return p;
+}
 function fortune(f: number): PixelArt {
   const p = new PixelArt(26, 38);
   const wood = ramp('#5a3a2a'), glass = ramp('#3a4a5a'), owl = ramp('#a88a5a');
@@ -143,7 +171,7 @@ export function npcSprites(): NpcSprites {
   if (cache) return cache;
   const mk = (fn: (f: number) => PixelArt, n: number) => [...Array(n).keys()].map((f) => { const pa = fn(f); return new Sprite(pa, Math.floor(pa.w / 2), pa.h); });
   cache = {
-    mott: mk(mott, 2), slot: mk(slot, 4), fortune: mk(fortune, 2), beggar: mk(beggar, 2), well: mk(() => well(), 1),
+    mott: mk(mott, 2), slot: mk(slot, 4), donation: mk(donation, 2), restock: mk(restockMachine, 2), fortune: mk(fortune, 2), beggar: mk(beggar, 2), well: mk(() => well(), 1),
     seamstress: mk(seamstress, 2), clock: mk(clock, 4),
     note: mk(note, 2), book: mk(book, 2), armchair: mk(() => armchair(), 1),
   };

@@ -17,6 +17,8 @@ import { CHARACTERS } from '../src/player/characters';
 import { ACHIEVEMENTS } from '../src/data/achievements';
 import { MAP_SIZE, TILE } from '../src/core/constants';
 import { beamScale, laserScale, overcharge, LASER_TIERS } from '../src/projectiles/weapons';
+import { slotBreakChance } from '../src/game/npc';
+import { shopLevelFor, shopPrice, shopCurios, MAX_SHOP_LEVEL } from '../src/game/shoplevel';
 import { Side, Ob } from '../src/rooms/room';
 import { ALL_SET_PIECES } from '../src/generation/setpieces';
 import * as fs from 'fs';
@@ -377,17 +379,25 @@ console.log('content:', JSON.stringify(counts));
   }
   ok(near === 0, `no enemy starts within 2 tiles of a door (${near} of ${total})`);
 }
-// ------------------------------------------------------------ Mott stands clear of every doorway
+// ------------------------------------------------------------ the shop: Mott, and a donation box, restock machine or beggar
 {
-  let shops = 0, bad = 0;
-  for (let i = 0; i < 30; i++) {
+  const count: Record<string, number> = {}; let shops = 0, nearDoor = 0, motts = 0;
+  for (let i = 0; i < 60; i++) {
     const run = new Run('M' + i.toString(36).toUpperCase().padStart(7, '3'), 'marcus', () => true);
     for (let f = 0; f < 8; f++) { run.floorIndex = f; const fl = generateFloor(run, f);
-      for (const r of fl.rooms) for (const n of r.npcs) if (n.kind === 'mott') { shops++;
-        // every side and slot a door could ever open on, not just the doors the room has now
-        for (const side of [Side.N, Side.S, Side.W, Side.E]) for (const slot of [0, 1]) { const d = r.doorPos(side, slot); if (Math.hypot(d.x - n.x, d.y - n.y) < TILE * 3) bad++; } } }
+      for (const r of fl.rooms) if (r.type === 'shop') { shops++;
+        motts += r.npcs.filter((n) => n.kind === 'mott').length;
+        for (const n of r.npcs) if (n.kind !== 'mott') { count[n.kind] = (count[n.kind] ?? 0) + 1;
+          for (const side of [Side.N, Side.S, Side.W, Side.E]) { const d = r.doorPos(side, 0); if (Math.hypot(d.x - n.x, d.y - n.y) < TILE * 3) nearDoor++; } } } }
   }
-  ok(shops > 50 && bad === 0, `Mott never stands within 3 tiles of a doorway (${bad} too close, ${shops} shops)`);
+  const frac = (k: string) => (count[k] ?? 0) / shops;
+  ok(motts === shops, `every shop has Mott (${motts}/${shops})`);
+  ok(Math.abs(frac('donation') - 0.6) < 0.08 && Math.abs(frac('restock') - 0.3) < 0.08 && Math.abs(frac('beggar') - 0.1) < 0.06, `shop fixture: donation ~60%, restock ~30%, beggar ~10% (${JSON.stringify(count)} of ${shops})`);
+  ok(nearDoor === 0, `the shop's machine never stands in a doorway (${nearDoor})`);
+  ok(slotBreakChance(0) === 0.05 && Math.abs(slotBreakChance(1) - 0.07) < 1e-9 && Math.abs(slotBreakChance(10) - 0.25) < 1e-9, 'slot machines: 5% to break, 2% more each pull');
+  ok(shopLevelFor(0) === 0 && shopLevelFor(49) === 0 && shopLevelFor(50) === 1 && shopLevelFor(149) === 2 && shopLevelFor(9999) === MAX_SHOP_LEVEL, 'a shop level for every 50 buttons donated, capped');
+  ok(shopPrice(15, 0) === 15 && shopPrice(15, 2) < 15 && shopPrice(15, 4) < shopPrice(15, 2) && shopPrice(1, 4) === 1, 'shop discounts apply and never go below a button');
+  ok(shopCurios(0, 0) === 2 && shopCurios(0, 1) === 3 && shopCurios(0, 3) === 4 && shopCurios(5, 5) === 4, 'donations add curios to the shop, up to four');
 }
 // ------------------------------------------------------------ shot size widens every beam and laser
 {
