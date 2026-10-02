@@ -393,5 +393,17 @@ console.log('content:', JSON.stringify(counts));
     ok(ps.length === 3 && new Set(ps).size === 3 && Date.now() - t0 < 50, `${b.id} is dealt three different extra patterns`);
   }
 }
+// ------------------------------------------------------------ item icons read at a glance
+{
+  const { itemIconArt } = await import('../src/art/items');
+  const small: string[] = [];
+  for (const it of ALL_ITEMS) {
+    let art; try { art = itemIconArt(it.id); } catch { ok(false, `${it.id} icon draws`); continue; }
+    let n = 0, x0 = 99, x1 = -1, y0 = 99, y1 = -1;
+    for (let y = 0; y < art.h; y++) for (let x = 0; x < art.w; x++) if (art.opaque(x, y)) { n++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    if (n < 45 || Math.max(x1 - x0, y1 - y0) < 10) small.push(`${it.id}(${n}px)`);
+  }
+  ok(small.length === 0, `every item icon is big and solid enough to read (${small.join(', ')})`);
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

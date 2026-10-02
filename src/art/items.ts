@@ -2,6 +2,7 @@
 import { PixelArt } from '../render/pixel';
 import { getItem } from '../items/registry';
 import { ramp } from '../render/color';
+import { ICONS } from './itemicons';
 
 const cache = new Map<string, HTMLCanvasElement>();
 let unknown: HTMLCanvasElement | null = null;
@@ -9,7 +10,7 @@ let unknown: HTMLCanvasElement | null = null;
 export function itemIconArt(id: string): PixelArt {
   const p = new PixelArt(18, 18);
   const it = getItem(id);
-  if (it) { try { it.icon(p); } catch (e) { console.error('icon failed', id, e); } }
+  if (it) { try { (ICONS[id] ?? it.icon)(p); } catch (e) { console.error('icon failed', id, e); } }
   p.outline(undefined, false, 0.85);
   return p;
 }
