@@ -195,7 +195,8 @@ export function updateNpcs(w: World, dt: number): void {
     // leaning on Mott (pushing into him for a moment) asks for a restock, so a stray bump costs nothing
     if (n.kind === 'mott') {
       if (n.data.rummage > 0) n.data.rummage -= dt;
-      if (d2 < (rr + 2) * (rr + 2) && (Math.abs(pl.vx) + Math.abs(pl.vy) > 20 || n.data.lean > 0)) {
+      // and never in the first moment after walking in, while you're still carried by the doorway
+      if (w.roomTime > 1 && d2 < (rr + 2) * (rr + 2) && (Math.abs(pl.vx) + Math.abs(pl.vy) > 20 || n.data.lean > 0)) {
         n.data.lean = (n.data.lean ?? 0) + dt;
         if (n.data.lean > 0.7) { n.data.lean = -99; restock(w, n); }
       } else if (d2 > (rr + 8) * (rr + 8)) n.data.lean = 0;

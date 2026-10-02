@@ -5,7 +5,7 @@ import { getItem } from './registry';
 import { familiarSprites } from '../art/familiars';
 import { TAU, angleTo, dist2, clamp } from '../core/math';
 import { baseProfile, AttackProfile } from '../projectiles/profile';
-import { volley, Beam, SHOT_PX } from '../projectiles/weapons';
+import { volley, Beam, SHOT_PX, beamScale, laserScale } from '../projectiles/weapons';
 import type { Enemy } from '../enemies/enemy';
 import { spawnDrop } from '../game/drops';
 
@@ -169,10 +169,10 @@ export function updateFamiliars(w: World, dt: number): void {
         if (copy === 'beam') {
           // twins copy the Burning Glass: a shorter, weaker beam carrying your full profile
           f.cd = 1 / (sh.rate * 0.4);
-          const b = new Beam(prof); b.dur = 0.35; b.width = 5; b.dmg = pl.stats.damage * sh.dmg * 0.55; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = prof.tint ?? '#6a58ff';
+          const b = new Beam(prof); b.dur = 0.35; b.width = 5 * beamScale(pl.stats.size); b.dmg = pl.stats.damage * sh.dmg * 0.55; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = prof.tint ?? '#6a58ff';
           w.beams.push(b);
         } else if (sh.laser || copy === 'laser') {
-          const b = new Beam(prof); b.laser = true; b.dur = 0.1; b.width = 2; b.dmg = copy ? pl.stats.damage * sh.dmg : sh.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = copy ? prof.tint ?? '#ff5a6a' : '#6ad0ff';
+          const b = new Beam(prof); b.laser = true; b.dur = 0.1; b.width = 2 * laserScale(pl.stats.size); b.dmg = copy ? pl.stats.damage * sh.dmg : sh.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = copy ? prof.tint ?? '#ff5a6a' : '#6ad0ff';
           w.beams.push(b);
         } else {
           const st = { ...pl.stats, damage: sh.inherit ? pl.stats.damage * sh.dmg : sh.dmg, fireRate: sh.rate, range: sh.range ?? 200 };

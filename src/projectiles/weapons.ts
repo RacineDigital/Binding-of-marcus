@@ -42,6 +42,14 @@ export function volley(w: World, prof: AttackProfile, st: FinalStats, x: number,
 }
 
 // ------------------------------------------------------------------ beams
+/**
+ * How much your shot size widens a beam or laser (its hitbox as well as how it looks), the same for
+ * every one you fire: charged beams, lasers, the beams and lasers familiars copy, the Candle of Wrath.
+ */
+export function beamScale(size: number): number { return Math.max(0.6, Math.min(3, size)); }
+/** Lasers are thin, so size widens them a little faster than beams. */
+export function laserScale(size: number): number { return beamScale(size) ** 1.5; }
+
 export class Beam {
   active = true; t = 0; dur = 0.5; ang = 0; width = 7; dmg = 1; tick = 0; prof: AttackProfile; offset = 0;
   pts: number[] = []; followPlayer = true; x = 0; y = 0; laser = false; hitOnce = new Set<number>(); color = '#6a58ff';

@@ -281,7 +281,9 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'shop': {
-      room.npcs.push({ kind: 'mott', x: cx, y: room.oy + 34 });
+      // Mott stands at the end of his counter, well off the door lines: dead centre he stood right
+      // inside the top door, and walking in pushed you into him and asked for a restock
+      room.npcs.push({ kind: 'mott', x: cx - TILE * 4, y: room.oy + 34 });
       const y = cy + 18;
       const xs = [-80, -40, 0, 40, 80];
       const nItems = fi >= 2 ? 3 : 2;

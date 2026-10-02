@@ -15,7 +15,8 @@ import { RNG } from '../src/core/rng';
 import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
 import { ACHIEVEMENTS } from '../src/data/achievements';
-import { MAP_SIZE } from '../src/core/constants';
+import { MAP_SIZE, TILE } from '../src/core/constants';
+import { beamScale, laserScale } from '../src/projectiles/weapons';
 import { Side, Ob } from '../src/rooms/room';
 import { ALL_SET_PIECES } from '../src/generation/setpieces';
 import * as fs from 'fs';
@@ -375,6 +376,24 @@ console.log('content:', JSON.stringify(counts));
         if (r.doors.some((d) => { const [dc, dr] = r.doorInner(d.side, d.slot); return Math.abs(dc - Math.round(s.c)) + Math.abs(dr - Math.round(s.r)) < 3; })) near++; } }
   }
   ok(near === 0, `no enemy starts within 2 tiles of a door (${near} of ${total})`);
+}
+// ------------------------------------------------------------ Mott stands clear of every doorway
+{
+  let shops = 0, bad = 0;
+  for (let i = 0; i < 30; i++) {
+    const run = new Run('M' + i.toString(36).toUpperCase().padStart(7, '3'), 'marcus', () => true);
+    for (let f = 0; f < 8; f++) { run.floorIndex = f; const fl = generateFloor(run, f);
+      for (const r of fl.rooms) for (const n of r.npcs) if (n.kind === 'mott') { shops++;
+        // every side and slot a door could ever open on, not just the doors the room has now
+        for (const side of [Side.N, Side.S, Side.W, Side.E]) for (const slot of [0, 1]) { const d = r.doorPos(side, slot); if (Math.hypot(d.x - n.x, d.y - n.y) < TILE * 3) bad++; } } }
+  }
+  ok(shops > 50 && bad === 0, `Mott never stands within 3 tiles of a doorway (${bad} too close, ${shops} shops)`);
+}
+// ------------------------------------------------------------ shot size widens every beam and laser
+{
+  ok(beamScale(1) === 1 && laserScale(1) === 1, 'beams and lasers are their normal width at normal shot size');
+  ok(beamScale(2.6) > beamScale(2) && beamScale(2) > beamScale(1.4) && laserScale(2.6) > laserScale(2), 'bigger shots keep widening beams and lasers (no early cap)');
+  ok(beamScale(0.4) > 0 && laserScale(9) <= 3 ** 1.5, 'beam and laser width stay within sane bounds');
 }
 // ------------------------------------------------------------ every sound a script asks for exists
 {

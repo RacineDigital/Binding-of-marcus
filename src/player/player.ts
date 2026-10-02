@@ -9,7 +9,7 @@ import { CharacterDef } from './characters';
 import { buildOutfitSprites, PlayerSprites, HeadDir, HeadState } from '../art/marcus';
 import { costumeFor, Costume, drawCostume, Frame } from '../art/costume';
 import { LOOKS } from '../art/look';
-import { volley, Beam, meleeSwing, Swing, SHOT_PX } from '../projectiles/weapons';
+import { volley, Beam, meleeSwing, Swing, SHOT_PX, beamScale, laserScale } from '../projectiles/weapons';
 import { clamp, TAU } from '../core/math';
 import { moveBody } from '../rooms/collide';
 import { getItem } from '../items/registry';
@@ -310,7 +310,7 @@ export class Player {
       for (const base of this.fireAngles(ang)) for (let i = 0; i < n; i++) {
         const b = new Beam(prof);
         b.ang = base; b.offset = n === 1 ? 0 : (i - (n - 1) / 2) * 0.22;
-        b.dur = (prof.short ? 0.7 : 0.5) * (0.5 + part * 0.5); b.width = (prof.short ? 9 : 7) * Math.min(2.2, st.size) * (heavy ? 1.25 : 1) * (0.6 + part * 0.4); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1) * part;
+        b.dur = (prof.short ? 0.7 : 0.5) * (0.5 + part * 0.5); b.width = (prof.short ? 9 : 7) * beamScale(st.size) * (heavy ? 1.25 : 1) * (0.6 + part * 0.4); b.dmg = st.damage * 0.55 * (heavy ? 1.35 : 1) * part;
         b.color = prof.tint ?? (prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff');
         w.beams.push(b);
       }
@@ -343,7 +343,7 @@ export class Player {
   private fireLaser(w: World, ang: number, offset: number, dmg: number, extraW: number): void {
     const b = new Beam(this.prof);
     b.ang = ang; b.offset = offset; b.laser = true; b.dur = 0.12;
-    b.width = 2 + (this.stats.size - 1) * 3 + extraW; b.dmg = dmg; b.color = this.prof.tint ?? '#ff5a6a';
+    b.width = (2 + extraW) * laserScale(this.stats.size); b.dmg = dmg; b.color = this.prof.tint ?? '#ff5a6a';
     w.beams.push(b);
   }
   /** A burst-style spray of shots carrying the full profile. */
@@ -364,7 +364,7 @@ export class Player {
     if (m.has('beam') && charged) {
       for (const base of this.fireAngles(ang)) {
         const b = new Beam(this.prof);
-        b.ang = base; b.dur = 0.45; b.width = 7 * Math.min(2.2, st.size); b.dmg = st.damage * 0.5; b.color = this.prof.tint ?? '#6a58ff';
+        b.ang = base; b.dur = 0.45; b.width = 7 * beamScale(st.size); b.dmg = st.damage * 0.5; b.color = this.prof.tint ?? '#6a58ff';
         w.beams.push(b);
       }
     }

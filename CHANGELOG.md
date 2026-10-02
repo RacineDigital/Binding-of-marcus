@@ -2,6 +2,16 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.10.1: wider lasers, a safer shop
+
+- **Shot size widens every beam and laser.** Items that make your shots bigger now also widen, and
+  give a bigger hitbox to, everything you fire as a line: Copper Filament lasers, Burning Glass
+  beams (no longer capped), the laser and beam the blade fires with its swings, the lasers and
+  beams familiars like the Glass Eye shoot, and the Candle of Wrath's cross.
+- **Mott no longer stands in the doorway.** He used to stand right inside the shop's top door, so
+  walking in pushed you into him and could buy a restock by accident. He now stands at the end of
+  his counter, away from every door, and leaning on him does nothing in your first second in the room.
+
 ## What's new in 3.10.0: every curio pulls its weight
 
 **Items that did the same thing now do different things:**

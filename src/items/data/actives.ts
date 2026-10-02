@@ -7,7 +7,7 @@ import { spawnInkling } from '../familiar_rt';
 import { revealMap, unlockDoor, spawnPedestal } from '../../game/roomflow';
 import { priceFor } from '../../generation/populate';
 import { TAU, dist2 } from '../../core/math';
-import { Beam } from '../../projectiles/weapons';
+import { Beam, beamScale } from '../../projectiles/weapons';
 import { getItem } from '../registry';
 import type { RoomType } from '../../rooms/room';
 import { markDie } from './dice';
@@ -116,7 +116,7 @@ export const ACTIVES: ItemDef[] = [
     icon: (p) => { const b = ramp('#e8dcc8'); p.tube(9, 4, 4, 15, 1.4, b); p.tube(9, 4, 14, 15, 1.4, b); p.ball(9, 4, 2, 2, b); } },
   { id: 'wrath_candle', name: 'Candle of Wrath', kind: 'active', quality: 3, pools: { deal: 1 },
     pickup: 'Burn in four directions', effect: ['Fires four searing beams in a cross that inherit your shot effects.'],
-    active: { charge: 3, type: 'room', use: (w) => { for (let i = 0; i < 4; i++) { const b = new Beam(w.player.prof); b.ang = (i / 4) * TAU; b.dur = 0.6; b.width = 9; b.dmg = w.player.stats.damage * 0.9; b.color = '#ff5040'; w.beams.push(b); } w.shake(4); w.audio.play('beam'); } },
+    active: { charge: 3, type: 'room', use: (w) => { for (let i = 0; i < 4; i++) { const b = new Beam(w.player.prof); b.ang = (i / 4) * TAU; b.dur = 0.6; b.width = 9 * beamScale(w.player.stats.size); b.dmg = w.player.stats.damage * 0.9; b.color = '#ff5040'; w.beams.push(b); } w.shake(4); w.audio.play('beam'); } },
     icon: (p) => { const w = ramp('#3a1a1a'); p.rect(6, 7, 6, 9, w[2]); p.ball(9, 4, 2, 3, ramp('#ff5030')); p.line(1, 4, 5, 4, hex('#ff5030')); p.line(13, 4, 17, 4, hex('#ff5030')); } },
   { id: 'recipe_book', name: 'Recipe Book', kind: 'active', quality: 2, pools: { library: 1 },
     pickup: 'Mix it up', effect: ['Transforms every loose pickup in the room into a different random pickup.'],
