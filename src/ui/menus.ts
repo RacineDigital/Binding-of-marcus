@@ -29,6 +29,7 @@ import { ALL_ENEMY_DEFS } from '../enemies/registry';
 import { getSprites, EnemyDef } from '../enemies/enemy';
 import type { Sprite } from '../render/sprite';
 import { TRANSFORM_EFFECTS } from '../player/player';
+import { drawPaper, wornFrame } from './paper';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -38,33 +39,11 @@ export interface Screen {
 
 const INK = '#2a1e18', INK2 = '#5a4636', PAPER = '#e6dabd';
 
-/** Parchment page panel with burnt edges. */
+/** An old, handled page: torn, scorched, foxed and creased (painted once, then cached). */
 function page(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, a = 1, seed = 3): void {
   ctx.save(); ctx.globalAlpha *= a;
-  ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x + 3, y + 4, w, h);
-  let s = seed; const r = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
-  ctx.beginPath(); ctx.moveTo(x, y);
-  for (let i = 1; i <= 20; i++) ctx.lineTo(x + (w * i) / 20, y + r() * 1.5);
-  for (let i = 1; i <= 14; i++) ctx.lineTo(x + w - r() * 1.5, y + (h * i) / 14);
-  for (let i = 19; i >= 0; i--) ctx.lineTo(x + (w * i) / 20, y + h - r() * 1.5);
-  for (let i = 13; i >= 1; i--) ctx.lineTo(x + r() * 1.5, y + (h * i) / 14);
-  ctx.closePath();
-  ctx.fillStyle = PAPER; ctx.fill();
-  ctx.save(); ctx.clip();
-  const g = ctx.createRadialGradient(x + w / 2, y + h / 2, Math.min(w, h) * 0.3, x + w / 2, y + h / 2, Math.max(w, h) * 0.7);
-  g.addColorStop(0, 'rgba(120,90,50,0)'); g.addColorStop(1, 'rgba(90,60,30,0.35)');
-  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = 'rgba(110,80,50,0.07)';
-  for (let i = 0; i < 90; i++) ctx.fillRect(x + r() * w, y + r() * h, 1 + r() * 4, 0.5);
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(70,45,25,0.6)'; ctx.lineWidth = 0.6; ctx.stroke();
-  // a book-cover frame: double rule with diamonds at the corners
-  ctx.strokeStyle = 'rgba(95,62,32,0.32)'; ctx.lineWidth = 0.6; ctx.strokeRect(x + 6, y + 6, w - 12, h - 12);
-  ctx.strokeStyle = 'rgba(95,62,32,0.18)'; ctx.lineWidth = 0.4; ctx.strokeRect(x + 8.5, y + 8.5, w - 17, h - 17);
-  ctx.fillStyle = 'rgba(95,62,32,0.45)';
-  for (const [cx, cy] of [[x + 6, y + 6], [x + w - 6, y + 6], [x + 6, y + h - 6], [x + w - 6, y + h - 6]]) {
-    ctx.beginPath(); ctx.moveTo(cx, cy - 2.4); ctx.lineTo(cx + 2.4, cy); ctx.lineTo(cx, cy + 2.4); ctx.lineTo(cx - 2.4, cy); ctx.fill();
-  }
+  drawPaper(ctx, x, y, w, h, seed, PAPER);
+  wornFrame(ctx, x, y, w, h, seed);
   // a ribbon bookmark hanging over the top edge
   const bx = x + w - 30, bl = 11 + (seed % 3) * 2;
   ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx + 1, y - 2, 7, bl);
