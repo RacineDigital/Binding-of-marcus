@@ -1,6 +1,10 @@
 // Enemy runtime object. Behaviour lives in data-driven EnemyDefs.
 import type { World } from '../game/world';
 import { Sprite } from '../render/sprite';
+import { detailed } from '../render/hd';
+
+/** How much bigger regular enemies are than their original art (bosses keep their own size). */
+export const ENEMY_SCALE = 1.3;
 import { moveBody, MoveMode } from '../rooms/collide';
 import type { AttackProfile } from '../projectiles/profile';
 
@@ -53,7 +57,8 @@ export class Enemy {
   tx = 0; ty = 0; // generic target
   constructor(def: EnemyDef, x: number, y: number, hpMul = 1) {
     this.def = def; this.x = x; this.y = y;
-    this.r = def.r; this.hitY = def.hitY ?? def.r;
+    const k = def.boss ? 1 : ENEMY_SCALE;
+    this.r = def.r * k; this.hitY = (def.hitY ?? def.r) * k;
     this.hp = this.maxHp = def.hp * hpMul;
     this.mode = def.ghost ? 'ghost' : def.flying ? 'fly' : 'walk';
     this.isBoss = !!def.boss;
@@ -89,6 +94,15 @@ export class Enemy {
 const spriteCache = new Map<string, SpriteSet>();
 export function getSprites(def: EnemyDef): SpriteSet {
   let s = spriteCache.get(def.id);
-  if (!s) { s = def.sprites(); spriteCache.set(def.id, s); }
+  if (!s) {
+    s = def.sprites();
+    // regular enemies: doubled with detail, then drawn a bit bigger than they were
+    if (!def.boss) {
+      const hd: SpriteSet = {};
+      for (const [k, list] of Object.entries(s)) hd[k] = list.map((sp) => { const n = new Sprite(detailed(sp.art), sp.ox * 2, sp.oy * 2); n.scale = ENEMY_SCALE / 2; return n; });
+      s = hd;
+    }
+    spriteCache.set(def.id, s);
+  }
   return s;
 }

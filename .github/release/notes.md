@@ -1,32 +1,38 @@
-## What's new in 3.4.0: the Tainted, and boss title cards
+## What's new in 3.5.0: the boss pass
 
-### The Tainted
-Earn all five ending marks with a reader and their tainted self unlocks: the same person, inked over,
-their gift turned against them. They have their own page in the Readers gallery (press Q/R or walk off
-the edge of the page) once you've finished the story.
+### Every boss fight, reworked
+- **A tell before every attack.** Bosses gather themselves for a beat before each attack (a squash,
+  a ring on the floor in their colour, a low rumble), so you can read what's coming and move.
+- **They get worse as they get hurt.** At two thirds and one third of their health every boss roars
+  and escalates, unlocking **new bullet patterns** dealt to it alone: spirals, aimed volleys,
+  sweeping crosses, shockwave rings with a gap to slip through, marked rain, walls with one way
+  through, seekers, pincers, ricochet rings and bursting shells. Each boss always gets the same
+  set, in its own shot, so every fight has its own shape.
+- **They press harder.** Bosses move faster between attacks and rest less, more so as they're hurt.
+- **Cornered.** Under 15% health a boss starts pouring smoke and barely pauses between attacks.
 
-| Tainted | Title | Their twist |
-|---|---|---|
-| Marcus | The Smudged | Every shot flies out and comes back, hitting both ways. Shorter range. |
-| Wren | The Runaway | Pebbles fly in pairs and ricochet more. Very fast, wax hearts only. |
-| Edda | The Unravelled | Needles stitch the enemy they hit to two more. One heart, four bronze shields. |
-| Elias | The Forgotten | Shots circle around him through stone. Flies, wax hearts only. |
-| The Blot | The Spill | A full-length ink beam that leaves burning ink. Flies, ink hearts only. |
-| Ozzie | The Broke | Every new room rolls a die: a curse on one, a blessing on six. Starts broke. |
-| Nell | The Burnt Out | Sets enemies alight; anything she kills bursts into flame. |
-| Bram | The Brute | Huge swings that knock enemies flying and break rocks; kills sometimes heal. |
-| Wick | The Swarm | Moths hunt and split in two when they hit. Flies, wax hearts only. |
-| Ada | The Withered | Thorns poison and slow and leave brambles. Wax hearts only. |
+### The Patient (Room 4) is now the hardest fight in the book
+Nine and a half thousand health, four phases, and it doesn't remember who it is. Every few seconds
+it vanishes, comes back somewhere else as **another boss from the book**, flickering with ink and
+fighting with that boss's attacks, while its heart monitor keeps beating rings of shots underneath.
+It forgets faster every phase. In its last quarter it calls a **Code Blue**: walls of shots sweep
+in from both sides on top of everything else.
 
-If you already have all five marks with someone, their tainted self unlocks the next time you start
-the game.
+### Enemies
+- **Bigger and more detailed.** Every regular enemy is drawn about a third bigger, redrawn at twice
+  the resolution with clean curves, light catching its top edge, shadow underneath and texture
+  across its body. Hitboxes grow with them.
+- **Faster.** Enemies move about a third quicker.
+- **Placed, not scattered.** Rooms fill their enemy spots in mirrored pairs, so packs stand in
+  deliberate, symmetric formations.
 
-### Boss title cards
-Every boss fight now opens with a proper title card and **its own music sting**: each boss has a
-motif of its own, so you'll start to know who's behind the door by ear. Ink sweeps in during the
-riser; on the hit the boss is torn out of silhouette with a flash and a shake while its name stamps
-down letter by letter, and its description types itself out. Ending bosses get a red card with choir
-and organ, champions a gold card with a brass fanfare, and your echo a cold, drowned blue one.
+### Other changes
+- **The Tainted are now the Mirrored.** Same unlock (all five marks with a reader), new name.
+- **Nell no longer has the beam.** The Burning Glass was far too strong as a starting item. Her
+  shots are now embers that often set enemies alight (the Pocket Lantern stays). Mirrored Nell
+  burns the same way.
+- **Smaller door symbols.** Special doors now show a small symbol just above the doorway instead
+  of a big plaque beside it.
 
 ## Download and play
 

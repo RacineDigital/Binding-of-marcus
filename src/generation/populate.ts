@@ -166,7 +166,18 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
   let budget = (2.4 + Math.min(room.distance, 6) * 0.55) * (DEPTH_BUDGET[Math.min(DEPTH_BUDGET.length - 1, floor.index)] + 0.15 * Math.max(0, floor.index - DEPTH_BUDGET.length + 1)) * budgetMul * (room.cw * room.ch > 1 ? 1.8 : 1);
   if (floor.index === 0 && room.distance <= 1) budget = Math.min(budget, 2.5);
   const champ = 0.02 + floor.index * 0.012 + (hard ? 0.06 : 0);
-  const order = rng.shuffle(slots.slice());
+  // slots are taken in mirrored pairs (left/right, then top/bottom), so a room's enemies stand in a
+  // deliberate, symmetric formation rather than wherever the dice fell
+  const order: typeof slots = [];
+  const left = rng.shuffle(slots.slice());
+  const mirrorOf = (a: { c: number; r: number; ch: string }) =>
+    left.find((b) => b !== a && b.ch === a.ch && Math.abs(b.c - (room.cols - 1 - a.c)) < 0.6 && Math.abs(b.r - a.r) < 0.6)
+    ?? left.find((b) => b !== a && b.ch === a.ch && Math.abs(b.r - (room.rows - 1 - a.r)) < 0.6 && Math.abs(b.c - a.c) < 0.6);
+  while (left.length) {
+    const a = left.shift()!; order.push(a);
+    const m = mirrorOf(a);
+    if (m) { left.splice(left.indexOf(m), 1); order.push(m); }
+  }
   let placed = 0;
   for (const s of order) {
     if (nearDoor(room, s.c, s.r)) continue;

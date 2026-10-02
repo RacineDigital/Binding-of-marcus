@@ -13,6 +13,9 @@ export class Sprite {
   private flipped: HTMLCanvasElement | null = null;
   private tints = new Map<string, HTMLCanvasElement>();
   private src: PixelArt;
+  /** Drawn at this size (the detailed enemy art is painted at twice the resolution). */
+  scale = 1;
+  get art(): PixelArt { return this.src; }
   constructor(pa: PixelArt, ox?: number, oy?: number) {
     this.src = pa;
     this.canvas = pa.toCanvas();
@@ -40,6 +43,14 @@ export class Sprite {
     return c;
   }
   draw(ctx: CanvasRenderingContext2D, x: number, y: number, o?: DrawOpts): void {
+    if (this.scale !== 1) {
+      ctx.save(); ctx.translate(snap(x), snap(y)); ctx.scale(this.scale, this.scale);
+      this.drawAt(ctx, 0, 0, o);
+      ctx.restore(); return;
+    }
+    this.drawAt(ctx, x, y, o);
+  }
+  private drawAt(ctx: CanvasRenderingContext2D, x: number, y: number, o?: DrawOpts): void {
     const flip = !!o?.flip;
     const img = flip ? this.getFlipped() : this.canvas;
     const ox = flip ? this.w - this.ox : this.ox;

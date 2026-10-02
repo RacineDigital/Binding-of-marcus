@@ -11,6 +11,9 @@ import { BOSSES } from '../bosses/registry';
 export const ENEMY_DEFS: EnemyDef[] = [
   ...CELLAR_ENEMIES, ...BOILER_ENEMIES, ...UNDER_ENEMIES, ...WARD_ENEMIES, ...DEPTHS_ENEMIES, ...CHAPEL_ENEMIES, ...HOLLOW_ENEMIES,
 ];
+// regular enemies move about a third faster than they were first written to
+const ENEMY_PACE = 1.3;
+for (const d of ENEMY_DEFS) if (!d.boss) d.speed *= ENEMY_PACE;
 const byId = new Map<string, EnemyDef>();
 for (const d of [...ENEMY_DEFS, ...BOSSES]) byId.set(d.id, d);
 export function getEnemy(id: string): EnemyDef | undefined { return byId.get(id); }
