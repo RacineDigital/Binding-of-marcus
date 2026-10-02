@@ -425,6 +425,9 @@ export class Player {
     else if (this.flight) body = s.fly[this.bodyDir][Math.floor(w.time * 1.6) % 2];
     else if (moving) body = s.body[this.bodyDir][1 + (walkFrame % (s.body[this.bodyDir].length - 1))];
     else body = s.bodyIdle[this.bodyDir][Math.floor(w.time * 1.6) % 2];
+    // a restrained kick away from the shot, gone in a few frames
+    const kick = this.fireFlash > 0 ? (this.fireFlash / 0.11) * 1.1 : 0;
+    sx -= Math.cos(this.aimAng) * kick; sy -= Math.sin(this.aimAng) * kick * 0.5;
     const by = sy - hover;
     const o = { flip: this.bodyDir === 'side' && this.bodyFlip, alpha, sx: this.squashX, sy: this.squashY, flash: this.hurtT > 0.3 ? (this.hurtT - 0.3) * 4 : 0, tint: this.hurtT > 0 ? '#ff2030' : undefined, tintAmt: this.hurtT > 0 ? this.hurtT * 0.8 : 0 };
     const headAbove = this.headDir === 'up';

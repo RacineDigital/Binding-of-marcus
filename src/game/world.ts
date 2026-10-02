@@ -80,6 +80,8 @@ export class World {
   ambient: { x: number; y: number; vx: number; vy: number; life: number; kind: number }[] = [];
   telegraphs: { x: number; y: number; r: number; t: number; dur: number; color: string }[] = [];
   corpses: { e: Enemy; t: number; dur: number }[] = [];
+  /** Enemies in the blink between dying and bursting (drawn as a white swell). */
+  pops: { e: Enemy; t: number }[] = [];
   tasks: { t: number; fn: () => void; persist: boolean }[] = [];
   /** Run fn after `delay` seconds of game time (paused with the game; dropped on room change unless persist). */
   after(delay: number, fn: () => void, persist = false): void { this.tasks.push({ t: delay, fn, persist }); }
@@ -238,6 +240,8 @@ export class World {
   dmgScale(c: number): number { return this.run.floorIndex >= (this.run.mode === 'hard' ? 3 : 5) && c === 1 ? 2 : c; }
 
   private updateCorpses(dt: number): void {
+    for (const p of this.pops) p.t += dt;
+    if (this.pops.length) this.pops = this.pops.filter((p) => p.t < 0.09);
     for (const c of this.corpses) {
       c.t += dt;
       const e = c.e;
@@ -280,7 +284,17 @@ export class World {
 
   // =============================================================== damage
   damageEnemy(e: Enemy, dmg: number, info: HurtInfo): void {
-    if (e.dead || e.invuln || e.spawnT > 0 || e.friendly) return;
+    if (e.dead || e.spawnT > 0 || e.friendly) return;
+    if (e.invuln) {
+      // a blocked hit says so: a grey clink at the point of contact (not every beam tick)
+      if ((info.source === 'shot' || info.source === 'melee') && this.time - (e.data.blockT ?? -1) > 0.08) {
+        e.data.blockT = this.time;
+        this.fx.sparks(e.x - Math.cos(info.ang) * e.r, e.y - e.hitY, 4, '#c8c8d8', 80);
+        this.fx.ring(e.x - Math.cos(info.ang) * e.r, e.y - e.hitY, 2, 9, '#d0d0e0', 0.14, false);
+        this.audio.play('tink', { vol: 0.4, x: e.x, pitch: 0.8 });
+      }
+      return;
+    }
     let d = dmg;
     if (e.mark > 0) d *= 1.5;
     if (e.champion === 'armored') d *= 0.6;
@@ -297,6 +311,8 @@ export class World {
     }
     if (info.source === 'shot' || info.source === 'melee' || info.source === 'beam') {
       e.sx = 1.15; e.sy = 0.88;
+      // the impact itself: a small bright star where the shot landed
+      if (info.source !== 'beam') this.fx.flash(e.x - Math.cos(info.ang) * e.r * 0.8, e.y - e.hitY - Math.sin(info.ang) * e.r * 0.4, info.crit ? 9 : 5, '#fff4e0', 0.07);
       const gore = e.def.gore ?? '#7a1a2a';
       if (info.source !== 'beam' || Math.random() < 0.3) this.fx.spray(e.x, e.y, e.hitY, info.ang, 1.4, info.crit ? 10 : 4, gore, 70, 0.3, Math.random() < 0.3 ? gore : null);
       this.audio.play('hit', { vol: info.source === 'beam' ? 0.15 : 0.4, x: e.x, pitch: e.isBoss ? 0.8 : 1 });
@@ -333,6 +349,10 @@ export class World {
     const gore = e.def.gore ?? '#7a1a2a';
     if (e.isBoss && !quiet && this.room.type === 'boss') { this.corpses.push({ e, t: 0, dur: 1.3 }); }
     else if (!quiet) {
+      // the death pop: the body flashes white and swells for a blink before it bursts
+      this.pops.push({ e, t: 0 });
+      this.fx.ring(e.x, e.y - e.hitY * 0.6, 3, 10 + e.r * 1.4, '#fff0e0', 0.18, false);
+      if (e.r > 9) this.hitstop(0.025);
       this.fx.burst(e.x, e.y, e.hitY, 8 + Math.floor(e.r), gore, 90, 0.5, 2);
       this.fx.spray(e.x, e.y, e.hitY, 0, TAU, 6, gore, 60, 0.4, e.def.goreDecal ?? gore);
       this.fx.smoke(e.x, e.y - e.hitY * 0.5, 2, 'rgba(40,34,50,', e.r * 0.6, 0.5, 8);

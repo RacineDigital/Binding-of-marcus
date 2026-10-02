@@ -81,6 +81,7 @@ export function renderWorld(w: World): void {
   for (const n of w.npcs) drawables.push({ y: n.y, kind: 4, ref: n });
   for (const f of w.familiars) drawables.push({ y: f.y, kind: 5, ref: f });
   for (const c of w.corpses) drawables.push({ y: c.e.y, kind: 7, ref: c });
+  for (const pp of w.pops) drawables.push({ y: pp.e.y, kind: 8, ref: pp });
   // animated obstacles
   for (let i = 0; i < room.grid.length; i++) {
     const k = room.grid[i];
@@ -96,6 +97,12 @@ export function renderWorld(w: World): void {
       case 4: renderNpc(w, ctx, d.ref as Npc, snap((d.ref as Npc).x - camX), snap((d.ref as Npc).y - camY)); break;
       case 5: renderFamiliar(w, ctx, d.ref as Familiar, snap((d.ref as Familiar).x - camX), snap((d.ref as Familiar).y - camY)); break;
       case 6: drawDynamicObstacle(w, ctx, d.ref as number, camX, camY); break;
+      case 8: {
+        const pp = d.ref as { e: Enemy; t: number }, e = pp.e, k = pp.t / 0.09;
+        const set = e.sprites[e.anim] ?? e.sprites.idle ?? Object.values(e.sprites)[0], spr = set?.[e.frame % (set?.length || 1)];
+        if (spr) spr.draw(ctx, snap(e.x - camX), snap(e.y - e.z - camY), { flip: e.flip, flash: 1, sx: 1 + k * 0.35, sy: 1 + k * 0.2, alpha: 1 - k * 0.6 });
+        break;
+      }
       case 7: {
         const c = d.ref as { e: Enemy; t: number; dur: number };
         const e = c.e; const k = c.t / c.dur;

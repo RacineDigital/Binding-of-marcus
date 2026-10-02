@@ -230,7 +230,12 @@ export class Hud {
   render(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
     // screen flashes & vignette
-    if (w.redFlash > 0) { ctx.fillStyle = `rgba(160,10,20,${(w.redFlash * 0.28).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (w.redFlash > 0) {
+      // hurt: the edges of the screen flush red; the middle, where the fight is, stays clear
+      const rg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.32, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.6);
+      rg.addColorStop(0, 'rgba(160,10,20,0)'); rg.addColorStop(1, `rgba(170,12,24,${Math.min(0.75, w.redFlash * 0.9).toFixed(3)})`);
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    }
     if (w.whiteFlash > 0) { ctx.fillStyle = `rgba(255,250,240,${(w.whiteFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.45, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.62);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)');

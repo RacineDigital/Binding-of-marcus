@@ -3,7 +3,7 @@ import { ramp } from '../render/color';
 import { Sprite } from '../render/sprite';
 
 export const SHOT_COLORS: Record<string, string> = {
-  ink: '#343a9a', needle: '#c8ccd8', fire: '#f07a28', bone: '#e0d6c0', wax: '#eadcb0', spark: '#6ad0ff', page: '#efe8d6',
+  ink: '#4450c8', needle: '#c8ccd8', fire: '#f07a28', bone: '#e0d6c0', wax: '#eadcb0', spark: '#6ad0ff', page: '#efe8d6',
   blood: '#a01e2a', moth: '#a89a8a', star: '#f0d050', void: '#6a3ad0', beer: '#8a5a20',
   // enemy palettes
   bile: '#d23a3a', spore: '#7ab83a', ember: '#f08a2a', dark: '#7a3ab0', water: '#3a9ad0', holy: '#f0e0a0', inkE: '#2a2448',

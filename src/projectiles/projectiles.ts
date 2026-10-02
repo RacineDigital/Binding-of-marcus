@@ -337,8 +337,12 @@ export class Projectiles {
       const rw = Math.max(1, Math.round(p.r * 0.8));
       ctx.fillRect(sx - rw, sy, rw * 2, 1 + (p.r > 5 ? 1 : 0));
     }
-    for (const p of this.list) {
-      if (!p.active) continue;
+    // player shots first, enemy shots last and on top: what can hurt you is never hidden
+    let mine = 0;
+    for (const p of this.list) if (p.active && p.team === Team.Player) mine++;
+    const busy = mine > 40;
+    for (const pass of [Team.Player, Team.Enemy]) for (const p of this.list) {
+      if (!p.active || (p.team === Team.Enemy) !== (pass === Team.Enemy)) continue;
       const sx = p.x - camX, sy = p.y - p.z - camY;
       const glowC = GLOW_SHAPES.has(p.shape);
       if (p.shape === 'needle') {
@@ -349,19 +353,33 @@ export class Projectiles {
         ctx.beginPath(); ctx.moveTo(sx - Math.cos(a) * L, sy - Math.sin(a) * L); ctx.lineTo(sx + Math.cos(a) * L * 0.5, sy + Math.sin(a) * L * 0.5); ctx.stroke();
         continue;
       }
-      // motion trail for fast shots
       const spr = shotSprite(p.shape, p.r, p.tint);
-      if (p.team === Team.Player && p.spd > 250 && p.delay <= 0) {
-        ctx.globalAlpha = 0.25;
-        spr.draw(ctx, sx - p.vx * 0.022, sy - p.vy * 0.022);
+      if (p.team === Team.Player) {
+        // a short smear behind every one of your shots, so they read as moving ink on any floor
+        if (p.delay <= 0 && p.spd > 60) {
+          ctx.globalAlpha = busy ? 0.12 : 0.22;
+          spr.draw(ctx, sx - p.vx * 0.03, sy - p.vy * 0.03);
+          if (p.spd > 250) spr.draw(ctx, sx - p.vx * 0.016, sy - p.vy * 0.016);
+        }
+        ctx.globalAlpha = busy ? 0.8 : 1;
+        if (p.delay > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(p.t * 30);
+        spr.draw(ctx, sx, sy);
         ctx.globalAlpha = 1;
+        // a pale rim light so dark ink still reads against dark floors
+        if (!busy) w.r.addGlow(sx, sy, p.r * 2.2, '#a8b0ff', 0.12);
+      } else {
+        // enemy shots: a dark ring around a pulsing light rim, the same on every floor
+        const pulse = 0.5 + 0.5 * Math.sin(p.t * 14 + p.x * 0.05);
+        if (p.delay > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(p.t * 30);
+        ctx.fillStyle = 'rgba(8,4,10,0.6)'; ctx.beginPath(); ctx.arc(sx, sy, p.r + 1.6, 0, TAU); ctx.fill();
+        spr.draw(ctx, sx, sy);
+        ctx.strokeStyle = `rgba(255,236,220,${(0.35 + pulse * 0.4).toFixed(2)})`; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.arc(sx, sy, p.r + 0.6, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = 1;
+        w.r.addLight(sx, sy, 14 + p.r * 2, 0.35);
       }
-      if (p.delay > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(p.t * 30);
-      spr.draw(ctx, sx, sy);
-      ctx.globalAlpha = 1;
       if (p.crit) w.r.addGlow(sx, sy, p.r * 3, 'rgba(255,220,120,1)', 0.5);
       if (glowC) w.r.addGlow(sx, sy, p.r * 3.5, SHOT_COLORS[p.shape], 0.35);
-      if (p.team === Team.Enemy) w.r.addLight(sx, sy, 14 + p.r * 2, 0.35);
     }
   }
 }
