@@ -1,12 +1,49 @@
-## What's new in 3.2.3
+## What's new in 3.3.0: the chapter soundtrack
 
-- **Fixed: the main menu showing through the pause menu.** After you continued a saved run, the
-  main menu stayed behind the scenes and was drawn right over the pause screen. Continuing now
-  clears it, the same way starting a new run does.
-- **Esc no longer knocks you out of fullscreen.** Options → Fullscreen now uses the window's own
-  fullscreen (the same as F11), so Esc just pauses. The game also remembers fullscreen and opens
-  that way next time. In the browser version, a quick tap of Esc pauses; hold Esc to leave
-  fullscreen.
+Every chapter now has its own recorded theme: 30 new tracks of melodic electronic rock, one for each
+chapter, alternate chapter, hidden route and Home. Alternate chapters (the Root Cellar, the Morgue,
+the Belfry and the rest) no longer borrow another chapter's music.
+
+- While you explore, the track plays softer and muffled, as if from the next room; when a fight
+  starts it opens up to the full mix, and settles back down after the room is clear.
+- Each track loops seamlessly, and the next chapter's theme is loaded before you reach it.
+- Boss fights keep their own boss music.
+- In the browser version opened straight from disk, browsers don't allow the page to load the
+  music files, so it plays the previous synthesized music instead. The Windows app and hosted
+  web version play the new soundtrack.
+
+| Chapter | Track |
+|---|---|
+| The Cellar | Under the Floorboards |
+| The Boiler Rooms | Pressure Vessel |
+| The Underworks | Downstream |
+| The Forgotten Ward | Empty Beds |
+| The Depths | Weight of Stone |
+| The Chapel | Wax and Ash |
+| The Hollow | A Tear in the Page |
+| The Binding | Thread Through the Spine |
+| The Root Cellar | Roots in the Dark |
+| The Coal Chute | Black Lung |
+| The Flooded Drains | Below the Waterline |
+| The Morgue | Cold Drawers |
+| The Catacombs | Bone Shelves |
+| The Belfry | The Last Toll |
+| The Inkwell | Blue Black |
+| The Attic | Things We Kept |
+| The Greenhouse | Glass and Thorns |
+| The Print Shop | Red Type |
+| The Frozen Cistern | Ice Holds Its Breath |
+| The Clocktower | Four Minutes Past Four |
+| The Library Stacks | Between the Spines |
+| The Margins | What Was Crossed Out |
+| The Last Page | No More Words |
+| The Dedication | For My Grandson |
+| The Foreword | Before the First Word |
+| The Waiting Room | Visiting Hours |
+| The Night Ward | Footsteps After Eight |
+| Intensive Care | Borrowed Breath |
+| Room 4 | The Good Chair |
+| Home | Morning Through the Window |
 
 ## Download and play
 

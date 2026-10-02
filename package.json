@@ -1,7 +1,7 @@
 {
   "name": "lost-marcus",
   "private": true,
-  "version": "3.2.3",
+  "version": "3.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -55,7 +55,8 @@
         "from": "dist-single",
         "to": "game",
         "filter": [
-          "index.html"
+          "index.html",
+          "music/**"
         ]
       }
     ],

@@ -11,6 +11,8 @@ npm run build:single
 rm -rf release
 mkdir -p "release/Lost-Marcus"
 cp dist-single/index.html "release/Lost-Marcus/Lost Marcus.html"
+# the chapter soundtrack sits next to the page (the page falls back to synth music without it)
+if [ -d dist-single/music ]; then cp -r dist-single/music "release/Lost-Marcus/music"; fi
 cp .github/release/PLAY.txt "release/Lost-Marcus/PLAY.txt"
 
 # 1. Zip with the standalone game + instructions (the main download)

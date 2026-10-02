@@ -270,6 +270,20 @@ console.log('content:', JSON.stringify(counts));
   const fs = await import('fs');
   ok(JSON.parse(fs.readFileSync('package.json', 'utf8')).version === GAME_VERSION, 'GAME_VERSION matches package.json');
 }
+// every chapter plays its own recorded theme, and every recording belongs to a chapter
+{
+  const F = await import('../src/data/floors');
+  const { RECORDINGS } = await import('../src/audio/recorded');
+  const { themeMusic } = await import('../src/game/roomflow');
+  const fs = await import('fs');
+  const themes = [...F.FLOORS, ...Object.values(F.ALT_FLOORS), ...F.NEW_FLOORS, F.MARGINS_THEME, F.LASTPAGE_THEME, F.DEDICATION_THEME, F.FOREWORD_THEME, ...F.HOSPITAL_FLOORS, F.ROOM4_THEME, F.HOME_THEME];
+  const ids = new Set(themes.map((t) => t.id));
+  for (const t of themes) ok(themeMusic(t) === 'rec_' + t.id, `${t.id} plays its own recording`);
+  for (const r of RECORDINGS) ok(ids.has(r.id), `recording ${r.id} belongs to a chapter`);
+  const files = fs.readdirSync('assets/music/audio').filter((f) => f.endsWith('.ogg')).map((f) => f.replace(/^\d+[-_ ]?/, '').replace(/\.ogg$/, ''));
+  for (const r of RECORDINGS) ok(files.includes(r.id), `recording ${r.id} has its file`);
+  ok(new Set(themes.map((t) => themeMusic(t))).size === themes.length, 'no two chapters share a theme');
+}
 // the ending bosses each have their own theme
 {
   const { bossMusic } = await import('../src/game/roomflow');

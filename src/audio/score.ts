@@ -64,8 +64,6 @@ export interface PercPart extends PartBase {
 }
 export type Part = DrumPart | GuitarPart | BassPart | ArpPart | PadPart | LeadPart | StaccPart | PercPart;
 
-import type { ChapterTrack } from './chapterdata';
-
 export interface Song {
   title: string; genre: string;
   bpm: number; key: number; scale: ScaleName; bars: number;
@@ -78,8 +76,6 @@ export interface Song {
   swing?: number;
   reverb: { seconds: number; damp: number; mix: number };
   parts: Part[];
-  /** A chapter theme played from note data instead of patterns (bars/chords/parts unused). */
-  chapter?: ChapterTrack;
   /** Calm-only or combat-only tracks. */
   only?: 'calm' | 'combat';
 }

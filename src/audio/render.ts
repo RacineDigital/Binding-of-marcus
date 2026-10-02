@@ -4,7 +4,6 @@
 import { Song, Part, SCALES, Layer, GuitarPart } from './score';
 import * as I from './inst';
 import * as SV from './synthvoices';
-import { chapterNotes, ChapterNote } from './chapters';
 
 const SR = I.SR;
 const yieldFrame = () => new Promise<void>((r) => setTimeout(r, 0));
@@ -213,117 +212,12 @@ function parseMelody(song: Song, src: string, base: number): { step: number; mid
   return out;
 }
 
-// --------------------------------------------------------------------------- chapter themes (note data)
-/**
- * A chapter theme from its notes. Calm (exploring): strings, the chip melody, music-box bells, bass
- * and light hand percussion. Combat adds the kit and a rhythm guitar that chugs with the kick and
- * rings a power chord on every chord change.
- */
-async function renderChapter(c: Ctx, layer: 'calm' | 'combat'): Promise<void> {
-  const t = c.song.chapter!, sec = 60 / t.bpm, fight = layer === 'combat';
-  const at = (beat: number) => beat * sec;
-  const vel = (v: number) => 0.45 + 0.55 * (v / 127);
-  // lengths on a 1/32-beat grid so repeated notes share one rendered sample
-  const qd = (beats: number) => Math.max(1, Math.round(beats * 32)) / 32 * sec;
-  let n = 0;
-  const tick = async () => { if (++n % 60 === 0) await yieldFrame(); };
-
-  // harmony: chords (notes struck together) as wide string pads
-  const harm = chapterNotes(t, 'harmony');
-  const chords: { beat: number; len: number; notes: number[]; vel: number }[] = [];
-  for (const h of harm) {
-    const last = chords[chords.length - 1];
-    if (last && Math.abs(last.beat - h.beat) < 0.05) { last.notes.push(h.midi); last.len = Math.max(last.len, h.len); }
-    else chords.push({ beat: h.beat, len: h.len, notes: [h.midi], vel: h.vel });
-  }
-  const padOut = panned(c, c.buses.synth, 0, 0.45);
-  for (const ch of chords) {
-    const notes = [...ch.notes].sort((a, b) => a - b);
-    voicePad(c, 'strings', notes, at(ch.beat), Math.max(0.3, qd(ch.len) - 0.04), (fight ? 0.26 : 0.36) * vel(ch.vel), padOut);
-    if (!fight) voicePad(c, 'warm', notes.slice(0, 3), at(ch.beat), Math.max(0.3, qd(ch.len) - 0.04), 0.16 * vel(ch.vel), padOut);
-    await tick();
-  }
-  const chordAt = (beat: number) => {
-    let lo = 0, hi = chords.length - 1, best = -1;
-    while (lo <= hi) { const m = (lo + hi) >> 1; if (chords[m].beat <= beat + 0.02) { best = m; lo = m + 1; } else hi = m - 1; }
-    return best >= 0 ? chords[best] : null;
-  };
-  // the guitar root: the chord's lowest note, brought into the low E..E range
-  const gRoot = (ch: { notes: number[] }) => { let m = Math.min(...ch.notes); while (m > 52) m -= 12; while (m < 40) m += 12; return m; };
-
-  // lead: the chip melody, gliding between close notes
-  const leadOut = panned(c, c.buses.synth, 0.08, 0.28);
-  let prev: number | null = null, prevEnd = -1;
-  for (const l of chapterNotes(t, 'lead')) {
-    const glide = prev !== null && l.beat - prevEnd < 0.1 && Math.abs(prev - l.midi) <= 5 ? prev : null;
-    play(c, SV.chip(l.midi, qd(l.len), glide), at(l.beat), (fight ? 0.52 : 0.44) * vel(l.vel) * 0.6, leadOut);
-    prev = l.midi; prevEnd = l.beat + l.len;
-    await tick();
-  }
-  // detail: music-box bells, off to one side
-  const detOut = panned(c, c.buses.synth, -0.3, 0.4);
-  for (const d of chapterNotes(t, 'detail')) {
-    play(c, SV.bell(d.midi, Math.max(0.8, qd(d.len) * 1.4)), at(d.beat), (fight ? 0.22 : 0.3) * vel(d.vel) * 0.7, detOut);
-    await tick();
-  }
-  // bass
-  const bassOut = panned(c, c.buses.bass, 0, 0);
-  for (const b of chapterNotes(t, 'bass')) {
-    const dur = qd(b.len);
-    play(c, I.bassNote(b.midi, Math.min(2, dur + 0.05), fight ? 0.5 : 0.25), at(b.beat), (fight ? 0.62 : 0.42) * vel(b.vel), bassOut, { dur: dur + 0.02 });
-    await tick();
-  }
-  // drums: General MIDI kit. Calm keeps only the hand percussion and a soft hat for pulse.
-  const drums = chapterNotes(t, 'drums');
-  const kk = I.kick('metal'), sn = I.snare('rock'), gh = I.snare('rock', true);
-  const kicks: number[] = [];
-  for (const d of drums) {
-    const tt = at(d.beat), v = vel(d.vel), out = c.buses.drums;
-    switch (d.midi) {
-      case 36: case 35: if (fight) { play(c, kk, tt, 0.9 * v, out); kicks.push(d.beat); } break;
-      case 38: case 40: if (fight) play(c, sn, tt, 0.82 * v, out, { send: 0.12 }); break;
-      case 37: play(c, gh, tt, (fight ? 0.5 : 0.3) * v, out, { send: 0.05 }); break;
-      case 42: case 44: play(c, I.cymbal('hat'), tt, (fight ? 0.42 : 0.16) * v, out, { pan: 0.3 }); break;
-      case 46: if (fight) play(c, I.cymbal('open'), tt, 0.42 * v, out, { pan: 0.3, send: 0.05 }); break;
-      case 51: case 59: play(c, I.cymbal('ride'), tt, (fight ? 0.42 : 0.18) * v, out, { pan: 0.4, send: 0.05 }); break;
-      case 49: case 57: if (fight) play(c, I.cymbal('crash'), tt, 0.55 * v, out, { pan: -0.35, send: 0.15 }); break;
-      case 41: case 43: case 45: case 47: case 48: case 50:
-        if (fight) play(c, I.tom(d.midi <= 43 ? 38 : d.midi <= 47 ? 45 : 50), tt, 0.75 * v, out, { pan: d.midi <= 43 ? -0.3 : d.midi <= 47 ? 0 : 0.3, send: 0.12 }); break;
-      case 56: play(c, I.clang('anvil', 84), tt, (fight ? 0.22 : 0.16) * v, out, { pan: -0.2, send: 0.1 }); break;
-      case 70: play(c, I.cymbal('hat'), tt, (fight ? 0.18 : 0.12) * v, out, { pan: -0.45 }); break;
-      case 75: case 76: case 77: play(c, I.clang('pipe', d.midi === 77 ? 79 : 86), tt, (fight ? 0.2 : 0.18) * v, out, { pan: 0.25, send: 0.08 }); break;
-    }
-    await tick();
-  }
-  // rhythm guitar (combat): a ringing power chord on each chord change, palm-muted chugs on the kicks
-  if (fight && drums.length && chords.length) {
-    let k = 0;
-    for (const ch of chords) {
-      const dur = Math.min(2.2, qd(ch.len));
-      for (const take of [0, 1]) {
-        const d = I.realGuitar(gRoot(ch), { dur: dur + 0.1, take, rr: k % 4, vel: 1, voicing: 'power' });
-        play(c, d, at(ch.beat) + take * 0.006, 0.3, take ? c.buses.gtrR : c.buses.gtrL, { dur });
-      }
-      k++; await tick();
-    }
-    for (const kb of kicks) {
-      const ch = chordAt(kb); if (!ch || Math.abs(ch.beat - kb) < 0.05) continue;
-      for (const take of [0, 1]) {
-        const h = hash(kb * 7, take), rr = Math.floor(h * 4);
-        const d = I.realGuitar(gRoot(ch), { mute: true, dur: 0.24, take, rr, vel: h > 0.5 ? 1 : 0.88 });
-        play(c, d, Math.max(0, at(kb) + take * 0.005 + (hash(kb, take + 3) - 0.5) * 0.006), 0.32, take ? c.buses.gtrR : c.buses.gtrL, { dur: 0.22 });
-      }
-      await tick();
-    }
-  }
-}
-
 // --------------------------------------------------------------------------- song renderer
 async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): Promise<AudioBuffer> {
   const tStart = performance.now();
   const spb = 60 / song.bpm / 4;
   const tm = tempoMap(song);
-  const loop = song.chapter ? song.chapter.beats * 60 / song.bpm : tm.barT[song.bars];
+  const loop = tm.barT[song.bars];
   const oc = new OfflineAudioContext(2, Math.ceil((loop + tail) * SR), SR);
   // master chain: glue compressor -> limiter
   const master = oc.createGain(); master.gain.value = 0.9;
@@ -376,7 +270,6 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
   const bass = oc.createGain(); const bhp = oc.createBiquadFilter(); bhp.type = 'highpass'; bhp.frequency.value = 32; bass.connect(bhp); bhp.connect(masterIn);
   const c: Ctx = { oc, song, spb, barT: tm.barT, barSpb: tm.barSpb, buses: { gtrL: cab(-0.75), gtrR: cab(0.75), leadL: cab(-0.25, 0.32), leadR: cab(0.25, 0.32), drums, synth, bass, rev: rvIn }, bufs: new Map() };
 
-  if (song.chapter) await renderChapter(c, layer);
   const total = song.bars * 16;
   const parts = song.parts.filter((p) => active(p, layer));
   // guitars first so drums / bass can follow them

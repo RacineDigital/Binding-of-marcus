@@ -27,17 +27,11 @@ import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 import { charById } from '../player/characters';
-import { CHAPTER_SONGS, chapterMusic } from '../audio/chapters';
+import { chapterTrack } from '../audio/music';
 
-/**
- * Off until the recorded soundtrack lands: synthesizing these long themes from their notes takes too
- * long to start a chapter on time. With it on, each chapter plays its own theme (by chapter id, so
- * alternates never share one).
- */
-const CHAPTER_THEMES = false;
+/** Each chapter's own recorded theme (by chapter id, so alternates never share one); its old track where it can't load. */
 export function themeMusic(t: { id: string; music: string }): string {
-  const k = chapterMusic(t.id);
-  return CHAPTER_THEMES && CHAPTER_SONGS[k] ? k : t.music;
+  return chapterTrack(t.id, t.music);
 }
 
 // ------------------------------------------------------------------ floors
