@@ -38,7 +38,8 @@ export class Music {
   }
   private loadRec(name: string): Promise<AudioBuffer> {
     let p = this.recs.get(name);
-    if (!p) {
+    if (p) { this.recs.delete(name); this.recs.set(name, p); }   // most recently used goes to the back
+    else {
       const url = new URL('music/' + name.slice(4) + '.ogg', document.baseURI).href;
       // XHR rather than fetch: the desktop app runs from disk, and fetch can't read file:// URLs
       p = new Promise<ArrayBuffer>((ok, fail) => {
@@ -49,8 +50,9 @@ export class Music {
       }).then((b) => this.ctx.decodeAudioData(b));
       p.catch(() => this.recs.delete(name));
       this.recs.set(name, p);
-      // keep memory down: a decoded track is ~30 MB, so hold on to the newest three only
-      while (this.recs.size > 3) this.recs.delete(this.recs.keys().next().value!);
+      // keep memory down: a decoded track is ~60 MB of samples, so hold on to the two most recently used
+      // (a track already playing keeps its own buffer even if it falls out of here)
+      while (this.recs.size > 2) this.recs.delete(this.recs.keys().next().value!);
     }
     return p;
   }

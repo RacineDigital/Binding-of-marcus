@@ -31,6 +31,7 @@ import type { Sprite } from '../render/sprite';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { drawPaper, wornFrame } from './paper';
 import { isFullscreen, setFullscreen } from '../core/fullscreen';
+import { doorSymbol } from '../art/roomicons';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -87,6 +88,31 @@ function hint(ctx: CanvasRenderingContext2D, s: string): void {
   ctx.strokeStyle = 'rgba(201,164,106,0.35)'; ctx.lineWidth = 0.5; ctx.stroke();
   ctx.restore();
   text(ctx, s, VIEW_W / 2, y + 7.4, 6.5, 'rgba(230,215,195,0.85)', 'center', FONT_BODY, 600, false);
+}
+/** An open book: a worn leather cover, two foxed pages and a sewn spine. The in-game menus are pages of it. */
+function book(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, seed: number): void {
+  const hw = Math.round(w / 2);
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(x - 3, y + 4, w + 12, h + 6);
+  ctx.fillStyle = '#3a1c16'; ctx.fillRect(x - 6, y - 4, w + 12, h + 8);
+  ctx.fillStyle = '#4e261c'; ctx.fillRect(x - 6, y - 4, w + 12, 2); ctx.fillStyle = '#24100c'; ctx.fillRect(x - 6, y + h + 2, w + 12, 2);
+  for (const [cx, cy] of [[x - 6, y - 4], [x + w + 2, y - 4], [x - 6, y + h], [x + w + 2, y + h]]) { ctx.fillStyle = '#8a6a3a'; ctx.fillRect(cx, cy, 4, 4); }
+  ctx.restore();
+  drawPaper(ctx, x, y, hw, h, seed, PAPER); wornFrame(ctx, x, y, hw, h, seed);
+  drawPaper(ctx, x + hw, y, w - hw, h, seed + 7, PAPER); wornFrame(ctx, x + hw, y, w - hw, h, seed + 7);
+  // the gutter: pages curve down into the spine, held by the binder's thread
+  const gr = ctx.createLinearGradient(x + hw - 18, 0, x + hw + 18, 0);
+  gr.addColorStop(0, 'rgba(60,36,20,0)'); gr.addColorStop(0.45, 'rgba(60,36,20,0.32)'); gr.addColorStop(0.5, 'rgba(30,16,8,0.5)'); gr.addColorStop(0.55, 'rgba(60,36,20,0.32)'); gr.addColorStop(1, 'rgba(60,36,20,0)');
+  ctx.fillStyle = gr; ctx.fillRect(x + hw - 18, y, 36, h);
+  ctx.fillStyle = 'rgba(150,40,40,0.65)';
+  for (let sy = y + 14; sy < y + h - 10; sy += 22) ctx.fillRect(x + hw - 0.5, sy, 1, 7);
+}
+/** A ledger line: label on the left, value on the right, a dotted leader between. */
+function ledgerRow(ctx: CanvasRenderingContext2D, k: string, v: string, x0: number, x1: number, y: number): void {
+  text(ctx, k, x0, y, 7.5, INK2, 'left', FONT_BODY, 600, false);
+  text(ctx, v, x1, y, 7.5, INK, 'right', FONT_BODY, 700, false);
+  const a = x0 + measure(ctx, k, 7.5) + 4, b = x1 - measure(ctx, v, 7.5, FONT_BODY, 700) - 4;
+  ctx.fillStyle = 'rgba(90,60,40,0.4)'; for (let x = a; x < b; x += 3) ctx.fillRect(x, y - 0.5, 1, 0.6);
 }
 function fmtTime(sec: number): string { const m = Math.floor(sec / 60), s = Math.floor(sec % 60); return `${m}:${String(s).padStart(2, '0')}`; }
 
@@ -693,7 +719,7 @@ export class MenuSystem {
       { label: 'Show FPS', value: () => (st().showFps ? 'On' : 'Off'), ok: () => { st().showFps = !st().showFps; g.save.markDirty(); } },
       { label: 'Diagonal keyboard aiming', value: () => (st().diagonalAim ? 'On' : 'Off'), ok: () => { st().diagonalAim = !st().diagonalAim; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fire button-drop chance', value: () => pct(st().fireDropChance), left: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance - 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); }, right: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance + 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); } },
-      { label: 'Controls', value: () => '', ok: () => self.push(self.controlsScreen(overlay)) },
+      { label: 'Help & controls', value: () => '', ok: () => self.push(self.helpScreen(overlay)) },
     ];
     if (!overlay) opts.push({ label: 'Save slots', value: () => `Slot ${g.save.slot}`, ok: () => self.push(profilesScreen(self)) }, { label: 'Credits', value: () => '', ok: () => self.push(self.creditsScreen()) });
     if (!overlay) opts.push({ label: 'Erase all progress', value: () => '', ok: () => self.push(self.confirmScreen('Erase every unlock, statistic and saved run?', () => { g.save.reset(); self.openMain(); })) });
@@ -843,8 +869,16 @@ export class MenuSystem {
   // ------------------------------------------------------------ pause
   private pauseMenu(): Screen {
     const self = this, g = this.g;
-    const items = ['Resume', 'Options', 'Restart (same character)', 'Save & quit to menu'];
+    const items = ['Resume', 'Help & controls', 'Options', 'Restart (same reader)', 'Save & quit to menu'];
     let sel = 0;
+    const choose = () => {
+      if (sel === 0) { g.paused = false; return; }
+      if (sel === 1) { self.push(self.helpScreen(true)); return; }
+      if (sel === 2) { self.push(self.optionsScreen(true)); return; }
+      if (sel === 3) { const c = g.world!.run.charId, ch = g.world!.run.challenge; g.paused = false; g.fadeTo(() => g.newRun(c, undefined, ch), 0.4); return; }
+      if (sel === 4) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => g.quitToMenu(), 0.4); }
+    };
+    const BX = 36, BY = 18, BW = 408, BH = 236, L = BX + 22, R = BX + BW / 2 + 18;
     const scr: Screen = {
       t: 0,
       update(keys) {
@@ -852,107 +886,148 @@ export class MenuSystem {
         for (const k of keys) {
           if (k === 'back') { g.paused = false; g.audio.duck(1, 0.01); return; }
           if (k === 'up' || k === 'down') { sel = (sel + (k === 'up' ? -1 : 1) + items.length) % items.length; self.sfxMove(); }
-          if (k === 'confirm') {
-            if (sel === 0) { g.paused = false; return; }
-            if (sel === 1) { self.push(self.optionsScreen(true)); return; }
-            if (sel === 2) { const c = g.world!.run.charId, ch = g.world!.run.challenge; g.paused = false; g.fadeTo(() => g.newRun(c, undefined, ch), 0.4); return; }
-            if (sel === 3) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => g.quitToMenu(), 0.4); return; }
-          }
+          if (k === 'confirm') { choose(); return; }
         }
+      },
+      pointer(x, y, click, moved) {
+        if (self.stack.length) return;
+        items.forEach((_, i) => { const iy = 82 + i * 19; if (x > L - 6 && x < L + 160 && y > iy - 11 && y < iy + 5) { if (moved && sel !== i) { sel = i; self.sfxMove(); } if (click) { sel = i; choose(); } } });
       },
       render(ctx) {
         const w = g.world; if (!w) return;
-        // a deep, vignetted backdrop so the room (and any title card) falls away
-        ctx.fillStyle = 'rgba(4,2,6,0.84)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        const vg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, 60, VIEW_W / 2, VIEW_H / 2, 300);
-        vg.addColorStop(0, 'rgba(60,30,20,0.12)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
-        ctx.fillStyle = vg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        heading(ctx, 'Paused', 48, 46, 17, '#efe2c8', 'left');
-        ctx.fillStyle = 'rgba(201,164,106,0.45)'; ctx.fillRect(48, 53, 150, 0.6);
+        ctx.fillStyle = 'rgba(4,2,6,0.78)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        book(ctx, BX, BY, BW, BH, 21);
+        // the left page: where you are, and what to do
+        heading(ctx, 'Paused', L, 48, 15, INK, 'left', false);
+        text(ctx, `${w.floor.label}`, L, 60, 7.5, INK2, 'left', FONT_BODY, 600, false);
+        ctx.fillStyle = 'rgba(90,60,40,0.35)'; ctx.fillRect(L, 65, 160, 0.6);
         items.forEach((it, i) => {
-          const y = 76 + i * 18;
-          if (i === sel) inkBlot(ctx, 108, y - 3.5, 160, 16, self.time);
-          text(ctx, it, 48 + (i === sel ? 4 : 0), y, i === sel ? 11 : 9.5, i === sel ? '#fff4dc' : '#b8a890', 'left', FONT_TITLE, 400);
+          const y = 82 + i * 19;
+          if (i === sel) inkBlot(ctx, L + 72, y - 3.5, 168, 15, self.time, 'rgba(40,30,60,0.17)');
+          text(ctx, it, L + (i === sel ? 4 : 0), y, i === sel ? 10.5 : 9.5, i === sel ? INK : INK2, 'left', FONT_TITLE, 400, false);
         });
-        // your controls, as currently bound
-        const cx0 = 44, cy0 = 160;
-        panel(ctx, cx0, cy0, 176, 92, 0.9);
-        text(ctx, 'CONTROLS', cx0 + 8, cy0 + 11, 6.5, '#c9a46a', 'left', FONT_BODY, 600, false);
-        const b = g.save.data.settings.bindings;
-        const one = (a: Action) => [bindLabel(a)];
-        const rows: [string, string[]][] = [
-          ['Move', g.input.usingPad ? ['L-stick'] : [b.moveUp, b.moveLeft, b.moveDown, b.moveRight].map((c) => keyLabel(c[0] ?? ''))],
-          ['Fire', g.input.usingPad ? ['R-stick'] : [b.shootUp, b.shootLeft, b.shootDown, b.shootRight].map((c) => keyLabel(c[0] ?? ''))],
-          ['Bomb', one('bomb')], ['Active item', one('active')], ['Page / sweet', one('consumable')],
-          ['Swap', one('swap')], ['Drop charm (hold)', one('drop')], ['Map & item info (hold)', one('map')],
-        ];
-        rows.forEach(([label, caps], i) => {
-          const col = i < 4 ? 0 : 1, row = i % 4;
-          const x = cx0 + 8 + col * 86, y = cy0 + 29 + row * 16;
-          text(ctx, label, x, y, 6.5, COL.dim, 'left', FONT_BODY, 600, false);
-          keycaps(ctx, caps, x + 79, y + 1);
-        });
-        // run info
+        text(ctx, `Seed  ${formatSeed(w.run.seed)}`, L, BY + BH - 20, 7, INK2, 'left', FONT_BODY, 600, false);
+        // the right page: the ledger of this run
         const r = w.run;
-        const x0 = 246;
-        panel(ctx, x0 - 10, 30, 214, 222, 0.75);
-        text(ctx, w.floor.label, x0, 48, 10, '#e6d6bc', 'left', FONT_TITLE, 400);
-        text(ctx, `Seed  ${formatSeed(r.seed)}`, x0, 62, 9, COL.gold, 'left', FONT_BODY, 600);
+        heading(ctx, 'This run', R, 48, 11, INK, 'left', false);
         const st: [string, string][] = [['Time', fmtTime(r.stats.time)], ['Enemies defeated', String(r.stats.kills)], ['Rooms cleared', String(r.stats.roomsCleared)], ['Secrets found', String(r.stats.secretsFound)], ['Damage taken', `${r.stats.damageTaken / 2} hearts`]];
-        st.forEach(([k, v], i) => {
-          const y = 80 + i * 12;
-          if (i % 2 === 0) { ctx.fillStyle = 'rgba(255,240,220,0.035)'; ctx.fillRect(x0 - 4, y - 8, 194, 11); }
-          text(ctx, k, x0, y, 7.5, COL.dim); text(ctx, v, x0 + 186, y, 7.5, COL.text, 'right');
-        });
-        text(ctx, 'Curios', x0, 152, 8, COL.dim);
+        st.forEach(([k, v], i) => ledgerRow(ctx, k, v, R, R + 168, 66 + i * 12));
+        text(ctx, 'Curios', R, 136, 8, INK2, 'left', FONT_TITLE, 400, false);
         const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
-        if (!ids.length) text(ctx, 'Nothing yet.', x0, 166, 7, 'rgba(168,156,140,0.6)');
-        ids.forEach((id, i) => ctx.drawImage(itemIconCanvas(id), x0 + (i % 10) * 18, 156 + Math.floor(i / 10) * 18));
-        if (w.player.transformations.size) text(ctx, [...w.player.transformations].map((t) => t[0].toUpperCase() + t.slice(1)).join(' · '), x0, 246, 7, '#c8a0ff');
+        if (!ids.length) text(ctx, 'Nothing yet.', R, 150, 7, 'rgba(90,70,54,0.7)', 'left', FONT_BODY, 600, false);
+        ids.slice(0, 36).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), R + (i % 9) * 19, 141 + Math.floor(i / 9) * 19));
+        if (ids.length > 36) text(ctx, `+${ids.length - 36} more`, R + 168, 226, 6.5, INK2, 'right', FONT_BODY, 600, false);
+        if (w.player.transformations.size) text(ctx, [...w.player.transformations].map((t) => TRANSFORM_EFFECTS[t]?.name ?? t).join(' · '), R, BY + BH - 20, 7, '#5a2a7a', 'left', FONT_BODY, 700, false);
         hint(ctx, `${bindLabel('pause')} to resume`);
       },
     };
     return scr;
   }
 
+  /** Help: the controls as you have them bound, and how to read the house. Opened from the pause menu, the title and Options. */
+  helpScreen(overlay: boolean): Screen {
+    const self = this, g = this.g;
+    const BX = 36, BY = 14, BW = 408, BH = 244, L = BX + 20, R = BX + BW / 2 + 16;
+    return {
+      t: 0, overlay,
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back') { self.pop(); return; }
+          if (k === 'confirm') { self.push(self.controlsScreen(overlay)); return; }
+        }
+      },
+      pointer(_x, _y, click) { if (click) self.push(self.controlsScreen(overlay)); },
+      render(ctx) {
+        ctx.fillStyle = overlay ? 'rgba(4,2,6,0.6)' : 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        book(ctx, BX, BY, BW, BH, 33);
+        heading(ctx, 'Controls', L, 40, 11, INK, 'left', false);
+        const pad = g.input.usingPad, b = g.save.data.settings.bindings, one = (a: Action) => [bindLabel(a)];
+        const rows: [string, string[]][] = pad
+          ? [['Move', ['L-stick']], ['Fire', ['R-stick', 'A B X Y']], ['Active item', ['RB']], ['Bomb', ['LB']], ['Page / sweet', ['LT']], ['Pause', ['Start']]]
+          : [
+            ['Move', [b.moveUp, b.moveLeft, b.moveDown, b.moveRight].map((c) => keyLabel(c[0] ?? ''))],
+            ['Fire', [b.shootUp, b.shootLeft, b.shootDown, b.shootRight].map((c) => keyLabel(c[0] ?? ''))],
+            ['Steady (slow, precise)', one('focus')], ['Cherry bomb', one('bomb')], ['Active item / interact', one('active')],
+            ['Page / sweet', one('consumable')], ['Swap pocket item', one('swap')], ['Drop charm (hold)', one('drop')],
+            ['Map & item info (hold)', one('map')], ['Pause', one('pause')],
+          ];
+        rows.forEach(([label, caps], i) => { const y = 58 + i * 16; text(ctx, label, L, y, 7.5, INK2, 'left', FONT_BODY, 600, false); keycaps(ctx, caps, L + 170, y + 1); });
+        text(ctx, 'Hold fire to charge beams, sprays and swings when you have them.', L, BY + BH - 24, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        text(ctx, `${pad ? 'A' : 'Enter'}: change key bindings`, L, BY + BH - 13, 6.5, '#8a2a2a', 'left', FONT_BODY, 700, false);
+        // reading the house
+        heading(ctx, 'Reading the house', R, 40, 11, INK, 'left', false);
+        const doors: [string, string][] = [['treasure', 'Treasure: one curio'], ['shop', 'Shop: spend buttons'], ['boss', 'The chapter\'s keeper'], ['library', 'Library: pages and books'],
+          ['deal', 'Inkwell: pay in hearts'], ['blessing', 'Chapel: a gift'], ['challenge', 'Challenge: a fight for a prize'], ['secret', 'Hidden: bomb the walls']];
+        doors.forEach(([k, s], i) => { const y = 56 + i * 13; const sp = doorSymbol(k); if (sp) sp.draw(ctx, R + 5, y + 2); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
+        const H = pickupSprites().hud;
+        const hearts: [Sprite, string][] = [[H.red, 'Red: refills when you heal'], [H.wax, 'Wax: extra, gone once lost'], [H.ink, 'Ink: extra, bursts when lost'], [H.brass, 'Brass: stops one whole hit']];
+        hearts.forEach(([sp, s], i) => { const y = 168 + i * 13; ctx.drawImage(sp.canvas, R, y - 7); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
+        text(ctx, 'Stand by a curio to read what it does to you.', R, BY + BH - 13, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        hint(ctx, `${pad ? 'A' : 'Enter'} to rebind · Esc back`);
+      },
+    };
+  }
+
   // ------------------------------------------------------------ death & ending
   deathScreen(w: World): Screen {
     const self = this, g = this.g;
     let sel = 0; const items = ['Begin again', 'Return to the menu'];
+    const BX = 36, BY = 16, BW = 408, BH = 240, L = BX + 20, R = BX + BW / 2 + 16, cx = BX + BW / 4;
+    const act = () => {
+      if (sel === 0) g.fadeTo(() => { self.stack = []; g.newRun(w.run.charId, undefined, w.run.challenge); }, 0.5);
+      else g.fadeTo(() => g.quitToMenu(), 0.5);
+    };
     return {
       t: 0,
       update(keys) {
         if (this.t < 1) return;
         for (const k of keys) {
           if (k === 'up' || k === 'down') { sel = 1 - sel; self.sfxMove(); }
-          if (k === 'confirm') {
-            if (sel === 0) g.fadeTo(() => { self.stack = []; g.newRun(w.run.charId, undefined, w.run.challenge); }, 0.5);
-            else g.fadeTo(() => g.quitToMenu(), 0.5);
-          }
+          if (k === 'confirm') act();
         }
       },
+      pointer(x, y, click, moved) {
+        if (this.t < 1) return;
+        items.forEach((_, i) => { const iy = BY + BH - 36 + i * 16; if (x > R - 4 && x < R + 170 && y > iy - 11 && y < iy + 5) { if (moved && sel !== i) { sel = i; self.sfxMove(); } if (click) { sel = i; act(); } } });
+      },
       render(ctx) {
-        const a = clamp(this.t * 1.2, 0, 1);
+        const a = clamp(this.t * 1.2, 0, 1), r = w.run;
         ctx.globalAlpha = a;
-        ctx.fillStyle = 'rgba(4,2,6,0.75)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        page(ctx, 90, 18, 300, 236, a, 13);
-        text(ctx, 'The story ends here', 240, 50, 18, INK, 'center', FONT_TITLE, 400, false);
-        const r = w.run;
-        text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name} fell in ${w.floor.theme.name}`, 240, 64, 8.5, INK2, 'center', FONT_BODY, 600, false);
-        text(ctx, `to ${r.stats.deathCause ?? 'something in the dark'}.`, 240, 74, 8.5, '#8a2a2a', 'center', FONT_BODY, 600, false);
-        const st: [string, string][] = [['Time', fmtTime(r.stats.time)], ['Enemies', String(r.stats.kills)], ['Rooms', String(r.stats.roomsCleared)], ['Secrets', String(r.stats.secretsFound)], ['Seed', formatSeed(r.seed)]];
-        st.forEach(([k, v], i) => { text(ctx, k, 160, 92 + i * 10, 7.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 320, 92 + i * 10, 7.5, INK, 'right', FONT_BODY, 600, false); });
-        const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
-        ids.slice(0, 26).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), 125 + (i % 13) * 18, 146 + Math.floor(i / 13) * 18));
+        ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        book(ctx, BX, BY + (1 - ease.outCubic(a)) * 10, BW, BH, 13);
+        // left page: who fell, where, and to what
+        const c = CHARACTERS.find((ch) => ch.id === r.charId) ?? CHARACTERS[0];
+        heading(ctx, 'The story ends here', cx, 44, 13, INK, 'center', false);
+        ctx.save(); ctx.translate(cx, 112); ctx.scale(2, 2); ctx.filter = 'grayscale(0.85) sepia(0.35) brightness(0.9)';
+        drawReader(ctx, self.sprites(c), c, 0); ctx.restore();
+        ctx.fillStyle = 'rgba(60,40,24,0.18)'; ctx.beginPath(); ctx.ellipse(cx, 114, 20, 4, 0, 0, TAU); ctx.fill();
+        text(ctx, `${c.name} fell in ${w.floor.theme.name}`, cx, 134, 8, INK2, 'center', FONT_BODY, 600, false);
+        text(ctx, `to ${r.stats.deathCause ?? 'something in the dark'}.`, cx, 145, 8, '#8a2a2a', 'center', FONT_BODY, 700, false);
+        // how far the story got: one mark per chapter, a cross where it stopped
+        const n = r.floorIndex + 1, sp = Math.min(22, 150 / Math.max(1, n)), x0 = cx - ((n - 1) * sp) / 2;
+        for (let i = 0; i < n; i++) {
+          const x = x0 + i * sp, last = i === n - 1;
+          if (i > 0) { ctx.fillStyle = 'rgba(90,60,40,0.4)'; ctx.fillRect(x - sp + 5, 165.5, sp - 10, 0.6); }
+          text(ctx, roman(i + 1), x, 168, 7, last ? '#8a2a2a' : INK2, 'center', FONT_TITLE, 400, false);
+          if (last) { ctx.fillStyle = 'rgba(138,42,42,0.85)'; ctx.fillRect(x - 6, 165, 12, 1); ctx.fillRect(x - 2, 173, 4, 1); }
+        }
         const sc = r.flags.score as { score: number; best: number; isBest: boolean } | undefined;
         if (sc) {
-          text(ctx, `Score ${sc.score}`, 240, 190, 11, INK, 'center', FONT_TITLE, 400, false);
-          text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, 240, 199, 7, sc.isBest ? '#8a2a2a' : INK2, 'center', FONT_BODY, 600, false);
+          text(ctx, `Score ${sc.score}`, cx, 196, 11, INK, 'center', FONT_TITLE, 400, false);
+          text(ctx, sc.isBest ? 'A new personal best' : `Best ${sc.best}`, cx, 206, 7, sc.isBest ? '#8a2a2a' : INK2, 'center', FONT_BODY, 600, false);
         }
+        // right page: the ledger, the build, and what next
+        heading(ctx, 'Ledger', R, 44, 11, INK, 'left', false);
+        const st: [string, string][] = [['Time', fmtTime(r.stats.time)], ['Enemies defeated', String(r.stats.kills)], ['Rooms cleared', String(r.stats.roomsCleared)], ['Secrets found', String(r.stats.secretsFound)], ['Damage taken', `${r.stats.damageTaken / 2} hearts`], ['Seed', formatSeed(r.seed)]];
+        st.forEach(([k, v], i) => ledgerRow(ctx, k, v, R, R + 168, 60 + i * 11));
+        text(ctx, 'Curios carried', R, 136, 8, INK2, 'left', FONT_TITLE, 400, false);
+        const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
+        if (!ids.length) text(ctx, 'None.', R, 150, 7, 'rgba(90,70,54,0.7)', 'left', FONT_BODY, 600, false);
+        ids.slice(0, 27).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), R + (i % 9) * 19, 141 + Math.floor(i / 9) * 19));
         items.forEach((it, i) => {
-          const y = 214 + i * 15;
-          if (i === sel) inkBlot(ctx, 240, y - 3, 140, 14, self.time, 'rgba(40,30,60,0.2)');
-          text(ctx, it, 240, y, 10, INK, 'center', FONT_TITLE, 400, false);
+          const y = BY + BH - 36 + i * 16;
+          if (i === sel) inkBlot(ctx, R + 70, y - 3.5, 160, 14, self.time, 'rgba(40,30,60,0.17)');
+          text(ctx, it, R + (i === sel ? 4 : 0), y, i === sel ? 10.5 : 9.5, i === sel ? INK : INK2, 'left', FONT_TITLE, 400, false);
         });
         ctx.globalAlpha = 1;
       },

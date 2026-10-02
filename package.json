@@ -1,7 +1,7 @@
 {
   "name": "lost-marcus",
   "private": true,
-  "version": "3.5.0",
+  "version": "3.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "test": "tsx tests/run.ts",
     "smoke": "tsx tests/smoke.ts",
     "test:e2e": "tsx tests/e2e.ts",
+    "test:soak": "tsx tests/soak.ts",
     "test:synergy": "tsx tests/synergy.ts",
     "build:single": "tsc --noEmit && vite build --mode single",
     "release": "bash scripts/package-release.sh",

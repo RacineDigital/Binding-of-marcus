@@ -583,7 +583,6 @@ export class Hud {
         const lx = VIEW_W - 22 - (pl.consumables.length - 1) * 20 - 4;
         const name = c.kind === 'page' ? (getConsumable(c.id)?.name ?? 'Page') : sweetName(this.w, Number(c.id));
         text(ctx, name, lx, y + 12, 7, COL.text, 'right');
-        text(ctx, bindLabel('consumable'), lx, y + 3, 6, COL.dim, 'right', FONT_BODY, 700);
       }
     });
     pl.charms.forEach((id, i) => { ctx.drawImage(itemIconCanvas(id), 6 + i * 20, VIEW_H - 24); });

@@ -253,7 +253,6 @@ function drawLogo(ctx: CanvasRenderingContext2D, t: number, a: number, finished 
   ctx.fillRect(x, ry, W / 2 - 6, 0.8); ctx.fillRect(cx + 6, ry, W / 2 - 6, 0.8);
   ctx.fillStyle = '#c9a46a';
   ctx.beginPath(); ctx.moveTo(cx, ry - 2.6); ctx.lineTo(cx + 2.6, ry + 0.4); ctx.lineTo(cx, ry + 3.4); ctx.lineTo(cx - 2.6, ry + 0.4); ctx.fill();
-  text(ctx, finished ? 'some stories just need finishing' : 'some stories should stay shut', cx, y + 22, 6.5, finished ? 'rgba(240,210,150,0.7)' : 'rgba(200,180,160,0.6)', 'center', FONT_BODY, 500, false);
   ctx.restore();
 }
 

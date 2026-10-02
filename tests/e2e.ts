@@ -30,6 +30,14 @@ const D = 'window.__bomDebug';
   await page.keyboard.down('KeyD'); await page.waitForTimeout(400); await page.keyboard.up('KeyD');
   ok((await ev<number>(page, `${D}.world.player.x`)) > x0 + 15, 'walking right moves Marcus');
 
+  console.log('pause, help and settings');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(500);
+  ok(await ev(page, `${D}.game.paused`), 'Esc pauses');
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter'); await page.waitForTimeout(400);
+  ok(await ev(page, `${D}.game.menus.stack.length === 1`), 'Help & controls opens from the pause menu');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  ok(await ev(page, `!${D}.game.paused && ${D}.game.menus.stack.length === 0`), 'Esc backs out of help, then resumes');
+
   console.log('save & continue');
   const before = await ev<any>(page, `(async () => {
     const d = ${D}, w = d.world, g = d.game;
@@ -101,7 +109,7 @@ const D = 'window.__bomDebug';
   const mus = await ev<any>(page, `(async () => { const m = await import('/src/audio/render.ts'); const a = ${D}.game.audio; return { cached: m.cachedSongs(), track: a.music && a.music.name, recs: a.music && a.music.recs.size }; })()`);
   console.log('   ', JSON.stringify(mus));
   ok(mus.cached <= 5, 'rendered songs are capped');
-  ok(mus.recs <= 3, 'decoded recordings are capped');
+  ok(mus.recs <= 2, 'decoded recordings are capped');
 
   ok(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 5).join(' | ') : ''));
   await browser.close();

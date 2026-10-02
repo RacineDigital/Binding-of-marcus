@@ -1,38 +1,44 @@
-## What's new in 3.5.0: the boss pass
+## What's new in 3.6.0: feel, items and the bindery's pages
 
-### Every boss fight, reworked
-- **A tell before every attack.** Bosses gather themselves for a beat before each attack (a squash,
-  a ring on the floor in their colour, a low rumble), so you can read what's coming and move.
-- **They get worse as they get hurt.** At two thirds and one third of their health every boss roars
-  and escalates, unlocking **new bullet patterns** dealt to it alone: spirals, aimed volleys,
-  sweeping crosses, shockwave rings with a gap to slip through, marked rain, walls with one way
-  through, seekers, pincers, ricochet rings and bursting shells. Each boss always gets the same
-  set, in its own shot, so every fight has its own shape.
-- **They press harder.** Bosses move faster between attacks and rest less, more so as they're hurt.
-- **Cornered.** Under 15% health a boss starts pouring smoke and barely pauses between attacks.
+### Continue a run exactly as you left it
+- **Bonus rooms survive Save & quit.** An Inkwell, Chapel or Lost & Found room that opened during a
+  floor (and the door to it) used to vanish when you continued. They now come back with the floor.
+- **Floor-long effects survive too.** Effects that last for the rest of a floor are kept in the save.
+- **Lighter on memory.** Recorded music keeps only the two most recent tracks decoded, and rendered
+  songs are evicted after five, so long sessions stay steady.
 
-### The Patient (Room 4) is now the hardest fight in the book
-Nine and a half thousand health, four phases, and it doesn't remember who it is. Every few seconds
-it vanishes, comes back somewhere else as **another boss from the book**, flickering with ink and
-fighting with that boss's attacks, while its heart monitor keeps beating rings of shots underneath.
-It forgets faster every phase. In its last quarter it calls a **Code Blue**: walls of shots sweep
-in from both sides on top of everything else.
+### Combat you can feel
+- **Every enemy shot is announced.** Before an enemy fires it swells and flashes white for a quarter
+  of a second, and the shots then leave at exactly the angles it showed.
+- **Hits read clearly.** A bright impact star where each shot lands, a grey clink and sparks when
+  a hit is blocked, a white death pop with a ring (and a tiny freeze on big kills), a small recoil
+  kick when you fire, and getting hurt reddens the edges of the screen instead of the whole screen.
+- **Dangerous shots stay readable.** Enemy shots are drawn on top with a dark ring and a pulsing rim;
+  your own shots get a smear and soften when the screen is full of them.
+- **Fairer rooms.** No room forces you across spikes to get from one door to another.
 
-### Enemies
-- **Bigger and more detailed.** Every regular enemy is drawn about a third bigger, redrawn at twice
-  the resolution with clean curves, light catching its top edge, shadow underneath and texture
-  across its body. Hitboxes grow with them.
-- **Faster.** Enemies move about a third quicker.
-- **Placed, not scattered.** Rooms fill their enemy spots in mirrored pairs, so packs stand in
-  deliberate, symmetric formations.
+### Items worth reading
+- **"With your build."** Stand by a curio and the panel shows what it would do to *you*: your damage,
+  fire rate, range, speed and shots before and after, whether your attack changes, and how two attack
+  styles combine (a beam with lasers charges faster, a spin with lasers fires them all round, ...).
+- **Plain stat items now change how you play.** Marrow's kills burst into bone splinters; Hot Cocoa
+  fires faster for the first seconds of a fight; Grandfather's Spectacles hit far-off enemies harder;
+  Grandfather's Pipe blows a confusing smoke ring every 5th attack; Lamp Oil sets enemies alight;
+  Worn Plimsolls reward running without stopping; Iron Filings curve shots toward enemies; Pressed
+  Clover leaves gifts after rooms; Grandmother's Ring really does glint beside secret rooms; Ink Pact
+  kills leave burning ink; Ink Horns gore the first hit on each enemy; Swollen Ink shoves; Fine Nib
+  slips through the first enemy.
+- **Ten new curios from the bindery:** Paper Cut, Bookends, Printing Plate, Gilt Edge, Creasing Iron,
+  Reading Lamp, Overdue Notice, Spilt Inkwell, Red Thread and Grandfather's Marginalia. Each one asks
+  something of you (stand still, keep close, stay unhurt, carry buttons) and pays you for it.
 
-### Other changes
-- **The Tainted are now the Mirrored.** Same unlock (all five marks with a reader), new name.
-- **Nell no longer has the beam.** The Burning Glass was far too strong as a starting item. Her
-  shots are now embers that often set enemies alight (the Pocket Lantern stays). Mirrored Nell
-  burns the same way.
-- **Smaller door symbols.** Special doors now show a small symbol just above the doorway instead
-  of a big plaque beside it.
+### Pages of the book
+- **Pause, Help and the end of a run are now an open book**: a worn leather cover, two foxed pages and
+  a sewn spine. The pause page keeps your run's ledger and curios; the results page shows your reader,
+  how far the story got chapter by chapter, and what you carried.
+- **A proper Help page** (from Pause, or Options) lists your controls as you have them bound, what each
+  door symbol means and what each kind of heart does. Controls are no longer printed on the pause page
+  or the HUD.
 
 ## Download and play
 
