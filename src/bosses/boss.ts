@@ -1,11 +1,34 @@
 // Boss framework: weighted attack selection per phase, telegraphs, phase transitions and death sequences.
 import type { Enemy } from '../enemies/enemy';
 import type { World } from '../game/world';
+import { PATTERNS, patternsFor, shapeFor } from './patterns';
+
+/** Bosses that keep only the fight they were written with (the final forms are their own bullet hell). */
+const OWN_FIGHT = new Set(['unwritten', 'author', 'echo', 'patient']);
+const dealt = new WeakSet<BossBrain>();
+/**
+ * Every boss gets its own pair of extra patterns once it's hurt (and a third for its last phase),
+ * and at least one phase change, so no fight stays the same from start to finish.
+ */
+function deal(e: Enemy, brain: BossBrain): void {
+  if (dealt.has(brain)) return;
+  dealt.add(brain);
+  if (OWN_FIGHT.has(e.def.id)) return;
+  const shape = shapeFor(e.def.id), picks = patternsFor(e.def.id);
+  picks.forEach((name, i) => {
+    const a = PATTERNS[name](shape);
+    a.minTier = i < 2 ? 1 : 2;
+    a.weight *= 0.8;
+    brain.attacks.push(a);
+  });
+}
 
 export interface BossAttack {
   id: string;
   weight: number;
   phases?: number[];           // allowed phases (0-based); default all
+  /** Only once the boss is this hurt: 1 under two thirds of its health, 2 under a third. */
+  minTier?: number;
   cooldown?: number;           // min seconds before reuse
   start?(e: Enemy, w: World): void;
   /** Return true when the attack is finished. t = seconds since start. */
@@ -21,7 +44,17 @@ export interface BossBrain {
 
 export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): void {
   const d = e.data;
+  deal(e, brain);
   d.phase ??= 0; d.lastUsed ??= {} as Record<string, number>;
+  // pressure tiers (separate from the boss's own phases): each one is announced and opens up more
+  const tier = e.hpFrac() <= 0.33 ? 2 : e.hpFrac() <= 0.66 ? 1 : 0;
+  if (tier > (d.tier ?? 0) && !OWN_FIGHT.has(e.def.id)) {
+    d.tier = tier;
+    w.shake(4 + tier * 2); w.audio.play('bossRoar', { x: e.x, pitch: 1.1 - tier * 0.15, vol: 0.7 });
+    w.fx.ring(e.x, e.y - e.hitY, 8, 70 + tier * 20, tier >= 2 ? '#ff3050' : '#ffa040', 0.45);
+    e.flash = 0.25;
+  }
+  d.tier ??= 0;
   // phase change
   const thresholds = brain.phases ?? [];
   if (d.phase < thresholds.length && e.hpFrac() <= thresholds[d.phase] && e.state !== 'phase') {
@@ -56,21 +89,40 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
     d.inkT = (d.inkT ?? 2) - dt;
     if (d.inkT <= 0) { d.inkT = 2.8; const off = Math.random(); for (let i = 0; i < 10; i++) w.proj.enemy(e.x, e.y - 6, off + (i / 10) * Math.PI * 2, 70, { r: 3.5, shape: 'inkE' }); }
   }
+  // every boss gets desperate near the end: less rest between attacks, smoke pouring off it
+  if (!d.hard && !d.cornered && e.hpFrac() <= 0.15 && !OWN_FIGHT.has(e.def.id)) {
+    d.cornered = true; w.shake(5); w.audio.play('bossRoar', { x: e.x, pitch: 0.8 });
+  }
+  if (d.cornered && Math.random() < dt * 8) w.fx.smoke(e.x + (Math.random() - 0.5) * e.r * 1.6, e.y - e.hitY, 1, 'rgba(40,20,30,', 5, 0.7);
+  // the tell: a beat where the boss gathers itself before every attack, so you can read it coming
+  if (e.state === 'windup') {
+    const k = e.st / d.windT;
+    e.sx = 1 + Math.sin(k * Math.PI) * 0.12; e.sy = 1 - Math.sin(k * Math.PI) * 0.1;
+    if (e.st >= d.windT) { e.sx = e.sy = 1; e.setState('attack'); (d.attack as BossAttack).start?.(e, w); }
+    return;
+  }
   if (e.state === 'idle') {
     brain.idle(e, w, dt);
     if (d.champ === 'crimson') d.idleT = (d.idleT ?? 1) - dt * 0.4;
     if (d.hard) d.idleT = (d.idleT ?? 1) - dt * 0.6;
+    if (d.cornered) d.idleT = (d.idleT ?? 1) - dt * 0.5;
     d.idleT = (d.idleT ?? rand(brain.idleTime)) - dt;
     if (d.idleT <= 0) {
       const now = e.t;
-      const opts = brain.attacks.filter((a) => (!a.phases || a.phases.includes(d.phase)) && (now - (d.lastUsed[a.id] ?? -99)) >= (a.cooldown ?? 0) && a.id !== d.lastAttack);
-      const pool = opts.length ? opts : brain.attacks.filter((a) => !a.phases || a.phases.includes(d.phase));
+      const ok = (a: BossAttack) => (!a.phases || a.phases.includes(d.phase)) && (a.minTier === undefined || d.tier >= a.minTier);
+      const opts = brain.attacks.filter((a) => ok(a) && (now - (d.lastUsed[a.id] ?? -99)) >= (a.cooldown ?? 0) && a.id !== d.lastAttack);
+      const pool = opts.length ? opts : brain.attacks.filter(ok);
       let tot = 0; for (const a of pool) tot += a.weight;
       let r = Math.random() * tot; let pick = pool[0];
       for (const a of pool) { r -= a.weight; if (r <= 0) { pick = a; break; } }
       d.attack = pick; d.lastAttack = pick.id; d.lastUsed[pick.id] = now;
-      e.setState('attack');
-      pick.start?.(e, w);
+      // a short tell (shorter as the fight goes on), with a flash of the boss's colour on the floor
+      d.windT = OWN_FIGHT.has(e.def.id) ? 0 : Math.max(0.16, 0.34 - Math.max(d.phase, d.tier) * 0.07);
+      if (d.windT > 0) {
+        e.setState('windup');
+        w.fx.ring(e.x, e.y, 4, e.r + 14, d.tier >= 2 || d.cornered ? '#ff4050' : '#ffb060', d.windT);
+        w.audio.play('rumble', { x: e.x, vol: 0.22, pitch: 1.5 });
+      } else { e.setState('attack'); pick.start?.(e, w); }
     }
     return;
   }
