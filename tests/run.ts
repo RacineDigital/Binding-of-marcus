@@ -270,6 +270,19 @@ console.log('content:', JSON.stringify(counts));
   const fs = await import('fs');
   ok(JSON.parse(fs.readFileSync('package.json', 'utf8')).version === GAME_VERSION, 'GAME_VERSION matches package.json');
 }
+// the tainted: one per reader, each with a look, real items and an unlock earned by all five marks
+{
+  const { TAINTED } = await import('../src/player/characters');
+  const { LOOKS } = await import('../src/art/look');
+  const bases = CHARACTERS.filter((c) => !c.tainted);
+  ok(TAINTED.length === bases.length, 'every reader has a tainted self');
+  for (const t of TAINTED) {
+    ok(!!LOOKS[t.look], `${t.id} has a look`);
+    ok(t.items.every((id) => ALL_ITEMS.some((i) => i.id === id)), `${t.id}'s starting items exist`);
+    ok(ACHIEVEMENTS.some((a) => a.id === t.unlock), `${t.id} unlock is an achievement`);
+    ok(t.unlock === 'tainted_' + t.tainted && bases.some((b) => b.id === t.tainted), `${t.id} unlocks from ${t.tainted}'s marks`);
+  }
+}
 // every chapter plays its own recorded theme, and every recording belongs to a chapter
 {
   const F = await import('../src/data/floors');

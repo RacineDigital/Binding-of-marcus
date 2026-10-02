@@ -50,6 +50,8 @@ export interface RunRecord { date: number; char: string; mode: string; seed: str
  * preload bridge); the browser build uses localStorage. Both expose the same tiny key/value API.
  */
 interface Store { read(key: string): string | null; write(key: string, json: string): void; remove(key: string): void; kind: 'file' | 'browser' }
+/** The five ending marks (ids of the endings in data/endings.ts). */
+const MARKS = ['morning', 'own_hand', 'for_marcus', 'the_visit', 'goodnight'];
 const desktop = (globalThis as any).bomDesktop as { readSave(k: string): string | null; writeSave(k: string, j: string): void; deleteSave(k: string): void } | undefined;
 const LEGACY_KEY = 'binding-of-marcus-save-v1';
 export const store: Store = desktop
@@ -161,8 +163,17 @@ export class SaveManager {
   addMark(char: string, ending: string, hard: boolean): void {
     const m = ((this.data.marks ??= {})[char] ??= []);
     for (const k of hard ? [ending, ending + ':hard'] : [ending]) if (!m.includes(k)) { m.push(k); this.markDirty(); }
+    this.checkTainted();
   }
   hasMark(char: string, key: string): boolean { return !!this.data.marks?.[char]?.includes(key); }
+  /** All five ending marks earned with a reader (a story win before marks existed counts for Morning). */
+  marksComplete(char: string): boolean {
+    return MARKS.every((k) => this.hasMark(char, k) || (k === 'morning' && this.isUnlocked(char === 'marcus' ? 'beat_final' : 'win_' + char)));
+  }
+  /** Earning every mark with a reader unlocks their tainted self. */
+  checkTainted(): void {
+    for (const c of Object.keys(this.data.marks ?? {})) if (!c.endsWith('_t') && this.marksComplete(c)) this.unlock('tainted_' + c);
+  }
   markBoss(id: string): void { if (!this.data.bossesBeaten.includes(id)) { this.data.bossesBeaten.push(id); this.markDirty(); } this.stat('bossKills', 1); }
   reset(): void { this.data = defaultSave(); this.data.settings = this.settings; this.markDirty(); this.flush(); }
 }

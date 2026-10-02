@@ -1,3 +1,4 @@
+import { MARCUS_PAL } from './hand/marcus';
 // Character look parameters so one rig renders every playable character.
 export interface CharacterLook {
   skin: string; hair: string; eye: string; shirt: string; trim: string; shorts: string;
@@ -70,3 +71,27 @@ export const LOOKS: Record<string, CharacterLook> = {
       c: '#3a3024', C: '#5a4c38', D: '#8a7a5a', E: '#a8987a', R: '#e0d0a8', q: '#a8987a', t: '#e0d0a8', j: '#4a4030', J: '#5e5440', n: '#8a7a5a', N: '#6a5c44', x: '#3a3024', ...noTear('#e4dccc') },
     acc: ['antennae'] },
 };
+
+// ------------------------------------------------------------------ the tainted
+// Each tainted reader wears their own colours drained and pushed toward ink, with skin gone grey,
+// hollow black eyes with a red glint, and ink where the blush was.
+function mixHex(a: string, b: string, k: number): string {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * k).toString(16).padStart(2, '0')).join('');
+}
+function drain(c: string, k: number): string {
+  const p = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)), g = (p[0] * 0.3 + p[1] * 0.59 + p[2] * 0.11);
+  return '#' + p.map((v) => Math.round(v + (g - v) * k).toString(16).padStart(2, '0')).join('');
+}
+const SKIN = new Set(['S', 's', 'd', 'W']);
+function taint(L: CharacterLook, darkSkin = false): CharacterLook {
+  const pal: Record<string, string> = { ...MARCUS_PAL, ...(L.pal ?? {}) };
+  for (const k of Object.keys(pal)) {
+    if (k === 'o') continue;
+    pal[k] = SKIN.has(k) ? mixHex(drain(pal[k], 0.85), '#8a8aa8', 0.25) : mixHex(drain(pal[k], 0.55), '#1a1028', 0.3);
+  }
+  // hollow eyes; on an ink face (the Blot) they burn red instead, or they'd vanish
+  Object.assign(pal, darkSkin ? { e: '#ff3a4a', w: '#ffd0d0', v: '#ff3a4a' } : { e: '#05030a', w: '#ff3a4a', v: '#5a0a1a', r: '#3a2a5a', k: '#1a1028', m: '#2a0a14' });
+  return { ...L, pal, ghost: L.ghost };
+}
+for (const id of Object.keys(LOOKS)) if (!id.endsWith('_t')) LOOKS[id + '_t'] = taint(LOOKS[id], id === 'blot');

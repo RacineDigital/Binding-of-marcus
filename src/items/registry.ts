@@ -11,9 +11,10 @@ import { FRIEND_ITEMS } from './data/friends';
 import { ECHO_ITEMS } from './data/echoes';
 import { PACT_ITEMS } from './data/pacts';
 import { INNATE_ITEMS } from './data/innate';
+import { TAINTED_ITEMS } from './data/tainted';
 import { PAGES, SWEETS, CHARMS } from './data/consumables';
 
-export const ALL_ITEMS: ItemDef[] = [...PASSIVES_A, ...PASSIVES_B, ...ACTIVES, ...FAMILIARS, ...REFERENCES, ...DICE, ...STORY_ITEMS, ...FRIEND_ITEMS, ...ECHO_ITEMS, ...PACT_ITEMS, ...INNATE_ITEMS];
+export const ALL_ITEMS: ItemDef[] = [...PASSIVES_A, ...PASSIVES_B, ...ACTIVES, ...FAMILIARS, ...REFERENCES, ...DICE, ...STORY_ITEMS, ...FRIEND_ITEMS, ...ECHO_ITEMS, ...PACT_ITEMS, ...INNATE_ITEMS, ...TAINTED_ITEMS];
 const byId = new Map<string, ItemDef>();
 for (const it of ALL_ITEMS) {
   if (byId.has(it.id)) console.warn('duplicate item id', it.id);

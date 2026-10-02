@@ -10,6 +10,8 @@ export interface CharacterDef {
   flight?: boolean;
   unlock?: string; unlockHint: string;
   passive: string;
+  /** The reader this is the tainted version of (unlocked by earning all of that reader's marks). */
+  tainted?: string;
 }
 
 export const CHARACTERS: CharacterDef[] = [
@@ -88,4 +90,45 @@ export const CHARACTERS: CharacterDef[] = [
     unlock: 'unlock_ada', unlockHint: 'Finish The Visit while carrying Grandmother\'s Ring.', passive: 'Rose Cuttings: thorns slow what they hit and leave brambles behind. Starts with Grandmother\'s Ring.',
   },
 ];
+// ------------------------------------------------------------------ the tainted
+// Each reader, inked over: their gift turned against them. One unlocks once its reader has earned
+// all five ending marks.
+const T = (base: string, name: string, title: string, desc: string, d: Omit<CharacterDef, 'id' | 'name' | 'title' | 'desc' | 'look' | 'unlock' | 'unlockHint' | 'tainted'>): CharacterDef => {
+  const b = CHARACTERS.find((c) => c.id === base)!;
+  return { id: base + '_t', name: 'Tainted ' + name, title, desc, look: base + '_t', unlock: 'tainted_' + base, tainted: base,
+    unlockHint: `Earn all five marks as ${b.name}.`, ...d };
+};
+export const TAINTED: CharacterDef[] = [
+  T('marcus', 'Marcus', 'The Smudged', 'The boy who wrote himself into the book, and could not wash the ink off. Whatever he throws comes back to him.',
+    { base: { damage: 3.6, tears: 2.6, range: 230, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 3 }, items: ['t_smudge'], buttons: 0, keys: 1, bombs: 1,
+      passive: 'The Smudge: every shot comes back to you, hitting going and coming. Shorter range.' }),
+  T('wren', 'Wren', 'The Runaway', 'She ran so far she ran out of herself. Too quick to hold anything red, and her pebbles never stop bouncing.',
+    { base: { damage: 3.0, tears: 3.0, range: 210, shotSpeed: 1.2, speed: 1.15, luck: 0 }, health: { red: 0, wax: 4, noRed: true }, items: ['slingshot', 't_runaway'], buttons: 5, keys: 0, bombs: 0,
+      passive: 'Running Away: pebbles fly in pairs and ricochet more. Very fast, wax hearts only.' }),
+  T('edda', 'Edda', 'The Unravelled', 'She stitched everyone else back together. Now every thread she throws pulls three of them tight at once.',
+    { base: { damage: 2.8, tears: 3.4, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 }, health: { red: 1, brass: 4 }, items: ['thimble', 't_unravel'], buttons: 0, keys: 1, bombs: 1,
+      profile: { shape: 'needle', pierce: 1 }, passive: 'Unravelling: needles stitch the enemy they hit to two more. One heart, four bronze shields.' }),
+  T('elias', 'Elias', 'The Forgotten', 'He forgot where the story was going. The pages circle him now, a slow storm he cannot put down.',
+    { base: { damage: 3.0, tears: 2.8, range: 260, shotSpeed: 0.95, speed: 0.95, luck: 0 }, health: { red: 0, wax: 4, noRed: true }, items: ['binders_awl', 't_orbit'], buttons: 0, keys: 0, bombs: 2,
+      profile: { spectral: true, tint: '#9ad0f0', shape: 'page' }, flight: true, passive: 'Lost Pages: your shots circle around you through stone. Flies, wax hearts only.' }),
+  T('blot', 'Blot', 'The Spill', 'It opened wide once and never closed again. The ink just keeps coming, all the way across the room.',
+    { base: { damage: 3.8, tears: 2.2, range: 220, shotSpeed: 0.9, speed: 0.9, luck: -1 }, health: { red: 0, ink: 4, noRed: true }, items: ['t_spill'], buttons: 0, keys: 0, bombs: 0,
+      profile: { shape: 'void' }, flight: true, passive: 'The Spill: a full-length ink beam that leaves burning ink behind. Flies, ink hearts only.' }),
+  T('ozzie', 'Ozzie', 'The Broke', 'He bet everything he had, and then he bet himself. Every room he walks into is another throw of the die.',
+    { base: { damage: 3.3, tears: 2.7, range: 230, shotSpeed: 1, speed: 1.05, luck: 1 }, health: { red: 2 }, items: ['old_dice', 't_fate'], buttons: 0, keys: 1, bombs: 1,
+      passive: 'Fate: each new room rolls a die, from a curse on one to a blessing on six. Starts broke.' }),
+  T('nell', 'Nell', 'The Burnt Out', 'She kept the lamp lit for him every night, until one night it kept her. Everything she touches catches.',
+    { base: { damage: 3.4, tears: 2.4, range: 220, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 2, brass: 1 }, items: ['burning_glass', 't_burnout'], buttons: 0, keys: 1, bombs: 1,
+      passive: 'Burnt Out: the Burning Glass sets enemies alight, and whatever you kill bursts into flame.' }),
+  T('bram', 'Bram', 'The Brute', 'He stopped going round things. He goes through them: walls, rocks, whatever is in the way.',
+    { base: { damage: 4.6, tears: 2.1, range: 200, shotSpeed: 0.95, speed: 0.85, luck: -1 }, health: { red: 5 }, items: ['bone_folder', 't_brute'], buttons: 0, keys: 0, bombs: 1,
+      passive: 'Brute: huge swings that knock enemies flying and break rocks; kills sometimes heal.' }),
+  T('wick', 'Wick', 'The Swarm', 'It was never really one moth. Now it does not pretend: every moth it throws becomes three.',
+    { base: { damage: 2.9, tears: 3.2, range: 240, shotSpeed: 1.05, speed: 1.05, luck: 0 }, health: { red: 0, wax: 4, noRed: true }, items: ['moth_friend', 't_swarm'], buttons: 0, keys: 1, bombs: 1,
+      profile: { shape: 'moth' }, flight: true, passive: 'The Swarm: moths hunt and split in two when they hit. Flies, wax hearts only.' }),
+  T('ada', 'Ada', 'The Withered', 'Her rose came back the wrong way: all thorn, no flower. She has come to see to that, too.',
+    { base: { damage: 3.2, tears: 2.8, range: 250, shotSpeed: 1, speed: 0.95, luck: 1 }, health: { red: 0, wax: 6, noRed: true }, items: ['grandmothers_ring', 't_wither'], buttons: 3, keys: 1, bombs: 1,
+      profile: { shape: 'needle', tint: '#6a7a3a' }, passive: 'Withering: thorns poison and slow, and leave brambles. Wax hearts only.' }),
+];
+CHARACTERS.push(...TAINTED);
 export const charById = (id: string) => CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];

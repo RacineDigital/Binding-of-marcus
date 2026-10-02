@@ -257,8 +257,9 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
     if (room.type === 'lostfound') w.audio.stinger('lostfound');
   }
   if (room.type === 'boss' && room.cleared && prevType !== 'boss') w.audio.setMusic(themeMusic(w.theme));
-  w.itemHook('onRoomEnter');
+  // last room's effects end first, so anything granted on entering this one lasts the room
   w.player.clearTemp((t) => !!t.room);
+  w.itemHook('onRoomEnter');
   w.player.activeRoomUses = 0;
   if (w.run.challenge === 'darkness') { /* handled in render */ }
 }
