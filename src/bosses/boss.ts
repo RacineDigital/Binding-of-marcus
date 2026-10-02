@@ -102,7 +102,10 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
     return;
   }
   if (e.state === 'idle') {
-    brain.idle(e, w, dt);
+    // between attacks bosses press in harder than they were written to, more so as they're hurt
+    const own = OWN_FIGHT.has(e.def.id), pace = own ? 1 : 1.35 + d.tier * 0.15;
+    brain.idle(e, w, dt * pace);
+    if (!own) d.idleT = (d.idleT ?? 1) - dt * 0.25;
     if (d.champ === 'crimson') d.idleT = (d.idleT ?? 1) - dt * 0.4;
     if (d.hard) d.idleT = (d.idleT ?? 1) - dt * 0.6;
     if (d.cornered) d.idleT = (d.idleT ?? 1) - dt * 0.5;
