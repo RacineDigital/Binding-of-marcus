@@ -12,6 +12,22 @@ import type { Enemy } from '../enemies/enemy';
 
 export const enum Team { Player = 0, Enemy = 1 }
 
+/** The dark ring and the light rim drawn around every enemy shot, pre-rendered once per size. */
+const haloCache = new Map<number, { dark: HTMLCanvasElement; rim: HTMLCanvasElement; h: number }>();
+function haloSprite(r: number): { dark: HTMLCanvasElement; rim: HTMLCanvasElement; h: number } {
+  const key = Math.round(r * 4);
+  let c = haloCache.get(key);
+  if (!c) {
+    const h = Math.ceil(r + 3), S = h * 2;
+    const dark = document.createElement('canvas'); dark.width = dark.height = S;
+    const d = dark.getContext('2d')!; d.fillStyle = 'rgba(8,4,10,0.6)'; d.beginPath(); d.arc(h, h, r + 1.6, 0, TAU); d.fill();
+    const rim = document.createElement('canvas'); rim.width = rim.height = S;
+    const g = rim.getContext('2d')!; g.strokeStyle = 'rgb(255,236,220)'; g.lineWidth = 0.6; g.beginPath(); g.arc(h, h, r + 0.6, 0, TAU); g.stroke();
+    c = { dark, rim, h }; haloCache.set(key, c);
+  }
+  return c;
+}
+
 export class Proj {
   active = false; team = Team.Player;
   x = 0; y = 0; z = 0; vx = 0; vy = 0; spd = 0; r = 3; baseR = 3; dmg = 1;
@@ -343,8 +359,8 @@ export class Projectiles {
       ctx.fillRect(sx - rw, sy, rw * 2, 1 + (p.r > 5 ? 1 : 0));
     }
     // player shots first, enemy shots last and on top: what can hurt you is never hidden
-    let mine = 0;
-    for (const p of this.list) if (p.active && p.team === Team.Player) mine++;
+    let mine = 0, enemyN = 0;
+    for (const p of this.list) if (p.active) { if (p.team === Team.Player) mine++; else enemyN++; }
     // the busier your side of the screen, the quieter your shots get, so the enemy's still stand out
     const busy = mine > 40, swarm = mine > 140;
     for (const pass of only !== undefined ? [only] : [Team.Player, Team.Enemy]) for (const p of this.list) {
@@ -374,15 +390,17 @@ export class Projectiles {
         // a pale rim light so dark ink still reads against dark floors
         if (!busy) w.r.addGlow(sx, sy, p.r * 2.2, '#a8b0ff', 0.12);
       } else {
-        // enemy shots: a dark ring around a pulsing light rim, the same on every floor
+        // enemy shots: a dark ring around a pulsing light rim, the same on every floor (both cached as
+        // images, so a screen full of them stays cheap to draw)
         const pulse = 0.5 + 0.5 * Math.sin(p.t * 14 + p.x * 0.05);
-        if (p.delay > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(p.t * 30);
-        ctx.fillStyle = 'rgba(8,4,10,0.6)'; ctx.beginPath(); ctx.arc(sx, sy, p.r + 1.6, 0, TAU); ctx.fill();
+        const base = p.delay > 0 ? 0.55 + 0.45 * Math.sin(p.t * 30) : 1;
+        const halo = haloSprite(p.r);
+        ctx.globalAlpha = base; ctx.drawImage(halo.dark, sx - halo.h, sy - halo.h);
         spr.draw(ctx, sx, sy);
-        ctx.strokeStyle = `rgba(255,236,220,${(0.35 + pulse * 0.4).toFixed(2)})`; ctx.lineWidth = 0.6;
-        ctx.beginPath(); ctx.arc(sx, sy, p.r + 0.6, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = base * (0.35 + pulse * 0.4); ctx.drawImage(halo.rim, sx - halo.h, sy - halo.h);
         ctx.globalAlpha = 1;
-        w.r.addLight(sx, sy, 14 + p.r * 2, 0.35);
+        // their glow on the floor is decoration: drop it when the screen is full of them
+        if (enemyN < 80) w.r.addLight(sx, sy, 14 + p.r * 2, 0.35);
       }
       if (p.crit) w.r.addGlow(sx, sy, p.r * 3, 'rgba(255,220,120,1)', 0.5);
       if (glowC) w.r.addGlow(sx, sy, p.r * 3.5, SHOT_COLORS[p.shape], 0.35);

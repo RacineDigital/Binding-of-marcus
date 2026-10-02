@@ -2,6 +2,16 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.8.1: smoother big fights
+
+- **Busy fights draw faster.** In a Room 4 fight against the Patient with an overpowered build (200
+  enemy shots and nearly a thousand particles on screen), drawing the fight got about a fifth cheaper:
+  every enemy shot's dark outline and light rim are now pre-drawn once instead of every frame, and the
+  floor glow under enemy shots is skipped once there are more than 80 of them.
+- **A particle budget.** Past 600 live particles, purely decorative dust, smoke and embers thin out;
+  sparks, rings, flashes and stars, which tell you something happened, always appear.
+- Includes everything from 3.8.0, including the fix for the freeze when Snap or Old Stoker woke up.
+
 ## What's new in 3.8.0: fights you can learn
 
 ### Fixed: the game could freeze when a boss woke up
