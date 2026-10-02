@@ -2,6 +2,13 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.10.2: shot size on the HUD
+
+- **Shot size is shown with your other stats**, under shot speed, with its own icon. It flashes
+  "+0.6 shot size" when an item changes it, like every other stat.
+- **Item previews list it too:** picking up or inspecting an item that changes your shot size shows
+  "Shot size 1 → 1.6" next to its other stat changes.
+
 ## What's new in 3.10.1: wider lasers, a safer shop
 
 - **Shot size widens every beam and laser.** Items that make your shots bigger now also widen, and

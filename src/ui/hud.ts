@@ -87,6 +87,16 @@ const STAT_ICON_MAPS: Record<string, string[]> = {
     '.........',
     '.........',
     '.........'],
+  size: [    // a small shot growing into a big one
+    '.........',
+    '....mmm..',
+    '...mMMMm.',
+    '.m.mMMMMm',
+    'mMmmMMMMm',
+    '.m.mMMMMm',
+    '...mMMMm.',
+    '....mmm..',
+    '.........'],
   luck: [    // a four-leaf clover
     '.ll...ll.',
     'lLLl.lLLl',
@@ -118,11 +128,11 @@ const STAT_ICON_MAPS: Record<string, string[]> = {
     'dddddddd'],
 };
 /** What each stat icon stands for, spelled out. */
-const STAT_NAMES: Record<string, string> = { speed: 'Speed', damage: 'Damage', rate: 'Fire rate', range: 'Range', shot: 'Shot speed', luck: 'Luck', door: 'Bargain door', wing: 'Flight' };
+const STAT_NAMES: Record<string, string> = { speed: 'Speed', damage: 'Damage', rate: 'Fire rate', range: 'Range', shot: 'Shot speed', size: 'Shot size', luck: 'Luck', door: 'Bargain door', wing: 'Flight' };
 const STAT_ICON_PAL: Record<string, string> = {
   y: '#e8b830', Y: '#ffe890', w: '#e8e4f4', b: '#7a4a2a', R: '#e0283a', s: '#c8ccd8', S: '#ffffff',
   k: '#3a7ae8', K: '#a8d0ff', o: '#f08a30', t: '#c8a868', c: '#40d0e0', C: '#d8fcff', l: '#3a9a3a', L: '#7ae06a', G: '#2a5a20',
-  d: '#8a7560', p: '#3a2e7a', P: '#efe6d2', W: '#ffffff', u: '#8ab8e8',
+  m: '#4a4ab8', M: '#9a9aff', d: '#8a7560', p: '#3a2e7a', P: '#efe6d2', W: '#ffffff', u: '#8ab8e8',
 };
 let statIcons: Record<string, HTMLCanvasElement> | null = null;
 function statIcon(k: string): HTMLCanvasElement {
@@ -486,7 +496,7 @@ export class Hud {
     const r2 = (v: number) => Math.round(v * 100) / 100;
     return [
       ['speed', fmt1(s.speed), s.speed], ['damage', fmt1(r2(s.damage)), r2(s.damage)], ['rate', fmt1(r2(s.fireRate)), r2(s.fireRate)],
-      ['range', String(Math.round(s.range / 24 * 10) / 10), Math.round(s.range / 24 * 10) / 10], ['shot', fmt1(r2(s.shotSpeed)), r2(s.shotSpeed)], ['luck', String(s.luck), s.luck],
+      ['range', String(Math.round(s.range / 24 * 10) / 10), Math.round(s.range / 24 * 10) / 10], ['shot', fmt1(r2(s.shotSpeed)), r2(s.shotSpeed)], ['size', fmt1(r2(s.size)), r2(s.size)], ['luck', String(s.luck), s.luck],
     ];
   }
   /** Recent stat changes, shown as +0.5 / -0.2 beside the value for a couple of seconds (like Isaac). */

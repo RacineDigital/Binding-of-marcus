@@ -48,7 +48,7 @@ export function previewLines(w: World, id: string): DescLine[] {
     out.push({ text: `${name} ${X} → ${Y}`, color: (Y > X) === higherIsBetter ? 'up' : 'down' });
   };
   row('Damage', b.damage, a.damage); row('Fire rate', b.fireRate, a.fireRate); row('Speed', b.speed, a.speed);
-  row('Range', b.range, a.range, 24, 1); row('Shot speed', b.shotSpeed, a.shotSpeed); row('Luck', b.luck, a.luck, 1, 0);
+  row('Range', b.range, a.range, 24, 1); row('Shot speed', b.shotSpeed, a.shotSpeed); row('Shot size', b.size, a.size); row('Luck', b.luck, a.luck, 1, 0);
   if (aShots !== bShots) out.push({ text: `Shots per volley ${bShots} → ${aShots}`, color: aShots > bShots ? 'up' : 'down' });
   if (aMode !== bMode) out.push({ text: `Your attack becomes ${MODE_NAME[aMode] ?? aMode}.`, color: 'note' });
   // a new attack style next to one you already have: say what they do together
