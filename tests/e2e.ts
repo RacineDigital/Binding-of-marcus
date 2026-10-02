@@ -64,6 +64,18 @@ const D = 'window.__bomDebug';
   const treasureDoors = await ev<number[]>(page, `${D}.world.floor.rooms.filter((r) => r.type === 'treasure').map((r) => r.doors.length)`);
   ok(treasureDoors.every((n) => n === 1), `treasure rooms have one entrance (${treasureDoors.join(',')})`);
 
+  console.log('item combinations');
+  for (const build of [['printing_plate', 'creasing_iron', 'marrow', 'spectacles'], ['grandpas_pipe', 'marginalia', 'copper_filament', 'red_thread'], ['spilt_inkwell', 'ink_pact', 'bookends', 'paper_cut', 'overdue_notice', 'gilt_edge', 'reading_lamp', 'running_shoes', 'hot_cocoa', 'four_leaf']]) {
+    await ev(page, `(() => { const d = ${D}, w = d.world; d.god(); for (const e of w.enemies) e.hp = 0; for (const id of ${JSON.stringify(build)}) d.give(id); w.player.buttons = 25; for (let i = 0; i < 6; i++) d.spawn('valvehead'); })()`);
+    const hp0 = await ev<number>(page, `${D}.world.enemies.filter((e) => !e.dead).reduce((s, e) => s + e.hp, 0)`);
+    await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');
+    await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowLeft');
+    await page.waitForTimeout(6000);   // stand still: the creasing iron and printing plate both need time
+    const hp1 = await ev<number>(page, `${D}.world.enemies.filter((e) => !e.dead).reduce((s, e) => s + e.hp, 0)`);
+    ok(hp1 < hp0, `${build.join(' + ')}: the build fights (${Math.round(hp0)} → ${Math.round(hp1)} enemy hp)`);
+  }
+  ok(await ev(page, `${D}.world.player.temp.some((t) => t.id === 'gilt_edge' && t.stats.damage === 2)`), 'Gilt Edge pays +2 damage for 25 buttons');
+
   console.log('busy combat');
   const perf = await ev<any>(page, `(async () => {
     const d = ${D}, w = d.world; d.god();

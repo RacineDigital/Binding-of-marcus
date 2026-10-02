@@ -2,6 +2,7 @@
 import type { ItemDef, ConsumableDef, PoolId } from './types';
 import { PASSIVES_A } from './data/passives_a';
 import { PASSIVES_B } from './data/passives_b';
+import { BINDERY_ITEMS } from './data/bindery';
 import { ACTIVES } from './data/actives';
 import { FAMILIARS } from './data/familiars';
 import { REFERENCES } from './data/references';
@@ -14,7 +15,7 @@ import { INNATE_ITEMS } from './data/innate';
 import { TAINTED_ITEMS } from './data/tainted';
 import { PAGES, SWEETS, CHARMS } from './data/consumables';
 
-export const ALL_ITEMS: ItemDef[] = [...PASSIVES_A, ...PASSIVES_B, ...ACTIVES, ...FAMILIARS, ...REFERENCES, ...DICE, ...STORY_ITEMS, ...FRIEND_ITEMS, ...ECHO_ITEMS, ...PACT_ITEMS, ...INNATE_ITEMS, ...TAINTED_ITEMS];
+export const ALL_ITEMS: ItemDef[] = [...PASSIVES_A, ...PASSIVES_B, ...BINDERY_ITEMS, ...ACTIVES, ...FAMILIARS, ...REFERENCES, ...DICE, ...STORY_ITEMS, ...FRIEND_ITEMS, ...ECHO_ITEMS, ...PACT_ITEMS, ...INNATE_ITEMS, ...TAINTED_ITEMS];
 const byId = new Map<string, ItemDef>();
 for (const it of ALL_ITEMS) {
   if (byId.has(it.id)) console.warn('duplicate item id', it.id);

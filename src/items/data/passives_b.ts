@@ -4,6 +4,7 @@ import { I, ramp, hex, conditional, counter } from './kit';
 import { spawnDrop } from '../../game/drops';
 import { spawnInkling } from '../familiar_rt';
 import { revealMap } from '../../game/roomflow';
+import { luckChance } from '../../projectiles/profile';
 import { TAU, dist2 } from '../../core/math';
 
 const cherry = (p: any, c: string) => { p.ball(9, 11, 5, 5, ramp(c)); p.line(9, 6, 11, 2, hex('#4a6a2a')); p.set(7, 9, '#ffffff'); };
@@ -92,10 +93,13 @@ export const PASSIVES_B: ItemDef[] = [
     pickup: '+5 keys', effect: [], give: { keys: 5 },
     icon: (p) => { p.ring(7, 7, 4.5, '#a8a8b0', 1.2); for (const a of [0.4, 1.1, 1.8]) { p.line(7 + Math.cos(a) * 4, 7 + Math.sin(a) * 4, 7 + Math.cos(a) * 11, 7 + Math.sin(a) * 11, hex('#b8b4a8')); } } },
   { id: 'four_leaf', name: 'Pressed Clover', kind: 'passive', quality: 2, pools: { shop: 1 },
-    pickup: 'Luck up', effect: [], stats: { luck: 2 },
+    pickup: 'Luck up, little gifts', effect: ['Clearing a room has a 20% chance (more with luck) to leave a button, key, bomb or heart.'], stats: { luck: 2 },
+    hooks: { onRoomClear(w) { if (Math.random() < luckChance(0.2, w.player.stats.luck)) { const c = w.room.center(); spawnDrop(w, ['button', 'key', 'bomb', 'heart'][Math.floor(Math.random() * 4)], c.x, c.y + 16); } } },
     icon: (p) => { for (let i = 0; i < 4; i++) { const a = (i / 4) * TAU + 0.78; p.ball(9 + Math.cos(a) * 3.5, 8 + Math.sin(a) * 3.5, 2.8, 2.8, ramp('#4a9a4a')); } p.line(9, 10, 10, 16, hex('#3a6a2a')); } },
   { id: 'grandmothers_ring', name: 'Grandmother\'s Ring', kind: 'passive', quality: 2, pools: { treasure: 1 },
-    pickup: 'It still fits someone', effect: ['You wear it, and it glints when something good is near.'], stats: { luck: 1, damage: 0.3 },
+    pickup: 'It glints near secrets', effect: ['Walking into a room next to an undiscovered secret room makes the ring glint, and marks it on your map.'], stats: { luck: 1, damage: 0.3 },
+    hooks: { onRoomEnter(w) { const here = w.room; for (const r of w.floor.rooms) if ((r.type === 'secret' || r.type === 'supersecret') && !r.discovered && Math.abs(r.gx - here.gx) + Math.abs(r.gy - here.gy) === 1) {
+      r.seen = true; w.hud.toast('The ring glints.', 1.6); w.audio.play('coinDrop', { pitch: 1.6, vol: 0.5 }); w.fx.stars(w.player.x, w.player.y - 10, 4, '#ffe48a'); return; } } },
     icon: (p) => { p.ring(9, 10, 5, '#d8a838', 1.6); p.ring(9, 10, 5, '#ffe48a', 0.5); p.ball(9, 4.5, 2.4, 2.2, ramp('#d01830')); p.set(8, 4, '#ffd0d8'); } },
   { id: 'grandpas_map', name: 'Grandfather\'s Map', kind: 'passive', quality: 2, pools: { library: 1 },
     pickup: 'Know the way', effect: ['Reveals the layout of every floor (not hidden rooms).'],
@@ -117,7 +121,8 @@ export const PASSIVES_B: ItemDef[] = [
     icon: (p) => { p.ring(9, 9, 6, '#c8a04a', 1.2); I.gem(p, '#4ab0e0', 4, 12, 2); I.gem(p, '#e04a6a', 14, 12, 2); } },
   // ------------------------------------------------------------- bargains (the Inkwell) and curses
   { id: 'ink_pact', name: 'Ink Pact', kind: 'passive', quality: 3, pools: { deal: 1 }, tags: ['ink'],
-    pickup: 'Damage up', effect: [], stats: { damage: 2 },
+    pickup: 'Damage up, spilt ink', effect: ['Enemies you kill leave a pool of ink that burns other enemies.'], stats: { damage: 2 },
+    hooks: { onKill(w, e) { w.addCreep(e.x, e.y, 13, 'player', Math.max(4, w.player.stats.damage * 1.2), 3, '#2a2650'); } },
     icon: (p) => { p.rect(4, 2, 10, 14, hex('#1a1830')); p.line(6, 5, 12, 5, hex('#4a44a0')); p.line(6, 8, 12, 8, hex('#4a44a0')); I.drop(p, '#8a1a2a', 9, 13, 1.8); } },
   { id: 'black_quill', name: 'Black Quill', kind: 'passive', quality: 4, pools: { curse: 0.8 }, tags: ['void'],
     pickup: 'Damage up', effect: ['Shots become void-black.'], stats: { damageMult: 1.35, damage: 0.5 }, attack: { shape: 'void' },

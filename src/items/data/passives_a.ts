@@ -1,7 +1,8 @@
 // Passive items that change stats and attack behaviour.
 import type { ItemDef } from '../types';
-import { I, ramp, hex, P } from './kit';
-import { TAU } from '../../core/math';
+import { I, ramp, hex, P, conditional, counter } from './kit';
+import { TAU, dist2 } from '../../core/math';
+import { luckChance } from '../../projectiles/profile';
 
 
 export const PASSIVES_A: ItemDef[] = [
@@ -42,13 +43,18 @@ export const PASSIVES_A: ItemDef[] = [
     attack: { spectral: true, tint: '#b0c8f0' }, stats: { range: 20 },
     icon: (p) => { I.drop(p, '#b0c8f0'); p.set(8, 10, '#3a3a5a'); p.set(10, 10, '#3a3a5a'); } },
   { id: 'marrow', name: 'Marrow', kind: 'passive', quality: 2, pools: { curse: 1 }, tags: ['bone'],
-    pickup: 'Damage up', effect: [], stats: { damage: 1.5, speed: -0.1 },
+    pickup: 'Damage up, brittle foes', effect: ['Kills have a 30% chance to burst into 4 bone splinters (60% of your damage each).'], stats: { damage: 1.5, speed: -0.1 },
+    hooks: { onKill(w, e) { if (Math.random() > 0.3) return; const pl = w.player, off = Math.random() * TAU;
+      for (let i = 0; i < 4; i++) w.proj.player(w, { ...pl.prof, shape: 'bone', split: 0, explode: 0 }, e.x, e.y, 6, off + (i / 4) * TAU, pl.stats.damage * 0.6, 200, 90, 0.8, 1);
+      w.audio.play('tink', { x: e.x, pitch: 0.6, vol: 0.4 }); } },
     icon: (p) => { const b = ramp('#e0d6c0'); p.tube(5, 13, 13, 5, 2, b); p.ball(4, 13, 2.4, 2.4, b); p.ball(6, 15, 2.4, 2.4, b); p.ball(12, 3, 2.4, 2.4, b); p.ball(14, 5, 2.4, 2.4, b); } },
   { id: 'hot_cocoa', name: 'Hot Cocoa', kind: 'passive', quality: 2, pools: { boss: 1 },
-    pickup: 'Fire rate up', effect: [], stats: { tears: 0.7 },
+    pickup: 'Fire rate up, a warm start', effect: ['For 4 seconds after you walk into a fight, fire rate +1 more.'], stats: { tears: 0.7 },
+    hooks: { onRoomEnter(w) { if (w.enemies.some((e) => !e.dead && !e.friendly)) w.player.addTemp({ id: 'hot_cocoa', stats: { tears: 1 }, time: 4, room: true }); } },
     icon: (p) => { const m = ramp('#c8c8d8'); p.rect(4, 7, 9, 9, m[2]); p.rect(4, 7, 9, 1, m[4]); p.ring(14, 11, 2.5, m[2]); p.rect(5, 8, 7, 2, hex('#6a3a1e')); p.line(7, 2, 8, 5, hex('#e8e8f0')); p.line(10, 3, 9, 6, hex('#e8e8f0')); } },
   { id: 'spectacles', name: 'Grandfather\'s Spectacles', kind: 'passive', quality: 2, pools: { shop: 1 },
-    pickup: 'Range and shot speed up', effect: [], stats: { range: 60, shotSpeed: 0.15, size: 0.1 },
+    pickup: 'See far, hit far', effect: ['Enemies more than 5 tiles away take 35% more damage.'], stats: { range: 60, shotSpeed: 0.15, size: 0.1 },
+    hooks: { onHitEnemy(w, e, dmg) { if (dist2(e.x, e.y, w.player.x, w.player.y) > 120 * 120 && !e.dead) { e.hp -= dmg * 0.35; if (Math.random() < 0.3) w.fx.text(e.x, e.y - e.hitY - 10, 'far!', '#c8e0ff'); } } },
     icon: (p) => { p.ring(5, 9, 3.5, '#c8a04a', 1.2); p.ring(13, 9, 3.5, '#c8a04a', 1.2); p.line(8, 9, 10, 9, hex('#c8a04a')); p.set(4, 8, '#e0f0ff'); p.set(12, 8, '#e0f0ff'); } },
   { id: 'tin_heart', name: 'Tin Heart', kind: 'passive', quality: 2, pools: { boss: 1.5 },
     pickup: 'Health and speed up', effect: [], health: { containers: 1, heal: 2 }, stats: { speed: 0.1 },
@@ -148,12 +154,12 @@ export const PASSIVES_A: ItemDef[] = [
     stats: { tearsMult: 0.85 }, attack: { sides: true },
     icon: (p) => { const m = ramp('#5a5a62'); p.line(9, 2, 9, 16, m[2]); p.line(2, 9, 16, 9, m[2]); p.poly([12, 3, 16, 5, 12, 7], hex('#c8a04a')); p.poly([6, 3, 2, 5, 6, 7], hex('#c8a04a')); p.ball(9, 9, 1.6, 1.6, m); } },
   { id: 'swollen_ink', name: 'Swollen Ink', kind: 'passive', quality: 2, pools: { treasure: 1 },
-    pickup: 'Big shots', effect: ['Shots are much larger and hit harder, but fly slower.'],
-    stats: { size: 0.6, damage: 0.5, shotSpeed: -0.15 },
+    pickup: 'Big, heavy shots', effect: ['Shots are much larger and hit harder, but fly slower.', 'They shove enemies back twice as hard.'],
+    stats: { size: 0.6, damage: 0.5, shotSpeed: -0.15 }, attack: { knock: 1 },
     icon: (p) => { p.ball(9, 10, 6.5, 6, ramp('#343a9a')); p.set(6, 7, '#ffffff'); p.set(7, 7, '#a0a8ff'); } },
   { id: 'fine_nib', name: 'Fine Nib', kind: 'passive', quality: 2, pools: { treasure: 1 },
-    pickup: 'Many tiny shots', effect: ['Fire much faster with smaller, weaker shots.'],
-    stats: { tears: 1.4, damageMult: 0.72, size: -0.3 },
+    pickup: 'Many tiny shots', effect: ['Fire much faster with smaller, weaker shots.', 'Each one slips through the first enemy it hits.'],
+    stats: { tears: 1.4, damageMult: 0.72, size: -0.3 }, attack: { pierce: 1 },
     icon: (p) => { const m = ramp('#c8c8d4'); p.poly([9, 2, 7, 10, 9, 16, 11, 10], m[2]); p.line(9, 3, 9, 15, m[0]); for (let i = 0; i < 4; i++) p.set(12 + (i % 2), 4 + i * 3, '#343a9a'); } },
   { id: 'lodestone', name: 'Lodestone', kind: 'passive', quality: 3, pools: { treasure: 0.8 },
     pickup: 'Shots eat bullets', effect: ['Your shots cancel enemy projectiles they touch, and drag loose pickups along.'],
@@ -172,16 +178,19 @@ export const PASSIVES_A: ItemDef[] = [
     attack: { rainbow: true },
     icon: (p) => { p.rect(3, 7, 12, 9, hex('#3a6ab0')); ['#e04a4a', '#e8c040', '#4ab05a', '#b05ad8'].forEach((c, i) => { p.rect(4 + i * 3, 3, 2, 5, hex(c)); p.set(4 + i * 3, 2, hex(c)); }); } },
   { id: 'grandpas_pipe', name: 'Grandfather\'s Pipe', kind: 'passive', quality: 3, pools: { treasure: 0.7 },
-    pickup: 'Damage up', effect: [], stats: { damageMult: 1.3, tears: -0.2 },
+    pickup: 'Damage up, smoke rings', effect: ['Every 5th attack also blows a slow smoke ring that drifts through enemies and confuses them.'], stats: { damageMult: 1.3, tears: -0.2 },
+    hooks: { onFire(w, ang) { if (counter(w, 'pipe') % 5) return; const pl = w.player;
+      w.proj.player(w, { ...pl.prof, pierce: 99, confuse: 1, split: 0, explode: 0, homing: 0, tint: '#d8d4cc', shape: 'ink' }, pl.x, pl.y, 8, ang, pl.stats.damage, 75, 190, 2.2, 1); } },
     icon: (p) => { const w = ramp('#6a3a24'); p.rect(10, 6, 5, 7, w[2]); p.rect(10, 6, 5, 1, w[3]); p.tube(3, 9, 10, 11, 1.2, ramp('#2a2228')); p.line(12, 4, 11, 1, hex('#c8c8d0')); } },
   { id: 'oil_flask', name: 'Lamp Oil', kind: 'passive', quality: 1, pools: { shop: 1 },
-    pickup: 'Shot speed and range up', effect: [], stats: { shotSpeed: 0.25, range: 30 },
+    pickup: 'Shots catch fire', effect: ['12% chance to set what you hit alight (luck raises it).'], stats: { shotSpeed: 0.25, range: 30 }, attack: { burn: 0.12 },
     icon: (p) => I.bottle(p, '#c89a3a') },
   { id: 'running_shoes', name: 'Worn Plimsolls', kind: 'passive', quality: 1, pools: { boss: 1 },
-    pickup: 'Speed up', effect: [], stats: { speed: 0.3 },
+    pickup: 'Speed up, keep running', effect: ['After a second of running without stopping, damage +1 until you stop.'], stats: { speed: 0.3 },
+    hooks: { onTick(w, dt) { const pl = w.player, f = w.run.flags; f.shoesT = Math.hypot(pl.vx, pl.vy) > 70 ? (f.shoesT ?? 0) + dt : 0; conditional(w, 'shoes_run', f.shoesT > 1, { stats: { damage: 1 }, room: true }); } },
     icon: (p) => { const s = ramp('#e8e0d0'); p.poly([2, 14, 3, 8, 8, 8, 15, 12, 15, 15, 2, 15], s[2]); p.rect(2, 14, 14, 2, hex('#6a5a4a')); p.line(5, 9, 8, 12, hex('#3a6ab0')); } },
   { id: 'iron_filings', name: 'Iron Filings', kind: 'passive', quality: 1, pools: { boss: 1 },
-    pickup: 'Damage up', effect: [], stats: { damage: 1 },
+    pickup: 'Damage up, drawn to them', effect: ['Shots curve gently toward enemies.'], stats: { damage: 1 }, attack: { homing: 0.25 },
     icon: (p) => { const m = ramp('#5a5a66'); for (let i = 0; i < 14; i++) p.line(3 + (i * 7) % 12, 5 + (i * 5) % 10, 5 + (i * 7) % 12, 6 + (i * 5) % 10, m[2 + (i % 3)]); } },
   { id: 'clock_spring', name: 'Clock Spring', kind: 'passive', quality: 2, pools: { shop: 1 }, tags: ['clock'],
     pickup: 'Fire rate and speed up', effect: [], stats: { tears: 0.5, speed: 0.1 },
