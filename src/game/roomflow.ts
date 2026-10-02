@@ -27,6 +27,18 @@ import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 import { charById } from '../player/characters';
+import { CHAPTER_SONGS, chapterMusic } from '../audio/chapters';
+
+/**
+ * Off until the recorded soundtrack lands: synthesizing these long themes from their notes takes too
+ * long to start a chapter on time. With it on, each chapter plays its own theme (by chapter id, so
+ * alternates never share one).
+ */
+const CHAPTER_THEMES = false;
+export function themeMusic(t: { id: string; music: string }): string {
+  const k = chapterMusic(t.id);
+  return CHAPTER_THEMES && CHAPTER_SONGS[k] ? k : t.music;
+}
 
 // ------------------------------------------------------------------ floors
 /** Champion bosses: a colour, a twist, and a better payout. */
@@ -80,10 +92,10 @@ export function startFloor(w: World): void {
   // the end game announces itself: the Binding is not the Binding you remember
   const endgame = floor.theme.id === 'binding' && run.floorIndex === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless';
   w.hud.floorCard(floor.label, endgame ? 'It remembers you.' : floor.theme.subtitle, floor.curse, endgame);
-  w.audio.setMusic(floor.theme.music);
+  w.audio.setMusic(themeMusic(floor.theme));
   w.audio.prepareMusic(bossMusic(w.run));
   const nextTheme = pickTheme(w.run, w.run.floorIndex + 1);
-  if (nextTheme) w.audio.prepareMusic(nextTheme.music);
+  if (nextTheme) w.audio.prepareMusic(themeMusic(nextTheme));
   if (w.run.floorIndex === 0) w.audio.prepareMusic('death');
   w.audio.setIntensity(0);
   w.game.saveSnapshot();
@@ -123,7 +135,7 @@ export function restoreFloor(w: World, st: any): void {
   w.snapCamera();
   w.floorIntroT = 0.8;
   w.hud.roomName('Continued · ' + floor.label);
-  w.audio.setMusic(floor.theme.music);
+  w.audio.setMusic(themeMusic(floor.theme));
   w.audio.prepareMusic(bossMusic(run));
   w.audio.setIntensity(w.enemies.length ? 1 : 0);
 }
@@ -250,7 +262,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
     if (room.type === 'blessing') w.audio.stinger('blessing');
     if (room.type === 'lostfound') w.audio.stinger('lostfound');
   }
-  if (room.type === 'boss' && room.cleared && prevType !== 'boss') w.audio.setMusic(w.theme.music);
+  if (room.type === 'boss' && room.cleared && prevType !== 'boss') w.audio.setMusic(themeMusic(w.theme));
   w.itemHook('onRoomEnter');
   w.player.clearTemp((t) => !!t.room);
   w.player.activeRoomUses = 0;
@@ -556,14 +568,14 @@ export function onBossKilled(w: World, e: Enemy): void {
       const id = left.length ? left[Math.floor(Math.random() * left.length)] : w.run.pools.roll('treasure');
       spawnPedestal(w, c.x, c.y - 10, id, 'treasure');
       w.hud.toast('The echo fades. It left something behind.', 3);
-      w.audio.setMusic(w.theme.music);
+      w.audio.setMusic(themeMusic(w.theme));
     }, true);
     w.game.save.data.echo = null; w.game.save.markDirty();
     w.game.save.unlock('echo_rest');
     return;
   }
   // the fight is over: the boss theme gives way to the chapter's own music
-  w.after(1.8, () => { if (w.room === room && w.game.scene === 'run') { w.audio.setMusic(w.theme.music); w.audio.setIntensity(0); } }, true);
+  w.after(1.8, () => { if (w.room === room && w.game.scene === 'run') { w.audio.setMusic(themeMusic(w.theme)); w.audio.setIntensity(0); } }, true);
   const fi = w.run.floorIndex;
   // finished the story before? then the Binding offers a way out and a way further in
   const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless';
