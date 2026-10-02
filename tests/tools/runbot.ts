@@ -5,14 +5,14 @@
 //   npx tsx tests/tools/runbot.ts [seeds] [chapters] [char]
 import { chromium } from 'playwright-core';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
-const [nSeeds = '4', nCh = '7', char = 'marcus'] = process.argv.slice(2);
+const [nSeeds = '4', nCh = '7', char = 'marcus', first = '0'] = process.argv.slice(2);
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage();
-  const errors: string[] = []; page.on('pageerror', (e) => errors.push(e.message));
+  const errors: string[] = []; page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 6).join(' | ')); });
   await page.goto(base); await page.waitForTimeout(2500);
   const rows: any[] = [];
-  for (let s = 0; s < Number(nSeeds); s++) {
+  for (let s = Number(first); s < Number(first) + Number(nSeeds); s++) {
     await page.evaluate(`(() => { const g = window.__bomDebug.game; g.menus.stack = []; g.newRun('${char}', 'BOT${s}XYZ'); })()`);
     await page.waitForTimeout(2000);
     for (let ch = 0; ch < Number(nCh); ch++) {
