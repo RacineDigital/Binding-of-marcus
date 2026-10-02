@@ -9,6 +9,8 @@ import type { World } from '../game/world';
 import { moveBody } from '../rooms/collide';
 import { TILE } from '../core/constants';
 import { charById } from '../player/characters';
+import { getEnemy } from '../enemies/registry';
+import { PATTERNS } from './patterns';
 
 function drawBoss(e: Enemy, ctx: CanvasRenderingContext2D, sx: number, sy: number, extra: Partial<{ alpha: number; yoff: number }> = {}): void {
   const set = e.sprites[e.anim] ?? e.sprites.idle; const spr = set[e.frame % set.length];
@@ -174,7 +176,7 @@ function beep(e: Enemy, w: World, n: number, speed: number): void {
   w.fx.ring(e.x, e.y - 48, 4, 26, e.data.phase >= 2 ? '#ff4050' : '#60ff90', 0.3);
 }
 const patientBrain: BossBrain = {
-  idleTime: [0.6, 1.05], phases: [0.66, 0.33],
+  idleTime: [0.5, 0.9], phases: [0.75, 0.5, 0.25],
   idle(e, w, dt) {
     // drift after Marcus at the edge of the screen, never quite touching the floor
     const pl = w.player;
@@ -184,12 +186,12 @@ const patientBrain: BossBrain = {
     e.z = 6 + Math.sin(e.t * 1.6) * 3; e.flip = pl.x < e.x; e.animate(dt, 4);
     // between attacks the monitor keeps beeping
     e.data.hb = (e.data.hb ?? 1) - dt;
-    if (e.data.hb <= 0) { e.data.hb = [1.4, 1.0, 0.7][e.data.phase]; beep(e, w, 10 + e.data.phase * 2, 70 + e.data.phase * 10); }
+    if (e.data.hb <= 0) { e.data.hb = [1.3, 1.0, 0.75, 0.55][e.data.phase]; beep(e, w, 10 + e.data.phase * 2, 70 + e.data.phase * 10); }
   },
   attacks: [
     { id: 'heartbeat', weight: 3,
       run(e, w, t) {
-        const gap = [0.4, 0.32, 0.24][e.data.phase], n = 4 + e.data.phase;
+        const gap = [0.36, 0.3, 0.24, 0.2][e.data.phase], n = 4 + e.data.phase;
         e.data.k ??= 0;
         while (e.data.k < n && t > 0.3 + e.data.k * gap) { beep(e, w, 16 + e.data.phase * 3, 90 + e.data.k * 8); e.data.k++; }
         if (t > 0.5 + n * gap) { e.data.k = 0; return true; }
@@ -254,7 +256,12 @@ const patientBrain: BossBrain = {
         if (t > 1) { e.data.vs = false; return true; }
         return false;
       } },
-    { id: 'flatline', weight: 3, phases: [2], cooldown: 3,
+    // what it learned from everything else in the book
+    { ...PATTERNS.wall('water'), weight: 2, phases: [1, 2, 3] },
+    { ...PATTERNS.seekers('holy'), weight: 1.6, phases: [1, 2, 3] },
+    { ...PATTERNS.spiral('bile'), weight: 2, phases: [2, 3] },
+    { ...PATTERNS.shockwave('water'), weight: 2, phases: [2, 3] },
+    { id: 'flatline', weight: 3, phases: [2, 3], cooldown: 3,
       start(e, w) {
         // the trace goes flat: a line right across the room, swinging slowly, with beeps between
         const s = Math.random() < 0.5 ? 1 : -1;
@@ -270,18 +277,113 @@ const patientBrain: BossBrain = {
       } },
   ],
   onPhase(e, w, ph) {
-    if (ph === 1) w.hud.toast('The monitor speeds up.');
-    else { w.hud.toast('The line goes flat. It keeps coming.'); e.anim = 'rage'; w.whiteFlash = 0.4; }
+    if (ph === 1) w.hud.toast('The monitor speeds up. It forgets who it is.');
+    else if (ph === 2) { w.hud.toast('The line goes flat. It keeps coming.'); e.anim = 'rage'; w.whiteFlash = 0.4; }
+    else { w.hud.toast('Code blue.', 1.6); e.anim = 'rage'; w.whiteFlash = 0.7; w.shake(9); }
   },
 };
+// ------------------------------------------------------------------ forgetting
+// The Patient doesn't remember who it is. Every few seconds it slips away and comes back as
+// something else from the book (any boss Marcus has fought), still with its monitor beeping
+// underneath, faster each phase: Delirium, in a hospital bed.
+const FORMS = ['grubmother', 'furnaceheart', 'oldstoker', 'bilgemaw', 'matron', 'sleepwalker', 'ossuaryknight', 'mothmother', 'bellringer',
+  'choirmaster', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'ironlung', 'wardrobe'];
+/** The fields a borrowed form keeps for itself; swapped in while it acts and draws. */
+const KEEP = ['def', 'data', 'r', 'hitY', 'anim', 'frame', 'ftime', 'state', 'st', 'z', 'sx', 'sy', 'alpha', 'hidden', 'cd', 'cd2', 'tx', 'ty', 'mode'] as const;
+type Snapshot = Record<string, unknown>;
+function snapshot(e: Enemy): Snapshot { const o: Snapshot = {}; for (const k of KEEP) o[k] = (e as any)[k]; return o; }
+function restore(e: Enemy, o: Snapshot): void { for (const k of KEEP) (e as any)[k] = o[k]; }
+/** Run `fn` with the Patient wearing its current form (its own def, data, state and body). */
+function asForm(e: Enemy, fn: (fd: EnemyDef) => void): void {
+  const pd = e.data, f = pd.form as { def: EnemyDef; body: Snapshot };
+  const mine = snapshot(e);
+  restore(e, f.body);
+  e.data.phase = Math.min(e.data.phase ?? 0, 1); e.data.hard = true;
+  try { fn(f.def); } finally { f.body = snapshot(e); restore(e, mine); }
+}
+const SHIFT = [9, 7, 5.5, 4.5];
+function shiftForm(e: Enemy, w: World): void {
+  const pd = e.data, last = pd.form?.def.id;
+  // fade out where it stands...
+  w.fx.smoke(e.x, e.y - 30, 14, 'rgba(20,16,40,', 9, 0.9);
+  w.audio.play('bossRoar', { x: e.x, pitch: 1.6, vol: 0.5 });
+  // ...and come back somewhere else, as something else (or, now and then, as itself)
+  const p = randomFloorPoint(w, 90);
+  telegraph(w, p.x, p.y, 26, 0.5, '#80c0ff');
+  pd.vanish = 0.55; pd.to = p; e.invuln = true;
+  const pool = FORMS.filter((id) => id !== last && getEnemy(id));
+  const next = pd.phase === 0 || Math.random() < 0.25 || !pool.length ? null : pool[Math.floor(Math.random() * pool.length)];
+  pd.nextForm = next;
+}
+function arrive(e: Enemy, w: World): void {
+  const pd = e.data;
+  e.x = pd.to.x; e.y = pd.to.y; e.invuln = false;
+  w.fx.ring(e.x, e.y - 30, 8, 80, '#80c0ff', 0.5); w.shake(5);
+  gapRing(e, w, 18 + pd.phase * 4, 3, 85, angleTo(e.x, e.y, w.player.x, w.player.y), { shape: 'dark', r: 3.6 });
+  if (pd.nextForm) {
+    const fd = getEnemy(pd.nextForm)!;
+    // a fresh body for the form, standing where the Patient arrived
+    const body: Snapshot = { def: fd, data: { idleT: 0.8, tier: pd.tier ?? 0 }, r: fd.r, hitY: fd.hitY ?? fd.r, anim: 'idle', frame: 0, ftime: 0, state: 'idle', st: 0, z: 0, sx: 1, sy: 1, alpha: 1, hidden: false, cd: 0, cd2: 0, tx: e.x, ty: e.y, mode: fd.ghost ? 'ghost' : fd.flying ? 'fly' : 'walk' };
+    pd.form = { def: fd, body };
+    asForm(e, (d) => d.init?.(e, w));
+    w.hud.toast(`It remembers ${fd.name}.`, 1.2);
+  } else { pd.form = null; e.anim = pd.phase >= 2 ? 'rage' : 'idle'; e.state = 'idle'; e.st = 0; pd.idleT = 0.6; }
+  pd.shiftT = SHIFT[pd.phase] ?? 4.5;
+}
+
 const patient: EnemyDef = {
-  id: 'patient', name: 'The Patient', desc: 'The bed at the end of the ward. Everything Marcus was afraid he would find there.', boss: true,
-  hp: 1050, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
+  id: 'patient', name: 'The Patient', desc: 'The bed at the end of the ward. Everything Marcus was afraid he would find there, and it has forgotten which.', boss: true,
+  hp: 9500, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
   sprites: () => ({ idle: frames(92, 104, 8, (p, f, n) => paintPatient(p, f, 0, n)), rage: frames(92, 104, 8, (p, f, n) => paintPatient(p, f, 1, n)) }),
-  init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; },
-  update(e, w, dt) { bossUpdate(e, w, dt, patientBrain); if (Math.random() < dt * 5) w.fx.burst(e.x + (Math.random() - 0.5) * 40, e.y, 2, 1, e.data.phase >= 2 ? '#14112a' : '#dce4e0', 20, 0.8); },
-  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { yoff: 6 }); w.r.addGlow(sx, sy - e.z - 46, 50, e.data.phase >= 2 ? '#ff4050' : '#60ff90', 0.14); },
+  init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; e.data.shiftT = 8; },
+  update(e, w, dt) {
+    const pd = e.data;
+    pd.phase ??= 0;
+    // vanishing between forms
+    if (pd.vanish > 0) { pd.vanish -= dt; e.alpha = Math.max(0, pd.vanish / 0.55); if (pd.vanish <= 0) { e.alpha = 1; arrive(e, w); } return; }
+    // a phase line crossed while it was someone else: it snaps back to itself to scream about it
+    const th = patientBrain.phases!;
+    if (pd.form && pd.phase < th.length && e.hpFrac() <= th[pd.phase]) { pd.form = null; e.state = 'idle'; e.anim = 'idle'; e.z = 6; e.hidden = false; }
+    if (pd.form) {
+      asForm(e, (fd) => fd.update(e, w, dt));
+      // the monitor never stops, whoever it is
+      pd.hb = (pd.hb ?? 1.2) - dt;
+      if (pd.hb <= 0) { pd.hb = [1.6, 1.3, 1.0, 0.8][pd.phase]; beep(e, w, 10 + pd.phase * 2, 70 + pd.phase * 8); }
+      if (pd.phase >= 3) { pd.cbT = (pd.cbT ?? 2) - dt; if (pd.cbT <= 0) { pd.cbT = 2.6; codeBlueWall(e, w); } }
+    } else bossUpdate(e, w, dt, patientBrain);
+    if (Math.random() < dt * 5) w.fx.burst(e.x + (Math.random() - 0.5) * 40, e.y, 2, 1, pd.phase >= 2 ? '#14112a' : '#dce4e0', 20, 0.8);
+    // time to forget again (not mid-phase-change)
+    if (pd.phase >= 1 && e.state !== 'phase') { pd.shiftT = (pd.shiftT ?? 6) - dt; if (pd.shiftT <= 0) shiftForm(e, w); }
+  },
+  draw(e, ctx, w, sx, sy) {
+    const pd = e.data;
+    if (pd.form && !(pd.vanish > 0)) {
+      // a borrowed body, flickering with ink and the odd glimpse of the bed underneath
+      asForm(e, (fd) => {
+        const glitch = Math.sin(e.t * 23) > 0.85;
+        ctx.save(); ctx.globalAlpha = 0.35; ctx.filter = 'hue-rotate(200deg) saturate(2)';
+        const set = e.sprites[e.anim] ?? e.sprites.idle, spr = set?.[e.frame % (set?.length || 1)];
+        spr?.draw(ctx, sx + (glitch ? 3 : 1.5), sy - e.z + 2, { flip: e.flip });
+        ctx.restore();
+        if (fd.draw) fd.draw(e, ctx, w, sx, sy); else drawBoss(e, ctx, sx, sy);
+      });
+      if (Math.sin(e.t * 9) > 0.93) { ctx.save(); ctx.globalAlpha = 0.25; drawBoss(e, ctx, sx, sy, { yoff: 6 }); ctx.restore(); }
+      w.r.addGlow(sx, sy - 20, 46, '#80c0ff', 0.12);
+      return;
+    }
+    drawBoss(e, ctx, sx, sy, { yoff: 6 });
+    w.r.addGlow(sx, sy - e.z - 46, 50, pd.phase >= 2 ? '#ff4050' : '#60ff90', 0.14);
+  },
 };
+/** Code blue: walls of shots sweep across from both sides with one way through each. */
+function codeBlueWall(e: Enemy, w: World): void {
+  const room = w.room, top = room.oy + 12, bot = room.oy + room.rows * TILE - 12;
+  for (const fromLeft of [true, false]) {
+    const x = fromLeft ? room.ox + 14 : room.ox + room.cols * TILE - 14, gapY = w.player.y + (Math.random() - 0.5) * 70;
+    for (let y = top; y < bot; y += 11) if (Math.abs(y - gapY) > 20) w.proj.enemy(x, y, fromLeft ? 0 : Math.PI, 62, { shape: 'water', r: 3.8, range: room.cols * TILE });
+  }
+  w.audio.play('chime', { x: e.x, pitch: 1.2, vol: 0.5 });
+}
 
 // ================================================================== Echoes
 // Your last death, come back: a ghost of the reader you died as, on the chapter where it happened.

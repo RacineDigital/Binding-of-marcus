@@ -43,7 +43,7 @@ export const CHAMPIONS: Record<ChampKind, { name: string; desc: string; hp: numb
   inked: { name: 'Inked', desc: 'It leaks ink in rings as it fights.', hp: 1.3, filter: 'grayscale(0.6) brightness(0.55) sepia(0.5) hue-rotate(200deg) saturate(2.5)', glow: '#7a5aff' },
 };
 /** Bosses that rewrite themselves (the Delirium-like ones): their health is set in their own definition. */
-const FINAL_FORMS = new Set(['unwritten', 'author']);
+const FINAL_FORMS = new Set(['unwritten', 'author', 'patient']);
 /** A floor whose boss can end the story: the Binding, the Last Page, the Foreword and Room 4. */
 export function isEndingFloor(run: Run): boolean {
   const fi = run.floorIndex;
