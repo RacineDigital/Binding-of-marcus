@@ -6,6 +6,7 @@ import { RoomData, RoomType, Side, DoorKind, opposite } from '../rooms/room';
 import { MARGINS_THEME, LASTPAGE_THEME, DEDICATION_THEME, FOREWORD_THEME, MARGINS_FLOOR, LASTPAGE_FLOOR, FLOORS, FloorTheme, FINAL_FLOOR, CHAPTER_POOL, familyOf, chapterLabel,
   HOSPITAL_FLOORS, ROOM4_THEME, HOME_THEME, HOSPITAL_FIRST, ROOM4_FLOOR, HOME_FLOOR } from '../data/floors';
 import type { Run, Floor } from '../game/run';
+import { setPiecesFor } from './setpieces';
 import { populateRoom } from './populate';
 import { notesFor } from '../data/notes';
 import { Ob } from '../rooms/room';
@@ -117,6 +118,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   };
   // populate every room (deterministic per room seed, pools consumed in id order)
   const prng = new RNG(`${run.seed}:populate${fi}`);
+  markSetPieces(floor, run);
   for (const r of c.rooms) populateRoom(r, floor, run, prng, save);
   sprinkleMarkedRocks(floor, rng);
   // only one of the Margins' boss rooms leads on, and nothing about its door says which
@@ -374,6 +376,15 @@ function connectDoors(c: Ctx, fi: number): void {
 }
 
 /** A bargain room (Inkwell, Wax Chapel or Lost & Found) appended next to the boss room after the boss dies. */
+/** Pick the chapter's set-piece rooms: one a floor (two from Chapter IV), away from the start, on its own seed stream. */
+function markSetPieces(floor: Floor, run: Run): void {
+  const pieces = setPiecesFor(floor.theme.id);
+  if (!pieces.length || run.challenge === 'twins') return;
+  const rng = new RNG(`${run.seed}:set${floor.index}`);
+  const cands = rng.shuffle(floor.rooms.filter((r) => r.type === 'normal' && r.cw === 1 && r.ch === 1 && r.distance >= 2));
+  const n = Math.min(cands.length, floor.index >= 3 ? 2 : 1), order = rng.shuffle(pieces.map((_, i) => i));
+  for (let i = 0; i < n; i++) cands[i].flags.setpiece = order[i % order.length];
+}
 export function addBargainRoom(run: Run, floor: Floor, boss: RoomData, kind: 'deal' | 'blessing' | 'lostfound'): RoomData | null {
   const map = floor.map;
   for (const [dx, dy, side] of DIRS) {

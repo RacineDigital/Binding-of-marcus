@@ -10,7 +10,7 @@ const MODE_NAME: Record<string, string> = {
   laser: 'rapid lasers', melee: 'close-range swings (hold for a spin)',
 };
 /** What two attack styles do together (order doesn't matter). */
-const COMBOS: Record<string, string> = {
+export const COMBOS: Record<string, string> = {
   'beam+burst': 'Your beam goes off with a spray of shots.',
   'beam+charge': 'Your beam comes out thicker and hits harder.',
   'beam+laser': 'Lasers make the beam charge faster.',
@@ -22,6 +22,12 @@ const COMBOS: Record<string, string> = {
   'burst+melee': 'A full spin also throws a spray of shots.',
   'charge+melee': 'Spins charge into a heavier blow.',
 };
+/** What two attack styles now do together, for each style newly joined to the ones already held. */
+export function newCombos(before: Set<string>, after: Set<string>): string[] {
+  const out: string[] = [];
+  for (const m of after) if (!before.has(m)) for (const o of before) { const c = COMBOS[[m, o].sort().join('+')]; if (c) out.push(c); }
+  return out;
+}
 const cache = new Map<string, DescLine[]>();
 
 export function previewLines(w: World, id: string): DescLine[] {

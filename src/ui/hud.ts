@@ -33,7 +33,7 @@ const GIFT_POP = 0.45, GIFT_HOLD = 1.7, GIFT_FLY_END = 2.3;
 /** How close you must stand to a pinned note to keep reading it (world px). */
 const NOTE_READ_RANGE = 34;
 
-interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null }
+interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null; note?: string; kicker?: string }
 
 /** 8x8 stat icons drawn from character maps (palette letters below). */
 const STAT_ICON_MAPS: Record<string, string[]> = {
@@ -175,7 +175,10 @@ export class Hud {
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(VIEW_W - 50, 63, 44, 11);
     text(ctx, str, VIEW_W - 8, 71, 7, this.w.run.won ? '#ffd060' : '#e8e0d0', 'right');
   }
-  banner(title: string, sub: string, icon: HTMLCanvasElement | null = null): void { this.banners = [{ title, sub, t: 0, icon }]; }
+  banner(title: string, sub: string, icon: HTMLCanvasElement | null = null, note?: string, kicker?: string): void { this.banners = [{ title, sub, t: 0, icon, note, kicker }]; }
+  /** A boss's name struck through in ink: the chapter's keeper is done. */
+  bossDown(name: string): void { this.dcard = { name, t: 0 }; }
+  dcard: { name: string; t: number } | null = null;
   toast(s: string, dur = 2.4): void { this.toasts.push({ text: s, t: 0, dur }); if (this.toasts.length > 3) this.toasts.shift(); }
   floorCardAlarm = false;
   floorCard(title: string, sub: string, curse: string | null, alarm = false): void { this.floorCardT = 3.2; this.floorTitle = title; this.floorSub = sub; this.floorCurse = curse; this.floorCardAlarm = alarm; }
@@ -192,7 +195,8 @@ export class Hud {
 
   update(dt: number): void {
     for (const b of this.banners) b.t += dt;
-    this.banners = this.banners.filter((b) => b.t < 3);
+    this.banners = this.banners.filter((b) => b.t < (b.note ? 4 : 3));
+    if (this.dcard && (this.dcard.t += dt) > 2.6) this.dcard = null;
     if (this.note && (this.note.t += dt) > this.note.dur) this.note = null;
     // a pinned note stays open while you stand by it, and fades the moment you walk away
     if (this.note?.at && this.note.dur > 1e8) {
@@ -258,6 +262,7 @@ export class Hud {
     if (eid) this.drawEID(ctx); else this.drawItemPanel(ctx);
     this.drawBanners(ctx);
     this.drawTransformCard(ctx);
+    this.drawBossDown(ctx);
     this.drawGift(ctx);
     this.drawNote(ctx);
     this.drawToasts(ctx);
@@ -812,20 +817,42 @@ export class Hud {
 
   private drawBanners(ctx: CanvasRenderingContext2D): void {
     for (const b of this.banners) {
-      const a = b.t < 0.25 ? ease.outBack(b.t / 0.25) : b.t > 2.5 ? 1 - (b.t - 2.5) / 0.5 : 1;
+      const end = b.note ? 3.5 : 2.5;
+      const a = b.t < 0.25 ? ease.outBack(b.t / 0.25) : b.t > end ? 1 - (b.t - end) / 0.5 : 1;
       const alpha = clamp(a, 0, 1);
-      const tw = Math.max(measure(ctx, b.title, 14, FONT_TITLE, 400), measure(ctx, b.sub, 8)) + (b.icon ? 34 : 24);
-      const x = VIEW_W / 2 - tw / 2, y = 30;
+      const tw = Math.max(measure(ctx, b.title, 14, FONT_TITLE, 400), measure(ctx, b.sub, 8), b.note ? measure(ctx, b.note, 7) : 0) + (b.icon ? 34 : 24);
+      const H = b.note ? 41 : 32, x = VIEW_W / 2 - tw / 2, y = 30;
       ctx.save();
       ctx.translate(VIEW_W / 2, y + 16); ctx.scale(1, 0.6 + 0.4 * a); ctx.translate(-VIEW_W / 2, -(y + 16));
-      paperStrip(ctx, x, y, tw, 32, alpha, b.title.length);
+      paperStrip(ctx, x, y, tw, H, alpha, b.title.length);
       ctx.globalAlpha = alpha;
+      if (b.kicker) {
+        // a rare find: a gilt edge and a small capital line above the strip
+        ctx.strokeStyle = 'rgba(214,168,64,0.9)'; ctx.lineWidth = 1; ctx.strokeRect(x + 1.5, y + 1.5, tw - 3, H - 3);
+        text(ctx, b.kicker, VIEW_W / 2, y - 3, 6.5, '#f0c860', 'center', FONT_BODY, 700);
+      }
       const tx = b.icon ? x + 26 : x + 12;
       if (b.icon) ctx.drawImage(b.icon, x + 6, y + 7);
       text(ctx, b.title, tx, y + 16, 14, '#2a1a14', 'left', FONT_TITLE, 400, false);
       text(ctx, b.sub, tx, y + 26, 8, '#5a4636', 'left', FONT_BODY, 600, false);
+      if (b.note) text(ctx, '✦ ' + b.note, tx, y + 36, 7, '#5a2a7a', 'left', FONT_BODY, 700, false);
       ctx.restore();
     }
+  }
+  private drawBossDown(ctx: CanvasRenderingContext2D): void {
+    const c = this.dcard; if (!c) return;
+    const a = clamp(Math.min(c.t * 5, (2.6 - c.t) * 2.5), 0, 1), cy = 104;
+    ctx.save(); ctx.globalAlpha = a;
+    const g = ctx.createLinearGradient(0, 0, VIEW_W, 0);
+    g.addColorStop(0, 'rgba(10,6,8,0)'); g.addColorStop(0.5, 'rgba(10,6,8,0.7)'); g.addColorStop(1, 'rgba(10,6,8,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, cy - 26, VIEW_W, 44);
+    text(ctx, 'CLOSED', VIEW_W / 2, cy - 14, 7, '#c8a878', 'center', FONT_BODY, 700);
+    text(ctx, c.name, VIEW_W / 2, cy + 4, 18, '#efe2c8', 'center', FONT_TITLE, 400);
+    // the strike: a wet ink line drawn across the name, quickly, a beat after it appears
+    const w = measure(ctx, c.name, 18, FONT_TITLE, 400) + 16, k = ease.outCubic(clamp((c.t - 0.35) / 0.3, 0, 1));
+    ctx.fillStyle = '#a02a2a'; ctx.fillRect(VIEW_W / 2 - w / 2, cy - 2, w * k, 2);
+    ctx.fillStyle = 'rgba(160,42,42,0.5)'; ctx.fillRect(VIEW_W / 2 - w / 2 + 2, cy, w * k - 4, 1);
+    ctx.restore();
   }
   private drawTransformCard(ctx: CanvasRenderingContext2D): void {
     const c = this.tcard; if (!c) return;

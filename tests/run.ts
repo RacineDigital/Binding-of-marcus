@@ -17,6 +17,7 @@ import { CHARACTERS } from '../src/player/characters';
 import { ACHIEVEMENTS } from '../src/data/achievements';
 import { MAP_SIZE } from '../src/core/constants';
 import { Side, Ob } from '../src/rooms/room';
+import { ALL_SET_PIECES } from '../src/generation/setpieces';
 
 let failures = 0, checks = 0;
 function ok(cond: boolean, msg: string): void { checks++; if (!cond) { failures++; console.error('FAIL:', msg); } }
@@ -342,5 +343,25 @@ console.log('content:', JSON.stringify(counts));
   const h = new Run('MUSIC2', 'marcus', () => true); h.flags.room4 = true; h.floorIndex = ROOM4_FLOOR; ok(bossMusic(h) === 'bossFinal', 'Room 4 keeps the final theme');
   for (const id of ['finalBinding', 'finalUnwritten', 'finalAuthor']) ok(!!SONGS[id], `${id} is in the soundtrack`);
 }
+// ------------------------------------------------------------ set pieces
+{
+  const doors = [[7, 0], [7, 8], [0, 4], [14, 4]];
+  for (const sp of ALL_SET_PIECES) {
+    ok(sp.rows.length === 9 && sp.rows.every((r) => r.length === 15), `set piece ${sp.name} is 15x9`);
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 15; c++) {
+      const id = sp.cast[sp.rows[r][c]]; if (!id) continue;
+      ok(!!getEnemy(id), `set piece ${sp.name}: ${id} exists`);
+      // mirroring keeps door distances (the doors are symmetric), so one check covers every flip
+      ok(doors.every(([dc, dr]) => Math.abs(dc - c) + Math.abs(dr - r) >= 3), `set piece ${sp.name}: ${id} at ${c},${r} is not on top of a door`);
+    }
+  }
+  let withPiece = 0, floors = 0;
+  for (let i = 0; i < 40; i++) {
+    const run = new Run('S' + i.toString(36).toUpperCase().padStart(7, '4'), 'marcus', () => true);
+    for (let f = 0; f < 7; f++) { run.floorIndex = f; const fl = generateFloor(run, f); floors++; if (fl.rooms.some((r) => r.flags.variant === 'setpiece' && r.spawns.length >= 4)) withPiece++; }
+  }
+  ok(withPiece >= floors * 0.95, `chapters have their set piece (${withPiece}/${floors})`);
+}
+
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

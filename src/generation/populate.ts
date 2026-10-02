@@ -1,4 +1,5 @@
 // Fills generated rooms: obstacle layouts from templates, role-based enemy casts and special room contents.
+import { setPiecesFor } from './setpieces';
 import { RNG } from '../core/rng';
 import { RoomData, Ob, SpawnDef, Side } from '../rooms/room';
 import { TEMPLATES, BOSS_TEMPLATE, Template } from '../rooms/templates';
@@ -215,6 +216,20 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       if (room.cw === 1 && room.ch === 1) subs.push([0, 0]);
       else for (let j = 0; j < room.ch; j++) for (let i = 0; i < room.cw; i++) subs.push([i * 20, j * 11]);
       // a little over half of all rooms are procedurally generated; the rest are handmade templates
+      const sp = room.flags.setpiece !== undefined ? setPiecesFor(floor.theme.id)[room.flags.setpiece] : null;
+      if (sp) {
+        // a set piece: its own layout and its own cast, mirrored at random
+        const fx = rng.chance(0.5), fy = rng.chance(0.5);
+        stamp(room, sp.rows, 0, 0, fx, fy, rng, floor, slots);
+        ensurePaths(room);
+        room.spawns = [];
+        for (let r = 0; r < 9; r++) for (let c = 0; c < 15; c++) {
+          const id = sp.cast[sp.rows[fy ? 8 - r : r][fx ? 14 - c : c]];
+          if (id && getEnemy(id)) room.spawns.push({ id, c, r });
+        }
+        room.flags.variant = 'setpiece'; room.flags.setName = sp.name;
+        break;
+      }
       for (const [oc, orr] of subs) stamp(room, rng.chance(0.55) ? generateLayout(rng, floor.theme, fi) : pickTemplate(rng, fi).rows, oc, orr, rng.chance(0.5), rng.chance(0.5), rng, floor, slots);
       // big rooms: decorate the seams with pillars
       if (room.cw === 2) for (const r of [1, room.rows - 2]) if (rng.chance(0.5)) room.setOb(17, r, Ob.Pillar);

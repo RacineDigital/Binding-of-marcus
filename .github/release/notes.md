@@ -1,44 +1,46 @@
-## What's new in 3.6.0: feel, items and the bindery's pages
+## What's new in 3.7.0: whole runs, start to finish
 
-### Continue a run exactly as you left it
-- **Bonus rooms survive Save & quit.** An Inkwell, Chapel or Lost & Found room that opened during a
-  floor (and the door to it) used to vanish when you continued. They now come back with the floor.
-- **Floor-long effects survive too.** Effects that last for the rest of a floor are kept in the save.
-- **Lighter on memory.** Recorded music keeps only the two most recent tracks decoded, and rendered
-  songs are evicted after five, so long sessions stay steady.
+### Pacing, measured
+Tuned from a pacing report over 60 seeds and a bot that plays whole runs in the browser.
+- **A fuller first chapter.** Chapter I had about three fights before its boss; it now has about five.
+- **Late chapters stop dragging.** Regular enemies toughen more gently (1.9x by the Binding instead
+  of 2.3x) and late floors have a couple fewer rooms. Bosses keep their full strength.
+- **A shop before the Binding.** Chapter VII had none, while a thorough player arrived carrying
+  most of a hundred buttons.
 
-### Combat you can feel
-- **Every enemy shot is announced.** Before an enemy fires it swells and flashes white for a quarter
-  of a second, and the shots then leave at exactly the angles it showed.
-- **Hits read clearly.** A bright impact star where each shot lands, a grey clink and sparks when
-  a hit is blocked, a white death pop with a ring (and a tiny freeze on big kills), a small recoil
-  kick when you fire, and getting hurt reddens the edges of the screen instead of the whole screen.
-- **Dangerous shots stay readable.** Enemy shots are drawn on top with a dark ring and a pulsing rim;
-  your own shots get a smear and soften when the screen is full of them.
-- **Fairer rooms.** No room forces you across spikes to get from one door to another.
+### Buttons, keys and bombs worth having
+- **Mott restocks.** Lean on the shopkeeper for a moment and he swaps every curio still for sale
+  for a fresh lot: 5 buttons, then 9, 13... in the same shop. The price shows when you walk up.
+- **Shops stock three curios from Chapter III** (was Chapter V).
+- **Fewer spare keys and bombs.** Thorough players were carrying 20-30 of each by the end; rooms
+  and chests now lean toward pages, sweets, sparks and charms instead.
 
-### Items worth reading
-- **"With your build."** Stand by a curio and the panel shows what it would do to *you*: your damage,
-  fire rate, range, speed and shots before and after, whether your attack changes, and how two attack
-  styles combine (a beam with lasers charges faster, a spin with lasers fires them all round, ...).
-- **Plain stat items now change how you play.** Marrow's kills burst into bone splinters; Hot Cocoa
-  fires faster for the first seconds of a fight; Grandfather's Spectacles hit far-off enemies harder;
-  Grandfather's Pipe blows a confusing smoke ring every 5th attack; Lamp Oil sets enemies alight;
-  Worn Plimsolls reward running without stopping; Iron Filings curve shots toward enemies; Pressed
-  Clover leaves gifts after rooms; Grandmother's Ring really does glint beside secret rooms; Ink Pact
-  kills leave burning ink; Ink Horns gore the first hit on each enemy; Swollen Ink shoves; Fine Nib
-  slips through the first enemy.
-- **Ten new curios from the bindery:** Paper Cut, Bookends, Printing Plate, Gilt Edge, Creasing Iron,
-  Reading Lamp, Overdue Notice, Spilt Inkwell, Red Thread and Grandfather's Marginalia. Each one asks
-  something of you (stand still, keep close, stay unhurt, carry buttons) and pays you for it.
+### Every chapter has its own fights
+Each chapter now has **set pieces**: rooms built around what only its cast does, named as you walk
+in, with a chest for clearing them. The Cellar's hives behind rock walls and pillbugs rolling down
+an aisle; the Boiler Rooms' stoker charging between lanes of fire, and powder kegs among the
+cinderhoppers; grate-eyes watching across a drain; nurses lobbing from behind the beds while the
+orderlies close in; an ossuary of leaping spiders; penitents you have to wait out between the pews;
+and a tear in the page that breathes in. One per floor, two from Chapter IV.
 
-### Pages of the book
-- **Pause, Help and the end of a run are now an open book**: a worn leather cover, two foxed pages and
-  a sewn spine. The pause page keeps your run's ledger and curios; the results page shows your reader,
-  how far the story got chapter by chapter, and what you carried.
-- **A proper Help page** (from Pause, or Options) lists your controls as you have them bound, what each
-  door symbol means and what each kind of heart does. Controls are no longer printed on the pause page
-  or the HUD.
+### Readers
+- **Marcus is no longer "the baseline."** Frightened: getting hit makes him flick a ring of ink and
+  fire much faster for 3 seconds, and on his last half heart he hits harder.
+- **Nell fans the flames.** Burning enemies take 25% more from her hits.
+
+### Unlocks you can't miss
+- An unlock slip now says **what you got**, and calls out a **new reader**.
+- New readers are marked **NEW** on the reader page, new achievements are marked NEW under
+  Statistics, and the Journal says how many are waiting.
+- The **results page and the ending list what the run unlocked**.
+- Hidden story achievements give a **clue** instead of a blank line.
+- Unlocks are **saved the moment they happen**, so a crash or a closed window can't lose one.
+
+### Moments
+- **A rare curio** lands with a gilt-edged banner, a held breath and a column of light.
+- **A synergy** says itself: when a new attack style meets one you have, the banner adds what the
+  two now do together.
+- **A boss's name is struck through in ink** when it falls.
 
 ## Download and play
 

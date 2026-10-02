@@ -1,4 +1,5 @@
 // Room lifecycle: entering, doors, clearing, rewards, special rooms and floor progression.
+import { newCombos } from '../items/preview';
 import type { World, DoorRT } from './world';
 import type { Run } from './run';
 import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef, SpawnDef } from '../rooms/room';
@@ -249,7 +250,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   if (from !== null) w.game.autosave();
   if (room.flags.variant && !room.cleared && !room.flags.announced) {
     room.flags.announced = true;
-    w.hud.roomName(VARIANT_NAMES[room.flags.variant] ?? '');
+    w.hud.roomName(room.flags.setName ?? VARIANT_NAMES[room.flags.variant] ?? '');
   }
   if (room.type !== 'normal' && room.type !== 'start' && room.type !== 'boss' && !room.flags.announced) {
     room.flags.announced = true;
@@ -460,6 +461,8 @@ function onClear(w: World, reward: boolean): void {
     else if (w.player.bombs === 0 && rng.chance(0.3)) kind = 'bomb';
     else if (w.run.mode === 'hard' && rng.chance(0.12)) kind = null;
     if (room.flags.variant === 'champions' || room.flags.variant === 'ambush') kind = rng.chance(0.5) ? 'chest' : kind ?? 'heart';
+    // a set piece pays for itself: a chest (sometimes locked, so a key matters) on top of the usual drop
+    if (room.flags.variant === 'setpiece') { const p2 = freeSpotNear(w, room.center().x - 26, room.center().y); spawnDrop(w, rng.chance(0.35) ? 'chest:locked' : 'chest:tin', p2.x, p2.y, true, rng); }
     if (room.flags.variant === 'dark') { const p2 = freeSpotNear(w, room.center().x + 24, room.center().y); spawnDrop(w, rng.pick(['page', 'sweet', 'key']), p2.x, p2.y, true, rng); }
     if (kind) {
       const p = freeSpotNear(w, room.center().x, room.center().y);
@@ -554,6 +557,7 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.run.stats.bossesKilled.push(e.def.id);
   w.slowT = 0.6; w.whiteFlash = 0.8; w.shake(8);
   w.audio.stinger('bossDeath');
+  if (room.type !== 'miniboss' && room.type !== 'echo') w.after(0.5, () => w.hud.bossDown(w.hud.bossName || e.def.name), true);
   for (const x of w.enemies) if (!x.dead && !x.isBoss) w.killEnemy(x);
   w.proj.clear();
   if (room.type === 'miniboss') { w.lockdown = false; return; }
@@ -999,18 +1003,29 @@ export function takeItem(w: World, p: Pickup): void {
   p.data.id = oldActive; p.data.charge = oldActive ? pl.charge : undefined;
   p.price = 0; p.deal = 0; p.shop = false;
   if (oldActive) { p.noCollect = 1.0; }
+  const modesBefore = new Set<string>(pl.prof.modes);
   grantItem(w, id, false, storedCharge);
-  presentItem(w, id, it);
+  presentItem(w, id, it, modesBefore);
 }
 
-function presentItem(w: World, id: string, it: NonNullable<ReturnType<typeof getItem>>): void {
+function presentItem(w: World, id: string, it: NonNullable<ReturnType<typeof getItem>>, modesBefore?: Set<string>): void {
   const pl = w.player;
   // (under Blight of the Unread the pedestal hid it; picking it up shows what it was)
   pl.pickupT = 1.1; pl.pickupSprite = itemIconCanvas(id);
-  w.hud.banner(it.name, it.pickup, itemIconCanvas(id));
+  // a new attack style meeting one you already have: say what they now do together
+  const combo = modesBefore ? newCombos(modesBefore, pl.prof.modes)[0] : undefined;
+  const rare = it.quality >= 4;
+  w.hud.banner(it.name, it.pickup, itemIconCanvas(id), combo, rare ? 'A RARE CURIO' : undefined);
   w.audio.play(it.quality >= 3 ? 'itemGetBig' : 'itemGet');
   w.fx.stars(pl.x, pl.y - 30, 14, '#ffe8a0', 60);
   w.fx.ring(pl.x, pl.y - 20, 4, 26, '#fff0c0', 0.4);
+  if (rare || combo) {
+    // the big finds land with weight: a held breath, a column of light, a thump
+    w.slowT = Math.max(w.slowT, 0.35); w.shake(2);
+    w.fx.ring(pl.x, pl.y - 20, 6, 64, rare ? '#ffd860' : '#c8a0ff', 0.6);
+    w.fx.flash(pl.x, pl.y - 24, 30, rare ? '#fff0b0' : '#e0c8ff', 0.25);
+    if (combo) w.audio.play('chime', { pitch: 1.2 });
+  }
 }
 
 /** Take a passive item away (the Lost & Found keeps it). Health it gave stays, like a reroll. */

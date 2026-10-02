@@ -119,7 +119,8 @@ export class Game {
     this.audio.update(dt);
     updatePresence(this, dt);
     if (this.scene === 'run' && !this.paused) { this.playAcc += dt; if (this.playAcc >= 10) { this.save.stat('playTime', this.playAcc); this.playAcc = 0; } }
-    for (const u of this.unlockQueue) u.t += dt;
+    // two slips at a time; the rest wait their turn rather than piling up over the room
+    this.unlockQueue.slice(0, 2).forEach((u) => { u.t += dt; });
     this.unlockQueue = this.unlockQueue.filter((u) => u.t < 5.5);
     if (this.fading) {
       this.fadeT += dt;
@@ -171,17 +172,17 @@ export class Game {
     const ui = r.uiBegin();
     if (this.fadeA > 0) { ui.fillStyle = `rgba(4,2,6,${this.fadeA.toFixed(3)})`; ui.fillRect(-2, -2, VIEW_W + 4, VIEW_H + 4); }
     // achievement toasts
-    this.unlockQueue.forEach((u, i) => {
+    this.unlockQueue.slice(0, 2).forEach((u, i) => {
       const a = Math.min(1, u.t * 5, (5.5 - u.t) * 2);
       ui.globalAlpha = Math.max(0, a);
       // bottom-left, above the charms (the bottom-right corner holds the item tracker): a torn slip of paper
-      const W = 176, H = 30, tx = this.scene === 'run' ? 6 : VIEW_W - W - 6, ty = VIEW_H - (this.scene === 'run' ? 64 : 44) - i * (H + 4) + (1 - Math.min(1, u.t * 4)) * 8;
+      const W = 150, H = 27, tx = this.scene === 'run' ? 4 : VIEW_W - W - 6, ty = VIEW_H - (this.scene === 'run' ? 58 : 44) - i * (H + 3) + (1 - Math.min(1, u.t * 4)) * 8;
       ui.fillStyle = 'rgba(0,0,0,0.4)'; ui.fillRect(tx + 2, ty + 2, W, H);
       ui.fillStyle = u.big ? '#efe2c0' : '#e2d6b8'; ui.fillRect(tx, ty, W, H);
       ui.fillStyle = u.big ? '#a02a2a' : '#8a6a3a'; ui.fillRect(tx, ty, 3, H);
-      text(ui, u.big ? 'A NEW READER' : 'UNLOCKED', tx + 8, ty + 8, 5.5, u.big ? '#a02a2a' : '#7a5a2a', 'left', FONT_BODY, 700, false);
-      text(ui, u.name, tx + 8, ty + 17, 8.5, '#2a1e18', 'left', FONT_TITLE, 400, false);
-      text(ui, u.reward.length > 46 ? u.reward.slice(0, 45) + '…' : u.reward, tx + 8, ty + 26, 6, '#5a4636', 'left', FONT_BODY, 600, false);
+      text(ui, u.big ? 'A NEW READER' : 'UNLOCKED', tx + 8, ty + 7.5, 5.5, u.big ? '#a02a2a' : '#7a5a2a', 'left', FONT_BODY, 700, false);
+      text(ui, u.name, tx + 8, ty + 15.5, 8, '#2a1e18', 'left', FONT_TITLE, 400, false);
+      text(ui, u.reward.length > 40 ? u.reward.slice(0, 39) + '…' : u.reward, tx + 8, ty + 23.5, 5.5, '#5a4636', 'left', FONT_BODY, 600, false);
       ui.globalAlpha = 1;
     });
     if (this.save.data.settings.showFps) text(ui, `${Math.round(this.fps)} fps`, 4, VIEW_H - 4, 6, COL.dim);
