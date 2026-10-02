@@ -270,6 +270,14 @@ console.log('content:', JSON.stringify(counts));
   const fs = await import('fs');
   ok(JSON.parse(fs.readFileSync('package.json', 'utf8')).version === GAME_VERSION, 'GAME_VERSION matches package.json');
 }
+// treasure rooms are dead ends: one way in (hidden doors included)
+{
+  const { Run } = await import('../src/game/run');
+  const { generateFloor } = await import('../src/generation/floorgen');
+  let bad = 0;
+  for (let k = 0; k < 40; k++) for (let f = 0; f < 8; f++) { const run = new Run('TREASURE' + k, 'marcus', () => true); run.floorIndex = f; for (const r of generateFloor(run, f).rooms) if (r.type === 'treasure' && r.doors.length !== 1) bad++; }
+  ok(bad === 0, 'every treasure room has exactly one entrance');
+}
 // every boss has its own sting, and the card slams its name on the sting's hit
 {
   const { bossStingRecipe, STING_HIT } = await import('../src/audio/bossting');

@@ -14,7 +14,7 @@ import { RNG } from '../core/rng';
 import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
 import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../items/familiar_rt';
-import { generateFloor, pickTheme } from '../generation/floorgen';
+import { generateFloor, pickTheme, addBargainRoom } from '../generation/floorgen';
 import { rollBargain, onLeaveFloor, ticketFor } from './bargain';
 import { itemIconCanvas } from '../art/items';
 import { dist2, TAU } from '../core/math';
@@ -101,6 +101,7 @@ export function serializeFloor(w: World): any {
   persistRoom(w);
   return {
     floor: w.run.floorIndex, room: w.room.id, px: Math.round(w.player.x), py: Math.round(w.player.y),
+    added: w.floor.added ?? [],
     rooms: w.floor.rooms.map((r) => ({
       c: r.cleared, v: r.visited, s: r.seen, d: r.discovered,
       g: Array.from(r.grid), h: Array.from(r.ghp, (x) => Math.round(x * 10) / 10), gv: Array.from(r.gvar),
@@ -115,6 +116,9 @@ export function restoreFloor(w: World, st: any): void {
   const run = w.run;
   const floor = generateFloor(run, run.floorIndex, w.game.save);
   w.floor = floor; w.theme = floor.theme; w.props = propsFor(floor.theme);
+  // rooms that were opened during play (bargain doors) aren't in the seed: open them again, in the
+  // same order beside the same rooms, so their ids, doors and saved contents line up
+  for (const a of st.added ?? []) { const beside = floor.rooms[a.beside]; if (beside) addBargainRoom(run, floor, beside, a.kind); }
   floor.rooms.forEach((r, i) => {
     const s = st.rooms[i]; if (!s) return;
     r.cleared = s.c; r.visited = s.v; r.seen = s.s; r.discovered = s.d;

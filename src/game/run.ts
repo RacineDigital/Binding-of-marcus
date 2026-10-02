@@ -7,6 +7,8 @@ import { ItemPools } from '../items/pools';
 export interface Floor {
   index: number; theme: FloorTheme; rooms: RoomData[]; map: Int16Array; size: number;
   startId: number; bossId: number; curse: string | null; label: string; alt: boolean;
+  /** Rooms opened during play (bargain doors), in order, so a continued run can rebuild them. */
+  added?: { kind: 'deal' | 'blessing' | 'lostfound'; beside: number }[];
 }
 export interface RunStats {
   kills: number; time: number; roomsCleared: number; items: string[]; damageTaken: number; bossesKilled: string[];

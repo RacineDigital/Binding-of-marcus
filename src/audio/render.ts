@@ -431,6 +431,22 @@ async function renderStem(song: Song, layer: 'calm' | 'combat', tail: number): P
 }
 
 const cache = new Map<string, Promise<Stems>>();
+/**
+ * A rendered song is two stereo stems (~20-40 MB). Keep only the most recent few: long sessions
+ * walk through many tracks, and anything evicted is simply rendered again if it comes back.
+ */
+const MAX_CACHED = 5;
+function touch(id: string): void {
+  const p = cache.get(id); if (!p) return;
+  cache.delete(id); cache.set(id, p);                     // most recently used goes to the end
+  while (cache.size > MAX_CACHED) {
+    const oldest = cache.keys().next().value!;
+    if (queue.some((j) => j.id === oldest)) break;        // never drop one that's still waiting to render
+    cache.delete(oldest);
+  }
+}
+/** How many rendered songs are held (for tests). */
+export const cachedSongs = () => cache.size;
 // Renders run one at a time (they are CPU heavy); urgent requests jump the queue.
 const queue: { id: string; song: Song; resolve: (s: Stems) => void; reject: (e: unknown) => void }[] = [];
 let busy = false;
@@ -460,6 +476,7 @@ export function renderSong(id: string, song: Song, urgent = false): Promise<Stem
   let p = cache.get(id);
   if (p) {
     if (urgent) { const i = queue.findIndex((j) => j.id === id); if (i > 0) queue.unshift(...queue.splice(i, 1)); }
+    touch(id);
     return p;
   }
   p = new Promise<Stems>((resolve, reject) => {
@@ -467,6 +484,8 @@ export function renderSong(id: string, song: Song, urgent = false): Promise<Stem
     if (urgent) queue.unshift(job); else queue.push(job);
   });
   cache.set(id, p);
+  touch(id);
+  p.catch(() => cache.delete(id));
   void pump();
   return p;
 }

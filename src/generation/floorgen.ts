@@ -387,6 +387,7 @@ export function addBargainRoom(run: Run, floor: Floor, boss: RoomData, kind: 'de
     r.doors.push({ side: opposite(side), slot: 0, to: boss.id, kind: 'normal', locked: false, hidden: false });
     r.distance = boss.distance + 1;
     populateRoom(r, floor, run, new RNG(r.seed + ':pop'));
+    (floor.added ??= []).push({ kind, beside: boss.id });
     return r;
   }
   return null;

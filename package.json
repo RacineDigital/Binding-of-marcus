@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "tsx tests/run.ts",
     "smoke": "tsx tests/smoke.ts",
+    "test:e2e": "tsx tests/e2e.ts",
     "test:synergy": "tsx tests/synergy.ts",
     "build:single": "tsc --noEmit && vite build --mode single",
     "release": "bash scripts/package-release.sh",

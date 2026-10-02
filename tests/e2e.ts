@@ -1,0 +1,98 @@
+// End-to-end checks in a real browser against the dev server (npm run dev first), failing loudly.
+//   npx tsx tests/e2e.ts
+// Covers: a fresh run, save & continue (bonus rooms, doors, floor effects, items, pickups, room),
+// death and restart, chapter transitions, music memory, and frame time in a busy fight.
+import { chromium, Page } from 'playwright-core';
+const base = process.env.BASE_URL || 'http://localhost:5173/';
+let failures = 0;
+const ok = (cond: unknown, msg: string) => { console.log((cond ? '  ok   ' : '  FAIL ') + msg); if (!cond) failures++; };
+const ev = <T>(p: Page, js: string): Promise<T> => p.evaluate(js) as Promise<T>;
+const D = 'window.__bomDebug';
+
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto(base);
+  await page.waitForTimeout(3000);
+  await page.keyboard.press('Enter');   // unlock audio
+  await page.waitForTimeout(300);
+
+  console.log('fresh run');
+  await ev(page, `(() => { const g = ${D}.game; g.menus.stack = []; g.newRun('marcus', 'E2ESEED1'); })()`);
+  await page.waitForTimeout(2200);
+  ok(await ev(page, `${D}.game.scene === 'run' && !!${D}.world.room`), 'a run starts in its first room');
+  // move: input reaches the player
+  await page.waitForFunction(`!${D}.world.inputLocked()`, null, { timeout: 5000 });
+  const x0 = await ev<number>(page, `${D}.world.player.x`);
+  await page.keyboard.down('KeyD'); await page.waitForTimeout(400); await page.keyboard.up('KeyD');
+  ok((await ev<number>(page, `${D}.world.player.x`)) > x0 + 15, 'walking right moves Marcus');
+
+  console.log('save & continue');
+  const before = await ev<any>(page, `(async () => {
+    const d = ${D}, w = d.world, g = d.game;
+    d.god();
+    const bonus = await d.bargain('lostfound');            // a room opened during play, beside this one
+    w.player.addTemp({ id: 'e2e_floor', stats: { damage: 1 }, floor: true });
+    d.give('split_nib'); d.give('moth_friend');
+    g.saveSnapshot(); g.save.flush();
+    return { rooms: w.floor.rooms.length, room: w.room.id, bonus, type: w.room.type, doors: w.floor.rooms.map((r) => r.doors.length).join(','),
+      items: [...w.player.items.keys()].sort().join(','), dmg: w.player.stats.damage, pickups: w.pickups.length, floor: w.run.floorIndex };
+  })()`);
+  ok(before.type === 'lostfound', 'a Lost & Found room opened during play');
+  await ev(page, `(() => { const g = ${D}.game; g.quitToMenu(); g.world = null; })()`);
+  await page.waitForTimeout(500);
+  ok(await ev(page, `${D}.game.continueRun()`), 'continue succeeds');
+  await page.waitForTimeout(1500);
+  const after = await ev<any>(page, `(() => { const w = ${D}.world; return { rooms: w.floor.rooms.length, room: w.room.id, type: w.room.type, doors: w.floor.rooms.map((r) => r.doors.length).join(','),
+    items: [...w.player.items.keys()].sort().join(','), dmg: w.player.stats.damage, pickups: w.pickups.length, floor: w.run.floorIndex, temp: w.player.temp.some((t) => t.id === 'e2e_floor') }; })()`);
+  ok(after.rooms === before.rooms, `the floor keeps its bonus room (${after.rooms}/${before.rooms} rooms)`);
+  ok(after.doors === before.doors, 'every door comes back, including the one to the bonus room');
+  ok(after.room === before.room && after.type === before.type, 'resumes in the same room');
+  ok(after.items === before.items, 'items carried are restored');
+  ok(after.temp && Math.abs(after.dmg - before.dmg) < 0.01, 'an effect lasting the floor survives the continue');
+  ok(after.pickups === before.pickups, `the room's pickups are restored (${after.pickups}/${before.pickups})`);
+  ok(await ev(page, `${D}.game.menus.stack.length === 0`), 'no menu is left open over the continued run');
+
+  console.log('chapter transition');
+  await ev(page, `${D}.nextFloor()`);
+  await page.waitForTimeout(2500);
+  ok((await ev<number>(page, `${D}.world.run.floorIndex`)) === before.floor + 1, 'next chapter loads');
+  ok(await ev(page, `!${D}.world.player.temp.some((t) => t.id === 'e2e_floor')`), 'floor effects end with the floor');
+  const treasureDoors = await ev<number[]>(page, `${D}.world.floor.rooms.filter((r) => r.type === 'treasure').map((r) => r.doors.length)`);
+  ok(treasureDoors.every((n) => n === 1), `treasure rooms have one entrance (${treasureDoors.join(',')})`);
+
+  console.log('busy combat');
+  const perf = await ev<any>(page, `(async () => {
+    const d = ${D}, w = d.world; d.god();
+    const ids = ['valvehead', 'moth', 'mite', 'gasper', 'cinderhopper'];
+    for (let i = 0; i < 18; i++) d.spawn(ids[i % ids.length], undefined, undefined);
+    for (const id of ['triple_seam', 'twin_wick', 'rubber_band', 'powder_ink', 'copper_filament']) d.give(id);
+    const t0 = performance.now(); let frames = 0, worst = 0, last = t0;
+    await new Promise((res) => { const f = () => { const n = performance.now(); worst = Math.max(worst, n - last); last = n; frames++; if (n - t0 < 4000) requestAnimationFrame(f); else res(0); }; requestAnimationFrame(f); });
+    return { fps: frames / 4, worst: Math.round(worst), proj: w.proj.count() };
+  })()`);
+  console.log('   ', JSON.stringify(perf));
+  ok(perf.fps > 20, `busy fight keeps a playable frame rate in headless software rendering (${perf.fps.toFixed(1)} fps)`);
+
+  console.log('death & restart');
+  await ev(page, `(() => { const w = ${D}.world; w.player.iframes = 0; w.player.health.red = 1; w.player.health.extra = []; w.player.health.brass = 0; w.hurtPlayer(2, 'test', { ignoreIframes: true }); })()`);
+  await page.waitForFunction(`${D}.game.scene === 'dead'`, null, { timeout: 8000 }).catch(() => {});
+  ok(await ev(page, `${D}.game.scene === 'dead'`), 'dying shows the death screen');
+  await ev(page, `(() => { const g = ${D}.game; g.menus.stack = []; g.newRun('marcus', 'E2ESEED2'); })()`);
+  await page.waitForTimeout(2000);
+  ok(await ev(page, `${D}.game.scene === 'run' && ${D}.world.player.health.red > 0`), 'a new run starts cleanly after death');
+
+  console.log('music');
+  const mus = await ev<any>(page, `(async () => { const m = await import('/src/audio/render.ts'); const a = ${D}.game.audio; return { cached: m.cachedSongs(), track: a.music && a.music.name, recs: a.music && a.music.recs.size }; })()`);
+  console.log('   ', JSON.stringify(mus));
+  ok(mus.cached <= 5, 'rendered songs are capped');
+  ok(mus.recs <= 3, 'decoded recordings are capped');
+
+  ok(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 5).join(' | ') : ''));
+  await browser.close();
+  console.log(failures ? `${failures} FAILED` : 'all e2e checks passed');
+  process.exit(failures ? 1 : 0);
+})();

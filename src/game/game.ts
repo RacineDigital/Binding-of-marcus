@@ -225,7 +225,7 @@ export class Game {
       seed: w.run.seed, charId: w.run.charId, floor: w.run.floorIndex, challenge: w.run.challenge, mode: w.run.mode,
       health: pl.health.serialize(), buttons: pl.buttons, keys: pl.keys, bombs: pl.bombs, goldKey: pl.goldKey, goldBomb: pl.goldBomb,
       items: [...pl.items.entries()], order: pl.itemOrder, active: pl.active, charge: pl.charge, consumables: pl.consumables, charms: pl.charms,
-      consumableSlots: pl.consumableSlots, charmSlots: pl.charmSlots, temp: pl.temp.filter((t) => !t.room && !t.floor && t.time === undefined),
+      consumableSlots: pl.consumableSlots, charmSlots: pl.charmSlots, temp: pl.temp.filter((t) => !t.room && t.time === undefined),   // effects for the rest of the floor carry over
       transformations: [...pl.transformations], pools: w.run.pools.serialize(), stats: w.run.stats, flags: w.run.flags, identified: [...w.run.identified],
       floorState: flow.serializeFloor(w), savedAt: Date.now(),
     };

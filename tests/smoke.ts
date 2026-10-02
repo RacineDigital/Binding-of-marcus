@@ -8,6 +8,7 @@ const floors = Number(process.argv[3] || 8);
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors: string[] = [];
+  let failed = 0;
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text()}`); });
   page.on('pageerror', (e) => errors.push('[pageerror] ' + e.message + '\n' + (e.stack ?? '').split('\n').slice(0, 4).join('\n')));
   await page.goto(base + '?play&seed=' + seed);
@@ -50,8 +51,11 @@ const floors = Number(process.argv[3] || 8);
     }
     const stats = await page.evaluate(`(() => { const w = ${D}.world; return { fps: Math.round(${D}.game.fps), items: w.player.itemOrder.length, dmg: w.player.stats.damage.toFixed(1), modes: [...w.player.prof.modes].join('+') }; })()`);
     console.log('  stats', JSON.stringify(stats));
-    if (errors.length) { console.log(errors.slice(0, 20).join('\n')); errors.length = 0; }
+    if (errors.length) { console.log(errors.slice(0, 20).join('\n')); failed += errors.filter((e) => !e.startsWith('[warning]')).length; errors.length = 0; }
   }
   await page.screenshot({ path: 'test-output/smoke/final.png' });
   await browser.close();
+  // a smoke test that only prints problems never fails a build: errors are failures
+  console.log(failed ? `SMOKE FAILED: ${failed} page errors` : 'smoke ok');
+  process.exit(failed ? 1 : 0);
 })();
