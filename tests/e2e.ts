@@ -42,7 +42,9 @@ const D = 'window.__bomDebug';
   const before = await ev<any>(page, `(async () => {
     const d = ${D}, w = d.world, g = d.game;
     d.god();
-    const bonus = await d.bargain('lostfound');            // a room opened during play, beside this one
+    // a room opened during play, beside one with space for it
+    let bonus = null;
+    for (const r of w.floor.rooms.filter((r) => r.type === 'start' || r.type === 'normal')) { d.goto(r.id); d.killAll(); bonus = await d.bargain('lostfound'); if (bonus !== null) break; }
     w.player.addTemp({ id: 'e2e_floor', stats: { damage: 1 }, floor: true });
     d.give('split_nib'); d.give('moth_friend');
     g.saveSnapshot(); g.save.flush();
@@ -104,6 +106,16 @@ const D = 'window.__bomDebug';
   await ev(page, `(() => { const g = ${D}.game; g.menus.stack = []; g.newRun('marcus', 'E2ESEED2'); })()`);
   await page.waitForTimeout(2000);
   ok(await ev(page, `${D}.game.scene === 'run' && ${D}.world.player.health.red > 0`), 'a new run starts cleanly after death');
+
+  console.log('unlocks');
+  const un = await ev<any>(page, `(() => { const s = ${D}.game.save; s.data.unlocks = s.data.unlocks.filter((u) => u !== 'runs_5'); s.data.seenUnlocks = s.data.unlocks.slice();
+    s.unlock('runs_5');
+    const raw = localStorage.getItem('slot' + s.slot) || Object.keys(localStorage).map((k) => localStorage.getItem(k)).join('');
+    return { stored: raw.includes('"runs_5"'), fresh: !s.data.seenUnlocks.includes('runs_5'), toast: ${D}.game.unlockQueue.some((u) => u.reward.includes('Trash Island')),
+      thisRun: (${D}.world.run.flags.unlockedNow || []).includes('runs_5') }; })()`);
+  ok(un.stored, 'an unlock is written to storage at once, not at the next save');
+  ok(un.fresh && un.toast, 'a new unlock is marked NEW and its toast says what it unlocks');
+  ok(un.thisRun, 'the run remembers what it unlocked for its last page');
 
   console.log('music');
   const mus = await ev<any>(page, `(async () => { const m = await import('/src/audio/render.ts'); const a = ${D}.game.audio; return { cached: m.cachedSongs(), track: a.music && a.music.name, recs: a.music && a.music.recs.size }; })()`);

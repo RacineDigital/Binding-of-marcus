@@ -1,5 +1,5 @@
 // Achievements: each unlocks new content (items, characters, challenges) rather than raw power.
-export interface Achievement { id: string; name: string; desc: string; unlocks: string; hidden?: boolean }
+export interface Achievement { id: string; name: string; desc: string; unlocks: string; hidden?: boolean; /** What a hidden one says before it's earned. */ clue?: string }
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first_death', name: 'Ink on the Floor', desc: 'Die for the first time.', unlocks: 'Unlocks the Second Draft in the treasure pool.' },
   { id: 'beat_ch1', name: 'Chapter I Closed', desc: 'Defeat the Chapter I boss.', unlocks: 'Unlocks Split Nib.' },
@@ -10,13 +10,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'beat_ch6', name: 'Last Rites', desc: 'Defeat the Chapter VI boss.', unlocks: 'Unlocks Elias.' },
   { id: 'beat_ch7', name: 'Through the Hollow', desc: 'Defeat the Chapter VII boss.', unlocks: 'Unlocks the Ossuary Key.' },
   { id: 'beat_final', name: 'The Binding Holds', desc: 'Finish the story.', unlocks: 'Unlocks The Blot, the Challenges and Second Edition (Hard mode).' },
-  { id: 'beat_unwritten', name: 'The Last Page', desc: 'Go through the tear after the Binding and defeat what waits on the Last Page.', unlocks: 'Unlocks Nell, the Lamplighter.', hidden: true },
-  { id: 'beat_author', name: 'The Foreword', desc: 'Follow the light after the Binding and face the one who wrote it all.', unlocks: 'Unlocks the D100.', hidden: true },
-  { id: 'back_stair', name: 'Visiting Hours', desc: 'Take the back stair to St. Agnes.', unlocks: 'Grandfather\'s hospital notes can be found.', hidden: true },
-  { id: 'both_halves', name: 'Both Halves', desc: 'Put Grandfather\'s letter back together.', unlocks: 'Unlocks Get Well Soon.', hidden: true },
-  { id: 'beat_patient', name: 'The Visit', desc: 'Open Room 4 and stay until the end.', unlocks: 'Unlocks Grandad\'s Cardigan.', hidden: true },
-  { id: 'the_end', name: 'Goodnight', desc: 'See the very last ending.', unlocks: 'Unlocks The Last Word. The cellar door stays shut.', hidden: true },
-  { id: 'notes_all', name: 'Collected Works', desc: 'Read every one of Grandfather\'s notes.', unlocks: 'A gold ribbon on the Journal.', hidden: true },
+  { id: 'beat_unwritten', name: 'The Last Page', desc: 'Go through the tear after the Binding and defeat what waits on the Last Page.', unlocks: 'Unlocks Nell, the Lamplighter.', hidden: true, clue: 'After the Binding, something tears open.' },
+  { id: 'beat_author', name: 'The Foreword', desc: 'Follow the light after the Binding and face the one who wrote it all.', unlocks: 'Unlocks the D100.', hidden: true, clue: 'After the Binding, there is a light as well as a tear.' },
+  { id: 'back_stair', name: 'Visiting Hours', desc: 'Take the back stair to St. Agnes.', unlocks: 'Grandfather\'s hospital notes can be found.', hidden: true, clue: 'Not every way down is the cellar stair.' },
+  { id: 'both_halves', name: 'Both Halves', desc: 'Put Grandfather\'s letter back together.', unlocks: 'Unlocks Get Well Soon.', hidden: true, clue: 'A letter was torn in two.' },
+  { id: 'beat_patient', name: 'The Visit', desc: 'Open Room 4 and stay until the end.', unlocks: 'Unlocks Grandad\'s Cardigan.', hidden: true, clue: 'Someone is waiting in Room 4.' },
+  { id: 'the_end', name: 'Goodnight', desc: 'See the very last ending.', unlocks: 'Unlocks The Last Word. The cellar door stays shut.', hidden: true, clue: 'The very last page of all.' },
+  { id: 'notes_all', name: 'Collected Works', desc: 'Read every one of Grandfather\'s notes.', unlocks: 'A gold ribbon on the Journal.', hidden: true, clue: 'Read everything he left behind.' },
   { id: 'echo_rest', name: 'Laid to Rest', desc: 'Defeat your own echo, where you fell last time.', unlocks: 'Unlocks the Rewind Tape.' },
   { id: 'flawless_boss', name: 'Untouched', desc: 'Defeat a boss without taking damage.', unlocks: 'Unlocks the Glass Heart.' },
   { id: 'secrets_10', name: 'Hollow Walls', desc: 'Find 10 secrets.', unlocks: 'Unlocks the Chalk Line.' },
@@ -61,7 +61,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'unlock_ozzie', name: 'Loaded Dice', desc: 'Defeat It Remembers while holding a die.', unlocks: 'Unlocks Ozzie, the Gambler.' },
   { id: 'unlock_bram', name: 'Not a Scratch on Me', desc: 'Defeat three chapter bosses in one run without any of them hitting you.', unlocks: 'Unlocks Bram, the Bruiser.' },
   { id: 'unlock_wick', name: 'Drawn to the Light', desc: 'Finish the story while you are Mothkin.', unlocks: 'Unlocks Wick, the Moth Child.' },
-  { id: 'unlock_ada', name: 'Her Ring', desc: 'Finish The Visit while carrying Grandmother\'s Ring.', unlocks: 'Unlocks Ada, the Gardener.', hidden: true },
+  { id: 'unlock_ada', name: 'Her Ring', desc: 'Finish The Visit while carrying Grandmother\'s Ring.', unlocks: 'Unlocks Ada, the Gardener.', hidden: true, clue: 'Finish a visit, wearing her ring.' },
   { id: 'win_ada', name: 'Pruned', desc: 'Finish the story as Ada.', unlocks: 'A gold star on Ada\'s card.' },
   { id: 'win_ozzie', name: 'House Edge', desc: 'Finish the story as Ozzie.', unlocks: 'A gold star on Ozzie\'s card.' },
   { id: 'win_nell', name: 'Lights On', desc: 'Finish the story as Nell.', unlocks: 'A gold star on Nell\'s card.' },

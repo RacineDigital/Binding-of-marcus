@@ -1,11 +1,25 @@
 // Each reader's signature: the thing only they do, like Azazel's stubby brimstone. These are never
 // found in a pool, can't be rerolled or traded away, and show in the tracker so you can read them.
 import type { ItemDef } from '../types';
-import { ramp, hex, P } from './kit';
+import { ramp, hex, P, conditional } from './kit';
+import { TAU } from '../../core/math';
 
 const SIG = ['quest', 'innate'];
 
 export const INNATE_ITEMS: ItemDef[] = [
+  { id: 'frightened', name: 'Frightened', kind: 'passive', quality: 0, pools: {}, tags: SIG,
+    pickup: 'He flicks ink when he\'s scared', effect: ['Getting hit makes Marcus flick a ring of ink and fire much faster (+1.5) for 3 seconds.', 'On his last half heart, damage +1.5.'],
+    hooks: {
+      onHurt(w) {
+        const pl = w.player;
+        pl.clearTemp((t) => t.id === 'frightened');
+        pl.addTemp({ id: 'frightened', stats: { tears: 1.5 }, time: 3 });
+        for (let i = 0; i < 8; i++) w.proj.player(w, pl.prof, pl.x, pl.y - 6, 8, (i / 8) * TAU, pl.stats.damage, 200, 110, 0.9, 1);
+      },
+      onTick(w) { const h = w.player.health; conditional(w, 'last_half', !h.noRed && h.red <= 1 && h.extra.length === 0 && h.brass === 0, { stats: { damage: 1.5 } }); },
+    },
+    icon: (p: P) => { p.ball(9, 9, 4, 4, ramp('#343a9a')); for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; p.set(9 + Math.cos(a) * 7, 9 + Math.sin(a) * 7, '#5a64d8'); } p.set(8, 8, '#ffffff'); },
+    lore: 'He was always the one who jumped at noises. Down here, the noises jump back.' },
   { id: 'stitchwork', name: 'Stitchwork', kind: 'passive', quality: 0, pools: {}, tags: SIG,
     pickup: 'Edda sews them together', effect: ['Your needles pierce, and often stitch the enemy they hit to another nearby: the thread carries the damage across.'],
     attack: { chain: 1, chainChance: 0.35 },
@@ -32,8 +46,9 @@ export const INNATE_ITEMS: ItemDef[] = [
     icon: (p: P) => { p.tube(4, 15, 13, 5, 1, ramp('#3a7a2a')); for (const [x, y] of [[6, 12], [9, 9], [11, 7]]) p.set(x + 1, y, '#e0e8b0'); p.ball(13, 4, 3, 3, ramp('#c8283a')); p.set(12, 3, '#ff9aa0'); },
     lore: 'Grandmother took cuttings of everything. The rose is from one of them.' },
   { id: 'lamplight', name: 'Lamplight', kind: 'passive', quality: 0, pools: {}, tags: SIG,
-    pickup: 'Embers, not ink', effect: ['Your shots are embers: about a third of them set what they hit alight.', 'Burning enemies light the room around them.'],
+    pickup: 'Embers, not ink', effect: ['Your shots are embers: about a third of them set what they hit alight.', 'Fan the flames: your hits on burning enemies deal 25% more.'],
     attack: { shape: 'fire', burn: 0.33, tint: '#ffb050' },
+    hooks: { onHitEnemy(w, e, dmg) { if (e.burn > 0 && !e.dead) e.hp -= dmg * 0.25; } },
     icon: (p: P) => { p.ball(9, 11, 4, 5, ramp('#ff9030')); p.ball(9, 10, 2, 3, ramp('#ffe080')); p.set(8, 5, '#ffd060'); p.set(11, 4, '#ff9030'); p.set(6, 7, '#ff9030'); },
     lore: 'Nell lit Grandad\'s lamp every evening. She brought the flame down with her.' },
 ];

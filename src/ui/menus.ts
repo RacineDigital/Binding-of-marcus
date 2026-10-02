@@ -107,6 +107,14 @@ function book(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
   ctx.fillStyle = 'rgba(150,40,40,0.65)';
   for (let sy = y + 14; sy < y + h - 10; sy += 22) ctx.fillRect(x + hw - 0.5, sy, 1, 7);
 }
+/** What a run unlocked, listed on its last page (so nothing earned slips past behind a toast). */
+function unlockedThisRun(ctx: CanvasRenderingContext2D, ids: string[] | undefined, cx: number, y: number, head = '#8a2a2a', body = INK2): void {
+  const got = (ids ?? []).map((id) => ACHIEVEMENTS.find((a) => a.id === id)).filter((a) => !!a);
+  if (!got.length) return;
+  text(ctx, got.length === 1 ? 'Unlocked this run' : `Unlocked this run (${got.length})`, cx, y, 7, head, 'center', FONT_BODY, 700, false);
+  got.slice(0, 2).forEach((a, i) => { const s = a!.unlocks; text(ctx, s.length > 40 ? s.slice(0, 39) + '…' : s, cx, y + 9 + i * 8, 6.5, body, 'center', FONT_BODY, 600, false); });
+  if (got.length > 2) text(ctx, `and ${got.length - 2} more in the Journal`, cx, y + 25, 6, body, 'center', FONT_BODY, 600, false);
+}
 /** A ledger line: label on the left, value on the right, a dotted leader between. */
 function ledgerRow(ctx: CanvasRenderingContext2D, k: string, v: string, x0: number, x1: number, y: number): void {
   text(ctx, k, x0, y, 7.5, INK2, 'left', FONT_BODY, 600, false);
@@ -354,6 +362,7 @@ export class MenuSystem {
         // info
         const x0 = 190;
         text(ctx, un ? c.name : '???', x0, 70, 20, INK, 'left', FONT_TITLE, 400, false);
+        if (un && !(g.save.data.readersMet ?? []).includes(c.id)) text(ctx, 'NEW', x0 + measure(ctx, c.name, 20, FONT_TITLE, 400) + 6, 58, 7, '#a02a2a', 'left', FONT_BODY, 700, false);
         // a gold star once the story has been finished with this reader
         if (un && (c.id === 'marcus' ? g.save.isUnlocked('beat_final') : g.save.isUnlocked('win_' + c.id))) text(ctx, '★', x0 + measure(ctx, c.name, 20, FONT_TITLE, 400) + 6, 66, 12, '#c89a2a', 'left', FONT_BODY, 700, false);
         text(ctx, un ? c.title : 'Locked', x0, 82, 8, '#8a3a2a', 'left', FONT_BODY, 600, false);
@@ -658,7 +667,12 @@ export class MenuSystem {
     let scroll = 0;
     return {
       t: 0,
-      update(keys) { for (const k of keys) { if (k === 'back' || k === 'confirm') { self.pop(); return; } if (k === 'down') scroll = Math.min(ACHIEVEMENTS.length - 10, scroll + 1); if (k === 'up') scroll = Math.max(0, scroll - 1); } },
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back' || k === 'confirm') { const s = g.save.data; s.seenUnlocks = [...s.unlocks]; g.save.markDirty(); self.pop(); return; }
+          if (k === 'down') scroll = Math.min(ACHIEVEMENTS.length - 10, scroll + 1); if (k === 'up') scroll = Math.max(0, scroll - 1);
+        }
+      },
       pointer(x, y, click, _m, wheel) {
         if (wheel) { scroll = clamp(scroll + wheel, 0, ACHIEVEMENTS.length - 10); return; }
         // click the scrollbar track to jump
@@ -679,11 +693,16 @@ export class MenuSystem {
         const un = ACHIEVEMENTS.filter((a) => g.save.isUnlocked(a.id)).length;
         heading(ctx, 'Achievements', 230, 38, 12, INK, 'left');
         text(ctx, `${un} / ${ACHIEVEMENTS.length}`, 440, 38, 8, INK2, 'right', FONT_BODY, 600, false);
+        const seen = g.save.data.seenUnlocks ?? [];
         ACHIEVEMENTS.slice(scroll, scroll + 10).forEach((a, i) => {
-          const got = g.save.isUnlocked(a.id);
+          const got = g.save.isUnlocked(a.id), fresh = got && !seen.includes(a.id);
           const y = 54 + i * 19;
-          text(ctx, (got ? '◆ ' : '◇ ') + (got || !a.hidden ? a.name : '???'), 230, y, 8.5, got ? INK : '#8a7a6a', 'left', FONT_TITLE, 400, false);
-          text(ctx, got ? a.unlocks : (a.hidden ? 'A hidden achievement.' : a.desc), 238, y + 8, 6.5, INK2, 'left', FONT_BODY, 600, false);
+          const name = (got ? '◆ ' : '◇ ') + (got || !a.hidden ? a.name : '???');
+          text(ctx, name, 230, y, 8.5, got ? INK : '#8a7a6a', 'left', FONT_TITLE, 400, false);
+          if (fresh) text(ctx, 'NEW', 234 + measure(ctx, name, 8.5, FONT_TITLE, 400), y, 6, '#a02a2a', 'left', FONT_BODY, 700, false);
+          // earned: what it gave you. Not yet: what to do (hidden ones give a clue instead)
+          const line = got ? `${a.desc} ${a.unlocks}` : a.hidden ? (a.clue ? 'Clue: ' + a.clue : a.desc) : `${a.desc} ${a.unlocks}`;
+          text(ctx, line.length > 74 ? line.slice(0, 73) + '…' : line, 238, y + 8, 6.5, got ? INK2 : '#8a7a6a', 'left', FONT_BODY, 600, false);
         });
         // scrollbar
         const max = ACHIEVEMENTS.length - 10, th = Math.max(16, 194 * 10 / ACHIEVEMENTS.length), ty = 46 + (scroll / max) * (194 - th);
@@ -1013,9 +1032,10 @@ export class MenuSystem {
         }
         const sc = r.flags.score as { score: number; best: number; isBest: boolean } | undefined;
         if (sc) {
-          text(ctx, `Score ${sc.score}`, cx, 196, 11, INK, 'center', FONT_TITLE, 400, false);
-          text(ctx, sc.isBest ? 'A new personal best' : `Best ${sc.best}`, cx, 206, 7, sc.isBest ? '#8a2a2a' : INK2, 'center', FONT_BODY, 600, false);
+          text(ctx, `Score ${sc.score}`, cx, 192, 11, INK, 'center', FONT_TITLE, 400, false);
+          text(ctx, sc.isBest ? 'A new personal best' : `Best ${sc.best}`, cx, 202, 7, sc.isBest ? '#8a2a2a' : INK2, 'center', FONT_BODY, 600, false);
         }
+        unlockedThisRun(ctx, r.flags.unlockedNow, cx, 216);
         // right page: the ledger, the build, and what next
         heading(ctx, 'Ledger', R, 44, 11, INK, 'left', false);
         const st: [string, string][] = [['Time', fmtTime(r.stats.time)], ['Enemies defeated', String(r.stats.kills)], ['Rooms cleared', String(r.stats.roomsCleared)], ['Secrets found', String(r.stats.secretsFound)], ['Damage taken', `${r.stats.damageTaken / 2} hearts`], ['Seed', formatSeed(r.seed)]];
@@ -1076,6 +1096,7 @@ export class MenuSystem {
           text(ctx, `Score ${sc.score}`, VIEW_W / 2, ey + 36, 10, '#efe2c8', 'center', FONT_TITLE, 400);
           text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, VIEW_W / 2, ey + 45, 6.5, sc.isBest ? COL.gold : COL.dim, 'center');
         }
+        if (ey + 80 < VIEW_H - 14) unlockedThisRun(ctx, w.run.flags.unlockedNow, VIEW_W / 2, ey + 58, COL.gold, '#e6d6bc');
         ctx.globalAlpha = 1;
         if (this.t > 4) hint(ctx, 'Press Enter');
       },

@@ -22,7 +22,7 @@ import { MenuSystem } from '../ui/menus';
 import { Health } from '../player/health';
 import { spawnDrop } from './drops';
 import { ACHIEVEMENTS } from '../data/achievements';
-import { text, COL, FONT_TITLE } from '../ui/draw';
+import { text, COL, FONT_TITLE, FONT_BODY } from '../ui/draw';
 
 export type Scene = 'menu' | 'run' | 'dead' | 'ending';
 
@@ -35,7 +35,7 @@ export class Game {
   fading = false; fadeT = 0; fadeDur = 0.5; fadeCb: (() => void) | null = null; fadeA = 0;
   private acc = 0; private last = 0;
   fps = 60; private fpsAcc = 0; private fpsN = 0;
-  unlockQueue: { name: string; t: number }[] = [];
+  unlockQueue: { name: string; reward: string; t: number; big: boolean }[] = [];
   dropHold = 0;
   perf = { update: 0, render: 0, present: 0 };
   constructor(cv: HTMLCanvasElement) {
@@ -51,7 +51,12 @@ export class Game {
     onFullscreenChange((on) => { if (this.save.data.settings.fullscreen !== on) { this.save.data.settings.fullscreen = on; this.save.markSettings(); } });
     this.save.onUnlock = (id) => {
       const a = ACHIEVEMENTS.find((x) => x.id === id);
-      if (a) { this.unlockQueue.push({ name: a.name, t: 0 }); this.audio.stinger('unlock'); }
+      if (!a) return;
+      // what you got, not just what you did; a new reader is a bigger moment
+      const big = /Unlocks [A-Z][a-z]+, the|Unlocks (The Blot|Mirrored)/.test(a.unlocks);
+      this.unlockQueue.push({ name: a.name, reward: a.unlocks, t: 0, big });
+      this.audio.stinger('unlock');
+      if (this.world) (this.world.run.flags.unlockedNow ??= []).push(id);
     };
     // readers whose marks were all earned before the mirrored existed get theirs now
     this.save.checkTainted();
@@ -115,7 +120,7 @@ export class Game {
     updatePresence(this, dt);
     if (this.scene === 'run' && !this.paused) { this.playAcc += dt; if (this.playAcc >= 10) { this.save.stat('playTime', this.playAcc); this.playAcc = 0; } }
     for (const u of this.unlockQueue) u.t += dt;
-    this.unlockQueue = this.unlockQueue.filter((u) => u.t < 3.5);
+    this.unlockQueue = this.unlockQueue.filter((u) => u.t < 5.5);
     if (this.fading) {
       this.fadeT += dt;
       const half = this.fadeDur;
@@ -167,14 +172,16 @@ export class Game {
     if (this.fadeA > 0) { ui.fillStyle = `rgba(4,2,6,${this.fadeA.toFixed(3)})`; ui.fillRect(-2, -2, VIEW_W + 4, VIEW_H + 4); }
     // achievement toasts
     this.unlockQueue.forEach((u, i) => {
-      const a = Math.min(1, u.t * 4, (3.5 - u.t) * 3);
+      const a = Math.min(1, u.t * 5, (5.5 - u.t) * 2);
       ui.globalAlpha = Math.max(0, a);
-      // bottom-left, above the charms (the bottom-right corner holds the item tracker)
-      const tx = this.scene === 'run' ? 6 : VIEW_W - 150, ty = VIEW_H - (this.scene === 'run' ? 56 : 40) - i * 26;
-      ui.fillStyle = 'rgba(12,8,16,0.92)'; ui.fillRect(tx, ty, 144, 22);
-      ui.strokeStyle = '#c8a050'; ui.lineWidth = 0.6; ui.strokeRect(tx, ty, 144, 22);
-      text(ui, 'UNLOCKED', tx + 6, ty + 9, 6, COL.gold);
-      text(ui, u.name, tx + 6, ty + 18, 9, COL.text, 'left', FONT_TITLE, 400);
+      // bottom-left, above the charms (the bottom-right corner holds the item tracker): a torn slip of paper
+      const W = 176, H = 30, tx = this.scene === 'run' ? 6 : VIEW_W - W - 6, ty = VIEW_H - (this.scene === 'run' ? 64 : 44) - i * (H + 4) + (1 - Math.min(1, u.t * 4)) * 8;
+      ui.fillStyle = 'rgba(0,0,0,0.4)'; ui.fillRect(tx + 2, ty + 2, W, H);
+      ui.fillStyle = u.big ? '#efe2c0' : '#e2d6b8'; ui.fillRect(tx, ty, W, H);
+      ui.fillStyle = u.big ? '#a02a2a' : '#8a6a3a'; ui.fillRect(tx, ty, 3, H);
+      text(ui, u.big ? 'A NEW READER' : 'UNLOCKED', tx + 8, ty + 8, 5.5, u.big ? '#a02a2a' : '#7a5a2a', 'left', FONT_BODY, 700, false);
+      text(ui, u.name, tx + 8, ty + 17, 8.5, '#2a1e18', 'left', FONT_TITLE, 400, false);
+      text(ui, u.reward.length > 46 ? u.reward.slice(0, 45) + '…' : u.reward, tx + 8, ty + 26, 6, '#5a4636', 'left', FONT_BODY, 600, false);
       ui.globalAlpha = 1;
     });
     if (this.save.data.settings.showFps) text(ui, `${Math.round(this.fps)} fps`, 4, VIEW_H - 4, 6, COL.dim);
@@ -187,6 +194,7 @@ export class Game {
     run.challenge = challenge; run.mode = mode;
     if (mode === 'daily') this.save.unlock('daily_first');
     const ch = charById(charId);
+    const met = (this.save.data.readersMet ??= []); if (!met.includes(charId)) { met.push(charId); this.save.markDirty(); }
     const pl = new Player(ch);
     const h = new Health();
     h.noRed = !!ch.health.noRed;

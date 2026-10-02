@@ -42,6 +42,10 @@ export interface SaveData {
   marks?: Record<string, string[]>;
   /** Where the last run died: its echo waits there next time. */
   echo?: { char: string; floor: number; items: string[]; cause: string; chapter: string } | null;
+  /** Achievements already looked at in the Journal (the rest show as NEW). */
+  seenUnlocks?: string[];
+  /** Readers already played (an unlocked reader not in here shows as NEW). */
+  readersMet?: string[];
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 
@@ -102,6 +106,9 @@ export class SaveManager {
     let d: SaveData = def;
     try { const raw = store.read('slot' + n); if (raw) { const o = JSON.parse(raw); d = { ...def, ...o }; } } catch (e) { console.warn('slot load failed', e); }
     d.settings = this.settings; // settings are shared by every slot
+    // saves from before NEW marks: everything already earned counts as seen
+    d.seenUnlocks ??= [...d.unlocks];
+    d.readersMet ??= ['marcus', ...d.unlocks.filter((u) => /^(beat_ch\d|beat_final|beat_unwritten|unlock_|tainted_)/.test(u))];
     return d;
   }
   /** Switch to another save slot (saving the current one first). */
@@ -145,6 +152,7 @@ export class SaveManager {
     if (this.data.unlocks.includes(id)) return false;
     this.data.unlocks.push(id); this.markDirty();
     this.onUnlock?.(id);
+    this.flush();   // an unlock is never lost to a crash or a closed window
     return true;
   }
   stat(k: string, add: number): number {
