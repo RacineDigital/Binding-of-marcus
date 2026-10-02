@@ -92,7 +92,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   const special = theme === MARGINS_THEME || theme === DEDICATION_THEME ? 'margins'
     : theme === LASTPAGE_THEME || theme === FOREWORD_THEME || theme === ROOM4_THEME ? 'lastpage' : theme === HOME_THEME ? 'home' : null;
   const hospital = HOSPITAL_FLOORS.includes(theme);
-  const target = isFinal ? 7 : special === 'margins' ? 24 + base.int(0, 2) : Math.min(19, 7 + Math.floor(fi * 1.5) + base.int(0, 2));
+  const target = isFinal ? 7 : special === 'margins' ? 24 + base.int(0, 2) : Math.min(18, 9 + fi + base.int(0, 2));
   let c: Ctx | null = null;
   for (let attempt = 0; attempt < 400; attempt++) {
     const rng = new RNG(`${run.seed}:floor${fi}:a${attempt}`);
@@ -259,7 +259,7 @@ function tryBuild(c: Ctx, target: number, fi: number, isFinal: boolean, bosses =
   const specials: RoomType[] = [];
   if (!isFinal) {
     specials.push('treasure');
-    if (fi < FINAL_FLOOR - 1 || fi > FINAL_FLOOR) specials.push('shop');
+    if (fi !== FINAL_FLOOR) specials.push('shop');
     const optional: RoomType[] = [];
     if (fi >= 1 && rng.chance(0.55)) optional.push('challenge');
     if (rng.chance(0.4)) optional.push('sacrifice');

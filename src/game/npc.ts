@@ -8,6 +8,7 @@ import { FORTUNES } from '../data/lore';
 import { NOTE_BY_ID, NOTES } from '../data/notes';
 import * as flow from './roomflow';
 import { moveBody } from '../rooms/collide';
+import { priceFor } from '../generation/populate';
 
 export class Npc {
   kind: string; x: number; y: number; r = 9; t = 0; cd = 0; frame = 0; dead = false; data: any = {};
@@ -47,6 +48,28 @@ function npcBombed(w: World, n: Npc): void {
     n.dead = true; w.fx.smoke(n.x, n.y, 8); w.hud.toast('The beggar scatters.');
     w.run.flags.dealChance += 0.1;
   }
+}
+
+/** What Mott asks to fetch a fresh lot from under the counter: more each time in the same shop. */
+export function restockCost(w: World): number { return 5 + 4 * (w.room.flags.restocks ?? 0); }
+/** The shop's curios still for sale. */
+export function shopStock(w: World) { return w.pickups.filter((p) => !p.dead && p.shop && p.pedestal && p.price > 0 && p.data.id); }
+/** Lean on Mott and he swaps every curio still for sale for something else. */
+function restock(w: World, n: Npc): void {
+  const stock = shopStock(w);
+  if (!stock.length) { w.hud.toast('"Nothing left under the counter, I\'m afraid."', 2); return; }
+  const cost = restockCost(w);
+  if (!pay(w, cost)) { w.hud.toast(`"A fresh lot is ${cost} buttons, love."`, 2); return; }
+  const rng = new RNG(Math.random() * 1e9);
+  for (const p of stock) {
+    const id = w.run.pools.roll('shop', rng);
+    p.data.id = id; p.price = priceFor(id);
+    w.fx.smoke(p.x, p.y - 6, 5, 'rgba(200,180,140,', 5, 0.5, 10); w.fx.stars(p.x, p.y - 10, 3, '#ffe0a0');
+  }
+  w.room.flags.restocks = (w.room.flags.restocks ?? 0) + 1;
+  n.data.rummage = 0.6;
+  w.audio.play('chime', { x: n.x }); w.audio.play('coinBig', { x: n.x, vol: 0.5 });
+  w.hud.toast('Mott rummages under the counter and lays out a fresh lot.', 2);
 }
 
 function pay(w: World, amt: number): boolean {
@@ -169,6 +192,14 @@ export function updateNpcs(w: World, dt: number): void {
     // solid: push the player out
     const rr = n.r + pl.r;
     const d2 = dist2(pl.x, pl.y, n.x, n.y);
+    // leaning on Mott (pushing into him for a moment) asks for a restock, so a stray bump costs nothing
+    if (n.kind === 'mott') {
+      if (n.data.rummage > 0) n.data.rummage -= dt;
+      if (d2 < (rr + 2) * (rr + 2) && (Math.abs(pl.vx) + Math.abs(pl.vy) > 20 || n.data.lean > 0)) {
+        n.data.lean = (n.data.lean ?? 0) + dt;
+        if (n.data.lean > 0.7) { n.data.lean = -99; restock(w, n); }
+      } else if (d2 > (rr + 8) * (rr + 8)) n.data.lean = 0;
+    }
     if (d2 < rr * rr && d2 > 0.01) {
       const d = Math.sqrt(d2);
       moveBody(w.room, pl, ((pl.x - n.x) / d) * (rr - d), ((pl.y - n.y) / d) * (rr - d), pl.flight ? 'fly' : 'walk');

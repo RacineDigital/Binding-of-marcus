@@ -8,10 +8,10 @@ import { luckChance } from '../projectiles/profile';
 export type DropTable = 'room' | 'small' | 'urn' | 'chest' | 'crimson' | 'boss';
 
 const TABLES: Record<DropTable, [string, number][]> = {
-  room: [['button', 20], ['heart', 16], ['key', 18], ['bomb', 18], ['chest', 6], ['page', 6], ['sweet', 5], ['spark', 3], ['wax', 4], ['ink', 1], ['charm', 1.5]],
+  room: [['button', 20], ['heart', 16], ['key', 13], ['bomb', 13], ['chest', 7], ['page', 7], ['sweet', 6], ['spark', 3], ['wax', 4], ['ink', 1], ['charm', 2]],
   small: [['button', 40], ['heart', 20], ['key', 13], ['bomb', 13], ['wax', 5], ['ink', 1], ['page', 5], ['sweet', 5]],
   urn: [['button', 42], ['heart', 15], ['key', 14], ['bomb', 14], ['sweet', 8], ['page', 7]],
-  chest: [['button', 34], ['key', 19], ['bomb', 19], ['heart', 15], ['page', 8], ['sweet', 8], ['ink', 1.5], ['charm', 4]],
+  chest: [['button', 32], ['key', 13], ['bomb', 13], ['heart', 15], ['page', 10], ['sweet', 9], ['spark', 3], ['ink', 1.5], ['charm', 5]],
   crimson: [['ink', 10], ['page', 20], ['sweet', 15], ['charm', 10], ['button5', 15], ['brass', 6]],
   boss: [['heart', 45], ['wax', 18], ['ink', 4], ['brass', 10], ['button5', 20]],
 };

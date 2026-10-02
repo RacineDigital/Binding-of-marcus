@@ -12,7 +12,7 @@ import { PixelArt } from '../render/pixel';
 import { ramp } from '../render/color';
 import { MAP_SIZE, VIEW_W, VIEW_H } from '../core/constants';
 import type { Enemy } from '../enemies/enemy';
-import { ease, fmt1, clamp } from '../core/math';
+import { ease, fmt1, clamp, dist2 } from '../core/math';
 import { CURSE_NAMES } from '../generation/floorgen';
 import { sweetName, dealCost, dealCostText } from '../game/roomflow';
 import { SWEET_EFFECTS } from '../items/data/consumables';
@@ -20,6 +20,7 @@ import { drawHitboxes } from '../game/worldrender';
 import { ticketFor, doorOdds } from '../game/bargain';
 import { diceFace } from '../items/data/dice';
 import { bindLabel, fmtKeys } from '../core/input';
+import { restockCost, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
 import { STING_HIT, StingKind } from '../audio/bossting';
@@ -771,6 +772,16 @@ export class Hud {
 
   private drawPriceTags(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
+    // Mott's restock: what a fresh lot costs, shown once you walk up to him
+    for (const n of w.npcs) {
+      if (n.kind !== 'mott' || !shopStock(w).length || dist2(n.x, n.y, w.player.x, w.player.y) > 46 * 46) continue;
+      const sx = n.x - w.renderCamX, sy = n.y - w.renderCamY - 34, cost = restockCost(w), lean = Math.max(0, Math.min(1, (n.data.lean ?? 0) / 0.7));
+      const label = `Restock ${cost}`, tw = measure(ctx, label, 7.5) + 16;
+      ctx.fillStyle = 'rgba(8,6,12,0.82)'; ctx.fillRect(Math.round(sx - tw / 2), sy, tw, 11);
+      if (lean > 0) { ctx.fillStyle = 'rgba(232,192,96,0.35)'; ctx.fillRect(Math.round(sx - tw / 2), sy, tw * lean, 11); }
+      ctx.drawImage(pickupSprites().hud.button.canvas, sx + tw / 2 - 11, sy + 1.5, 8, 8);
+      text(ctx, label, sx - tw / 2 + 4, sy + 8.5, 7.5, w.player.buttons >= cost ? COL.gold : COL.down, 'left', FONT_BODY, 700);
+    }
     for (const p of w.pickups) {
       if (p.dead) continue;
       const sx = p.x - w.renderCamX, sy = p.y - w.renderCamY;

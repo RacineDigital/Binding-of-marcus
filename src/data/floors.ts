@@ -328,13 +328,16 @@ const FAMILY: Record<string, string> = { rootcellar: 'cellar', coalchute: 'boile
 export const familyOf = (t: FloorTheme): string => FAMILY[t.id] ?? t.id;
 
 /** Difficulty comes from how deep you are, not which chapter you are in. */
-export const DEPTH_HP = [1, 1.15, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3];
+// regular enemies toughen gently so late chapters don't turn into long, flat fights; bosses keep the
+// steeper curve, so each one is still the wall at the end of its chapter
+export const DEPTH_HP = [1, 1.12, 1.25, 1.38, 1.5, 1.62, 1.75, 1.9];
+const BOSS_DEPTH_HP = [1, 1.15, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3];
 export const DEPTH_BUDGET = [0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3];
 const BOSS_TIER_HP = [240, 290, 300, 320, 380, 380, 400, 900];
 export function enemyHpMul(depth: number, tier: number, boss: boolean): number {
   const d = Math.min(DEPTH_HP.length - 1, depth), t = Math.min(7, tier);
   const loop = 1 + 0.3 * Math.max(0, depth - FINAL_FLOOR); // endless: every chapter past the Binding is tougher
-  if (boss) return loop * DEPTH_HP[d] * Math.min(1.25, Math.max(0.6, BOSS_TIER_HP[d] / BOSS_TIER_HP[t]));
+  if (boss) return loop * BOSS_DEPTH_HP[d] * Math.min(1.25, Math.max(0.6, BOSS_TIER_HP[d] / BOSS_TIER_HP[t]));
   return loop * DEPTH_HP[d] * Math.min(1.5, Math.max(0.65, (1 + 0.12 * d) / (1 + 0.12 * t)));
 }
 export const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
