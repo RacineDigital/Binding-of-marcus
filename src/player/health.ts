@@ -1,16 +1,15 @@
 // Segmented health: red felt hearts (containers), wax (temporary), ink (temporary, bursts when lost),
-// brass (armour plates that absorb one whole hit), gilded overlays (spill buttons when broken).
+// gilded overlays (spill buttons when broken).
 export type ExtraKind = 'wax' | 'ink';
 export interface ExtraHeart { k: ExtraKind; h: number } // h = half units (1 or 2)
 
 export const MAX_HEARTS = 12;
 
-export interface DamageResult { taken: number; brassBroke: boolean; inkLost: number; gildedBroke: number; dead: boolean }
+export interface DamageResult { taken: number; inkLost: number; gildedBroke: number; dead: boolean }
 
 export class Health {
   redMax = 6; red = 6;
   extra: ExtraHeart[] = [];
-  brass = 0;
   gilded = 0;
   /** Characters that cannot hold red hearts (e.g. Elias). */
   noRed = false;
@@ -58,13 +57,11 @@ export class Health {
     this.redMax += 2; this.red += 2;
     return true;
   }
-  addBrass(n: number): void { this.brass = Math.min(6, this.brass + n); }
   addGilded(n: number): void { this.gilded = Math.min(this.redMax / 2, this.gilded + n); }
 
   /** Apply damage in half-hearts. redFirst: self-inflicted costs (drain red before temporary). */
   damage(half: number, redFirst = false): DamageResult {
-    const res: DamageResult = { taken: 0, brassBroke: false, inkLost: 0, gildedBroke: 0, dead: false };
-    if (!redFirst && this.brass > 0) { this.brass--; res.brassBroke = true; return res; }
+    const res: DamageResult = { taken: 0, inkLost: 0, gildedBroke: 0, dead: false };
     const redBefore = this.red;
     while (half > 0) {
       if (redFirst && this.red > 0) { this.red--; half--; res.taken++; continue; }
@@ -91,6 +88,11 @@ export class Health {
     res.dead = this.totalHalf() <= 0;
     return res;
   }
-  serialize(): any { return { redMax: this.redMax, red: this.red, extra: this.extra.map((e) => ({ ...e })), brass: this.brass, gilded: this.gilded, noRed: this.noRed }; }
-  static from(o: any): Health { const h = new Health(); Object.assign(h, o); h.extra = (o.extra ?? []).map((e: ExtraHeart) => ({ ...e })); return h; }
+  serialize(): any { return { redMax: this.redMax, red: this.red, extra: this.extra.map((e) => ({ ...e })), gilded: this.gilded, noRed: this.noRed }; }
+  static from(o: any): Health {
+    const h = new Health(); const { brass, ...rest } = o ?? {}; Object.assign(h, rest); h.extra = (o.extra ?? []).map((e: ExtraHeart) => ({ ...e }));
+    // brass hearts are gone: a run saved with some keeps them as wax hearts
+    if (brass > 0) h.addExtra('wax', brass * 2);
+    return h;
+  }
 }

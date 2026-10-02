@@ -75,7 +75,7 @@ export function startFloor(w: World): void {
   w.trapdoor = null;
   enterRoom(w, floor.startId, null, false);
   w.itemHook('onFloor');
-  if (w.player.transformations.has('bone')) w.player.health.addBrass(1);
+  if (w.player.transformations.has('bone')) w.player.health.addExtra('wax', 2);
   if (floor.curse === 'lost') { /* map hidden */ }
   if (floor.curse === 'seen') revealMap(w, false);
   w.floorIntroT = 2.6;
@@ -662,7 +662,7 @@ export function onBossKilled(w: World, e: Enemy): void {
     // champions pay better
     const champ = e.data.champ as ChampKind | undefined;
     if (champ === 'gilded') { for (let i = 0; i < 3; i++) spawnDrop(w, 'button10', c.x + 30, c.y); spawnDrop(w, 'chest:locked', c.x + 44, c.y + 4); }
-    if (champ === 'crimson') { spawnDrop(w, 'heart', c.x + 30, c.y); spawnDrop(w, 'brass', c.x + 40, c.y); }
+    if (champ === 'crimson') { spawnDrop(w, 'heart', c.x + 30, c.y); spawnDrop(w, 'wax', c.x + 40, c.y); }
     if (champ === 'inked') { spawnDrop(w, 'page', c.x + 30, c.y); spawnDrop(w, 'charm', c.x + 40, c.y); }
     w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
     room.flags.trap = { x: c.x, y: c.y + 26 };
@@ -864,12 +864,12 @@ export function touchPickup(w: World, p: Pickup): void {
       w.fx.stars(pl.x, pl.y - 20, 4, '#ff6070', 30);
       break;
     }
-    case 'wax': case 'waxHalf': case 'ink': {
+    // 'brass' only survives in old saves: it's a wax heart now
+    case 'wax': case 'waxHalf': case 'ink': case 'brass': {
       if (!h.canAddHeart() && !(h.extra.length && h.extra[h.extra.length - 1].h === 1)) return;
       payShop();
       h.addExtra(p.kind === 'ink' ? 'ink' : 'wax', p.kind === 'waxHalf' ? 1 : 2); collect(p.kind === 'ink' ? 'inkHeart' : 'waxHeart'); break;
     }
-    case 'brass': if (h.brass >= 6) return; payShop(); h.addBrass(1); collect('brass'); break;
     case 'gilded': if (h.redMax <= h.gilded * 2) return; payShop(); h.addGilded(1); collect('coinBig'); break;
     case 'spark': case 'sparkBig': {
       const it = pl.active ? getItem(pl.active) : null;
@@ -1061,7 +1061,6 @@ export function grantItem(w: World, id: string, silentHealth = false, charge?: n
     if (g.heal) h.healRed(g.heal);
     if (g.wax) h.addExtra('wax', g.wax);
     if (g.ink) h.addExtra('ink', g.ink);
-    if (g.brass) h.addBrass(g.brass);
     if (g.gilded) h.addGilded(g.gilded);
     if (h.totalHalf() <= 0) h.addExtra('wax', 1);
   }

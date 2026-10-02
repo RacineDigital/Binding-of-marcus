@@ -125,8 +125,8 @@ export const REFERENCES: ItemDef[] = [
       p.set(14, 2, '#6ac0e0'); p.set(15, 3, '#6ac0e0');
     } },
   { id: 'crest', name: 'Crest', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
-    pickup: 'Wear it', effect: ['+1 Brass heart.', 'Damage up. Star-shaped shots.'],
-    health: { brass: 1 }, stats: { damage: 0.5 }, attack: { shape: 'star' },
+    pickup: 'Wear it', effect: ['+1 Wax heart.', 'Damage up. Star-shaped shots.'],
+    health: { wax: 2 }, stats: { damage: 0.5 }, attack: { shape: 'star' },
     icon: (p) => {
       const s = ramp('#8aa8d8');
       p.poly([3, 3, 15, 3, 15, 9, 9, 16, 3, 9], s[2]); p.poly([3, 3, 9, 3, 9, 16, 3, 9], s[3]);
@@ -325,8 +325,8 @@ export const REFERENCES: ItemDef[] = [
       p.rect(1, 15, 3, 3, hex('#e88a9a')); p.rect(3, 14, 2, 2, hex('#b8b8c0'));
     } },
   { id: 'bike_helmet', name: 'Blue Bike Helmet', kind: 'passive', quality: 2, pools: { shop: 0.8 }, tags: ['jeffy'],
-    pickup: 'Safety first', effect: ['+1 brass heart.', 'Your own bombs can\'t hurt you.'],
-    health: { brass: 1 },
+    pickup: 'Safety first', effect: ['+1 wax heart.', 'Your own bombs can\'t hurt you.'],
+    health: { wax: 2 },
     icon: (p) => {
       const c = ramp('#2a6ad8');
       p.ball(9, 9, 7, 6, c); p.rect(2, 10, 15, 3, c[1]);

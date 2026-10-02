@@ -591,7 +591,7 @@ export const TRANSFORM_EFFECTS: Record<string, { name: string; desc: string; sta
   clock: { name: 'Clockwork', desc: 'Fire rate up. Shots wind forward faster.', stats: { tears: 0.7 }, attack: { accel: 0.8 } },
   wax: { name: 'Waxen Saint', desc: 'Shots burn. A halo of heat.', stats: { damage: 0.5 }, attack: { burn: 0.25, tint: '#f0c060' } },
   thread: { name: 'Needleworker', desc: 'Shots pierce and stitch enemies together.', attack: { pierce: 2, chain: 1, chainChance: 0.2 } },
-  bone: { name: 'Ossified', desc: 'Brass heart every floor. Bony shots.', stats: { damage: 0.7 }, attack: { shape: 'bone', knock: 1 } },
+  bone: { name: 'Ossified', desc: 'A wax heart every floor. Bony shots.', stats: { damage: 0.7 }, attack: { shape: 'bone', knock: 1 } },
   void: { name: 'Hollowed', desc: 'Spectral homing shots.', attack: { spectral: true, homing: 0.4 } },
   drain: { name: 'Drainer', desc: 'Flight. Speed up. Every shot can chill.', stats: { speed: 0.2, tears: 0.3 }, attack: { slow: 0.25, tint: '#a8dcff' }, flight: true },
   vamp: { name: 'King Vamp', desc: 'Damage up. Your shots drink blood.', stats: { damage: 1.5 }, attack: { lifesteal: 0.35, tint: '#d01828', shape: 'blood' } },

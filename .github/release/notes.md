@@ -1,40 +1,27 @@
-## What's new in 3.11.0: Live Wire
+## What's new in 3.12.0: a better shop, honest slots, no more brass
 
-**Lasers feed each other now.** Every laser item past the first overcharges *all* your lasers and
-beams, and the HUD shows it under your stats ("Lasers ×3 · Searing"):
-- **×2 Overcharged** (orange): every ray gets a twin, damage +20%, wider rays.
-- **×3 Searing** (yellow-white): lasers set enemies alight, damage +40%.
-- **×4 White-hot** (blue-white): every fifth pull fires a giant ray, damage +60%.
-- **Three laser items make the Live Wire transformation:** welding goggles, glowing eyes, damage
-  up, and every laser leaps on to another enemy.
-- Picking up a laser item tells you what it just did to the rest, and an item's preview shows
-  "Lasers ×3: Searing" before you take it. Familiar lasers (Glass Eye), Burning Glass beams and the
-  Candle of Wrath are all overcharged too.
+**The shop**
+- **Mott is back behind his counter** where he always stood. He no longer restocks.
+- Every shop now has one more fixture at the end of the counter:
+  - **Donation box** (60%): drop buttons in, one at a time. Donations are kept forever, across every
+    run, and every 50 buttons raises the shop a level: an extra curio for sale, 10% off, another extra
+    curio, 20% off, and finally a guaranteed rare curio in every shop. Stand by the box to see your
+    level and progress.
+  - **Restock machine** (30%): pay it and every curio still for sale becomes something else (5
+    buttons, then 4 more each time in the same shop).
+  - **A beggar** (10%).
 
-**Five new laser items** (all in the Curio, with Copper Filament, Burning Glass and Glass Eye):
-- **Arc Lamp**: every laser hit leaps on to the two nearest enemies in thin blue arcs.
-- **Jeweller's Loupe**: lasers and beams heat up whatever they keep hitting, up to nearly double damage.
-- **Mirror Shard**: lasers ricochet off walls twice.
-- **Stained Glass**: every pull adds a red ray that burns and a blue ray that chills.
-- **Lighthouse Lens**: every fourth pull (or full beam) sweeps a searchlight across the room.
+**Slot machines** wear out. Each one has a 5% chance to break on its first pull, 2% more on every
+pull after that, and starts smoking when it's close. When one breaks, half the time there's an item in
+the wreckage. A winning pull no longer gives items.
 
-**Other items now change how your lasers behave**, and their previews say how ("Your lasers will…"):
-- **Splits** (Prism, Split Nib…): a landing laser refracts into a fan of smaller rays.
-- **Boomerangs**: the laser comes back to you a beat later, cutting through everything again.
-- **Fire** (Burnt Toast, candles…): lasers scorch a line of embers along their path.
-- **Wiggle** (Worm Apple, Drain Butterfly): lasers linger and lash side to side.
-- **Spiral** (Snail Shell): an extra ray spins around you. **Orbit** (Pocket Moon): an extra ray
-  fires from a point circling you.
-- **Growing Pains**: much wider lasers. **Rocket Nib**: lasers hit harder the further they reach.
-- **Explosive shots**: lasers blow up the wall they land on.
-- **Rainbow shots**: lasers shift colour every pull.
-- **Bombs**: with lasers, your bombs go off as a burst of rays (more when overcharged).
+**Brass hearts are gone.** Everything that gave them gives wax hearts instead (one brass heart became
+one wax heart): Crest, the Blue Bike Helmet, the Ossuary Key, the Guardian Candle, the Ossified
+transformation, Edda and the mirrored readers. Runs saved with brass hearts keep them as wax hearts.
+- **Brass Breastplate** is now: +2 wax hearts, and no hit can take more than half a heart.
 
-**Also in this update:**
-- **Shot size is shown with your stats** and in item previews (from 3.10.2).
-- **The Tab screen is simpler**: the chapter and floor, your items as icons, and the map zoomed in
-  to fill the screen.
-- **Discord status** has a "Lost Marcus on GitHub" button at the bottom.
+**The Dust Jacket shows in your health bar**: a little blue book cover at the end of your hearts,
+bright while it will block the first hit in the room and faded once it has.
 
 ## Download and play
 

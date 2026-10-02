@@ -31,7 +31,7 @@ const PICKUP_TEXT: Record<string, [string, string, string]> = {
   wax: ['Wax Heart', 'Soft and temporary', 'Adds 1 wax heart on top of your red hearts. Wax hearts melt away when hit.'],
   waxHalf: ['Half Wax Heart', 'Soft and temporary', 'Adds half a wax heart.'],
   ink: ['Ink Heart', 'Bottled darkness', 'Adds 1 ink heart. When it breaks, it splashes damage on every enemy in the room.'],
-  brass: ['Brass Heart', 'Armour plating', 'Adds 1 brass heart. Absorbs a whole hit before breaking.'],
+  brass: ['Wax Heart', 'Soft and warm', 'Adds 1 wax heart.'], // old saves
   gilded: ['Gilded Heart', 'Worth its weight', 'Adds 1 gilded heart. Spills buttons when it breaks.'],
   key: ['Key', 'Opens things', 'Opens locked doors, locked boxes and the treasure room on later chapters.'],
   goldKey: ['Golden Key', 'Opens everything', 'Every lock on this floor opens for free.'],

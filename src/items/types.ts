@@ -8,7 +8,7 @@ import type { Enemy } from '../enemies/enemy';
 export type ItemKind = 'passive' | 'active' | 'familiar' | 'trinket';
 export type PoolId = 'treasure' | 'shop' | 'boss' | 'secret' | 'deal' | 'blessing' | 'library' | 'curse' | 'challenge' | 'arcade';
 
-export interface HealthGrant { containers?: number; heal?: number; wax?: number; ink?: number; brass?: number; gilded?: number; loseContainers?: number }
+export interface HealthGrant { containers?: number; heal?: number; wax?: number; ink?: number; gilded?: number; loseContainers?: number }
 export interface Grant { buttons?: number; keys?: number; bombs?: number; drops?: [string, number][] }
 
 export interface BombMods {

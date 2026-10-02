@@ -12,8 +12,8 @@ const TABLES: Record<DropTable, [string, number][]> = {
   small: [['button', 40], ['heart', 20], ['key', 13], ['bomb', 13], ['wax', 5], ['ink', 1], ['page', 5], ['sweet', 5]],
   urn: [['button', 42], ['heart', 15], ['key', 14], ['bomb', 14], ['sweet', 8], ['page', 7]],
   chest: [['button', 32], ['key', 13], ['bomb', 13], ['heart', 15], ['page', 10], ['sweet', 9], ['spark', 3], ['ink', 1.5], ['charm', 5]],
-  crimson: [['ink', 10], ['page', 20], ['sweet', 15], ['charm', 10], ['button5', 15], ['brass', 6]],
-  boss: [['heart', 45], ['wax', 18], ['ink', 4], ['brass', 10], ['button5', 20]],
+  crimson: [['ink', 10], ['page', 20], ['sweet', 15], ['charm', 10], ['button5', 15], ['wax', 6]],
+  boss: [['heart', 45], ['wax', 28], ['ink', 4], ['button5', 20]],
 };
 
 export function rollDropKind(rng: RNG, luck: number, table: DropTable): string | null {
@@ -26,7 +26,7 @@ export function rollDropKind(rng: RNG, luck: number, table: DropTable): string |
 export function resolveKind(rng: RNG, kind: string, luck = 0): { kind: string; data?: any } {
   switch (kind) {
     case 'button': { const r = rng.next(); return { kind: r < luckChance(0.02, luck) ? 'button10' : r < luckChance(0.1, luck) ? 'button5' : 'button' }; }
-    case 'heart': { const r = rng.next(); return { kind: r < 0.02 ? 'gilded' : r < 0.05 ? 'brass' : r < 0.065 ? 'ink' : r < 0.16 ? 'wax' : r < 0.4 ? 'heartHalf' : 'heart' }; }
+    case 'heart': { const r = rng.next(); return { kind: r < 0.02 ? 'gilded' : r < 0.065 ? 'ink' : r < 0.16 ? 'wax' : r < 0.4 ? 'heartHalf' : 'heart' }; }
     case 'key': return { kind: rng.next() < 0.025 ? 'goldKey' : 'key' };
     case 'bomb': { const r = rng.next(); return { kind: r < 0.12 ? 'bomb2' : 'bomb' }; }
     case 'chest': { const r = rng.next(); return { kind: r < 0.04 ? 'chest:crimson' : r < 0.3 ? 'chest:locked' : 'chest:tin' }; }

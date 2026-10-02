@@ -382,7 +382,6 @@ export class MenuSystem {
           for (let i = 0; i < c.health.red; i++) { ctx.drawImage(H.red.canvas, hx, hy); hx += 11; }
           for (let i = 0; i < (c.health.wax ?? 0) / 2; i++) { ctx.drawImage(H.wax.canvas, hx, hy); hx += 11; }
           for (let i = 0; i < (c.health.ink ?? 0) / 2; i++) { ctx.drawImage(H.ink.canvas, hx, hy); hx += 11; }
-          for (let i = 0; i < (c.health.brass ?? 0); i++) { ctx.drawImage(H.brass.canvas, hx, hy); hx += 11; }
           text(ctx, c.passive, x0, hy + 20, 7, '#4a3a6a', 'left', FONT_BODY, 600, false);
           // starting items, shown as their icons
           c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), x0 + 240 - (c.items.length - i) * 18, hy - 4, 16, 16); });
@@ -980,7 +979,7 @@ export class MenuSystem {
           ['deal', 'Inkwell: pay in hearts'], ['blessing', 'Chapel: a gift'], ['challenge', 'Challenge: a fight for a prize'], ['secret', 'Hidden: bomb the walls']];
         doors.forEach(([k, s], i) => { const y = 56 + i * 13; const sp = doorSymbol(k); if (sp) sp.draw(ctx, R + 5, y + 2); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
         const H = pickupSprites().hud;
-        const hearts: [Sprite, string][] = [[H.red, 'Red: refills when you heal'], [H.wax, 'Wax: extra, gone once lost'], [H.ink, 'Ink: extra, bursts when lost'], [H.brass, 'Brass: stops one whole hit']];
+        const hearts: [Sprite, string][] = [[H.red, 'Red: refills when you heal'], [H.wax, 'Wax: extra, gone once lost'], [H.ink, 'Ink: extra, bursts when lost']];
         hearts.forEach(([sp, s], i) => { const y = 168 + i * 13; ctx.drawImage(sp.canvas, R, y - 7); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
         text(ctx, 'Stand by a curio to read what it does to you.', R, BY + BH - 13, 6.5, INK2, 'left', FONT_BODY, 600, false);
         hint(ctx, `${pad ? 'A' : 'Enter'} to rebind · Esc back`);

@@ -102,7 +102,7 @@ const D = 'window.__bomDebug';
   ok(perf.updateMs < 6 && perf.renderMs < 16, `busy fight: game logic ${perf.updateMs} ms and drawing ${perf.renderMs} ms a frame`);
 
   console.log('death & restart');
-  await ev(page, `(() => { const w = ${D}.world; w.player.iframes = 0; w.player.health.red = 1; w.player.health.extra = []; w.player.health.brass = 0; w.hurtPlayer(2, 'test', { ignoreIframes: true }); })()`);
+  await ev(page, `(() => { const w = ${D}.world; w.player.iframes = 0; w.player.health.red = 1; w.player.health.extra = []; w.hurtPlayer(2, 'test', { ignoreIframes: true }); })()`);
   await page.waitForFunction(`${D}.game.scene === 'dead'`, null, { timeout: 8000 }).catch(() => {});
   ok(await ev(page, `${D}.game.scene === 'dead'`), 'dying shows the death screen');
   await ev(page, `(() => { const g = ${D}.game; g.menus.stack = []; g.newRun('marcus', 'E2ESEED2'); })()`);

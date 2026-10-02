@@ -317,7 +317,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       if (r < 0.3) item(cx, cy, 'secret', 'normal');
       else if (r < 0.65) for (let i = 0; i < rng.int(4, 7); i++) pk(rng.pick(['button', 'button', 'button5', 'key', 'bomb']), cx + rng.int(-40, 40), cy + rng.int(-24, 24));
       else if (r < 0.85) { pk('chest:tin', cx - 30, cy); pk('chest:locked', cx + 30, cy); }
-      else { pk('heart', cx - 20, cy); pk('wax', cx, cy); pk('brass', cx + 20, cy); }
+      else { pk('heart', cx - 20, cy); pk('wax', cx, cy); pk('ink', cx + 20, cy); }
       break;
     }
     case 'supersecret': {

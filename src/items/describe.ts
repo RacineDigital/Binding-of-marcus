@@ -28,7 +28,6 @@ export function describeItem(it: ItemDef): DescLine[] {
     if (h.heal) out.push({ text: h.heal >= 24 ? 'Full heal' : `Heals ${h.heal / 2} heart${h.heal > 2 ? 's' : ''}`, color: 'up' });
     if (h.wax) out.push({ text: `+${h.wax / 2} Wax heart${h.wax > 2 ? 's' : ''}`, color: 'up' });
     if (h.ink) out.push({ text: `+${h.ink / 2} Ink heart${h.ink > 2 ? 's' : ''}`, color: 'up' });
-    if (h.brass) out.push({ text: `+${h.brass} Brass heart${h.brass > 1 ? 's' : ''}`, color: 'up' });
     if (h.gilded) out.push({ text: `+${h.gilded} Gilded heart${h.gilded > 1 ? 's' : ''}`, color: 'up' });
   }
   const g = it.give;

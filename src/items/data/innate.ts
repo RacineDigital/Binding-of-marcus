@@ -16,7 +16,7 @@ export const INNATE_ITEMS: ItemDef[] = [
         pl.addTemp({ id: 'frightened', stats: { tears: 1.5 }, time: 3 });
         for (let i = 0; i < 8; i++) w.proj.player(w, pl.prof, pl.x, pl.y - 6, 8, (i / 8) * TAU, pl.stats.damage, 200, 110, 0.9, 1);
       },
-      onTick(w) { const h = w.player.health; conditional(w, 'last_half', !h.noRed && h.red <= 1 && h.extra.length === 0 && h.brass === 0, { stats: { damage: 1.5 } }); },
+      onTick(w) { const h = w.player.health; conditional(w, 'last_half', !h.noRed && h.red <= 1 && h.extra.length === 0, { stats: { damage: 1.5 } }); },
     },
     icon: (p: P) => { p.ball(9, 9, 4, 4, ramp('#343a9a')); for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; p.set(9 + Math.cos(a) * 7, 9 + Math.sin(a) * 7, '#5a64d8'); } p.set(8, 8, '#ffffff'); },
     lore: 'He was always the one who jumped at noises. Down here, the noises jump back.' },

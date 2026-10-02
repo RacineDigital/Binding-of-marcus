@@ -4,7 +4,7 @@ import type { ProfilePart } from '../projectiles/profile';
 export interface CharacterDef {
   id: string; name: string; title: string; desc: string; look: string;
   base: BaseStats;
-  health: { red: number; wax?: number; ink?: number; brass?: number; noRed?: boolean };
+  health: { red: number; wax?: number; ink?: number; noRed?: boolean };
   items: string[]; buttons: number; keys: number; bombs: number;
   profile?: ProfilePart;
   flight?: boolean;
@@ -32,7 +32,7 @@ export const CHARACTERS: CharacterDef[] = [
     id: 'edda', name: 'Edda', title: 'The Seamstress', look: 'edda',
     desc: 'Marcus\'s aunt, who mended everything but herself, and sewed Grandad\'s name into his hospital coat. Her needles pass through the first thing they hit.',
     base: { damage: 2.6, tears: 3.7, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 },
-    health: { red: 2, brass: 2 }, items: ['thimble', 'stitchwork'], buttons: 0, keys: 1, bombs: 1,
+    health: { red: 2, wax: 4 }, items: ['thimble', 'stitchwork'], buttons: 0, keys: 1, bombs: 1,
     profile: { shape: 'needle', pierce: 1 },
     unlock: 'beat_ch4', unlockHint: 'Defeat the Chapter IV boss.', passive: 'Stitchwork: needles pierce and stitch enemies together. Starts with the Thimble.',
   },
@@ -106,7 +106,7 @@ export const TAINTED: CharacterDef[] = [
     { base: { damage: 3.0, tears: 3.0, range: 210, shotSpeed: 1.2, speed: 1.15, luck: 0 }, health: { red: 0, wax: 4, noRed: true }, items: ['slingshot', 't_runaway'], buttons: 5, keys: 0, bombs: 0,
       passive: 'Running Away: pebbles fly in pairs and ricochet more. Very fast, wax hearts only.' }),
   T('edda', 'Edda', 'The Unravelled', 'She stitched everyone else back together. Now every thread she throws pulls three of them tight at once.',
-    { base: { damage: 2.8, tears: 3.4, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 }, health: { red: 1, brass: 4 }, items: ['thimble', 't_unravel'], buttons: 0, keys: 1, bombs: 1,
+    { base: { damage: 2.8, tears: 3.4, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 }, health: { red: 1, wax: 8 }, items: ['thimble', 't_unravel'], buttons: 0, keys: 1, bombs: 1,
       profile: { shape: 'needle', pierce: 1 }, passive: 'Unravelling: needles stitch the enemy they hit to two more. One heart, four bronze shields.' }),
   T('elias', 'Elias', 'The Forgotten', 'He forgot where the story was going. The pages circle him now, a slow storm he cannot put down.',
     { base: { damage: 3.0, tears: 2.8, range: 260, shotSpeed: 0.95, speed: 0.95, luck: 0 }, health: { red: 0, wax: 4, noRed: true }, items: ['binders_awl', 't_orbit'], buttons: 0, keys: 0, bombs: 2,
@@ -118,7 +118,7 @@ export const TAINTED: CharacterDef[] = [
     { base: { damage: 3.3, tears: 2.7, range: 230, shotSpeed: 1, speed: 1.05, luck: 1 }, health: { red: 2 }, items: ['old_dice', 't_fate'], buttons: 0, keys: 1, bombs: 1,
       passive: 'Fate: each new room rolls a die, from a curse on one to a blessing on six. Starts broke.' }),
   T('nell', 'Nell', 'The Burnt Out', 'She kept the lamp lit for him every night, until one night it kept her. Everything she touches catches.',
-    { base: { damage: 3.4, tears: 2.4, range: 220, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 2, brass: 1 }, items: ['lamplight', 't_burnout'], buttons: 0, keys: 1, bombs: 1,
+    { base: { damage: 3.4, tears: 2.4, range: 220, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 2, wax: 2 }, items: ['lamplight', 't_burnout'], buttons: 0, keys: 1, bombs: 1,
       passive: 'Burnt Out: embers set enemies alight, and whatever you kill bursts into flame.' }),
   T('bram', 'Bram', 'The Brute', 'He stopped going round things. He goes through them: walls, rocks, whatever is in the way.',
     { base: { damage: 4.6, tears: 2.1, range: 200, shotSpeed: 0.95, speed: 0.85, luck: -1 }, health: { red: 5 }, items: ['bone_folder', 't_brute'], buttons: 0, keys: 0, bombs: 1,

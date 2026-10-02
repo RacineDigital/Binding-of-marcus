@@ -35,21 +35,13 @@ function cherryBomb(big = false): PixelArt {
   p.polish().outline(undefined, false, 0.8);
   return p;
 }
-export function heartIcon(kind: 'red' | 'wax' | 'ink' | 'brass' | 'empty' | 'gilded', half: 0 | 1 | 2): PixelArt {
+export function heartIcon(kind: 'red' | 'wax' | 'ink' | 'empty' | 'gilded', half: 0 | 1 | 2): PixelArt {
   // 11x10 felt heart with stitching
   const p = new PixelArt(11, 10);
   const shape = (pp: PixelArt, col: string | number) => {
     pp.ellipse(3, 3, 2.9, 2.9, col); pp.ellipse(7.5, 3, 2.9, 2.9, col);
     pp.poly([0.2, 3.5, 10.8, 3.5, 5.5, 9.4], col);
   };
-  if (kind === 'brass') {
-    const c = ramp('#c8963a');
-    p.poly([1, 1, 10, 1, 10, 5, 5.5, 9.5, 1, 5], c[2]);
-    p.shadeV(1, 1, 10, 9, c, 0.5);
-    p.rect(1, 1, 9, 1, c[4]); p.set(3, 3, c[4]); p.set(7, 3, c[4]); p.set(5, 6, c[1]);
-    p.outline('#1a1008');
-    return p;
-  }
   const colors: Record<string, string> = { red: '#c8283a', wax: '#e6e0d0', ink: '#2a2650', empty: '#2a2228', gilded: '#c8283a' };
   const c = ramp(colors[kind]);
   const tmp = new PixelArt(11, 10);
@@ -72,10 +64,10 @@ export function heartIcon(kind: 'red' | 'wax' | 'ink' | 'brass' | 'empty' | 'gil
   if (kind === 'gilded') { p.set(0, 3, '#f0c040'); p.set(10, 3, '#f0c040'); p.set(5, 9, '#f0c040'); p.set(1, 1, '#f0c040'); p.set(9, 1, '#f0c040'); }
   return p;
 }
-function heartPickup(kind: 'red' | 'wax' | 'ink' | 'brass' | 'gilded', half: 0 | 1): PixelArt {
+function heartPickup(kind: 'red' | 'wax' | 'ink' | 'gilded', half: 0 | 1): PixelArt {
   const p = new PixelArt(13, 12);
   p.stamp(heartIcon(kind, half ? 1 : 2), 1, 1);
-  if (half) for (let y = 0; y < 12; y++) for (let x = 7; x < 13; x++) if (!(kind === 'brass')) p.clear(x, y);
+  if (half) for (let y = 0; y < 12; y++) for (let x = 7; x < 13; x++) p.clear(x, y);
   return p;
 }
 function spark(big: boolean): PixelArt {
@@ -166,7 +158,7 @@ function trapdoor(open: number): PixelArt {
 
 export interface PickupSprites {
   button: Sprite; button5: Sprite; button10: Sprite; key: Sprite; goldKey: Sprite; bomb: Sprite; bomb2: Sprite; goldBomb: Sprite;
-  heart: Sprite; heartHalf: Sprite; wax: Sprite; waxHalf: Sprite; ink: Sprite; brass: Sprite; gilded: Sprite;
+  heart: Sprite; heartHalf: Sprite; wax: Sprite; waxHalf: Sprite; ink: Sprite; gilded: Sprite;
   spark: Sprite; sparkBig: Sprite; page: Sprite; sweets: Sprite[];
   chest: Record<string, [Sprite, Sprite]>;
   pedestal: Record<string, Sprite>;
@@ -181,7 +173,7 @@ export function pickupSprites(): PickupSprites {
     button: s(button('#b87a44')), button5: s(button('#c8c8d8')), button10: s(button('#e8c040', 2)),
     key: s(key()), goldKey: s(key(true)), bomb: s(cherryBomb()), bomb2: s(cherryBomb()), goldBomb: s(cherryBomb(true)),
     heart: s(heartPickup('red', 0)), heartHalf: s(heartPickup('red', 1)), wax: s(heartPickup('wax', 0)), waxHalf: s(heartPickup('wax', 1)),
-    ink: s(heartPickup('ink', 0)), brass: s(heartPickup('brass', 0)), gilded: s(heartPickup('gilded', 0)),
+    ink: s(heartPickup('ink', 0)), gilded: s(heartPickup('gilded', 0)),
     spark: s(spark(false)), sparkBig: s(spark(true)), page: s(page()), sweets: SWEET_COLORS.map((_, i) => s(sweet(i))),
     chest: {
       tin: [s(chest('tin', false)), s(chest('tin', true))], locked: [s(chest('locked', false)), s(chest('locked', true))],
@@ -193,7 +185,7 @@ export function pickupSprites(): PickupSprites {
       red: new Sprite(heartIcon('red', 2), 0, 0), redHalf: new Sprite(heartIcon('red', 1), 0, 0), empty: new Sprite(heartIcon('empty', 0), 0, 0),
       wax: new Sprite(heartIcon('wax', 2), 0, 0), waxHalf: new Sprite(heartIcon('wax', 1), 0, 0),
       ink: new Sprite(heartIcon('ink', 2), 0, 0), inkHalf: new Sprite(heartIcon('ink', 1), 0, 0),
-      brass: new Sprite(heartIcon('brass', 2), 0, 0), gilded: new Sprite(heartIcon('gilded', 2), 0, 0), gildedHalf: new Sprite(heartIcon('gilded', 1), 0, 0),
+      gilded: new Sprite(heartIcon('gilded', 2), 0, 0), gildedHalf: new Sprite(heartIcon('gilded', 1), 0, 0),
       button: new Sprite(button('#b87a44'), 0, 0), key: new Sprite(key(), 0, 0), bomb: new Sprite(cherryBomb(), 0, 0),
       goldKey: new Sprite(key(true), 0, 0), goldBomb: new Sprite(cherryBomb(true), 0, 0),
       page: new Sprite(page(), 0, 0), spark: new Sprite(spark(false), 0, 0),

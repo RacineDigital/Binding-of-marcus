@@ -14,6 +14,7 @@ import { generateLayout } from '../src/generation/roomgen';
 import { RNG } from '../src/core/rng';
 import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
+import { Health } from '../src/player/health';
 import { ACHIEVEMENTS } from '../src/data/achievements';
 import { MAP_SIZE, TILE } from '../src/core/constants';
 import { beamScale, laserScale, overcharge, LASER_TIERS } from '../src/projectiles/weapons';
@@ -404,6 +405,13 @@ console.log('content:', JSON.stringify(counts));
   ok(beamScale(1) === 1 && laserScale(1) === 1, 'beams and lasers are their normal width at normal shot size');
   ok(beamScale(2.6) > beamScale(2) && beamScale(2) > beamScale(1.4) && laserScale(2.6) > laserScale(2), 'bigger shots keep widening beams and lasers (no early cap)');
   ok(beamScale(0.4) > 0 && laserScale(9) <= 3 ** 1.5, 'beam and laser width stay within sane bounds');
+}
+// ------------------------------------------------------------ brass hearts are gone
+{
+  const old = Health.from({ redMax: 6, red: 6, extra: [], brass: 2, gilded: 0 });
+  ok(!('brass' in old.serialize()) && old.extraHalf() === 4 && old.extra.every((e) => e.k === 'wax'), 'a saved run holding brass hearts gets wax hearts instead');
+  ok(ALL_ITEMS.every((i) => !(i.health as any)?.brass), 'no item grants brass hearts');
+  ok(CHARACTERS.every((c) => !(c.health as any).brass), 'no reader starts with brass hearts');
 }
 // ------------------------------------------------------------ the laser family
 {

@@ -202,7 +202,6 @@ export class Game {
     h.redMax = ch.health.red * 2; h.red = ch.health.red * 2;
     if (ch.health.wax) h.addExtra('wax', ch.health.wax);
     if (ch.health.ink) h.addExtra('ink', ch.health.ink);
-    if (ch.health.brass) h.addBrass(ch.health.brass);
     if (challenge === 'glass') { h.redMax = 2; h.red = 2; h.extra = []; }
     pl.health = h;
     pl.buttons = ch.buttons; pl.keys = ch.keys; pl.bombs = ch.bombs;

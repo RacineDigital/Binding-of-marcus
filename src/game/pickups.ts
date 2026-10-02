@@ -105,7 +105,7 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
     case 'wax': S.wax.draw(ctx, sx, y, o); break;
     case 'waxHalf': S.waxHalf.draw(ctx, sx, y, o); break;
     case 'ink': S.ink.draw(ctx, sx, y, o); break;
-    case 'brass': S.brass.draw(ctx, sx, y, o); break;
+    case 'brass': S.wax.draw(ctx, sx, y, o); break; // old saves: brass hearts are wax now
     case 'gilded': S.gilded.draw(ctx, sx, y, o); break;
     case 'spark': S.spark.draw(ctx, sx, y, o); break;
     case 'sparkBig': S.sparkBig.draw(ctx, sx, y, o); break;

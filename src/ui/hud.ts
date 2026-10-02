@@ -145,6 +145,19 @@ const STAT_ICON_PAL: Record<string, string> = {
   k: '#3a7ae8', K: '#a8d0ff', o: '#f08a30', t: '#c8a868', c: '#40d0e0', C: '#d8fcff', l: '#3a9a3a', L: '#7ae06a', G: '#2a5a20',
   m: '#4a4ab8', M: '#9a9aff', x: '#ff4a5a', X: '#fff0e0', d: '#8a7560', p: '#3a2e7a', P: '#efe6d2', W: '#ffffff', u: '#8ab8e8',
 };
+/** The Dust Jacket in the heart row: a little blue book cover with its flap folded round. */
+let jacketCanvas: HTMLCanvasElement | null = null;
+function jacketIcon(): HTMLCanvasElement {
+  if (jacketCanvas) return jacketCanvas;
+  const p = new PixelArt(11, 10);
+  for (let y = 1; y <= 9; y++) for (let x = 1; x <= 9; x++) p.set(x, y, y <= 2 ? '#8ab0d8' : x >= 8 ? '#2a4a7a' : '#4a72a8');
+  for (let y = 1; y <= 9; y++) p.set(0, y, '#1a2a4a');
+  for (let y = 2; y <= 8; y++) p.set(8, y, '#e8dcc0');
+  p.rect(3, 4, 3, 1, '#c8a04a'); p.rect(3, 6, 3, 1, '#c8a04a');
+  p.outline('#0a1020');
+  jacketCanvas = p.toCanvas();
+  return jacketCanvas;
+}
 let statIcons: Record<string, HTMLCanvasElement> | null = null;
 function statIcon(k: string): HTMLCanvasElement {
   if (!statIcons) {
@@ -406,13 +419,19 @@ export class Hud {
       const spr = e.k === 'wax' ? (e.h === 2 ? H.wax : H.waxHalf) : (e.h === 2 ? H.ink : H.inkHalf);
       ctx.drawImage(spr.canvas, x, y);
     }
-    for (let b = 0; b < h.brass; b++) { const [x, y] = pos(); ctx.drawImage(H.brass.canvas, x, y); }
+    // the Dust Jacket sits at the end of your hearts: bright while it will take this room's first hit,
+    // faded once it has
+    if (this.w.player.count('dust_jacket') > 0) {
+      const [x, y] = pos(), ready = !!this.w.run.flags.jacket;
+      ctx.globalAlpha = ready ? 1 : 0.3; ctx.drawImage(jacketIcon(), x, y); ctx.globalAlpha = 1;
+      if (ready && Math.floor(this.w.time * 1.5) % 4 === 0) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 2, y + 1, 1, 7); }
+    }
   }
 
   private drawResources(ctx: CanvasRenderingContext2D): void {
     const pl = this.w.player;
     const H = pickupSprites().hud;
-    const rows = Math.ceil((pl.health.redMax / 2 + pl.health.extra.length + pl.health.brass) / 6);
+    const rows = Math.ceil((pl.health.redMax / 2 + pl.health.extra.length + (pl.count('dust_jacket') > 0 ? 1 : 0)) / 6);
     const y0 = Math.max(30, 8 + Math.max(1, rows) * 10 + 4);
     const x = 6;
     const line = (spr: HTMLCanvasElement, n: number, y: number, special = false) => {

@@ -406,22 +406,24 @@ export class World {
       this.run.flags.jacket = false; pl.iframes = 1; this.audio.play('brass', { x: pl.x }); this.fx.ring(pl.x, pl.y - 10, 4, 24, '#8ab0d0', 0.3);
       this.hud.toast('The jacket takes the blow.', 1.2); return false;
     }
+    // the Brass Breastplate: no hit takes more than half a heart
+    if (!o.redFirst && pl.count('brass_plate') > 0 && half > 1) { half = 1; this.fx.ring(pl.x, pl.y - 10, 4, 22, '#d8a040', 0.3); }
     const red0 = pl.health.red;
     const res = pl.health.damage(half, !!o.redFirst);
     if (!o.noIframes) pl.iframes = 1.25 + this.player.count('pocket_watch') * 0.3;
     pl.hurtT = 0.45;
-    this.hitstop(res.brassBroke ? 0.05 : 0.09);
-    this.shake(res.brassBroke ? 2 : 4);
+    this.hitstop(0.09);
+    this.shake(4);
     this.redFlash = 0.6;
-    this.audio.play(res.brassBroke ? 'brass' : 'hurt', { x: pl.x });
-    this.fx.spray(pl.x, pl.y, 12, -Math.PI / 2, TAU, 8, res.brassBroke ? '#d8a040' : '#a01e2a', 70, 0.4, res.brassBroke ? null : '#6a1420');
+    this.audio.play('hurt', { x: pl.x });
+    this.fx.spray(pl.x, pl.y, 12, -Math.PI / 2, TAU, 8, '#a01e2a', 70, 0.4, '#6a1420');
     if (res.inkLost > 0) this.inkBurst();
     if (res.gildedBroke > 0) for (let i = 0; i < 3 * res.gildedBroke; i++) spawnDrop(this, 'button', pl.x, pl.y);
     this.run.stats.damageTaken += res.taken;
     this.run.flags.hitThisFloor = true;
     this.roomHit = true;
     if (this.room.type === 'boss') this.run.flags.bossHit = true;
-    // only losing red hearts costs you the bargain door (wax, ink and brass soak hits for free), and
+    // only losing red hearts costs you the bargain door (wax and ink soak hits for free), and
     // paying the Pincushion never counts
     if (pl.health.red < red0 && !o.redFirst) { this.run.flags.redHit = true; if (this.room.type === 'boss') this.run.flags.bossRedHit = true; }
     if (!o.redFirst) this.itemHook('onHurt');
