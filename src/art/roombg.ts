@@ -141,6 +141,7 @@ function floorCobble(c: Ctx): void {
   }
 }
 function floorTile(c: Ctx): void {
+  // Glazed square tiles: bevelled edges, a glaze glint in the corner, chipped corners and the odd gap.
   const { p, x0, y0, w, h, rng } = c;
   const base = hex(c.t.pal.floor), alt = hex(c.t.pal.floor2), grout = hex(c.t.pal.grout);
   const S = 12;
@@ -151,8 +152,16 @@ function floorTile(c: Ctx): void {
     let v = jit(((tx + ty) % 2 ? base : mix(base, alt, 0.5)), 0.08, hash2(tx, ty, c.seed));
     const grime = fbm(x * 0.04, y * 0.04, c.seed + 2, 3);
     v = mix(v, hex(c.t.pal.stain), Math.max(0, grime - 0.55) * 1.6);
+    // grime settles into the grout-side of each tile
+    if (lx >= S - 2 || ly >= S - 2) v = mix(v, grout, 0.12);
     if (lx === 0 || ly === 0) v = grout;
     else if (lx === 1 || ly === 1) v = lighten(v, 0.1);
+    else if (lx === S - 1 || ly === S - 1) v = darken(v, 0.1);
+    else if (lx + ly >= 4 && lx + ly <= 5 && lx >= 2 && ly >= 2 && hash2(tx, ty, c.seed + 6) < 0.55) v = lighten(v, 0.13);
+    // chipped corners
+    const chip = hash2(tx, ty, c.seed + 8);
+    if (chip < 0.12 && lx + ly <= 2 && lx > 0 && ly > 0) v = darken(grout, -0.1);
+    else if (chip > 0.9 && (S - 1 - lx) + (S - 1 - ly) <= 1) v = grout;
     if (missing.has(tx * 1000 + ty)) {
       v = (lx === 0 || ly === 0) ? grout : darken(hex('#3a2c24'), hash2(x, y, 4) * 0.3);
       if (ly === 1) v = hex('#1a1210');
@@ -162,21 +171,58 @@ function floorTile(c: Ctx): void {
   cracks(c, 5, grout);
 }
 function floorEarth(c: Ctx): void {
+  // Packed dirt: broad tonal drifts, patches of dried mud split into plates, half-buried stones and grit.
   const { p, x0, y0, w, h } = c;
-  const base = ramp(c.t.pal.floor);
+  const base = ramp(c.t.pal.floor), stone = ramp(c.t.pal.rock);
+  const tones = [mix(base[1], base[2], 0.45), base[2], mix(base[2], base[3], 0.55)];
+  const crack = darken(base[0], 0.15);
+  const S = 20;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const n = fbm(x * 0.07, y * 0.07, c.seed, 4);
-    const t = n * 1.4 - 0.2 + BAYER4[((y & 3) << 2) | (x & 3)] * 0.18;
-    const v = base[Math.max(0, Math.min(3, Math.floor(t * 4)))];
+    const n = fbm(x * 0.035, y * 0.035, c.seed, 4);
+    const t = n * 1.6 - 0.3 + BAYER4[((y & 3) << 2) | (x & 3)] * 0.1;
+    let v = tones[Math.max(0, Math.min(2, Math.floor(t * 3)))];
+    const g = hash2(x, y, c.seed + 3);
+    if (g < 0.05) v = darken(v, 0.12); else if (g > 0.965) v = lighten(v, 0.08);
+    const dry = fbm(x * 0.022 + 17, y * 0.022, c.seed + 21, 3);
+    if (dry > 0.56) {
+      const gx0 = Math.floor(x / S), gy0 = Math.floor(y / S);
+      let d1 = 1e9, d2 = 1e9, fx1 = 0, fy1 = 0;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+        const gx = gx0 + i, gy = gy0 + j;
+        const fx = (gx + 0.1 + hash2(gx, gy, c.seed + 30) * 0.8) * S, fy = (gy + 0.1 + hash2(gx, gy, c.seed + 31) * 0.8) * S;
+        const d = Math.hypot(x - fx, y - fy);
+        if (d < d1) { d2 = d1; d1 = d; fx1 = fx; fy1 = fy; } else if (d < d2) d2 = d;
+      }
+      const edge = d2 - d1;
+      v = lighten(v, Math.min(0.06, (dry - 0.56) * 0.5));
+      if (edge < 1 && dry > 0.59) v = crack;
+      else if (edge < 2 && dry > 0.59) v = (y < fy1 || x < fx1) ? lighten(v, 0.05) : darken(v, 0.08);
+    }
     p.set(x0 + x, y0 + y, v);
   }
-  // pebbles
-  for (let i = 0; i < (w * h) / 180; i++) {
-    const px = x0 + c.rng.int(0, w - 1), py = y0 + c.rng.int(0, h - 1);
-    const pc = ramp(c.t.pal.rock);
-    p.set(px, py, pc[3]); p.set(px + 1, py, pc[2]); p.set(px, py + 1, pc[1]); p.set(px + 1, py + 1, pc[0]);
+  // half-buried stones, lit from the top-left with a contact shadow
+  const { rng } = c;
+  for (let i = 0; i < (w * h) / 650; i++) {
+    const px = x0 + rng.int(2, w - 3), py = y0 + rng.int(2, h - 3);
+    const rx = rng.float(1.2, 3.4), ry = rx * rng.float(0.6, 0.85);
+    const ext = Math.ceil(rx) + 1;
+    for (let dy = -ext; dy <= ext; dy++) for (let dx = -ext; dx <= ext; dx++) {
+      const sx = dx - 1, sy = dy - 1;
+      if ((sx / rx) ** 2 + (sy / ry) ** 2 <= 1 && (dx / rx) ** 2 + (dy / ry) ** 2 > 1) p.set(px + dx, py + dy, darken(p.get(px + dx, py + dy), 0.3));
+    }
+    for (let dy = -ext; dy <= ext; dy++) for (let dx = -ext; dx <= ext; dx++) {
+      const d = (dx / rx) ** 2 + (dy / ry) ** 2;
+      if (d > 1) continue;
+      const lit = -(dx / rx) * 0.55 - (dy / ry) * 0.75;
+      p.set(px + dx, py + dy, lit > 0.45 ? stone[4] : lit > 0 ? stone[3] : lit > -0.45 ? stone[2] : stone[1]);
+    }
   }
-  cracks(c, 8, darken(base[0], 0.3));
+  // grit
+  for (let i = 0; i < (w * h) / 160; i++) {
+    const px = x0 + c.rng.int(0, w - 1), py = y0 + c.rng.int(0, h - 1);
+    p.set(px, py, stone[2]); p.set(px, py + 1, darken(p.get(px, py + 1), 0.2));
+  }
+  cracks(c, 4, crack);
 }
 function floorChecker(c: Ctx): void {
   const { p, x0, y0, w, h } = c;
@@ -185,11 +231,17 @@ function floorChecker(c: Ctx): void {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const tx = Math.floor(x / S), ty = Math.floor(y / S), lx = x % S, ly = y % S;
     let v = (tx + ty) % 2 ? a : b;
-    const vein = Math.abs(vnoise(x * 0.09 + ty * 3, y * 0.05 + tx * 5, c.seed) - 0.5);
-    if (vein < 0.025) v = (tx + ty) % 2 ? darken(v, 0.15) : lighten(v, 0.15);
+    // marble: soft clouding plus thin warped veins that run one way across each slab
+    v = mix(v, lighten(v, 0.1), Math.max(0, fbm(x * 0.07, y * 0.07, c.seed + tx * 13 + ty * 7, 3) - 0.45));
+    const ang = hash2(tx, ty, c.seed + 4) * Math.PI;
+    const warp = fbm(x * 0.04, y * 0.04, c.seed + 3 + tx * 31 + ty * 17, 3) * 4;
+    const vein = Math.abs(Math.sin((x * Math.cos(ang) + y * Math.sin(ang)) * 0.07 + warp));
+    const dark = (tx + ty) % 2 === 0;
+    if (vein < 0.05) v = dark ? lighten(v, 0.2) : darken(v, 0.18);
+    else if (vein < 0.12) v = dark ? lighten(v, 0.08) : darken(v, 0.07);
     const wear = fbm(x * 0.03, y * 0.03, c.seed + 8, 3);
     v = mix(v, hex('#2a2224'), Math.max(0, wear - 0.6) * 1.2);
-    if (lx === 0 || ly === 0) v = grout; else if (lx === 1 || ly === 1) v = lighten(v, 0.08);
+    if (lx === 0 || ly === 0) v = grout; else if (lx === 1 || ly === 1) v = lighten(v, 0.08); else if (lx === S - 1 || ly === S - 1) v = darken(v, 0.1);
     p.set(x0 + x, y0 + y, v);
   }
   // carpet runner through the middle
@@ -326,17 +378,34 @@ function wallTexel(style: string, side: number, u: number, d: number, x: number,
         if (lx < 1 || ly === 0) v = hex('#4a5a52');
         return v;
       }
-      let v = mix(wall, wall2, fbm(u * 0.08, d * 6, seed, 2));
+      // painted plaster: damp streaks running down from the ceiling, flakes of paint lifting off
+      let v = mix(wall, wall2, fbm(u * 0.08, d * 6, seed, 2) * 0.7);
+      const col = Math.floor((u + 400) / 3);
+      if (hash2(col, side, seed + 6) < 0.22 && d > 0.55 + hash2(col, side, seed + 7) * 0.35) v = darken(v, 0.09);
       const peel = fbm(u * 0.12, d * 8, seed + 2, 3);
-      if (peel > 0.62) v = mix(hex('#8a7a6a'), v, 0.3);
+      if (peel > 0.645) v = mix(hex('#9a8c78'), hex('#7e705e'), Math.min(1, (peel - 0.645) * 12));
+      else if (peel > 0.625) v = darken(v, 0.22);
+      else if (peel > 0.61) v = lighten(v, 0.08);
       if (d > 0.44 && d < 0.49) v = hex('#3a4a42');
       return v;
     }
     case 'cave': {
-      const n = fbm(u * 0.06, d * 3 + side * 10, seed, 4);
-      let v = mix(wall2, wall, n);
-      if (Math.abs(n - 0.5) < 0.02) v = mortar;
-      if (hash2(Math.floor(x / 2), Math.floor(y / 2), seed) < 0.03) v = lighten(v, 0.2);
+      // rough-hewn rock: lumpy boulders packed in dark earth, lit on the face that turns toward the room
+      const S = 13, px = u + (vnoise(u * 0.12, d * 5, seed + 5) - 0.5) * 6, py = d * 44 + side * 97;
+      const gx0 = Math.floor(px / S), gy0 = Math.floor(py / S);
+      let d1 = 1e9, d2 = 1e9, id = 0, fy1 = 0;
+      for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+        const gx = gx0 + i, gy = gy0 + j;
+        const fx = (gx + 0.15 + hash2(gx, gy, seed + 40) * 0.7) * S, fy = (gy + 0.15 + hash2(gx, gy, seed + 41) * 0.7) * S;
+        const dd = Math.hypot(px - fx, (py - fy) * 1.3);
+        if (dd < d1) { d2 = d1; d1 = dd; id = gx * 7919 + gy; fy1 = fy; } else if (dd < d2) d2 = dd;
+      }
+      const edge = d2 - d1;
+      let v = jit(mix(wall2, wall, hash2(id, 1, seed)), 0.12, hash2(id, 2, seed));
+      if (fbm(px * 0.25, py * 0.25, seed + id, 2) > 0.62) v = darken(v, 0.1);
+      if (edge < 1.5) v = mortar;
+      else if (edge < 2.8) v = py < fy1 ? lighten(v, 0.14) : darken(v, 0.16);
+      if (hash2(Math.floor(x / 2), Math.floor(y / 2), seed) < 0.02) v = lighten(v, 0.2);
       return v;
     }
     case 'torn': {
