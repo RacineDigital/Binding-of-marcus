@@ -411,7 +411,7 @@ function rewrite(e: Enemy, w: World): void {
   w.hud.toast(`It ${S.forms} ${def?.name ?? 'something you remember'}.`, 1.6);
 }
 const finalBoss = (id: string, name: string, desc: string, gore: string, glow: string, paint: (p: any, s: any) => void): EnemyDef => ({
-  id, name, desc, boss: true,
+  id, name, desc, boss: true, borrows: Object.keys(FORMS),
   hp: 11000, r: 24, speed: 0, role: 'boss', cost: 0, hitY: 44, mass: 60, noKnock: true, gore, goreDecal: gore, light: [120, glow],
   sprites: () => rig({ w: 96, h: 104, paint, phases: 1, extra: { rage: [0, 1, 2, 3, 4, 5].map((f) => ({ x: { rage: 1 }, jaw: 0.5 + Math.abs(Math.sin(f)) * 0.5, breath: Math.sin(f * 1.05), t: f / 6 })) }, fps: { rage: 8 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.data.phase = 0; },

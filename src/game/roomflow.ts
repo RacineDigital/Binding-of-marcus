@@ -6,7 +6,7 @@ import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef, SpawnDef } from '../
 import { TILE, VIEW_W, VIEW_H } from '../core/constants';
 import { paintRoomBackground } from '../art/roombg';
 import { propsFor } from '../art/props';
-import { Enemy } from '../enemies/enemy';
+import { Enemy, getSprites } from '../enemies/enemy';
 import { getEnemy } from '../enemies/registry';
 import { Pickup, popPickup } from './pickups';
 import { spawnDrop, rollDropKind } from './drops';
@@ -87,6 +87,7 @@ export function startFloor(w: World): void {
   // the end game announces itself: the Binding is not the Binding you remember
   const endgame = floor.theme.id === 'binding' && run.floorIndex === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless';
   w.hud.floorCard(floor.label, endgame ? 'It remembers you.' : floor.theme.subtitle, floor.curse, endgame);
+  warmBosses(w);
   w.audio.setMusic(themeMusic(floor.theme));
   w.audio.prepareMusic(bossMusic(w.run));
   const nextTheme = pickTheme(w.run, w.run.floorIndex + 1);
@@ -302,6 +303,21 @@ function makeChampion(e: Enemy): void {
   const kinds = ['armored', 'swift', 'bloated'];
   e.champion = kinds[Math.floor(Math.random() * kinds.length)];
   if (e.champion === 'bloated') { e.hp *= 1.8; e.maxHp *= 1.8; e.r *= 1.15; }
+}
+
+/**
+ * Bake this floor's bosses (and any bodies they borrow mid-fight) a few at a time while Marcus is
+ * still in the start room, so the first sight of one never stalls a fight.
+ */
+function warmBosses(w: World): void {
+  const ids = new Set<string>();
+  for (const r of w.floor.rooms) {
+    if (!r.bossId) continue;
+    for (const id of r.bossId.split('+').flatMap((id) => (BOSS_ALIASES[id] ?? id).split('+'))) {
+      ids.add(id); for (const b of getEnemy(id)?.borrows ?? []) ids.add(b);
+    }
+  }
+  [...ids].forEach((id, i) => w.after(0.3 + i * 0.15, () => { const d = getEnemy(id); if (d) getSprites(d); }, true));
 }
 
 function startBoss(w: World, room: RoomData): void {

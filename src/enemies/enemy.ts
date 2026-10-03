@@ -21,6 +21,8 @@ export interface EnemyDef {
   role: Role; cost: number; hitY?: number;
   gore?: string; goreDecal?: string;
   sprites: () => SpriteSet;
+  /** Other enemies whose bodies this one wears mid-fight (their sprites are baked ahead of time). */
+  borrows?: string[];
   init?(e: Enemy, w: World): void;
   update(e: Enemy, w: World, dt: number): void;
   draw?(e: Enemy, ctx: CanvasRenderingContext2D, w: World, sx: number, sy: number): void;
