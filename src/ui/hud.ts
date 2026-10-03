@@ -24,6 +24,7 @@ import { bindLabel, fmtKeys } from '../core/input';
 import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
+import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
 import { STING_HIT, StingKind } from '../audio/bossting';
 
 /** How long a boss title card holds the screen. */
@@ -202,6 +203,24 @@ export class Hud {
   readingNote(title: string): boolean { return !!this.note?.at && this.note.title === title && this.note.dur > this.note.t + 0.3; }
 
   /** Speedrun-style run clock under the map. */
+  /** On the hospital path: a two-line checklist for the halves of Grandfather's letter, and where each one is. */
+  private drawLetterHunt(ctx: CanvasRenderingContext2D): void {
+    const w = this.w, h = letterHunt(w);
+    if (!h) return;
+    let y = 64 + (w.floor.curse ? 8 : 0) + (w.game.save.data.settings.timer ? 12 : 0);
+    const rows: [boolean, string, string][] = [
+      [h.top, 'Top half', 'Lost & Found, after the boss'],
+      [h.bottom, 'Bottom half', 'Deep Crawlspace, on the map'],
+    ];
+    const lines = rows.map(([got, name, where]) => got ? `\u2713 ${name}: found` : `\u2022 ${name}: ${where}`);
+    const wd = Math.max(measure(ctx, 'Grandfather\'s letter', 6, FONT_BODY, 700), ...lines.map((s) => measure(ctx, s, 5.5))) + 6;
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,6,12,0.55)'; ctx.fillRect(VIEW_W - 8 - wd, y, wd, 27);
+    text(ctx, 'Grandfather\'s letter', VIEW_W - 11, y + 7, 6, '#ffe08c', 'right', FONT_BODY, 700);
+    lines.forEach((s, i) => text(ctx, s, VIEW_W - 11, y + 16 + i * 9, 5.5, rows[i][0] ? COL.up : COL.text, 'right'));
+    ctx.restore();
+  }
+
   private drawTimer(ctx: CanvasRenderingContext2D): void {
     const t = this.w.run.stats.time;
     const m = Math.floor(t / 60), s = t % 60;
@@ -290,6 +309,7 @@ export class Hud {
     this.drawConsumables(ctx);
     if (w.floor.curse === 'lost') { if (!this.fullMap) text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right'); }
     else if (!this.fullMap) this.drawMinimap(ctx, false);
+    if (!this.fullMap) this.drawLetterHunt(ctx);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);
@@ -629,7 +649,15 @@ export class Hud {
         ctx.strokeRect(x - 0.6, y - 0.6, W + 1.2, Hh + 1.2);
       }
       const ic = mapIcon(r.type, Math.round(isz * dens));
-      if (ic) { ctx.globalAlpha = current ? 0.85 : 1; ctx.drawImage(ic, x + W / 2 - isz / 2, y + Hh / 2 - isz / 2, isz, isz); ctx.globalAlpha = 1; }
+      // half of Grandfather's letter is in here: show it, not the room's usual icon
+      const half = LETTER_HALVES.find((id) => (current ? w.pickups.some((p) => !p.dead && isWantedHalf(w, p.kind, p.data.id) && p.data.id === id) : r.pickups.some((p) => isWantedHalf(w, p.kind, p.data?.id) && p.data?.id === id)));
+      if (half) {
+        const s = isz * (1.15 + 0.12 * Math.sin(w.time * 5));
+        ctx.save(); ctx.imageSmoothingEnabled = false;
+        ctx.strokeStyle = `rgba(255,224,140,${0.6 + 0.4 * Math.sin(w.time * 5)})`; ctx.lineWidth = 0.8; ctx.strokeRect(x - 0.8, y - 0.8, W + 1.6, Hh + 1.6);
+        ctx.drawImage(itemIconCanvas(half), x + W / 2 - s / 2, y + Hh / 2 - s / 2, s, s);
+        ctx.restore();
+      } else if (ic) { ctx.globalAlpha = current ? 0.85 : 1; ctx.drawImage(ic, x + W / 2 - isz / 2, y + Hh / 2 - isz / 2, isz, isz); ctx.globalAlpha = 1; }
     }
     if (!full) ctx.restore();
     // curse label
