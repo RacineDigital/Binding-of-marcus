@@ -247,10 +247,8 @@ function shiftForm(e: Enemy, w: World): void {
   // fade out where it stands...
   w.fx.smoke(e.x, e.y - 30, 14, 'rgba(20,16,40,', 9, 0.9);
   w.audio.play('bossRoar', { x: e.x, pitch: 1.6, vol: 0.5 });
-  // ...and come back as something else (or, now and then, as itself): usually close to where it
-  // was, only sometimes somewhere else in the room
-  const near = Math.random() < 0.65;
-  const p = near ? nearPoint(w, e.x, e.y) : randomFloorPoint(w, 90);
+  // ...and come back as something else (or, now and then, as itself), a short step from where it was
+  const p = nearPoint(w, e.x, e.y);
   telegraph(w, p.x, p.y, 26, 0.5, '#80c0ff');
   pd.vanish = VANISH; pd.to = p; e.invuln = true;
   const pool = FORMS.filter((id) => id !== last && getEnemy(id));

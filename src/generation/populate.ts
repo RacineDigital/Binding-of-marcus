@@ -249,9 +249,9 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'boss': {
       if (floor.theme.id === 'lastpage' || floor.theme.id === 'foreword' || floor.theme.id === 'room4') {
-        // a bare arena with four pillars to hide behind (Room 4 is one small room, the others huge)
+        // a bare arena with four pillars to hide behind (Room 4 is one long room, the others huge)
         room.bossId = floor.theme.bosses[0];
-        const pillars = room.cw === 1 ? [[3, 2], [room.cols - 4, 2], [3, room.rows - 3], [room.cols - 4, room.rows - 3]]
+        const pillars = room.ch === 1 ? [[7, 2], [room.cols - 8, 2], [7, room.rows - 3], [room.cols - 8, room.rows - 3]]
           : [[7, 5], [room.cols - 8, 5], [7, room.rows - 6], [room.cols - 8, room.rows - 6]];
         for (const [c, r] of pillars) room.setOb(c, r, Ob.Pillar);
         break;

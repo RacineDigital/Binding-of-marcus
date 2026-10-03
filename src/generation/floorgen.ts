@@ -200,8 +200,8 @@ function placeEcho(floor: Floor, run: Run, save: SaveManager): void {
 /** The Last Page: a landing and, through one door, a huge arena. */
 function buildLastPage(c: Ctx, small = false): void {
   place(c, 6, 10, 1, 1, 'start');
-  // Room 4 is a single ward room, all on one screen; the Last Page and the Foreword are huge
-  if (small) place(c, 6, 9, 1, 1, 'boss');
+  // Room 4 is one long ward room (two screens wide); the Last Page and the Foreword are huge
+  if (small) place(c, 5, 9, 2, 1, 'boss');
   else place(c, 5, 8, 2, 2, 'boss');
   c.rooms.forEach((r, i) => (r.distance = i));
   connectDoors(c, c.fi);
