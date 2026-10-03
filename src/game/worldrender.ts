@@ -2,6 +2,7 @@
 import type { World } from './world';
 import { snap } from '../render/snap';
 import { drawBossLife } from '../bosses/bosslife';
+import { drawRigged } from '../bosses/rig';
 import { doorSymbol } from '../art/roomicons';
 import { BG_MARGIN } from '../art/roombg';
 import { Ob, Side } from '../rooms/room';
@@ -109,8 +110,12 @@ export function renderWorld(w: World): void {
         const e = c.e; const k = c.t / c.dur;
         const jx = (Math.random() - 0.5) * 3 * (1 + k * 2);
         ctx.save(); ctx.globalAlpha = 1 - Math.max(0, k - 0.85) * 6;
-        e.flash = Math.random() < 0.3 ? 1 : 0; e.sx = 1 + k * 0.15; e.sy = 1 - k * 0.25; e.dead = false;
-        drawEnemyBody(w, ctx, e, snap(e.x - camX + jx), snap(e.y - camY));
+        // a rigged boss plays its own death; anything else shakes and squashes
+        const own = !!e.sprites.death;
+        e.flash = Math.random() < (own ? 0.12 : 0.3) ? 1 : 0;
+        if (own) { e.data.deathK = Math.min(0.999, k); e.sx = e.sy = 1; } else { e.sx = 1 + k * 0.15; e.sy = 1 - k * 0.25; }
+        e.dead = false;
+        drawEnemyBody(w, ctx, e, snap(e.x - camX + jx * (own ? 0.4 : 1)), snap(e.y - camY));
         e.dead = true;
         ctx.restore();
         break;
@@ -230,6 +235,7 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
     if (set && set.length) {
       const spr = set[e.frame % set.length];
       let tint: string | undefined, tintAmt = 0;
+      const rigged = e.isBoss && !!e.sprites.death;
       if (e.freeze > 0) { tint = '#9ad8ff'; tintAmt = 0.55; }
       else if (e.burn > 0) { tint = '#ff7a2a'; tintAmt = 0.3 + Math.sin(w.time * 20) * 0.1; }
       else if (e.poison > 0) { tint = '#6ad040'; tintAmt = 0.35; }
@@ -237,7 +243,9 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
       else if (e.charm > 0) { tint = '#ff80c0'; tintAmt = 0.4; }
       else if (e.mark > 0) { tint = '#c040ff'; tintAmt = 0.3; }
       else if (e.champion) { tint = e.champion === 'armored' ? '#8a8aa8' : e.champion === 'swift' ? '#40c0ff' : '#e04040'; tintAmt = 0.35; }
-      spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
+      // rigged bosses pick their own pose and draw their eyes live
+      if (rigged) drawRigged(e, ctx, w, sx, sy, { tint, tintAmt });
+      else spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
     }
   }
   if (champ) ctx.restore();

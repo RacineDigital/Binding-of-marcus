@@ -1334,7 +1334,7 @@ class GridView {
 
 function drawBeast(ctx: CanvasRenderingContext2D, d: EnemyDef, x: number, y: number, size: number, hidden: boolean): void {
   let spr: Sprite | undefined;
-  try { const set = getSprites(d); spr = (set.idle ?? Object.values(set)[0])?.[0]; } catch { spr = undefined; }
+  try { const set = getSprites(d); spr = (set.portrait ?? set.idle ?? Object.values(set)[0])?.[0]; } catch { spr = undefined; }
   if (!spr) return;
   const c = spr.canvas, k = Math.min(size / c.width, size / c.height, 2);
   const w = Math.round(c.width * k), h = Math.round(c.height * k);

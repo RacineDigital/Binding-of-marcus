@@ -2,6 +2,8 @@
 // second Binding boss, and The Unwritten: what waits on the Last Page beyond the Margins.
 import type { EnemyDef, Enemy } from '../enemies/enemy';
 import { getSprites } from '../enemies/enemy';
+import { rig, drawRigged, drawEyes } from './rig';
+import * as G from './art_d';
 import { bigEye, crack, drips, eye, frames, glowEye, grain, hex, maw, ramp, rivets, sprinkle, stitches } from '../art/creature';
 import { aimAngle, shoot, spreadShot, ringShot, randomFloorPoint, chase, keepDistance } from '../enemies/ai';
 import { bossUpdate, BossBrain, BossAttack, telegraph } from './boss';
@@ -11,7 +13,9 @@ import type { World } from '../game/world';
 import { getEnemy } from '../enemies/registry';
 import { TILE } from '../core/constants';
 
-function drawBoss(e: Enemy, ctx: CanvasRenderingContext2D, sx: number, sy: number, extra: Partial<{ rot: number; alpha: number; tint: string; tintAmt: number; yoff: number; scale: number }> = {}): void {
+function drawBoss(e: Enemy, ctx: CanvasRenderingContext2D, sx: number, sy: number, extra: Partial<{ rot: number; alpha: number; tint: string; tintAmt: number; yoff: number; scale: number }> = {}, w?: World): void {
+  // rigged bosses pick their own pose and draw their eyes live
+  if (w && e.sprites.death) { drawRigged(e, ctx, w, sx, sy, { tint: extra.tint, tintAmt: extra.tintAmt, alpha: extra.alpha, yoff: extra.yoff ?? 2 }); return; }
   const set = e.sprites[e.anim] ?? e.sprites.idle; const spr = set[e.frame % set.length];
   const k = extra.scale ?? 1;
   spr.draw(ctx, sx, sy - e.z + (extra.yoff ?? 2), { flip: e.flip, flash: e.flash > 0 ? 0.5 : 0, sx: e.sx * k, sy: e.sy * k, rot: extra.rot, alpha: extra.alpha ?? (e.alpha < 1 ? e.alpha : undefined), tint: extra.tint, tintAmt: extra.tintAmt });
@@ -34,54 +38,6 @@ function tendril(w: World, x0: number, y0: number, ang: number, n: number, step:
 const inRoom = (w: World, x: number, y: number) => x > w.room.ox + 12 && x < w.room.ox + w.room.cols * TILE - 12 && y > w.room.oy + 12 && y < w.room.oy + w.room.rows * TILE - 12;
 
 // ================================================================== The Thornwife (Greenhouse)
-function paintThornwife(p: any, f: number, open: number, n = 4): void {
-  // a rose grown monstrous in Grandmother's pot: thorned vine arms ending in grasping tendrils,
-  // ruffled petals layered round a pale, sleeping-then-screaming face, roots splitting the clay
-  const ph = (f / n) * TAU;
-  const pot = ramp('#a8583a'), stem = ramp('#3a6a2a'), rose = ramp('#c8283a'), face = ramp('#ecdccc'), thorn = '#e0e8b0';
-  const cx = 34, sway = Math.sin(ph) * 1.8;
-  // clay pot, cracked by the roots
-  p.poly([cx - 16, 50, cx + 16, 50, cx + 12, 66, cx - 12, 66], pot[2]); p.shadeV(cx - 16, 50, 32, 16, pot, 0.5);
-  p.rect(cx - 18, 47, 36, 4, pot[3]); p.rect(cx - 18, 47, 36, 1, pot[4]); p.rect(cx - 16, 51, 32, 1, hex('#3a2418'));
-  for (let x = cx - 10; x < cx + 10; x += 5) p.line(x, 56, x + 3, 56, pot[4]);   // painted band
-  crack(p, cx + 6, 51, 9, '#3a2418', 5, 1.5); crack(p, cx - 8, 52, 7, '#3a2418', 9, 1.7);
-  for (const [x, y] of [[cx + 9, 60], [cx - 11, 58]]) { p.tube(x, y, x + (x > cx ? 4 : -4), y + 6, 1, stem); }   // roots out of the cracks
-  // stem
-  p.tube(cx, 48, cx + sway, 26, 3.5, stem);
-  for (let y = 30; y < 47; y += 3) { p.set(cx - 4 + (y % 2), y, thorn); p.set(cx + 4, y + 1, thorn); }
-  // vine arms, thorned, with curling grasping tips
-  for (const s of [-1, 1]) {
-    const ax = cx + s * (18 + open * 6) + Math.sin(ph + s) * 1.5, ay = 30 - open * 8 + Math.cos(ph + s) * 1.5;
-    p.tube(cx + sway, 36, ax, ay, 2.2, stem);
-    p.tube(ax, ay, ax + s * 4, ay + 8 - open * 10, 1.5, stem);
-    const tx = ax + s * 4, ty = ay + 8 - open * 10;
-    for (let k = 0; k < 4; k++) { const a = (s > 0 ? 0 : Math.PI) + k * 0.9 * s + ph * 0.2; p.set(tx + Math.cos(a) * 2.5, ty + Math.sin(a) * 2.5, stem[1]); }
-    for (let k = 0; k < 5; k++) { const kx = cx + s * (5 + k * 3.5), ky = 35 - k * (1 + open * 1.6); p.set(kx, ky - 1, thorn); p.set(kx, ky - 2, '#f8fce0'); }
-    // leaves
-    p.ball(cx + s * 9, 41 - (s > 0 ? 2 : 0), 5, 2.5, stem); p.line(cx + s * 5, 41, cx + s * 13, 40, stem[3]);
-  }
-  // the bloom: three rings of petals, a face in the heart
-  const hx = cx + sway, hy = 18;
-  p.ball(hx, hy, 16, 14, ramp('#8a1424'), { dither: 0.5 });
-  for (let r = 0; r < 3; r++) {
-    const R = 14 - r * 3.4, cnt = 9 - r;
-    for (let i = 0; i < cnt; i++) {
-      const a = (i / cnt) * TAU + r * 0.4 + Math.sin(ph) * 0.05;
-      p.ball(hx + Math.cos(a) * R * 0.7, hy + Math.sin(a) * R * 0.6, 4.2 - r * 0.6, 3.4 - r * 0.4, rose, { dither: 0.4 });
-      p.line(hx + Math.cos(a) * R * 0.45, hy + Math.sin(a) * R * 0.4, hx + Math.cos(a) * R * 0.9, hy + Math.sin(a) * R * 0.8, rose[0]);
-    }
-  }
-  for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; p.set(hx + Math.cos(a) * 15, hy + Math.sin(a) * 13, rose[4]); }
-  p.ball(hx, hy + 1, 7, 7, face, { dither: 0.4 });
-  if (open > 0) {
-    bigEye(p, hx - 3, hy - 1, 1.8, 0, 0.3, '#2a0a10', { veins: '' }); bigEye(p, hx + 3, hy - 1, 1.8, 0, 0.3, '#2a0a10', { veins: '' });
-    maw(p, hx - 3, hy + 2, 6, 5, open, { gum: '#6a1a24', drool: '' });
-  } else {
-    p.line(hx - 4, hy - 1, hx - 2, hy, hex('#6a3a3a')); p.line(hx + 2, hy, hx + 4, hy - 1, hex('#6a3a3a'));   // sleeping lids
-    p.line(hx - 1, hy + 4, hx + 1, hy + 4, hex('#6a1a24'));
-    p.set(hx - 5, hy + 2, '#e89aa0'); p.set(hx + 5, hy + 2, '#e89aa0');
-  }
-}
 const thornBrain: BossBrain = {
   idleTime: [0.9, 1.4], phases: [0.5],
   idle(e, w, dt) { keepDistance(e, w, 90, 150, 18 + e.data.phase * 10, dt); e.setAnim('idle'); e.animate(dt, 4); },
@@ -125,43 +81,13 @@ const thornBrain: BossBrain = {
 const thornwife: EnemyDef = {
   id: 'thornwife', name: 'The Thornwife', desc: 'Grandmother\'s prize rose. Nobody remembered to stop watering it.', boss: true,
   hp: 340, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 30, mass: 14, noKnock: true, gore: '#c8283a', goreDecal: '#3a5a2a', light: [60, '#ff8090'],
-  sprites: () => ({ idle: frames(68, 70, 8, (p, f, n) => paintThornwife(p, f, 0, n)), open: frames(68, 70, 8, (p, f, n) => paintThornwife(p, f, 1, n)) }),
+  sprites: () => rig({ w: 68, h: 70, paint: G.paintThornwife, phases: 1, extra: { open: [0, 1, 2, 3].map((f) => ({ x: { open: 1 }, jaw: 0.9 + (f % 2) * 0.1, raise: 0.6 + (f % 2) * 0.3, breath: Math.sin(f * 1.6) })) }, fps: { open: 7 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
   update(e, w, dt) { bossUpdate(e, w, dt, thornBrain); },
-  draw(e, ctx, w, sx, sy) { if (e.hidden) { ctx.fillStyle = '#2a3a1e'; ctx.beginPath(); ctx.ellipse(sx, sy, 14, 5, 0, 0, TAU); ctx.fill(); return; } drawBoss(e, ctx, sx, sy); },
+  draw(e, ctx, w, sx, sy) { if (e.hidden) { ctx.fillStyle = '#2a3a1e'; ctx.beginPath(); ctx.ellipse(sx, sy, 14, 5, 0, 0, TAU); ctx.fill(); return; } drawBoss(e, ctx, sx, sy, {}, w); },
 };
 
 // ================================================================== The Rime Bride (Frozen Cistern)
-function paintBride(p: any, f: number, veil: number, n = 4): void {
-  // a frozen bride: a long gown hardening into ice at the hem, a frost-bitten bouquet, an icicle
-  // crown, and under the lace a face the colour of a winter window
-  const ph = (f / n) * TAU;
-  const ice = ramp('#a8d8f0'), dress = ramp('#d8ecf8'), dark = ramp('#14203a');
-  const cx = 30, bob = Math.sin(ph) * 1.5;
-  p.poly([cx - 6, 24 + bob, cx + 6, 24 + bob, cx + 21, 62, cx - 21, 62], dress[2]); p.shadeV(cx - 21, 24, 42, 40, dress, 0.6);
-  // folds and frost creeping up from the hem
-  for (const x of [-12, -5, 3, 10]) p.line(cx + x * 0.3, 30 + bob, cx + x, 61, dress[1]);
-  for (let i = 0; i < 18; i++) { const x = cx - 19 + ((i * 7) % 38), y = 50 + ((i * 5) % 11); p.set(x, y, '#ffffff'); p.set(x + 1, y + 1, ice[2]); }
-  for (let x = cx - 20; x < cx + 21; x += 2) { const l = 3 + ((x * 7) % 6) + Math.round(Math.sin(ph + x) * 0.8); p.line(x, 62, x, 62 + l, ice[1 + (x % 3 ? 1 : 2)]); p.set(x, 62 + l, '#ffffff'); }
-  // waist sash with a frozen brooch
-  p.rect(cx - 7, 30 + bob, 14, 2, ice[3]); p.ball(cx, 31 + bob, 1.6, 1.6, ramp('#7af0ff'));
-  // arms and the frozen bouquet
-  p.tube(cx - 6, 30 + bob, cx - 2, 40 + bob, 1.5, dress); p.tube(cx + 6, 30 + bob, cx + 2, 40 + bob, 1.5, dress);
-  p.ball(cx, 42 + bob, 5.5, 4.5, ice);
-  for (const [dx, dy, c] of [[-3, -2, '#e8f8ff'], [2, -3, '#b8e0ff'], [0, 0, '#ffffff'], [-1, 2, '#88c8f0'], [3, 1, '#d8f0ff']] as [number, number, string][]) p.ball(cx + dx, 41 + bob + dy, 1.4, 1.4, ramp(c));
-  for (let i = 0; i < 3; i++) p.line(cx - 2 + i * 2, 46 + bob, cx - 3 + i * 3, 52 + bob, hex('#5a8aa0'));
-  // head and icicle crown
-  p.ball(cx, 16 + bob, 9, 10, dark, { dither: 0.5 });
-  p.ball(cx, 17 + bob, 6, 7, ramp('#8ab8d8'), { dither: 0.5 });
-  for (let i = -3; i <= 3; i++) { const h = (3 - Math.abs(i)) * 1.6 + 3; p.line(cx + i * 2.5, 6 + bob, cx + i * 2.5, 6 + bob - h, ice[3]); p.set(cx + i * 2.5, 6 + bob - h, '#ffffff'); }
-  glowEye(p, cx - 3, 16 + bob, '#7af0ff'); glowEye(p, cx + 3, 16 + bob, '#7af0ff');
-  p.line(cx - 2, 21 + bob, cx + 2, 21 + bob, hex('#2a4060'));
-  if (veil > 0.5) maw(p, cx - 3, 20 + bob, 6, 4, 1, { gum: '#2a4060', tooth: '#e8f8ff', drool: '' });
-  // the veil, lifted when she screams
-  const vy = 8 + bob - veil * 6;
-  for (let y = 0; y < 24; y++) { const half = 10 + y * 0.25; for (let x = -half; x <= half; x++) if ((Math.round(x) + y) % 2 === 0 && (y > 12 || Math.abs(x) > 6 || veil > 0.5)) p.set(cx + x + Math.sin(ph + y * 0.3) * 0.6, vy + y, (y % 6 === 0) ? '#ffffff' : '#dcecf6'); }
-  sprinkle(p, '#ffffff', 16, 3 + f);
-}
 const brideBrain: BossBrain = {
   idleTime: [0.8, 1.3], phases: [0.5],
   idle(e, w, dt) {
@@ -210,50 +136,13 @@ const brideBrain: BossBrain = {
 const rimebride: EnemyDef = {
   id: 'rimebride', name: 'The Rime Bride', desc: 'She waited at the bottom of the cistern for a groom who never came down.', boss: true,
   hp: 360, r: 13, speed: 0, role: 'boss', cost: 0, hitY: 30, mass: 8, noKnock: true, flying: true, gore: '#c8e8f8', goreDecal: '#5a7a9a', light: [70, '#a0e8ff'],
-  sprites: () => ({ idle: frames(60, 72, 8, (p, f, n) => paintBride(p, f, 0, n)), veil: frames(60, 72, 8, (p, f, n) => paintBride(p, f, 1, n)) }),
+  sprites: () => rig({ w: 60, h: 72, paint: G.paintBride, phases: 1, extra: { veil: [0, 1, 2, 3].map((f) => ({ x: { veil: 1 }, raise: 1, jaw: 0.7 + (f % 2) * 0.3, breath: Math.sin(f * 1.6) })) }, fps: { veil: 6 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; e.z = 10; },
   update(e, w, dt) { bossUpdate(e, w, dt, brideBrain); if (Math.random() < dt * 6) w.fx.burst(e.x + (Math.random() - 0.5) * 30, e.y, 4, 1, '#e0f4ff', 20, 0.8); },
-  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { alpha: 0.95 }); w.r.addGlow(sx, sy - e.z - 30, 40, '#a0e8ff', 0.15); },
+  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, { alpha: 0.95 }, w); w.r.addGlow(sx, sy - e.z - 30, 40, '#a0e8ff', 0.15); },
 };
 
 // ================================================================== The Pendulum (Clocktower)
-function paintPendulum(p: any, f: number, swing: number): void {
-  // a grandfather clock that is also an eye: carved hood with finials, a cracked dial, gears grinding
-  // behind the glass, a heavy brass bob, and the case splitting open into teeth
-  const wood = ramp('#4a2a1a'), brass = ramp('#c8a04a'), face = ramp('#efe6d2');
-  const cx = 36;
-  p.rect(cx - 16, 8, 32, 70, wood[2]); p.shadeV(cx - 16, 8, 32, 70, wood, 0.5);
-  grain(p, cx - 16, 8, 32, 70, wood[1], 13);
-  p.rect(cx - 16, 8, 2, 70, wood[3]); p.rect(cx + 14, 8, 2, 70, wood[0]);
-  p.rect(cx - 18, 6, 36, 4, wood[3]); p.rect(cx - 19, 76, 38, 4, wood[1]); p.rect(cx - 19, 76, 38, 1, wood[3]);
-  p.poly([cx - 18, 6, cx - 6, -1, cx, -3, cx + 6, -1, cx + 18, 6], wood[3]);
-  for (const s of [-1, 1]) { p.ball(cx + s * 17, 3, 1.6, 2.2, brass); p.line(cx + s * 17, 0, cx + s * 17, -1, brass[4]); }
-  p.ball(cx, -1, 2, 2, brass);
-  // carved pillars
-  for (const s of [-1, 1]) { p.rect(cx + s * 14 - (s > 0 ? 1 : 0), 38, 2, 36, wood[3]); for (let y = 40; y < 74; y += 4) p.set(cx + s * 14, y, wood[1]); }
-  // dial
-  p.ball(cx, 22, 13.5, 13.5, face, { dither: 0.3 });
-  p.ring(cx, 22, 13.5, brass[2], 1.5); p.ring(cx, 22, 12, brass[4], 0.6);
-  for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU; p.line(cx + Math.cos(a) * 9.5, 22 + Math.sin(a) * 9.5, cx + Math.cos(a) * 11, 22 + Math.sin(a) * 11, '#3a2a1a'); }
-  crack(p, cx + 6, 14, 9, '#8a7a6a', 3, 2.2);
-  bigEye(p, cx, 22, 5.5, Math.sin(f) * 0.6, 0.2, '#8a0a14', { veins: '#c84a4a' });
-  const ha = f * 0.8 - Math.PI / 2;
-  p.line(cx, 22, cx + Math.cos(ha) * 9, 22 + Math.sin(ha) * 9, '#1a1010');
-  p.line(cx, 22, cx + Math.cos(ha * 3) * 6, 22 + Math.sin(ha * 3) * 6, '#1a1010');
-  // the window: gears turning behind the glass, the pendulum swinging
-  p.rect(cx - 10, 40, 20, 32, hex('#1a1418'));
-  for (const [gx, gy, gr, d] of [[cx - 5, 46, 4, 1], [cx + 5, 50, 3, -1]] as [number, number, number, number][]) {
-    p.ring(gx, gy, gr, brass[0], 1);
-    for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + swing * d; p.set(gx + Math.cos(a) * (gr + 1), gy + Math.sin(a) * (gr + 1), brass[1]); }
-    p.set(gx, gy, brass[2]);
-  }
-  const sw = Math.sin(swing) * 7;
-  p.line(cx, 42, cx + sw, 64, brass[1]); p.line(cx + 1, 42, cx + sw + 1, 64, brass[3]);
-  p.ball(cx + sw, 66, 5, 5, brass); p.ball(cx + sw - 1.5, 64.5, 1.5, 1.5, ramp('#fff4c0'));
-  p.rect(cx - 10, 40, 20, 1, hex('#8a7a6a')); p.line(cx - 9, 41, cx - 4, 50, hex('#3a3440'));   // a glint on the glass
-  // teeth where the case splits at the base
-  for (let x = cx - 12; x < cx + 12; x += 2) { p.set(x, 74, '#efe6d0'); p.set(x + 1, 75, '#efe6d0'); }
-}
 const pendBrain: BossBrain = {
   idleTime: [0.8, 1.3], phases: [0.5],
   idle(e, w, dt) { chase(e, w, 22 + e.data.phase * 10, dt); e.animate(dt, 4); },
@@ -297,45 +186,13 @@ const pendBrain: BossBrain = {
 const pendulum: EnemyDef = {
   id: 'pendulum', name: 'The Pendulum', desc: 'The tower clock, stopped at four minutes past four: the morning Grandmother went.', boss: true,
   hp: 380, r: 15, speed: 0, role: 'boss', cost: 0, hitY: 34, mass: 30, noKnock: true, gore: '#4a2a1a', goreDecal: '#2a1a10', light: [60, '#ffd890'],
-  sprites: () => ({ idle: frames(72, 86, 12, (p, f, n) => paintPendulum(p, f * 6 / n, (f / n) * TAU)) }),
+  sprites: () => rig({ w: 72, h: 86, paint: G.paintPendulum, phases: 1, counts: { idle: 12, move: 12 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
   update(e, w, dt) { bossUpdate(e, w, dt, pendBrain); },
-  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy); },
+  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, {}, w); },
 };
 
 // ================================================================== The Typesetter (Print Shop)
-function paintPress(p: any, f: number, open: number, n = 3): void {
-  // the Typesetter: a cast-iron printing press with a face. Wheel and screw on top, letter-block teeth
-  // that chew paper, type cases for ribs, a sheet of fresh print hanging off it, ink everywhere
-  const ph = (f / n) * TAU;
-  const iron = ramp('#3a3a44'), brass = ramp('#a8804a');
-  const cx = 38, chew = open * 6 + Math.abs(Math.sin(ph)) * open * 2;
-  for (const s of [-1, 1]) { p.tube(cx + s * 18, 44, cx + s * 22, 58, 3, iron); p.rect(cx + s * 22 - 3, 57, 6, 2, iron[1]); }
-  p.rect(cx - 26, 14, 52, 32, iron[2]); p.shadeV(cx - 26, 14, 52, 32, iron, 0.5);
-  p.rect(cx - 28, 12, 56, 4, iron[3]); p.rect(cx - 28, 12, 56, 1, iron[4]);
-  rivets(p, cx - 24, 17, cx + 24, 17, 10, iron[0], iron[4]); rivets(p, cx - 24, 43, cx + 24, 43, 10, iron[0], iron[4]);
-  // type cases down the sides
-  for (const s of [-1, 1]) for (let y = 0; y < 3; y++) { const x = cx + s * 23 - 2, yy = 20 + y * 7; p.rect(x, yy, 5, 5, hex('#2a2224')); p.rect(x + 1, yy + 1, 3, 1, hex('#c8bca0')); p.set(x + 2, yy + 3, '#e6dcc0'); }
-  // big screw and wheel on top, turning
-  p.rect(cx - 2, 0, 4, 13, brass[2]); for (let y = 1; y < 12; y += 2) p.set(cx - 2 + ((y + f) % 2), y, brass[4]);
-  p.ring(cx, 3, 9, brass[1], 1.5);
-  for (let i = 0; i < 4; i++) { const a = ph * 0.5 + (i / 4) * Math.PI; p.line(cx - Math.cos(a) * 9, 3 - Math.sin(a) * 2, cx + Math.cos(a) * 9, 3 + Math.sin(a) * 2, brass[1]); }
-  // mouth with letter-block teeth, a paper tongue
-  p.rect(cx - 20, 26, 40, 10 + chew, hex('#0c0a10'));
-  const letters = 'MARCUSGRAND';
-  for (let i = 0; i < 8; i++) {
-    const x = cx - 18 + i * 5;
-    p.rect(x, 26, 4, 4, hex('#e6dcc0')); p.rect(x, 26, 4, 1, hex('#ffffff')); p.set(x + 1 + (i % 2), 27 + (letters.charCodeAt(i) % 2), '#2a2420');
-    p.rect(x, 32 + chew, 4, 4, hex('#d8ccb0')); p.set(x + 2 - (i % 2), 33 + chew + (letters.charCodeAt(i + 3) % 2), '#2a2420');
-  }
-  if (open > 0) { p.rect(cx - 6, 31, 12, chew + 2, hex('#efe6d2')); for (let y = 32; y < 31 + chew; y += 2) p.line(cx - 4, y, cx + 3, y, hex('#5a4a3a')); }
-  bigEye(p, cx - 10, 20, 2.6, 0.2, 0.2, '#ff4040', { veins: '', sclera: '#e8d8c0' }); bigEye(p, cx + 10, 20, 2.6, -0.2, 0.2, '#ff4040', { veins: '', sclera: '#e8d8c0' });
-  p.line(cx - 14, 16, cx - 7, 18, iron[0]); p.line(cx + 14, 16, cx + 7, 18, iron[0]);   // a frown in the iron
-  // ink drips and a fresh printed sheet hanging off one side
-  drips(p, cx - 24, cx + 24, 46, hex('#14122a'), null, f / n, 5, 4);
-  p.poly([cx + 26, 30, cx + 34, 32 + Math.sin(ph) * 1.5, cx + 33, 48, cx + 26, 46], hex('#efe6d2'));
-  for (let y = 34; y < 46; y += 2) p.line(cx + 27, y, cx + 32, y + 1, hex('#5a4a3a'));
-}
 const pressBrain: BossBrain = {
   idleTime: [0.9, 1.4], phases: [0.5],
   idle(e, w, dt) { chase(e, w, 28 + e.data.phase * 10, dt); e.setAnim('idle'); e.animate(dt, 4); },
@@ -389,45 +246,13 @@ const pressBrain: BossBrain = {
 const typesetter: EnemyDef = {
   id: 'typesetter', name: 'The Typesetter', desc: 'The old press in the print shop. It printed the book you are lost in.', boss: true,
   hp: 380, r: 17, speed: 0, role: 'boss', cost: 0, hitY: 24, mass: 30, noKnock: true, gore: '#2a2a34', goreDecal: '#14122a',
-  sprites: () => ({ idle: frames(76, 62, 6, (p, f, n) => paintPress(p, f, 0, n)), open: frames(76, 62, 6, (p, f, n) => paintPress(p, f, 1, n)) }),
+  sprites: () => rig({ w: 76, h: 74, paint: G.paintPress, phases: 1, extra: { open: [0, 1, 2, 3].map((f) => ({ x: { open: 1 }, jaw: 0.85 + (f % 2) * 0.15, breath: Math.sin(f * 1.6) })) }, fps: { open: 8 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
   update(e, w, dt) { bossUpdate(e, w, dt, pressBrain); },
-  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy); },
+  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, {}, w); },
 };
 
 // ================================================================== The Bookbinder (The Binding)
-function paintBinder(p: any, f: number, arm: number, n = 4): void {
-  // the Bookbinder: a gaunt, long-limbed thing in a scorched leather apron, its head a book sewn
-  // shut with red thread, an awl-needle as long as a sword and a spool of thread on its belt
-  const ph = (f / n) * TAU;
-  const skin = ramp('#8a7a6a'), apron = ramp('#5a3424'), book = ramp('#5a1e24'), pg = ramp('#e6dcc0');
-  const cx = 28, sway = Math.sin(ph) * 1.4;
-  p.tube(cx - 5, 50, cx - 6 + sway, 70, 2, skin); p.tube(cx + 5, 50, cx + 6 - sway, 70, 2, skin);
-  p.ball(cx - 6 + sway, 70, 2.4, 1.4, ramp('#2a1a14')); p.ball(cx + 6 - sway, 70, 2.4, 1.4, ramp('#2a1a14'));
-  // ribs under the apron, apron with pockets of tools and a spool
-  p.ball(cx, 30, 9, 6, skin); for (let i = 0; i < 3; i++) p.line(cx - 6, 27 + i * 2, cx + 6, 27 + i * 2, skin[1]);
-  p.poly([cx - 10, 28, cx + 10, 28, cx + 13, 55, cx - 13, 55], apron[2]); p.shadeV(cx - 13, 28, 26, 27, apron, 0.5);
-  stitches(p, cx - 11, 30, cx - 13, 54, '#c8a070', 3); stitches(p, cx + 11, 30, cx + 13, 54, '#c8a070', 3);
-  p.rect(cx - 7, 40, 6, 5, apron[1]); p.line(cx - 6, 37, cx - 5, 41, hex('#c8c8d0')); p.line(cx - 3, 38, cx - 3, 41, hex('#c8a04a'));
-  p.ball(cx + 6, 44, 2.6, 3, ramp('#a87a4a')); p.rect(cx + 4, 43, 5, 2, hex('#c83a4a'));
-  for (let i = 0; i < 4; i++) p.set(cx - 8 + i * 5, 48 + (i % 2), '#2a1a14');   // scorch marks
-  // arms: one holds the long needle, the other trails thread
-  p.tube(cx - 10, 29, cx - 18, 42 - arm * 10, 1.5, skin);
-  for (let i = 0; i < 3; i++) p.line(cx - 18, 42 - arm * 10, cx - 20 + i, 45 - arm * 10, skin[1]);
-  p.line(cx - 18, 42 - arm * 10, cx - 27, 20 - arm * 18, hex('#d8dce8'), 1); p.line(cx - 17, 42 - arm * 10, cx - 26, 20 - arm * 18, hex('#8a8c98'), 1);
-  p.set(cx - 27, 19 - arm * 18, '#ffffff');
-  p.tube(cx + 10, 29, cx + 16, 44, 1.5, skin);
-  for (let i = 0; i < 12; i++) p.set(cx + 16 + Math.sin(i * 0.8 + ph) * 3, 44 + i * 2, '#c83a4a');
-  // head: a book sewn shut
-  p.rect(cx - 9, 4, 18, 22, book[2]); p.shadeV(cx - 9, 4, 18, 22, book, 0.5);
-  p.rect(cx + 7, 5, 3, 20, pg[2]); for (let y = 6; y < 25; y += 2) p.set(cx + 8, y, pg[1]);
-  p.rect(cx - 9, 4, 18, 1, hex('#c8a04a')); p.rect(cx - 9, 25, 18, 1, hex('#c8a04a'));
-  for (let y = 8; y < 24; y += 3) { p.line(cx - 7, y, cx + 6, y + 1, hex('#c83a4a')); p.set(cx - 7, y, '#e6dcc0'); p.set(cx + 6, y + 1, '#e6dcc0'); }
-  glowEye(p, cx - 4, 12, '#ff3040'); glowEye(p, cx + 2, 12, '#ff3040');
-  p.rect(cx - 4, 18, 7, 1, hex('#14101a'));
-  // a neck of twisted thread
-  p.line(cx - 1, 26, cx + 1, 28, hex('#c83a4a')); p.line(cx + 1, 26, cx - 1, 28, hex('#8a2a34'));
-}
 const binderBrain: BossBrain = {
   idleTime: [0.7, 1.1], phases: [0.66, 0.33],
   idle(e, w, dt) { keepDistance(e, w, 90, 140, 50, dt); e.setAnim('idle'); e.animate(dt, 5); },
@@ -460,10 +285,10 @@ const binderBrain: BossBrain = {
 const bookbinder: EnemyDef = {
   id: 'bookbinder', name: 'The Bookbinder', desc: 'He sewed the story shut. He would like to sew you into it.', boss: true,
   hp: 820, r: 12, speed: 0, role: 'boss', cost: 0, hitY: 32, mass: 10, noKnock: true, gore: '#5a1e24', goreDecal: '#2b2f66', light: [70, '#ff6070'],
-  sprites: () => ({ idle: frames(56, 76, 8, (p, f, n) => paintBinder(p, f, 0, n)), raise: frames(56, 76, 8, (p, f, n) => paintBinder(p, f, 1, n)) }),
+  sprites: () => rig({ w: 56, h: 76, paint: G.paintBinder, phases: 2, extra: { raise: [0, 1, 2, 3].map((f) => ({ x: { raise: 1 }, raise: 1, jaw: 0.5 + (f % 2) * 0.4, breath: Math.sin(f * 1.6) })) }, fps: { raise: 6 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
   update(e, w, dt) { bossUpdate(e, w, dt, binderBrain); },
-  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy); },
+  draw(e, ctx, w, sx, sy) { drawBoss(e, ctx, sx, sy, {}, w); },
 };
 
 // ================================================================== The Unwritten (the Last Page)
@@ -493,45 +318,6 @@ const LAST_MOVES: Move[] = ['beams', 'spiral', 'tendrils', 'rain', 'drops', 'flo
 const FINAL_TH = [0.88, 0.76, 0.64, 0.52, 0.4, 0.28, 0.14];
 const PHASE_LINES = ['', 'It starts rewriting itself.', 'It writes faster.', 'The pages turn on their own.', 'Every story at once.', 'It is running out of ink. It does not care.', 'The ink is everywhere.', 'The last line. Everything at once.'];
 
-function paintUnwritten(p: any, f: number, rage: number, n = 4): void {
-  // a tower of living ink: crawling handwriting, a cloak of torn pages, many-fingered tendrils at
-  // the base, a blank paper mask with a crown of quill nibs, and a mouth of words
-  const ph = (f / n) * TAU;
-  const ink = ramp('#14112a'), paper = ramp('#efe6d2');
-  const cx = 48, by = 92;
-  for (let y = 18; y < by; y++) {
-    const k = (y - 18) / (by - 18);
-    const half = 10 + k * 22 + Math.sin(y * 0.35 + ph) * 2.5;
-    for (let x = Math.floor(cx - half); x < cx + half; x++) p.set(x, y, ink[(x + y + f) % 7 === 0 ? 3 : (x * 3 + y) % 11 === 0 ? 1 : 2]);
-  }
-  // tendrils, each with a little hand
-  for (let i = 0; i < 9; i++) {
-    const a = Math.PI * (0.1 + 0.8 * (i / 8)); const l = 10 + ((i * 5) % 8) + Math.sin(ph + i) * 3;
-    const ex = cx + Math.cos(a) * (32 + l), ey = by + Math.sin(a) * 3 + Math.sin(ph * 2 + i) * 1.5;
-    p.tube(cx + Math.cos(a) * 24, by - 2, ex, ey, 2.4 - (i % 2) * 0.8, ink);
-    for (let j = -1; j <= 1; j++) p.line(ex, ey, ex + Math.cos(a) * 3 + j, ey + 2 + Math.abs(j), ink[1]);
-  }
-  // eyes opening and closing in the ink
-  for (const [x, y, r] of [[cx - 12, 64, 1.8], [cx + 14, 58, 2.2], [cx + 4, 76, 1.6], [cx - 18, 82, 1.4]] as [number, number, number][]) {
-    if (Math.sin(ph + x) > -0.4) bigEye(p, x, y, r, 0, 0.3, rage ? '#ff3040' : '#8a7aff', { sclera: '#d8d0ff', veins: '' });
-  }
-  // crawling handwriting
-  for (let r = 0; r < 6; r++) { const y = 34 + r * 9; let x = cx - 14 - r + ((f * 2) % 4); for (let s2 = 0; s2 < 8 + r; s2++) { p.set(x, y + Math.sin(s2 * 1.7 + ph) * 1.5, rage ? '#c83a4a' : '#4a4a8a'); p.set(x + 1, y + Math.sin(s2 * 1.7 + ph) * 1.5, rage ? '#8a2a3a' : '#3a3a6a'); x += 2 + ((s2 * 7) % 3); } }
-  // cloak of torn pages
-  p.poly([cx - 26, 24, cx + 26, 24, cx + 35, 55, cx + 20, 46, cx + 12, 59, cx, 48, cx - 12, 59, cx - 20, 46, cx - 35, 55], paper[3]);
-  p.shadeV(cx - 35, 24, 70, 35, paper, 0.5);
-  for (let x = cx - 24; x < cx + 24; x += 4) p.line(x, 26, x + 2 + Math.sin(ph + x) * 0.6, 44, paper[1]);
-  for (let i = 0; i < 8; i++) { const x = cx - 22 + i * 6; p.rect(x, 28 + (i % 3) * 4, 3, 1, hex('#8a7a6a')); }
-  drips(p, cx - 30, cx + 30, 50, ink[2], ink[3], f / n, 13, 5);
-  // the mask and its crown of nibs
-  p.ball(cx, 14, 11, 12, paper, { dither: 0.3 });
-  crack(p, cx + 3, 4, 10, '#b8ab90', 7, 1.7);
-  for (let i = -2; i <= 2; i++) { const x = cx + i * 5; p.poly([x - 1.8, 4 - Math.abs(i), x + 1.8, 4 - Math.abs(i), x, -7 - (2 - Math.abs(i)) * 2.5], hex('#2a2440')); p.line(x, 3 - Math.abs(i), x, -3 - (2 - Math.abs(i)) * 2, hex('#5a5490')); }
-  p.ball(cx - 4, 13, 2.4, 2.2, ramp('#14101e')); p.ball(cx + 4, 13, 2.4, 2.2, ramp('#14101e'));
-  glowEye(p, cx - 4, 13, rage ? '#ff3040' : '#8a7aff'); glowEye(p, cx + 4, 13, rage ? '#ff3040' : '#8a7aff');
-  for (let x = cx - 4; x <= cx + 4; x++) p.set(x, 19 + Math.round(Math.sin(x + ph) * 0.8), '#2a2440');
-  for (let x = cx - 3; x <= cx + 3; x += 2) p.set(x, 20, '#4a4a8a');
-}
 
 function startMove(e: Enemy, w: World, m: Move): void {
   e.data.move = m; e.data.mt = 0; e.data.mk = 0;
@@ -624,10 +410,10 @@ function rewrite(e: Enemy, w: World): void {
   const def = getEnemy(e.data.form);
   w.hud.toast(`It ${S.forms} ${def?.name ?? 'something you remember'}.`, 1.6);
 }
-const finalBoss = (id: string, name: string, desc: string, gore: string, glow: string, paint: (p: any, f: number, rage: number, n?: number) => void): EnemyDef => ({
+const finalBoss = (id: string, name: string, desc: string, gore: string, glow: string, paint: (p: any, s: any) => void): EnemyDef => ({
   id, name, desc, boss: true,
   hp: 11000, r: 24, speed: 0, role: 'boss', cost: 0, hitY: 44, mass: 60, noKnock: true, gore, goreDecal: gore, light: [120, glow],
-  sprites: () => ({ idle: frames(96, 104, 8, (p, f, n) => paint(p, f, 0, n)), rage: frames(96, 104, 8, (p, f, n) => paint(p, f, 1, n)) }),
+  sprites: () => rig({ w: 96, h: 104, paint, phases: 1, extra: { rage: [0, 1, 2, 3, 4, 5].map((f) => ({ x: { rage: 1 }, jaw: 0.5 + Math.abs(Math.sin(f)) * 0.5, breath: Math.sin(f * 1.05), t: f / 6 })) }, fps: { rage: 8 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.data.phase = 0; },
   update(e, w, dt) {
     const d = e.data, S = styleOf(e);
@@ -643,6 +429,8 @@ const finalBoss = (id: string, name: string, desc: string, gore: string, glow: s
       if (d.phase >= 7) { e.anim = 'rage'; }
       rewrite(e, w);
     }
+    // tell the rig what it's doing: roaring through a phase change, mid-move, or drifting
+    e.state = d.invT > 0 ? 'phase' : d.move ? 'attack' : 'idle'; e.st = d.invT > 0 ? 1 - d.invT : 0;
     if (d.invT > 0) { d.invT -= dt; e.sx = 1 + Math.sin(e.t * 40) * 0.05; if (d.invT <= 0) { e.invuln = false; e.sx = 1; } return; }
     // shapes change on a timer once it starts rewriting, faster and faster
     if (d.phase >= 1) { d.formT -= dt; if (d.formT <= 0 && !d.move) rewrite(e, w); }
@@ -686,59 +474,19 @@ const finalBoss = (id: string, name: string, desc: string, gore: string, glow: s
       if (set) {
         const spr = set[Math.floor(e.t * 5) % set.length];
         spr.draw(ctx, sx, sy + 2, { flip: e.flip, flash: e.flash > 0 ? 0.6 : 0, sx: 1.45 * e.sx, sy: 1.45 * e.sy, tint: styleOf(e).tint, tintAmt: 0.62 });
+        // the borrowed body's eyes still follow Marcus
+        if (e.flash <= 0.05) drawEyes(e, ctx, w, spr, sx, sy + 2, 1.45 * e.sx, 1.45 * e.sy, !!e.flip);
         w.r.addGlow(sx, sy - 30, 70, styleOf(e).glow, 0.2);
         return;
       }
     }
-    drawBoss(e, ctx, sx, sy, { yoff: 6 });
+    drawBoss(e, ctx, sx, sy, { yoff: 6 }, w);
     w.r.addGlow(sx, sy - 50, 80, d.phase >= 3 ? '#ff3050' : styleOf(e).glow, e.def.id === 'author' ? 0.08 : 0.2);
   },
 });
-const unwritten = finalBoss('unwritten', 'The Unwritten', 'Everything the book left out, writing itself in. It wants the last word.', '#14112a', '#8a7aff', paintUnwritten);
+const unwritten = finalBoss('unwritten', 'The Unwritten', 'Everything the book left out, writing itself in. It wants the last word.', '#14112a', '#8a7aff', G.paintUnwritten);
 
-/** The Author: robed in white, haloed in quills, the pen that started all of this. */
-function paintAuthor(p: any, f: number, rage: number, n = 4): void {
-  // the Author: a tall figure in white and gold, the hood full of light, a halo of quill nibs, the
-  // great quill held like a spear, ink bleeding up through the hem where the story has turned
-  const ph = (f / n) * TAU;
-  const robe = ramp('#efe6d2'), gold = ramp('#d8b048'), shade = ramp('#b8ab90');
-  const cx = 48, by = 96;
-  for (let y = 26; y < by; y++) {
-    const k = (y - 26) / (by - 26), half = 9 + k * 24 + Math.sin(y * 0.3 + ph) * 1.5;
-    for (let x = Math.floor(cx - half); x < cx + half; x++) p.set(x, y, robe[(x - cx) > half * 0.4 ? 1 : (x - cx) < -half * 0.6 ? 3 : 2]);
-    p.set(Math.floor(cx - half), y, gold[2]); p.set(Math.ceil(cx + half) - 1, y, gold[1]);
-  }
-  // folds and an embroidered band of script
-  for (const x of [-14, -5, 5, 15]) p.line(cx + x * 0.4, 32, cx + x, by - 3, robe[1]);
-  for (let x = cx - 30; x < cx + 30; x += 2) { p.set(x, by - 6, gold[(x % 4) ? 3 : 1]); p.set(x, by - 4, gold[2]); }
-  for (let x = cx - 33; x < cx + 33; x++) p.set(x, by - 1, gold[3]);
-  // ink bleeding up through the hem when it rages
-  if (rage) for (let i = 0; i < 12; i++) { const x = cx - 30 + i * 5 + (i % 2); const h = 6 + ((i * 7 + f * 3) % 10); for (let j = 0; j < h; j++) p.set(x + Math.round(Math.sin(j * 0.6 + i) * 0.7), by - 2 - j, '#14112a'); }
-  // a gold sash and a hanging book
-  p.line(cx - 12, 34, cx + 12, 48, gold[2]); p.line(cx - 12, 35, cx + 12, 49, gold[0]);
-  p.rect(cx + 8, 50, 7, 9, hex('#5a1e24')); p.rect(cx + 14, 51, 1, 7, robe[3]); p.set(cx + 10, 53, gold[3]);
-  // sleeves and hands holding the great quill
-  p.tube(cx - 10, 32, cx - 20, 62, 4, robe); p.tube(cx + 10, 32, cx + 14, 42, 4, robe);
-  p.tube(cx - 26, 70, cx + 18, 30, 1.6, shade);
-  for (let i = 0; i < 12; i++) { const w = Math.sin(ph + i * 0.5) * 0.6; p.line(cx + 18 - i * 3, 30 + i * 3, cx + 24 - i * 3 + w, 22 + i * 3 + w, robe[4]); p.set(cx + 24 - i * 3 + w, 22 + i * 3 + w, robe[2]); }
-  p.poly([cx - 28, 72, cx - 25, 69, cx - 24, 72], hex('#2a2440')); p.set(cx - 29, 74, '#14112a'); p.set(cx - 29, 76, '#14112a');
-  p.ball(cx - 20, 62, 2.4, 2.4, ramp('#f0dcc8')); p.ball(cx + 14, 42, 2.4, 2.4, ramp('#f0dcc8'));
-  // hood full of light
-  p.ball(cx, 16, 12.5, 13.5, robe, { dither: 0.4 });
-  p.line(cx - 11, 18, cx - 7, 28, robe[1]); p.line(cx + 11, 18, cx + 7, 28, robe[1]);
-  p.ball(cx, 18, 7, 8, ramp(rage ? '#ff6050' : '#fff2c0'), { dither: 0.2 });
-  p.ball(cx, 18, 3.5 + Math.sin(ph) * 0.6, 4, ramp(rage ? '#ffc0a0' : '#ffffff'));
-  // halo of quill nibs, slowly turning
-  for (let i = 0; i < 11; i++) {
-    const a = Math.PI + (i / 10) * Math.PI + Math.sin(ph) * 0.04;
-    const x = cx + Math.cos(a) * 19, y = 12 + Math.sin(a) * 15;
-    p.poly([x - 1.4, y, x + 1.4, y, x + Math.cos(a) * 6, y + Math.sin(a) * 6], gold[3 - (i % 2)]);
-    p.set(x + Math.cos(a) * 2, y + Math.sin(a) * 2, gold[0]);
-  }
-  p.ring(cx, 12, 15, gold[1], 0.6);
-  sprinkle(p, '#ffffff', 12, 5 + f);
-}
-const author = finalBoss('author', 'The Author', 'Grandfather, as he was when he first picked up the pen. He would like a better ending.', '#e8d8a0', '#ffe8a0', paintAuthor);
+const author = finalBoss('author', 'The Author', 'Grandfather, as he was when he first picked up the pen. He would like a better ending.', '#e8d8a0', '#ffe8a0', G.paintAuthor);
 
 export const BOSSES_D: EnemyDef[] = [thornwife, rimebride, pendulum, typesetter, bookbinder, unwritten, author];
 void clamp; void dist; void hex; void eye;

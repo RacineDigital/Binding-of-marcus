@@ -1,27 +1,30 @@
-## What's new in 3.12.0: a better shop, honest slots, no more brass
+## What's new in 3.13.0: every boss, redrawn
 
-**The shop**
-- **Mott is back behind his counter** where he always stood. He no longer restocks.
-- Every shop now has one more fixture at the end of the counter:
-  - **Donation box** (60%): drop buttons in, one at a time. Donations are kept forever, across every
-    run, and every 50 buttons raises the shop a level: an extra curio for sale, 10% off, another extra
-    curio, 20% off, and finally a guaranteed rare curio in every shop. Stand by the box to see your
-    level and progress.
-  - **Restock machine** (30%): pay it and every curio still for sale becomes something else (5
-    buttons, then 4 more each time in the same shop).
-  - **A beggar** (10%).
+Every boss in the book has been redesigned and reanimated from scratch. Their attacks, health,
+hitboxes and patterns are exactly as they were; what changed is how they look and move.
 
-**Slot machines** wear out. Each one has a 5% chance to break on its first pull, 2% more on every
-pull after that, and starts smoking when it's close. When one breaks, half the time there's an item in
-the wreckage. A winning pull no longer gives items.
+**New designs.** Each boss now has its own silhouette, face and colours, so you know who you're
+fighting at a glance even in a room full of shots. A few of the bigger changes:
+- **The Grubmother** rears out of her mound with one huge eye on her brow and a mouth full of teeth.
+- **The Wardrobe** scowls with a carved face and a yellow eye at the keyhole. Open, its doors are jaws.
+- **Furnace Heart** is a stove with a face, its gauges for eyes, scowling harder as it heats up.
+- **The Rat King** is a ring of rats knotted round one snarling, crowned rat.
+- **The Thornwife** sleeps with a little smile until her face splits open into a flower of thorns.
+- **The Rime Bride** watches you through her veil, then lifts it.
+- **The Pendulum's** dial is a face, with the clock hands for angry brows and a mouth full of teeth.
+- **The Bookbinder** is hunched and long-necked, his eyes and mouth sewn shut. Hurt him and the
+  stitches tear, one eye at a time.
+- **The Unwritten** is a hood with a hole full of eyes. **The Author** holds the quill and the book.
+- **The Iron Lung** drags itself along with arms pushed out through its portholes.
+- **The Patient's** sheet clings to a face, and it tears as the fight goes on.
 
-**Brass hearts are gone.** Everything that gave them gives wax hearts instead (one brass heart became
-one wax heart): Crest, the Blue Bike Helmet, the Ossuary Key, the Guardian Candle, the Ossified
-transformation, Edda and the mirrored readers. Runs saved with brass hearts keep them as wax hearts.
-- **Brass Breastplate** is now: +2 wax hearts, and no hit can take more than half a heart.
+**Animation.** Every boss has idle, walking, wind-up, attack and recovery poses, flinches when you
+hit it, roars when it changes phase, and melts into a puddle when it dies. Most bosses rear back and wind
+up before they strike, so you can see an attack coming. (Your Echo still wears your own look.)
 
-**The Dust Jacket shows in your health bar**: a little blue book cover at the end of your hearts,
-bright while it will block the first hit in the room and faded once it has.
+**Eyes that follow you.** Boss eyes track Marcus around the room.
+
+**Phases show.** When a boss changes phase it looks different: cracked, torn, bloodied, angrier.
 
 ## Download and play
 

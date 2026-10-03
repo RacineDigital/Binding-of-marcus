@@ -959,7 +959,7 @@ export class Hud {
     // the boss: a silhouette until the hit, then torn into view with a white flash
     const b = this.bossRef;
     if (b && !b.dead) {
-      const set = b.sprites.idle ?? Object.values(b.sprites)[0];
+      const set = b.sprites.portrait ?? b.sprites.idle ?? Object.values(b.sprites)[0];
       const spr = set?.[Math.floor(t * 6) % set.length];
       if (spr) {
         const k = Math.min(1.8, 92 / Math.max(spr.h, 1)), sl = ease.outCubic(clamp(t / 0.5, 0, 1));
