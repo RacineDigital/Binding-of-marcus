@@ -98,7 +98,7 @@ export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
   for (let attempt = 0; attempt < 400; attempt++) {
     const rng = new RNG(`${run.seed}:floor${fi}:a${attempt}`);
     const ctx: Ctx = { rng, map: new Int16Array(MAP_SIZE * MAP_SIZE).fill(-1), rooms: [], seed: run.seed, fi };
-    if (special === 'lastpage') { buildLastPage(ctx); c = ctx; break; }
+    if (special === 'lastpage') { buildLastPage(ctx, theme === ROOM4_THEME); c = ctx; break; }
     if (special === 'home') { place(ctx, 6, 6, 1, 1, 'start'); ctx.rooms[0].distance = 0; connectDoors(ctx, fi); c = ctx; break; }
     // the Margins wants five boss rooms; settle for fewer if the map won't have it
     const bosses = special === 'margins' ? Math.max(3, 5 - Math.floor(attempt / 150)) : 1;
@@ -198,9 +198,11 @@ function placeEcho(floor: Floor, run: Run, save: SaveManager): void {
 }
 
 /** The Last Page: a landing and, through one door, a huge arena. */
-function buildLastPage(c: Ctx): void {
+function buildLastPage(c: Ctx, small = false): void {
   place(c, 6, 10, 1, 1, 'start');
-  place(c, 5, 8, 2, 2, 'boss');
+  // Room 4 is a single ward room, all on one screen; the Last Page and the Foreword are huge
+  if (small) place(c, 6, 9, 1, 1, 'boss');
+  else place(c, 5, 8, 2, 2, 'boss');
   c.rooms.forEach((r, i) => (r.distance = i));
   connectDoors(c, c.fi);
 }
