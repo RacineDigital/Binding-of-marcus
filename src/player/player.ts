@@ -251,6 +251,8 @@ export class Player {
     const charged = mode === 'charge' || mode === 'burst' || mode === 'beam';
     if (charged) {
       if (aim) {
+        // starting a new beam charge cuts off the one still firing
+        if (mode === 'beam' && !this.wasAiming) this.cancelChargedBeams(w);
         this.wcharge = Math.min(1, this.wcharge + dt / this.chargeTime());
         if (this.wcharge >= 1 && !this.wasAiming) { /* noop */ }
         if (this.wcharge >= 1 && Math.random() < 0.3) w.fx.sparks(this.x, this.y - 22, 1, '#b8b0ff', 30, 0.2);
@@ -332,6 +334,7 @@ export class Player {
         const oc = overchargeMul(prof);
         b.dur = (prof.short ? 0.7 : 0.5) * (0.5 + part * 0.5); b.width = (prof.short ? 9 : 7) * beamScale(st.size) * oc.width * (heavy ? 1.25 : 1) * (0.6 + part * 0.4); b.dmg = st.damage * 0.55 * oc.dmg * (heavy ? 1.35 : 1) * part;
         b.color = laserColor(prof, prof.modes.has('laser') ? '#ff5a8a' : '#6a58ff', w);
+        b.charged = true;
         w.beams.push(b);
       }
       // burst: the beam goes off with a spray of shots
@@ -352,6 +355,10 @@ export class Player {
     volley(w, prof, st, m.x, m.y, m.z, ang, { dmgMul: 0.3 + c * 3.7, sizeMul: 0.6 + c * 1.1, speedMul: 1 + c * 0.25, rangeMul: 1 + c * 0.3, inherit: { vx: this.vx, vy: this.vy } });
     if (c >= 1) w.shake(2);
     this.onFired(w, ang, c >= 1 ? 'bigshot' : 'shot');
+  }
+
+  private cancelChargedBeams(w: World): void {
+    for (let i = w.beams.length - 1; i >= 0; i--) if (w.beams[i].charged) w.beams.splice(i, 1);
   }
 
   /** Aim direction plus the extra directions rear / side shots add. */
