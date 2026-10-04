@@ -91,6 +91,8 @@ export class Beam {
   arced = false;
   /** Wiggle makes a laser linger and lash side to side; a searchlight sweeps this far each way. */
   lash = 0; sweepSpan = 0;
+  /** A held-and-released beam from Marcus himself: starting the next charge cuts it off. */
+  charged = false;
   constructor(prof: AttackProfile) { this.prof = prof; }
 }
 
