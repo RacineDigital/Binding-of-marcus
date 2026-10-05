@@ -1,30 +1,73 @@
-## What's new in 3.13.0: every boss, redrawn
+## What's new in 3.14.0: getting ready for everyone
 
-Every boss in the book has been redesigned and reanimated from scratch. Their attacks, health,
-hitboxes and patterns are exactly as they were; what changed is how they look and move.
+**Grandfather's letter is easy to follow.** On the hospital path:
+- The **Lost & Found** door always opens after a hospital boss while it's holding the top half, and
+  the letter costs nothing to take.
+- The **Deep Crawlspace** holding the bottom half is open (no bombing) and marked on your map from
+  the start of the chapter. Rooms holding a half you still need show the letter on the map.
+- A checklist under the minimap says where each half is and ticks them off; each chapter opens
+  with a tip, and the Room 4 door says which half is still missing.
 
-**New designs.** Each boss now has its own silhouette, face and colours, so you know who you're
-fighting at a glance even in a room full of shots. A few of the bigger changes:
-- **The Grubmother** rears out of her mound with one huge eye on her brow and a mouth full of teeth.
-- **The Wardrobe** scowls with a carved face and a yellow eye at the keyhole. Open, its doors are jaws.
-- **Furnace Heart** is a stove with a face, its gauges for eyes, scowling harder as it heats up.
-- **The Rat King** is a ring of rats knotted round one snarling, crowned rat.
-- **The Thornwife** sleeps with a little smile until her face splits open into a flower of thorns.
-- **The Rime Bride** watches you through her veil, then lifts it.
-- **The Pendulum's** dial is a face, with the clock hands for angry brows and a mouth full of teeth.
-- **The Bookbinder** is hunched and long-necked, his eyes and mouth sewn shut. Hurt him and the
-  stitches tear, one eye at a time.
-- **The Unwritten** is a hood with a hole full of eyes. **The Author** holds the quill and the book.
-- **The Iron Lung** drags itself along with arms pushed out through its portholes.
-- **The Patient's** sheet clings to a face, and it tears as the fight goes on.
+**The Patient (Room 4)**
+- Room 4 is one long ward room, two screens wide, instead of a huge hall.
+- It forgets itself about half as often, is gone for less time when it does, and comes back a
+  short step from where it was instead of across the room.
+- It no longer borrows the bosses that burrow, sink or blink out of reach (Grubmother, Bilgemaw,
+  Matron, Choirmaster, Thornwife).
+- It has less health (4,000, down from 9,500): measured fights with ordinary builds ran past five
+  minutes, more than twice as long as It Remembers.
 
-**Animation.** Every boss has idle, walking, wind-up, attack and recovery poses, flinches when you
-hit it, roars when it changes phase, and melts into a puddle when it dies. Most bosses rear back and wind
-up before they strike, so you can see an attack coming. (Your Echo still wears your own look.)
+**First-run hints.** On your first few runs, a small card at the top of the screen shows one thing
+at a time (move, fire, doors, cherry bombs, the map, active items, pages) with your own keys or
+controller buttons, and ticks it off when you do it. Options -> Tutorial hints turns them off.
 
-**Eyes that follow you.** Boss eyes track Marcus around the room.
+**Secrets you can follow.** Once the story is finished, the boarded back stair behind Chapter II's
+boss announces itself (and says a cherry bomb opens it) until you've climbed it once. The ending
+screen now gives the clue for the next ending you haven't found.
 
-**Phases show.** When a boss changes phase it looks different: cracked, torn, bloodied, angrier.
+**What's new, in the game.** After an update, returning players see these notes once as pages of the
+book, and the title screen has a **What's new** entry to read them again.
+
+**Accessibility and comfort**
+- **Reduce flashing** (Options) softens every full-screen flash to a faint glow. The boot screen
+  now carries a photosensitivity notice.
+- **HUD text size** (Options): 100%, 115% or 130% for everything you read during a run.
+- **High-contrast enemy shots** (Options) gives every enemy shot a solid black ring and a thick
+  white rim, so they stand out by brightness alone, whatever colours you can tell apart.
+- **Effects: Low** (Options) thins out decorative particles for slower computers.
+
+**Renamed sets.** Three item sets named after real people now have names of their own. Effects,
+unlocks and synergies are unchanged, and your collection carries over.
+- The cold set is now **Frostbitten** (Frost Skate, Paste Pot, Darkroom Lamp, Lucky Threes, Rime
+  Wings, Cellar Spider, Kind Words, Icebox, Flotsam, Frosted Glass, Ginseng Tonic).
+- The blood set is now the **Night Count** (Seeing Red, Last Light, Blood Hymn, Peashooter, Held
+  Breath, Power Chord, Slime Heart, Baby Talk).
+- The toddler set is now **Tantrum** (Oversized Nappy, Chewed Pencil, Bike Helmet).
+- Four dice have new names: **Grandfather's Die** (the six-sided one), the **Hollow Die**, the
+  **Countdown Die** and the **Shifting Die**.
+
+**Comfort**
+- **A tip when you fall** (your first 30 deaths): drawn from how the run ended, like a charged
+  active item you never used, bombs still in your pocket, or a boss you could have hit while it was open.
+- **Pause when away** (Options, on by default): switching windows, hiding the tab or unplugging the
+  controller pauses the run.
+- **Controller rumble** (Options): big hits, explosions and getting hurt rumble the controller.
+
+**Safer saves and better bug reports**
+- The browser version now keeps a backup of each save, like the desktop version, so one bad write
+  can't wipe a slot.
+- Errors are logged (on the desktop next to your saves, in `logs/errors.log`). Options -> Error log
+  opens the folder, or copies a report in the browser, ready to send with a bug report.
+
+**Fixed**
+- The downloaded game, opened by double-clicking `Lost Marcus.html`, now plays the recorded
+  soundtrack in Chrome and other browsers that refused to read the music files from disk. Before, it
+  quietly fell back to the synth tracks.
+- Restarting a Second Edition run from the pause menu or with Begin again after a death started a
+  normal run. It keeps the mode now,
+  and a Daily Run can't be restarted for a different seed.
+- Sweets and pages left in cursed rooms could crash the game when picked up, and a broken sweet
+  could stop the room from drawing. Saves holding one load safely.
 
 ## Download and play
 
