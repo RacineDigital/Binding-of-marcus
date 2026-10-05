@@ -420,6 +420,7 @@ export class World {
     this.shake(4);
     this.redFlash = 0.6;
     this.audio.play('hurt', { x: pl.x });
+    this.game.input.rumble(0.75, 180);
     this.fx.spray(pl.x, pl.y, 12, -Math.PI / 2, TAU, 8, '#a01e2a', 70, 0.4, '#6a1420');
     if (res.inkLost > 0) this.inkBurst();
     if (res.gildedBroke > 0) for (let i = 0; i < 3 * res.gildedBroke; i++) spawnDrop(this, 'button', pl.x, pl.y);
@@ -721,7 +722,11 @@ export class World {
   pullPickups(x: number, y: number, r: number): void {
     for (const p of this.pickups) if (!p.pedestal && !p.isChest() && dist2(p.x, p.y, x, y) < r * r) { p.vx += (x - p.x) * 0.5; p.vy += (y - p.y) * 0.5; }
   }
-  shake(amt: number): void { this.trauma = Math.min(1, this.trauma + amt * 0.08 * (this.game.save.data.settings.shake ?? 1)); }
+  shake(amt: number): void {
+    this.trauma = Math.min(1, this.trauma + amt * 0.08 * (this.game.save.data.settings.shake ?? 1));
+    // the big ones reach your hands too
+    if (amt >= 3) this.game.input.rumble(amt / 10, 70 + amt * 12);
+  }
   /**
    * A short freeze on impact. Scaled by the Hit pause setting, and drawn from a budget that refills at
    * 0.15s per second: a big hit always lands, but a hail of small ones never makes the controls stick.

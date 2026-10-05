@@ -68,6 +68,11 @@ export class Game {
     // F9 (or F12) saves a screenshot: to Pictures/Lost Marcus on desktop, a download in the browser
     window.addEventListener('keydown', (e) => { if (e.code === 'F9' || e.code === 'F12') { e.preventDefault(); this.screenshot(cv); } });
     // closing the window mid-run keeps your exact spot
+    // alt-tab, a hidden tab or an unplugged controller pauses the run (Options -> Pause when away)
+    const away = () => this.autoPause();
+    window.addEventListener('blur', away);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) away(); });
+    window.addEventListener('gamepaddisconnected', away);
     window.addEventListener('beforeunload', () => { if (this.scene === 'run' && this.world && !this.world.player.dead && this.world.deathT < 0) this.saveSnapshot(); this.save.flush(); });
   }
 
@@ -86,6 +91,7 @@ export class Game {
     const s = this.save.data.settings;
     this.input.bindings = structuredClone(s.bindings);
     this.input.diagonalAim = s.diagonalAim;
+    this.input.rumbleScale = s.rumble ?? 1;
     this.r.mode = s.scale; this.r.resize();
     this.audio.setVolumes(s.music, s.sfx);
   }
@@ -190,6 +196,12 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- run lifecycle
+  /** Pause the run as if the pause key were pressed, when the player has looked away. */
+  autoPause(): void {
+    if (this.save.data.settings.autoPause === false || this.scene !== 'run' || !this.world || this.paused || this.fading) return;
+    if (this.world.player.dead || this.world.deathT >= 0) return;
+    this.paused = true; this.input.clearMenu(); this.menus.openPause(); this.audio.duck(0.4, 0.2);
+  }
   newRun(charId: string, seed?: string, challenge: string | null = null, mode: RunMode = 'normal'): void {
     const s = seed ? normalizeSeed(seed) : randomSeed();
     const run = new Run(s.length ? s : randomSeed(), charId, (id) => this.save.isUnlocked(id));

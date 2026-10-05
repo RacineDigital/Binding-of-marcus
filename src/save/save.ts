@@ -22,6 +22,10 @@ export interface Settings {
   reduceFlash?: boolean;
   /** Fewer decorative particles, for slow machines. */
   lowFx?: boolean;
+  /** Pause the run when the window loses focus, the tab is hidden or the controller unplugs. */
+  autoPause?: boolean;
+  /** Controller rumble strength 0..1. */
+  rumble?: number;
   /** The version whose What's new notes were last shown. */
   seenVersion?: string;
   /** Enemy shots get a solid black ring and a thick white rim (readable without colour). */

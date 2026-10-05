@@ -50,6 +50,11 @@ unlocks and synergies are unchanged, and your collection carries over.
 - Four dice have new names: **Grandfather's Die** (the six-sided one), the **Hollow Die**, the
   **Countdown Die** and the **Shifting Die**.
 
+**Comfort**
+- **Pause when away** (Options, on by default): switching windows, hiding the tab or unplugging the
+  controller pauses the run.
+- **Controller rumble** (Options): big hits, explosions and getting hurt rumble the controller.
+
 **Safer saves and better bug reports**
 - The browser version now keeps a backup of each save, like the desktop version, so one bad write
   can't wipe a slot.
@@ -57,6 +62,8 @@ unlocks and synergies are unchanged, and your collection carries over.
   opens the folder, or copies a report in the browser, ready to send with a bug report.
 
 **Fixed**
+- Restarting a Second Edition run from the pause menu started a normal run. It keeps the mode now,
+  and a Daily Run can't be restarted for a different seed.
 - Sweets and pages left in cursed rooms could crash the game when picked up, and a broken sweet
   could stop the room from drawing. Saves holding one load safely.
 

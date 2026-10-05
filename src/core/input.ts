@@ -128,6 +128,20 @@ export class Input {
   }
 
   /** Poll gamepads; call once per rendered frame. */
+  /** Controller rumble strength 0..1 (Options); 0 turns it off. */
+  rumbleScale = 1;
+  private rumbleUntil = 0; private rumbleNow = 0;
+  /** A short rumble on the first connected pad, if it can; the strongest wins while one is playing. */
+  rumble(strength: number, ms: number): void {
+    if (!this.usingPad || this.rumbleScale <= 0) return;
+    const now = performance.now(), k = Math.min(1, strength) * this.rumbleScale;
+    if (now < this.rumbleUntil && k <= this.rumbleNow) return;
+    const pad = (navigator.getGamepads ? [...navigator.getGamepads()] : []).find((p) => p && p.connected) as (Gamepad & { vibrationActuator?: { playEffect?(t: string, o: object): Promise<unknown> } }) | undefined;
+    const act = pad?.vibrationActuator;
+    if (!act?.playEffect) return;
+    this.rumbleUntil = now + ms; this.rumbleNow = k;
+    act.playEffect('dual-rumble', { duration: ms, strongMagnitude: k, weakMagnitude: Math.min(1, k * 1.2) }).catch(() => {});
+  }
   pollPad(dt: number): void {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     let pad: Gamepad | null = null;

@@ -751,6 +751,8 @@ export class MenuSystem {
       { label: 'Frame rate cap', value: () => (st().fpsCap ? st().fpsCap + ' fps' : 'Display rate'), ok: () => { const caps = [0, 60, 120, 144, 165, 240]; st().fpsCap = caps[(caps.indexOf(st().fpsCap ?? 0) + 1) % caps.length]; g.save.markDirty(); } },
       { label: 'Effects', value: () => (st().lowFx ? 'Low (for slower computers)' : 'Full'), ok: () => { st().lowFx = !st().lowFx; g.save.markDirty(); } },
       { label: 'Show FPS', value: () => (st().showFps ? 'On' : 'Off'), ok: () => { st().showFps = !st().showFps; g.save.markDirty(); } },
+      { label: 'Controller rumble', value: () => pct(st().rumble ?? 1), left: () => { st().rumble = clamp(Math.round(((st().rumble ?? 1) - 0.25) * 4) / 4, 0, 1); g.applySettings(); g.save.markDirty(); g.input.rumble(0.6, 150); }, right: () => { st().rumble = clamp(Math.round(((st().rumble ?? 1) + 0.25) * 4) / 4, 0, 1); g.applySettings(); g.save.markDirty(); g.input.rumble(0.6, 150); } },
+      { label: 'Pause when away', value: () => (st().autoPause !== false ? 'On' : 'Off'), ok: () => { st().autoPause = st().autoPause === false; g.save.markDirty(); } },
       { label: 'Diagonal keyboard aiming', value: () => (st().diagonalAim ? 'On' : 'Off'), ok: () => { st().diagonalAim = !st().diagonalAim; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fire button-drop chance', value: () => pct(st().fireDropChance), left: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance - 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); }, right: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance + 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); } },
       { label: 'Help & controls', value: () => '', ok: () => self.push(self.helpScreen(overlay)) },
@@ -904,13 +906,14 @@ export class MenuSystem {
   // ------------------------------------------------------------ pause
   private pauseMenu(): Screen {
     const self = this, g = this.g;
-    const items = ['Resume', 'Help & controls', 'Options', 'Restart (same reader)', 'Save & quit to menu'];
+    const daily = g.world?.run.mode === 'daily';
+    const items = ['Resume', 'Help & controls', 'Options', daily ? 'Restart (not in the Daily Run)' : 'Restart (same reader)', 'Save & quit to menu'];
     let sel = 0;
     const choose = () => {
       if (sel === 0) { g.paused = false; return; }
       if (sel === 1) { self.push(self.helpScreen(true)); return; }
       if (sel === 2) { self.push(self.optionsScreen(true)); return; }
-      if (sel === 3) { const c = g.world!.run.charId, ch = g.world!.run.challenge; g.paused = false; g.fadeTo(() => g.newRun(c, undefined, ch), 0.4); return; }
+      if (sel === 3) { if (daily) { g.audio.play('deny'); return; } const r = g.world!.run, c = r.charId, ch = r.challenge, mode = r.mode; g.paused = false; g.fadeTo(() => g.newRun(c, undefined, ch, mode), 0.4); return; }
       if (sel === 4) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => g.quitToMenu(), 0.4); }
     };
     const BX = 36, BY = 18, BW = 408, BH = 236, L = BX + 22, R = BX + BW / 2 + 18;
