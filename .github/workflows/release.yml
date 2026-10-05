@@ -47,6 +47,10 @@ jobs:
       - name: Build and package
         if: steps.version.outputs.skip != 'true'
         run: bash scripts/package-release.sh "${{ steps.version.outputs.tag }}"
+      # start the built game before anything is published: a page that won't load never ships
+      - name: Boot test the built game
+        if: steps.version.outputs.skip != 'true'
+        run: npm run test:boot
       - name: Publish release
         if: steps.version.outputs.skip != 'true'
         env:

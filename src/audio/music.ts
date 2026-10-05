@@ -28,6 +28,12 @@ export class Music {
   private cur: Playing | null = null;
   /** Decoded recordings: the current one and whatever is being readied next (older ones dropped). */
   private recs = new Map<string, Promise<AudioBuffer>>();
+  /**
+   * The page opened straight from disk (the downloaded zip): browsers won't let it read the music
+   * files' bytes, but an <audio> element may still play them. These follow the music volume and
+   * fade in and out like the real thing (without the muffled exploring filter).
+   */
+  private els: { name: string; a: HTMLAudioElement; level: number; dying: boolean }[] = [];
   constructor(ctx: AudioContext, out: GainNode, _reverb: AudioNode) {
     this.ctx = ctx; this.out = out;
   }
@@ -64,10 +70,19 @@ export class Music {
     if (name.startsWith('rec_')) {
       this.loadRec(name).then((buf) => { if (this.name === name && !this.cur) this.startRec(name, buf); })
         .catch((e) => {
-          // no recordings here (e.g. the standalone page opened from disk): play the old track
-          console.warn('recording unavailable, using the synth track', name, e);
-          const fb = fallbacks.get(name);
-          if (this.name === name && fb) { this.name = null; this.setTrack(fb); }
+          if (this.name !== name) return;
+          // opened from disk: try an <audio> element before giving up on the recording
+          const url = new URL('music/' + name.slice(4) + '.ogg', document.baseURI).href;
+          const a = new Audio(url); a.loop = true; a.volume = 0;
+          a.play().then(() => {
+            if (this.name !== name || this.cur || this.els.some((x) => x.name === name && !x.dying)) { a.pause(); return; }
+            this.els.push({ name, a, level: 0, dying: false });
+          }).catch(() => {
+            // no recordings here at all: play the old synth track
+            console.warn('recording unavailable, using the synth track', name, e);
+            const fb = fallbacks.get(name);
+            if (this.name === name && fb) { this.name = null; this.setTrack(fb); }
+          });
         });
       return;
     }
@@ -76,6 +91,7 @@ export class Music {
       .catch((e) => console.warn('music render failed', name, e));
   }
   private stopCurrent(fade: number): void {
+    for (const x of this.els) x.dying = true;
     const p = this.cur; if (!p) return;
     this.cur = null;
     const t = this.ctx.currentTime;
@@ -128,5 +144,15 @@ export class Music {
     const k = this.target > this.intensity ? 2.2 : 0.6;
     this.intensity += (this.target - this.intensity) * Math.min(1, dt * k);
     this.applyMix();
+    if (this.els.length) {
+      // the music bus gain carries the volume setting and any ducking; exploring plays a little quieter
+      const bus = this.out.gain.value * 0.8 * (0.75 + 0.25 * this.intensity);
+      for (const x of this.els) {
+        x.level = x.dying ? Math.max(0, x.level - dt / 1.4) : Math.min(1, x.level + dt / 1.2);
+        x.a.volume = Math.max(0, Math.min(1, x.level * bus));
+        if (x.dying && x.level <= 0) x.a.pause();
+      }
+      this.els = this.els.filter((x) => !(x.dying && x.level <= 0));
+    }
   }
 }

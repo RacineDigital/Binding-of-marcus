@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "tsx tests/run.ts",
     "smoke": "tsx tests/smoke.ts",
+    "test:boot": "tsx tests/boot.ts",
     "test:e2e": "tsx tests/e2e.ts",
     "test:soak": "tsx tests/soak.ts",
     "test:extreme": "tsx tests/tools/extreme.ts",

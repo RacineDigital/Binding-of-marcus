@@ -62,6 +62,9 @@ unlocks and synergies are unchanged, and your collection carries over.
   opens the folder, or copies a report in the browser, ready to send with a bug report.
 
 **Fixed**
+- The downloaded game, opened by double-clicking `Lost Marcus.html`, now plays the recorded
+  soundtrack in Chrome and other browsers that refused to read the music files from disk. Before, it
+  quietly fell back to the synth tracks.
 - Restarting a Second Edition run from the pause menu started a normal run. It keeps the mode now,
   and a Daily Run can't be restarted for a different seed.
 - Sweets and pages left in cursed rooms could crash the game when picked up, and a broken sweet
