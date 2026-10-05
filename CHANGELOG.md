@@ -29,6 +29,9 @@ controller buttons, and ticks it off when you do it. Options -> Tutorial hints t
 boss announces itself (and says a cherry bomb opens it) until you've climbed it once. The ending
 screen now gives the clue for the next ending you haven't found.
 
+**What's new, in the game.** After an update, returning players see these notes once as pages of the
+book, and the title screen has a **What's new** entry to read them again.
+
 **Accessibility and comfort**
 - **Reduce flashing** (Options) softens every full-screen flash to a faint glow. The boot screen
   now carries a photosensitivity notice.

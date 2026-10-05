@@ -1,4 +1,6 @@
 // Front-end and overlay menus. Keyboard and controller navigable; drawn crisp over an animated scene.
+import { latestNews } from './whatsnew';
+import { GAME_VERSION } from '../core/constants';
 import { errorCount, shareErrorLog } from '../core/errorlog';
 import type { Game } from '../game/game';
 import type { World } from '../game/world';
@@ -172,6 +174,12 @@ export class MenuSystem {
     this.stack = [];
     if (!this.g.save.data.introSeen) { this.push(this.introScreen()); return; }
     this.push(mainMenuScreen(this));
+    // after an update, a returning player gets the new notes once (a brand new player doesn't need them)
+    const st = this.g.save.data.settings;
+    if (st.seenVersion !== GAME_VERSION) {
+      if ((this.g.save.data.stats.runs ?? 0) > 0 && latestNews().blocks.length) this.push(this.whatsNewScreen());
+      else { st.seenVersion = GAME_VERSION; this.g.save.markDirty(); }
+    }
     this.g.audio.setMusic('menu');
     this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
@@ -952,6 +960,66 @@ export class MenuSystem {
   }
 
   /** Help: the controls as you have them bound, and how to read the house. Opened from the pause menu, the title and Options. */
+  /** What's new: the newest changelog section, as pages of the book (left/right to turn them). */
+  whatsNewScreen(): Screen {
+    const self = this, g = this.g;
+    const BX = 36, BY = 14, BW = 408, BH = 244, COLW = 172, LH = 9, TOP = 58, ROWS = Math.floor((BY + BH - 22 - TOP) / LH);
+    const news = latestNews();
+    let cols: { s: string; kind: string }[][] | null = null, spread = 0;
+    const layout = (ctx: CanvasRenderingContext2D) => {
+      const out: { s: string; kind: string }[] = [];
+      for (const b of news.blocks) {
+        if (b.kind === 'gap') { out.push({ s: '', kind: 'gap' }); continue; }
+        const size = b.kind === 'head' ? 8 : 7, w = b.kind === 'bullet' ? COLW - 8 : COLW;
+        wrap(ctx, b.s, size, w, b.kind === 'head' ? FONT_TITLE : FONT_BODY).forEach((s, i) => out.push({ s, kind: b.kind === 'bullet' && i > 0 ? 'cont' : b.kind }));
+      }
+      cols = [];
+      let cur: { s: string; kind: string }[] = [];
+      for (const l of out) {
+        if (cur.length >= ROWS || (l.kind === 'head' && cur.length >= ROWS - 2)) { cols.push(cur); cur = []; }
+        if (l.kind === 'gap' && !cur.length) continue;
+        cur.push(l);
+      }
+      if (cur.length) cols.push(cur);
+    };
+    const spreads = () => Math.max(1, Math.ceil((cols?.length ?? 1) / 2));
+    const done = () => { g.save.data.settings.seenVersion = GAME_VERSION; g.save.markDirty(); self.pop(); };
+    return {
+      t: 0,
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back') { done(); return; }
+          if (k === 'left' || k === 'up') { if (spread > 0) { spread--; self.sfxMove(); } }
+          if (k === 'right' || k === 'down') { if (spread < spreads() - 1) { spread++; self.sfxMove(); } }
+          if (k === 'confirm') { if (spread < spreads() - 1) { spread++; self.sfxMove(); } else { done(); return; } }
+        }
+      },
+      pointer(x, _y, click) { if (click) { if (x < VIEW_W / 2 && spread > 0) spread--; else if (spread < spreads() - 1) spread++; else done(); } },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        if (!cols) layout(ctx);
+        book(ctx, BX, BY, BW, BH, 47);
+        // the title on the left page, its subtitle on the right: nothing runs across the spine
+        const [main, sub] = news.title.split(/:\s*/);
+        heading(ctx, main, BX + 18, 40, 10, INK, 'left', false);
+        if (sub) text(ctx, spread === 0 ? sub[0].toUpperCase() + sub.slice(1) : 'continued', BX + BW / 2 + 14, 40, 9, '#6a2a1a', 'left', FONT_TITLE, 400, false);
+        [0, 1].forEach((side) => {
+          const col = cols![spread * 2 + side]; if (!col) return;
+          const x0 = side === 0 ? BX + 18 : BX + BW / 2 + 14;
+          col.forEach((l, i) => {
+            const y = TOP + i * LH;
+            if (l.kind === 'head') text(ctx, l.s, x0, y, 8, '#6a2a1a', 'left', FONT_TITLE, 400, false);
+            else if (l.kind === 'bullet') { text(ctx, '\u2022', x0 + 1, y, 7, '#8a5a3a', 'left', FONT_BODY, 700, false); text(ctx, l.s, x0 + 8, y, 7, INK2, 'left', FONT_BODY, 600, false); }
+            else if (l.kind === 'cont') text(ctx, l.s, x0 + 8, y, 7, INK2, 'left', FONT_BODY, 600, false);
+            else if (l.kind === 'body') text(ctx, l.s, x0, y, 7, INK2, 'left', FONT_BODY, 600, false);
+          });
+        });
+        text(ctx, `${spread + 1} / ${spreads()}`, BX + BW - 18, BY + BH - 10, 6.5, '#8a6a4a', 'right', FONT_BODY, 600, false);
+        hint(ctx, spread < spreads() - 1 ? '\u2190 \u2192 turn the page \u00b7 Esc close' : 'Enter or Esc to close');
+      },
+    };
+  }
+
   helpScreen(overlay: boolean): Screen {
     const self = this, g = this.g;
     const BX = 36, BY = 14, BW = 408, BH = 244, L = BX + 20, R = BX + BW / 2 + 16;

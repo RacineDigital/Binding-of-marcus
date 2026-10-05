@@ -22,6 +22,8 @@ export interface Settings {
   reduceFlash?: boolean;
   /** Fewer decorative particles, for slow machines. */
   lowFx?: boolean;
+  /** The version whose What's new notes were last shown. */
+  seenVersion?: string;
   /** Enemy shots get a solid black ring and a thick white rim (readable without colour). */
   contrastShots?: boolean;
 }

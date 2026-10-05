@@ -290,6 +290,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
   if (CHALLENGES.some((c) => !c.unlock || g.save.isUnlocked(c.unlock))) entries.push({ id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) });
   entries.push(
     { id: 'journal', label: 'Journal', icon: I.book, desc: () => { const n = newUnlocks(g); return n ? `${n} new achievement${n > 1 ? 's' : ''} to read under Statistics.` : 'Readers, collection, past runs, statistics, notes and endings.'; }, act: () => ms.push(journalScreen(ms)) },
+    { id: 'news', label: 'What\'s new', icon: I.scroll, desc: () => `What changed in v${GAME_VERSION}.`, act: () => ms.push(ms.whatsNewScreen()) },
     { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls, save slots and credits.', act: () => ms.push(ms.optionsScreen()) },
   );
   if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Close the book for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
