@@ -1,4 +1,5 @@
 // Room lifecycle: entering, doors, clearing, rewards, special rooms and floor progression.
+import { bindLabel } from '../core/input';
 import { newCombos } from '../items/preview';
 import type { World, DoorRT } from './world';
 import type { Run } from './run';
@@ -690,6 +691,8 @@ export function onBossKilled(w: World, e: Enemy): void {
     if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && !w.run.flags.hospital) {
       const sx = c.x + 76, sy = c.y + 22;
       w.backStair = { x: sx, y: sy, t: 0, boarded: true }; room.flags.stair = { x: sx, y: sy, boarded: true };
+      // until it has been climbed once, say it's there and how to open it
+      if (!w.game.save.isUnlocked('back_stair')) w.after(2.4, () => { if (w.room === room) w.hud.toast(`Behind the boss: a back stair, boarded over. A cherry bomb (${bindLabel('bomb')}) would open it.`, 4.5); });
     }
     // the end of the hospital: Room 4, which opens for Grandfather's letter
     if (w.run.flags.hospital && fi === ROOM4_FLOOR - 1) {

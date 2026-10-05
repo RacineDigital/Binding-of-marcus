@@ -25,6 +25,10 @@ Every version of Lost Marcus, newest first. Each release page only lists what's 
 at a time (move, fire, doors, cherry bombs, the map, active items, pages) with your own keys or
 controller buttons, and ticks it off when you do it. Options -> Tutorial hints turns them off.
 
+**Secrets you can follow.** Once the story is finished, the boarded back stair behind Chapter II's
+boss announces itself (and says a cherry bomb opens it) until you've climbed it once. The ending
+screen now gives the clue for the next ending you haven't found.
+
 **Accessibility and comfort**
 - **Reduce flashing** (Options) softens every full-screen flash to a faint glow. The boot screen
   now carries a photosensitivity notice.

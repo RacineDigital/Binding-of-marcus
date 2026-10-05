@@ -1067,6 +1067,8 @@ export class MenuSystem {
     const epilogue = EPILOGUES[w.run.charId] ?? '';
     const fresh = !!w.run.flags.newEnding;
     const found = g.save.data.endings?.length ?? 0;
+    // the next ending still to find, and its clue: a reason to pick the book up again
+    const next = ENDINGS.find((e) => !g.save.hasEnding(e.id));
     // lay the story out once: wrapped lines, each fading in after the last
     let laid: { s: string; y: number; at: number; big: boolean; dim?: boolean }[] | null = null;
     let doneAt = 0;
@@ -1104,7 +1106,8 @@ export class MenuSystem {
           text(ctx, `Score ${sc.score}`, VIEW_W / 2, ey + 36, 10, '#efe2c8', 'center', FONT_TITLE, 400);
           text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, VIEW_W / 2, ey + 45, 6.5, sc.isBest ? COL.gold : COL.dim, 'center');
         }
-        if (ey + 80 < VIEW_H - 14) unlockedThisRun(ctx, w.run.flags.unlockedNow, VIEW_W / 2, ey + 58, COL.gold, '#e6d6bc');
+        if (ey + 80 < VIEW_H - (next ? 28 : 14)) unlockedThisRun(ctx, w.run.flags.unlockedNow, VIEW_W / 2, ey + 58, COL.gold, '#e6d6bc');
+        if (next) text(ctx, `Ending ${next.num} is still out there. ${next.clue}`, VIEW_W / 2, VIEW_H - 22, 6.5, 'rgba(220,200,160,0.8)', 'center');
         ctx.globalAlpha = 1;
         if (this.t > 4) hint(ctx, 'Press Enter');
       },
