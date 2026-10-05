@@ -2,6 +2,51 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.14.0: getting ready for everyone
+
+**Grandfather's letter is easy to follow.** On the hospital path:
+- The **Lost & Found** door always opens after a hospital boss while it's holding the top half, and
+  the letter costs nothing to take.
+- The **Deep Crawlspace** holding the bottom half is open (no bombing) and marked on your map from
+  the start of the chapter. Rooms holding a half you still need show the letter on the map.
+- A checklist under the minimap says where each half is and ticks them off; each chapter opens
+  with a tip, and the Room 4 door says which half is still missing.
+
+**The Patient (Room 4)**
+- Room 4 is one long ward room, two screens wide, instead of a huge hall.
+- It forgets itself about half as often, is gone for less time when it does, and comes back a
+  short step from where it was instead of across the room.
+- It no longer borrows the bosses that burrow, sink or blink out of reach (Grubmother, Bilgemaw,
+  Matron, Choirmaster, Thornwife).
+
+**First-run hints.** On your first few runs, a small card at the top of the screen shows one thing
+at a time (move, fire, doors, cherry bombs, the map, active items, pages) with your own keys or
+controller buttons, and ticks it off when you do it. Options -> Tutorial hints turns them off.
+
+**Accessibility and comfort**
+- **Reduce flashing** (Options) softens every full-screen flash to a faint glow. The boot screen
+  now carries a photosensitivity notice.
+- **HUD text size** (Options): 100%, 115% or 130% for everything you read during a run.
+- **Effects: Low** (Options) thins out decorative particles for slower computers.
+
+**Renamed sets.** Three item sets named after real people now have names of their own. Effects,
+unlocks and synergies are unchanged, and your collection carries over.
+- The cold set is now **Frostbitten** (Frost Skate, Paste Pot, Darkroom Lamp, Lucky Threes, Rime
+  Wings, Cellar Spider, Kind Words, Icebox, Flotsam, Frosted Glass, Ginseng Tonic).
+- The blood set is now the **Night Count** (Seeing Red, Last Light, Blood Hymn, Peashooter, Held
+  Breath, Power Chord, Slime Heart, Baby Talk).
+- The toddler set is now **Tantrum** (Oversized Nappy, Chewed Pencil, Bike Helmet).
+
+**Safer saves and better bug reports**
+- The browser version now keeps a backup of each save, like the desktop version, so one bad write
+  can't wipe a slot.
+- Errors are logged (on the desktop next to your saves, in `logs/errors.log`). Options -> Error log
+  opens the folder, or copies a report in the browser, ready to send with a bug report.
+
+**Fixed**
+- Sweets and pages left in cursed rooms could crash the game when picked up, and a broken sweet
+  could stop the room from drawing. Saves holding one load safely.
+
 ## What's new in 3.13.0: every boss, redrawn
 
 Every boss in the book has been redesigned and reanimated from scratch. Their attacks, health,
