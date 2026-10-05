@@ -1,4 +1,5 @@
 // Front-end and overlay menus. Keyboard and controller navigable; drawn crisp over an animated scene.
+import { errorCount, shareErrorLog } from '../core/errorlog';
 import type { Game } from '../game/game';
 import type { World } from '../game/world';
 import { MenuKey, ACTION_ORDER, ACTION_LABELS, keyLabel, DEFAULT_BINDINGS, Action, bindLabel } from '../core/input';
@@ -720,6 +721,7 @@ export class MenuSystem {
     const st = () => g.save.data.settings;
     type Opt = { label: string; value: () => string; left?: () => void; right?: () => void; ok?: () => void };
     const pct = (v: number) => Math.round(v * 100) + '%';
+    let logNote = '';
     const step = (k: 'music' | 'sfx' | 'shake', d: number) => { const s = st(); s[k] = clamp(Math.round((s[k] + d) * 10) / 10, 0, 1); g.applySettings(); g.save.markDirty(); g.audio.play('coin', { vol: 0.5 }); };
     const opts: Opt[] = [
       { label: 'Music volume', value: () => pct(st().music), left: () => step('music', -0.1), right: () => step('music', 0.1) },
@@ -738,10 +740,12 @@ export class MenuSystem {
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },
       { label: 'Motion smoothing', value: () => (st().interpolate !== false ? 'On' : 'Off'), ok: () => { st().interpolate = st().interpolate === false; g.save.markDirty(); } },
       { label: 'Frame rate cap', value: () => (st().fpsCap ? st().fpsCap + ' fps' : 'Display rate'), ok: () => { const caps = [0, 60, 120, 144, 165, 240]; st().fpsCap = caps[(caps.indexOf(st().fpsCap ?? 0) + 1) % caps.length]; g.save.markDirty(); } },
+      { label: 'Effects', value: () => (st().lowFx ? 'Low (for slower computers)' : 'Full'), ok: () => { st().lowFx = !st().lowFx; g.save.markDirty(); } },
       { label: 'Show FPS', value: () => (st().showFps ? 'On' : 'Off'), ok: () => { st().showFps = !st().showFps; g.save.markDirty(); } },
       { label: 'Diagonal keyboard aiming', value: () => (st().diagonalAim ? 'On' : 'Off'), ok: () => { st().diagonalAim = !st().diagonalAim; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fire button-drop chance', value: () => pct(st().fireDropChance), left: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance - 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); }, right: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance + 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); } },
       { label: 'Help & controls', value: () => '', ok: () => self.push(self.helpScreen(overlay)) },
+      { label: 'Error log', value: () => logNote || (errorCount() ? `${errorCount()} logged` : 'No errors'), ok: () => { void shareErrorLog().then((s) => { logNote = s; setTimeout(() => (logNote = ''), 2500); }); } },
     ];
     if (!overlay) opts.push({ label: 'Save slots', value: () => `Slot ${g.save.slot}`, ok: () => self.push(profilesScreen(self)) }, { label: 'Credits', value: () => '', ok: () => self.push(self.creditsScreen()) });
     if (!overlay) opts.push({ label: 'Erase all progress', value: () => '', ok: () => self.push(self.confirmScreen('Erase every unlock, statistic and saved run?', () => { g.save.reset(); self.openMain(); })) });

@@ -1,5 +1,6 @@
 // The in-run simulation: owns every entity in the current room and all cross-system interactions.
 import { tutorialTick } from './tutorial';
+import { logError } from '../core/errorlog';
 import type { Game } from './game';
 import type { Renderer } from '../render/renderer';
 import type { Input } from '../core/input';
@@ -98,6 +99,7 @@ export class World {
 
   update(dtReal: number): void {
     this.hud.update(dtReal);
+    this.fx.budget = this.game.save.data.settings.lowFx ? 160 : 600;
     (this.audio as any).listenerX = this.camX + 240;
     if (this.transition) {
       this.transition.t += dtReal;
@@ -148,7 +150,7 @@ export class World {
     tutorialTick(this, dt);
     for (let i = 0; i < this.tasks.length; i++) {
       const k = this.tasks[i]; k.t -= dt;
-      if (k.t <= 0) { this.tasks.splice(i--, 1); try { k.fn(); } catch (e) { console.error('task', e); } }
+      if (k.t <= 0) { this.tasks.splice(i--, 1); try { k.fn(); } catch (e) { console.error('task', e); logError(e, 'task'); } }
     }
     for (const t of this.telegraphs) t.t += dt;
     this.telegraphs = this.telegraphs.filter((t) => t.t < t.dur);
