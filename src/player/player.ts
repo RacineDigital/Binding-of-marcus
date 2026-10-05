@@ -593,8 +593,8 @@ export const TRANSFORM_EFFECTS: Record<string, { name: string; desc: string; sta
   thread: { name: 'Needleworker', desc: 'Shots pierce and stitch enemies together.', attack: { pierce: 2, chain: 1, chainChance: 0.2 } },
   bone: { name: 'Ossified', desc: 'A wax heart every floor. Bony shots.', stats: { damage: 0.7 }, attack: { shape: 'bone', knock: 1 } },
   void: { name: 'Hollowed', desc: 'Spectral homing shots.', attack: { spectral: true, homing: 0.4 } },
-  drain: { name: 'Drainer', desc: 'Flight. Speed up. Every shot can chill.', stats: { speed: 0.2, tears: 0.3 }, attack: { slow: 0.25, tint: '#a8dcff' }, flight: true },
-  vamp: { name: 'King Vamp', desc: 'Damage up. Your shots drink blood.', stats: { damage: 1.5 }, attack: { lifesteal: 0.35, tint: '#d01828', shape: 'blood' } },
+  drain: { name: 'Frostbitten', desc: 'Flight. Speed up. Every shot can chill.', stats: { speed: 0.2, tears: 0.3 }, attack: { slow: 0.25, tint: '#a8dcff' }, flight: true },
+  vamp: { name: 'Night Count', desc: 'Damage up. Your shots drink blood.', stats: { damage: 1.5 }, attack: { lifesteal: 0.35, tint: '#d01828', shape: 'blood' } },
   laser: { name: 'Live Wire', desc: 'Damage up. Every laser leaps on to another enemy.', stats: { damage: 1 }, attack: { laserArc: 1 } },
-  jeffy: { name: 'Jeffy', desc: 'Speed and damage up. Getting hit throws a tantrum of pencils.', stats: { damage: 1, speed: 0.2 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' } },
+  jeffy: { name: 'Tantrum', desc: 'Speed and damage up. Getting hit throws a tantrum of pencils.', stats: { damage: 1, speed: 0.2 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' } },
 };

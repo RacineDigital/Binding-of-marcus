@@ -427,11 +427,11 @@ export class World {
     // paying the Pincushion never counts
     if (pl.health.red < red0 && !o.redFirst) { this.run.flags.redHit = true; if (this.room.type === 'boss') this.run.flags.bossRedHit = true; }
     if (!o.redFirst) this.itemHook('onHurt');
-    // Jeffy throws a tantrum: pencils everywhere and a burst of speed
+    // Tantrum: pencils everywhere and a burst of speed
     if (pl.transformations.has('jeffy') && !res.dead) {
       for (let i = 0; i < 14; i++) this.proj.player(this, pl.prof, pl.x, pl.y - 6, 10, (i / 14) * TAU, pl.stats.damage * 1.3, 240, 170, 1);
       pl.clearTemp((t) => t.id === 'tantrum'); pl.addTemp({ id: 'tantrum', time: 3, stats: { speed: 0.4, tearsMult: 1.4 } });
-      this.hud.toast(['WHY\'D YOU HAVE TO DO THAT?!', 'DADDY!', 'I\'M A BIG BOY!', 'THAT\'S MINE!'][Math.floor(Math.random() * 4)], 1.2);
+      this.hud.toast(['NOT FAIR!', 'MINE!', 'I DON\'T WANNA!', 'NO NO NO!'][Math.floor(Math.random() * 4)], 1.2);
       this.audio.play('bossRoar', { x: pl.x, pitch: 2.2, vol: 0.4 });
     }
     if (res.dead) this.onPlayerDied(source);

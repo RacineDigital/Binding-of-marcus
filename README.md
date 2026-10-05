@@ -117,19 +117,19 @@ Menus also work with the mouse: hover, click and scroll.
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
-- **Reference items.** A Drain Gang / Bladee set (Icedancer, Gluee, Red Light, 333, Exeter...), a
-  Playboi Carti set (Whole Lotta Red, Die Lit, Vamp Anthem, Magnolia, Sky, Stop Breathing...) and
-  internet-era objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug), plus Jeffy's
-  Big Boy Diaper, Nose Pencil and Blue Bike Helmet.
+- **Themed sets.** A cold set (Frost Skate, Paste Pot, Darkroom Lamp, Lucky Threes, Icebox...), a
+  blood set (Seeing Red, Last Light, Blood Hymn, Magnolia, Sky, Held Breath...) and internet-era
+  objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug), plus a toddler's Oversized
+  Nappy, Chewed Pencil and Bike Helmet.
 - **The dice.** Every die from Isaac: D1, D4, the D6, D7, D8, D10, D12, D20, D100, Eternal D6,
   Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
   charms. The strongest ones are earned: the D4 (two transformations at once), D8 (15 damage),
   Spindown Dice (three challenges), D100 (beat the Author) and D Infinity (roll every other die).
 - **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
-  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look. Jeffy
-  throws a tantrum of pencils whenever he gets hit.
+  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look.
+  Tantrum throws a fit of pencils whenever you get hit.
 - **One pool per item.** Every item lives in exactly one pool, and a transformation's items all
-  share theirs. Inkblooded lives in the Inkwell, King Vamp in secret rooms, Clockwork in the shop,
+  share theirs. Inkblooded lives in the Inkwell, the Night Count in secret rooms, Clockwork in the shop,
   and so on. Each item's description says which pool it is from, and Inkwell, Hexed and Chapel
   items carry a glow of their room wherever they turn up.
 - **Twenty chapters in a different order every run.** A run is seven chapters drawn from twenty
@@ -227,7 +227,7 @@ Menus also work with the mouse: hover, click and scroll.
   statistics, best scores and settings.
 - **Costumes.** Items that would show on you do (rings, spectacles, masks, crowns, halos, wings,
   capes), the strongest items restyle your whole outfit, and every transformation gives you a new
-  look (King Vamp: pale, red-eyed, crowned and caped).
+  look (the Night Count: pale, red-eyed, crowned and caped).
 - **Modes.** Normal; Second Edition (Hard) and Endless (the story keeps going after The Binding,
   harder each chapter), both unlocked by finishing the story; and a Daily Run with the same seed and
   reader for everyone that day. Every run ends with a score and a personal best.
