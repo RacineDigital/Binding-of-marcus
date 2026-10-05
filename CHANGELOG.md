@@ -29,6 +29,8 @@ controller buttons, and ticks it off when you do it. Options -> Tutorial hints t
 - **Reduce flashing** (Options) softens every full-screen flash to a faint glow. The boot screen
   now carries a photosensitivity notice.
 - **HUD text size** (Options): 100%, 115% or 130% for everything you read during a run.
+- **High-contrast enemy shots** (Options) gives every enemy shot a solid black ring and a thick
+  white rim, so they stand out by brightness alone, whatever colours you can tell apart.
 - **Effects: Low** (Options) thins out decorative particles for slower computers.
 
 **Renamed sets.** Three item sets named after real people now have names of their own. Effects,
