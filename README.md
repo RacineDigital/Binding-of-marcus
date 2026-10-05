@@ -41,6 +41,18 @@ The game autosaves on every room you enter and when you close it, so **Continue*
 the exact room with the floor as you left it. There are three save slots (Save Slots on the title
 screen), each of which can be exported to a file, imported again, or erased. Settings are shared
 between slots.
+Each save keeps a backup copy, and the game loads the backup if the main copy is ever damaged.
+
+### Accessibility and comfort
+All in Options: **Reduce flashing** (full-screen flashes become a faint glow), **Screen shake**,
+**Hit pause**, **HUD text size** (100%, 115% or 130%), **High-contrast enemy shots** (a solid
+black-and-white ring on every enemy shot, readable without colour), **Effects: Low** (fewer
+decorative particles for slower computers) and **Tutorial hints** (first-run control hints).
+
+### Reporting a bug
+Options → **Error log** opens the folder holding `errors.log` on the desktop version (in the app's
+data folder, beside `saves`), or copies an error report to the clipboard in the browser. Attach it
+to an issue on GitHub.
 
 ## Running from source
 
@@ -54,12 +66,13 @@ npm run build:single               # the whole game as one self-contained HTML f
 npm run release                    # build the release zips into release/
 npm run desktop                    # build and run the desktop (Electron) version
 npm run dist:win                   # Windows installer + portable .exe in release-desktop/ (run on Windows)
+npm run dist:linux                 # Linux AppImage in release-desktop/ (run on Linux)
 npm run test:synergy               # every item x every attack mode in headless Chromium (needs the dev server)
 ```
 
 The Release workflow also builds the Windows .exe files on a Windows runner, starts the packaged game
-in a self-test mode (`--smoke`), and attaches them to the release. The **Windows build check**
-workflow does the same on every push without publishing.
+in a self-test mode (`--smoke`), and attaches them to the release. The **Desktop build check**
+workflow does the same on every push, for Windows and a Linux AppImage, without publishing.
 
 To publish a new release, bump `version` in `package.json` and push, or push a tag such as `v1.1.0`. The
 **Release** GitHub Actions workflow tests, builds and packages the game, then attaches the files to a new
