@@ -16,6 +16,8 @@ export interface Settings {
   timer?: boolean;
   /** Show what you're playing in Discord (desktop). */
   discord?: boolean;
+  /** First-run hints (see game/tutorial). */
+  tutorial?: boolean;
 }
 export interface SaveData {
   version: number;
@@ -48,6 +50,8 @@ export interface SaveData {
   readersMet?: string[];
   /** Buttons put in shop donation boxes, ever. Every 50 raises the shop a level. */
   donated?: number;
+  /** First-run hints already done (ids from game/tutorial). */
+  tutorial?: string[];
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
 

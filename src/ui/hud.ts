@@ -25,6 +25,7 @@ import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
 import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
+import { tutorialLine } from '../game/tutorial';
 import { STING_HIT, StingKind } from '../audio/bossting';
 
 /** How long a boss title card holds the screen. */
@@ -203,6 +204,19 @@ export class Hud {
   readingNote(title: string): boolean { return !!this.note?.at && this.note.title === title && this.note.dur > this.note.t + 0.3; }
 
   /** Speedrun-style run clock under the map. */
+  /** A first-run hint, centred at the top of the screen; it ticks green for a moment once done. */
+  private drawTutorial(ctx: CanvasRenderingContext2D): void {
+    const t = tutorialLine(this.w);
+    if (!t) return;
+    const s = (t.done ? '\u2713 ' : '') + t.text, size = 8;
+    const wd = measure(ctx, s, size) + 18, x = VIEW_W / 2 - wd / 2, y = 8;
+    ctx.save();
+    ctx.fillStyle = 'rgba(14,10,20,0.82)'; ctx.fillRect(x, y, wd, 15);
+    ctx.strokeStyle = t.done ? 'rgba(158,224,138,0.8)' : 'rgba(255,224,140,0.55)'; ctx.lineWidth = 0.7; ctx.strokeRect(x + 0.5, y + 0.5, wd - 1, 14);
+    text(ctx, s, VIEW_W / 2, y + 10.5, size, t.done ? COL.up : '#ffe8b0', 'center');
+    ctx.restore();
+  }
+
   /** On the hospital path: a two-line checklist for the halves of Grandfather's letter, and where each one is. */
   private drawLetterHunt(ctx: CanvasRenderingContext2D): void {
     const w = this.w, h = letterHunt(w);
@@ -310,6 +324,7 @@ export class Hud {
     if (w.floor.curse === 'lost') { if (!this.fullMap) text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right'); }
     else if (!this.fullMap) this.drawMinimap(ctx, false);
     if (!this.fullMap) this.drawLetterHunt(ctx);
+    if (!this.fullMap) this.drawTutorial(ctx);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);

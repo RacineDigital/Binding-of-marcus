@@ -1,4 +1,5 @@
 // The in-run simulation: owns every entity in the current room and all cross-system interactions.
+import { tutorialTick } from './tutorial';
 import type { Game } from './game';
 import type { Renderer } from '../render/renderer';
 import type { Input } from '../core/input';
@@ -144,6 +145,7 @@ export class World {
     flow.checkExit(this);
     flow.updateSpecial(this, dt);
     this.itemHook('onTick', dt);
+    tutorialTick(this, dt);
     for (let i = 0; i < this.tasks.length; i++) {
       const k = this.tasks[i]; k.t -= dt;
       if (k.t <= 0) { this.tasks.splice(i--, 1); try { k.fn(); } catch (e) { console.error('task', e); } }
