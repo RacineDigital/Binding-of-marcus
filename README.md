@@ -66,13 +66,12 @@ npm run build:single               # the whole game as one self-contained HTML f
 npm run release                    # build the release zips into release/
 npm run desktop                    # build and run the desktop (Electron) version
 npm run dist:win                   # Windows installer + portable .exe in release-desktop/ (run on Windows)
-npm run dist:linux                 # Linux AppImage in release-desktop/ (run on Linux)
 npm run test:synergy               # every item x every attack mode in headless Chromium (needs the dev server)
 ```
 
 The Release workflow also builds the Windows .exe files on a Windows runner, starts the packaged game
 in a self-test mode (`--smoke`), and attaches them to the release. The **Desktop build check**
-workflow does the same on every push, for Windows and a Linux AppImage, without publishing.
+workflow does the same on every push without publishing.
 
 To publish a new release, bump `version` in `package.json` and push, or push a tag such as `v1.1.0`. The
 **Release** GitHub Actions workflow tests, builds and packages the game, then attaches the files to a new
