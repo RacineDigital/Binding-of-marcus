@@ -359,7 +359,11 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
         const sl = [{ c: 2, r: 2, ch: 'M' }, { c: 12, r: 6, ch: 'M' }, { c: 2, r: 6, ch: 'F' }, { c: 12, r: 2, ch: 'F' }];
         room.spawns = castEnemies(room, floor, rng, sl, 1.3, run.mode === 'hard');
         freeSpawns(room, room.spawns);
-      } else for (let i = 0; i < 3; i++) pk(rng.pick(['ink', 'page', 'sweet', 'button5']), cx + (i - 1) * 24, cy);
+      } else for (let i = 0; i < 3; i++) {
+        // a page or a sweet needs to know which one it is
+        const k = rng.pick(['ink', 'page', 'sweet', 'button5']);
+        pk(k, cx + (i - 1) * 24, cy, k === 'page' ? { id: null, rollPage: true } : k === 'sweet' ? { color: rng.int(0, 11) } : undefined);
+      }
       break;
     }
     case 'library': {

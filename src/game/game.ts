@@ -18,6 +18,7 @@ import { getItem, getConsumable } from '../items/registry';
 import { placeBomb } from './bombs';
 import * as flow from './roomflow';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { sweetColor } from '../items/sweetcolor';
 import { MenuSystem } from '../ui/menus';
 import { Health } from '../player/health';
 import { spawnDrop } from './drops';
@@ -368,7 +369,7 @@ export class Game {
       d?.use?.(w);
       this.save.stat('pagesUsed', 1);
     } else {
-      const eff = SWEET_EFFECTS[w.run.sweetMap[Number(c.id) % 12]];
+      const eff = SWEET_EFFECTS[w.run.sweetMap[sweetColor(c.id)]];
       w.run.identified.add(eff.id);
       w.hud.banner(eff.name, eff.desc);
       this.audio.play(eff.good ? 'sweetGood' : 'sweetBad');

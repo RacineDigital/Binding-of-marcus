@@ -23,6 +23,7 @@ import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { sweetColor } from '../items/sweetcolor';
 import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, ROOM4_FLOOR, HOSPITAL_FIRST, enemyHpMul } from '../data/floors';
 import { HOSPITAL_THEMES } from '../data/notes';
 import { checkProgress, onChapterCleared } from './progress';
@@ -905,7 +906,7 @@ export function touchPickup(w: World, p: Pickup): void {
         const q = new Pickup(old.kind, pl.x, pl.y); q.data = old.kind === 'page' ? { id: old.id } : { color: Number(old.id) }; q.noCollect = 1.2; popPickup(q, 0.6);
         w.pickups.push(q);
       }
-      pl.consumables.push({ kind: p.kind as 'page' | 'sweet', id: p.kind === 'page' ? p.data.id : String(p.data.color) });
+      pl.consumables.push({ kind: p.kind as 'page' | 'sweet', id: p.kind === 'page' ? p.data.id : String(sweetColor(p.data.color)) });
       collect('pageGet');
       if (p.kind === 'page') w.hud.toast(getConsumable(p.data.id)?.name ?? 'A torn page', 1.6);
       else w.hud.toast(sweetName(w, p.data.color), 1.6);
@@ -929,7 +930,7 @@ export function touchPickup(w: World, p: Pickup): void {
 }
 
 export function sweetName(w: World, color: number): string {
-  const eff = SWEET_EFFECTS[w.run.sweetMap[color % 12]];
+  const eff = SWEET_EFFECTS[w.run.sweetMap[sweetColor(color)]];
   return w.run.identified.has(eff.id) ? eff.name : 'Unmarked Sweet';
 }
 

@@ -8,6 +8,7 @@ import { poolInfo, PoolInfo } from '../items/homes';
 import { itemIconCanvas } from '../art/items';
 import { pickupSprites } from '../art/pickups';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { sweetColor } from '../items/sweetcolor';
 import { bindLabel as K, fmtKeys } from '../core/input';
 
 export interface InspectInfo {
@@ -70,7 +71,7 @@ function inspectRaw(w: World, p: Pickup): InspectInfo | null {
     return { key: c.id, icon: pickupSprites().page.canvas, title: c.name, subtitle: c.desc, lines: c.effect.map((t) => ({ text: t, color: 'plain' })), quality: -1, kindLabel: `TORN PAGE  ·  ${K('consumable')} to use` };
   }
   if (p.kind === 'sweet') {
-    const eff = SWEET_EFFECTS[w.run.sweetMap[p.data.color ?? 0] ?? 0];
+    const eff = SWEET_EFFECTS[w.run.sweetMap[sweetColor(p.data.color)] ?? 0];
     const known = !!eff && w.run.identified.has(eff.id);
     return { key: 'sweet' + (p.data.color ?? 0), icon: pickupSprites().sweets[(p.data.color ?? 0) % pickupSprites().sweets.length].canvas,
       title: known ? eff.name : 'Unmarked Sweet', subtitle: known ? 'Identified' : 'Who knows what it does',
