@@ -1,6 +1,7 @@
 // Chapter IV enemies: the forgotten ward's staff and patients.
 import type { EnemyDef } from './enemy';
-import { frames, eye, teeth, ramp, hex, glowEye, sprinkle } from '../art/creature';
+import { frames, eye, teeth, ramp, hex, glowEye, sprinkle, gridFrames } from '../art/creature';
+import * as H from '../art/hand/ward';
 import { chase, aimAngle, shoot, spreadShot, ringShot, distToPlayer, keepDistance, randomFloorPoint, wander } from './ai';
 import { TAU, angleTo, clamp, dist } from '../core/math';
 import { telegraph } from '../bosses/boss';
@@ -8,18 +9,7 @@ import { telegraph } from '../bosses/boss';
 const orderly: EnemyDef = {
   id: 'orderly', name: 'Night Orderly', desc: 'Walks toward you, fades out, and steps back in closer than before.', hp: 18, r: 7, speed: 38, role: 'melee', cost: 1.6, hitY: 14,
   gore: '#a8c0b8',
-  sprites: () => ({
-    walk: frames(18, 32, 4, (p, f) => {
-      const c = ramp('#b8d0c8'), s = ramp('#c8b8b0');
-      const st = [0, 1, 0, -1][f];
-      p.rect(6 + st, 26, 2, 5, c[1]); p.rect(10 - st, 26, 2, 5, c[1]);
-      p.poly([4, 27, 5, 11, 13, 11, 14, 27], c[2]); p.shadeV(4, 11, 10, 16, c, 0.6);
-      p.line(9, 12, 9, 26, c[1]);
-      p.tube(4, 13, 3, 22, 1.2, c); p.tube(14, 13, 15, 22, 1.2, c);
-      p.ball(9, 6, 4, 4.5, s); p.rect(5, 2, 8, 2, c[3]);
-      p.set(7, 6, '#1a1010'); p.set(11, 6, '#1a1010'); p.rect(8, 9, 2, 1, hex('#6a4a4a'));
-    }),
-  }),
+  sprites: () => ({ walk: gridFrames(H.ORDERLY, H.ORDERLY_PAL) }),
   init(e) { e.anim = 'walk'; e.cd = 2.5 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -44,17 +34,7 @@ const orderly: EnemyDef = {
 const wheelwraith: EnemyDef = {
   id: 'wheelwraith', name: 'Wheelchair Wraith', desc: 'Spins its wheels, then careens around the room bouncing off the walls.', hp: 18, r: 9, speed: 0, role: 'heavy', cost: 1.7, hitY: 12, mass: 2,
   gore: '#8a8a92',
-  sprites: () => ({
-    idle: frames(26, 28, 4, (p, f) => {
-      const m = ramp('#8a8a96'), g = ramp('#c8e0e8');
-      p.ring(8, 21, 6, m[3], 1.5); p.ring(19, 22, 4, m[3], 1.2);
-      const a = (f / 4) * Math.PI;
-      for (let k = 0; k < 2; k++) p.line(8 + Math.cos(a + k * 1.57) * 5, 21 + Math.sin(a + k * 1.57) * 5, 8 - Math.cos(a + k * 1.57) * 5, 21 - Math.sin(a + k * 1.57) * 5, m[2]);
-      p.rect(6, 14, 14, 3, m[2]); p.rect(6, 5, 2, 10, m[2]);
-      p.ball(14, 9, 5, 6, g, { dither: 0.8 }); p.ball(15, 4, 3.5, 3.5, g);
-      glowEye(p, 14, 4, '#30a0c0'); p.set(17, 4, '#30a0c0');
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.WRAITH, H.WRAITH_PAL) }),
   init(e) { e.cd = 1 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -77,18 +57,7 @@ const wheelwraith: EnemyDef = {
 const nursedoll: EnemyDef = {
   id: 'nursedoll', name: 'Porcelain Nurse', desc: 'Keeps her distance and lobs syringes that land where you were standing.', hp: 12, r: 6, speed: 40, role: 'shooter', cost: 1.5, hitY: 11,
   gore: '#e8e0e0',
-  sprites: () => ({
-    walk: frames(16, 24, 2, (p, f) => {
-      const d = ramp('#e8e8f0'), s = ramp('#f0e0d8');
-      p.poly([3, 21, 5, 10, 11, 10, 13, 21], d[2]); p.shadeV(3, 10, 10, 11, d, 0.6);
-      p.rect(7, 12, 2, 4, hex('#c83a3a')); p.rect(6, 13, 4, 2, hex('#c83a3a'));
-      p.rect(5 + f, 21, 2, 2, d[0]); p.rect(9 - f, 21, 2, 2, d[0]);
-      p.ball(8, 6, 4.5, 4.5, s);
-      p.rect(4, 2, 8, 2, d[3]); p.set(8, 2, '#c83a3a');
-      p.set(6, 6, '#2a2a3a'); p.set(10, 6, '#2a2a3a'); p.line(7, 3, 6, 9, hex('#c8b8b0')); // crack
-      p.set(8, 8, '#c86a6a');
-    }),
-  }),
+  sprites: () => ({ walk: gridFrames(H.NURSE, H.NURSE_PAL) }),
   init(e) { e.anim = 'walk'; e.cd = 1.5 + Math.random(); },
   update(e, w, dt) {
     keepDistance(e, w, 90, 140, e.def.speed, dt); e.animate(dt, 4);
@@ -107,16 +76,7 @@ const nursedoll: EnemyDef = {
 const sheetghost: EnemyDef = {
   id: 'sheetghost', name: 'Bedsheet', desc: 'Drifts through walls and rocks toward you, then swoops.', hp: 12, r: 7, speed: 35, flying: true, ghost: true, role: 'flyer', cost: 1.2, hitY: 14,
   gore: '#d8d8e0',
-  sprites: () => ({
-    idle: frames(20, 26, 4, (p, f) => {
-      const c = ramp('#e0e0e8');
-      p.ball(10, 9, 7, 7, c, { dither: 0.5 });
-      p.rect(3, 9, 14, 10, c[2]);
-      p.shadeV(3, 2, 14, 17, c, 0.5);
-      for (let i = 0; i < 4; i++) { const x = 3 + i * 4, len = 3 + ((i + f) % 3); p.rect(x, 19, 3, len, c[i % 2 ? 2 : 1]); }
-      p.ball(7, 9, 1.5, 2, ramp('#1a1a2a')); p.ball(13, 9, 1.5, 2, ramp('#1a1a2a'));
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.SHEET, H.SHEET_PAL) }),
   init(e) { e.cd = 2 + Math.random() * 2; e.alpha = 0.85; },
   update(e, w, dt) {
     e.animate(dt, 6);
@@ -138,22 +98,7 @@ const sheetghost: EnemyDef = {
 const mimic: EnemyDef = {
   id: 'mimic', name: 'Mimic Chest', desc: 'Not every box is a gift. It twitches when you get close.', hp: 22, r: 8, speed: 0, role: 'special', cost: 1.6, hitY: 8, mass: 2,
   gore: '#8a6a3a', contact: 1, spawnQuiet: true,
-  sprites: () => {
-    const paint = (p: any, open: number) => {
-      const c = ramp('#8a8e96'), t = ramp('#5a4a3a');
-      p.rect(2, 10, 18, 9, c[2]); p.rect(2, 10, 18, 1, c[3]); p.rect(2, 18, 18, 1, c[0]);
-      p.rect(2, 14, 18, 1, t[2]);
-      const ly = 10 - open * 6;
-      p.rect(1, ly - 5, 20, 6, c[2]); p.rect(1, ly - 5, 20, 1, c[4]); p.rect(9, ly - 1, 3, 3, t[3]);
-      if (open > 0) {
-        p.rect(3, ly + 1, 16, Math.max(1, 10 - ly), hex('#2a0a10'));
-        for (let x = 3; x < 19; x += 2) { p.set(x, ly + 1, '#f0e8d8'); p.set(x + 1, 10, '#f0e8d8'); }
-        p.ball(11, ly + 4, 3, 1.5, ramp('#c83a5a'));
-        glowEye(p, 6, ly - 3, '#f0e040'); p.set(15, ly - 3, '#f0e040');
-      }
-    };
-    return { shut: frames(22, 20, 1, (p) => paint(p, 0)), open: frames(22, 20, 2, (p, f) => paint(p, f ? 1 : 0.6)) };
-  },
+  sprites: () => ({ shut: gridFrames(H.MIMIC_SHUT, H.MIMIC_PAL), open: gridFrames(H.MIMIC_OPEN, H.MIMIC_PAL) }),
   init(e) { e.anim = 'shut'; e.spawnT = 0; e.data.noClear = false; },
   update(e, w, dt) {
     const d = distToPlayer(e, w);
@@ -172,17 +117,7 @@ const mimic: EnemyDef = {
 const dripsentinel: EnemyDef = {
   id: 'dripsentinel', name: 'Drip Sentinel', desc: 'An IV stand that walks. It leaves a sickly trail and spits from its bag.', hp: 20, r: 7, speed: 26, role: 'heavy', cost: 1.5, hitY: 16, mass: 2,
   gore: '#8ac04a',
-  sprites: () => ({
-    walk: frames(18, 36, 4, (p, f) => {
-      const m = ramp('#9a9aa8'), b = ramp('#8ac04a');
-      const st = [0, 2, 0, -2][f];
-      p.line(9, 10, 9, 30, m[3]); p.line(9, 30, 3 + st, 34, m[2]); p.line(9, 30, 15 - st, 34, m[2]); p.line(9, 30, 9, 35, m[1]);
-      p.line(4, 8, 14, 8, m[3]);
-      p.ball(12, 13, 4, 5.5, b, { dither: 0.5 }); p.set(11, 11, '#ffffff');
-      p.line(12, 18, 13, 24, hex('#c8e0a0'));
-      p.ball(9, 4, 3.5, 3, ramp('#c8c0b8')); p.set(8, 4, '#c83a3a'); p.set(10, 4, '#c83a3a');
-    }, 35),
-  }),
+  sprites: () => ({ walk: gridFrames(H.DRIP, H.DRIP_PAL) }),
   init(e) { e.anim = 'walk'; e.cd = 2; e.data.cr = 0; },
   update(e, w, dt) {
     chase(e, w, e.def.speed, dt); e.animate(dt, 5);
