@@ -73,7 +73,7 @@ function inspectRaw(w: World, p: Pickup): InspectInfo | null {
   if (p.kind === 'sweet') {
     const eff = SWEET_EFFECTS[w.run.sweetMap[sweetColor(p.data.color)] ?? 0];
     const known = !!eff && w.run.identified.has(eff.id);
-    return { key: 'sweet' + (p.data.color ?? 0), icon: pickupSprites().sweets[(p.data.color ?? 0) % pickupSprites().sweets.length].canvas,
+    return { key: 'sweet' + sweetColor(p.data.color), icon: pickupSprites().sweets[sweetColor(p.data.color) % pickupSprites().sweets.length].canvas,
       title: known ? eff.name : 'Unmarked Sweet', subtitle: known ? 'Identified' : 'Who knows what it does',
       lines: [{ text: known ? eff.desc : 'A random effect. Eat it ({consumable}) to find out.', color: 'plain' }], quality: -1, kindLabel: `SWEET  ·  ${K('consumable')} to use` };
   }

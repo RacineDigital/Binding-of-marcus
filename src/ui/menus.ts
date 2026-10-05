@@ -997,7 +997,11 @@ export class MenuSystem {
           if (k === 'confirm') { if (spread < spreads() - 1) { spread++; self.sfxMove(); } else { done(); return; } }
         }
       },
-      pointer(x, _y, click) { if (click) { if (x < VIEW_W / 2 && spread > 0) spread--; else if (spread < spreads() - 1) spread++; else done(); } },
+      pointer(x, _y, click) {
+        if (!click) return;
+        // the left page turns back (and does nothing on the first page); the right page turns on, or closes at the end
+        if (x < VIEW_W / 2) { if (spread > 0) spread--; } else if (spread < spreads() - 1) spread++; else done();
+      },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         if (!cols) layout(ctx);

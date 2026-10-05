@@ -26,6 +26,7 @@ import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
 import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
 import { tutorialLine } from '../game/tutorial';
+import { sweetColor } from '../items/sweetcolor';
 import { STING_HIT, StingKind } from '../audio/bossting';
 
 /** How long a boss title card holds the screen. */
@@ -607,7 +608,7 @@ export class Hud {
     const S = pickupSprites();
     pl.consumables.forEach((c, i) => {
       const x = VIEW_W - 22 - i * 20, y = VIEW_H - 22;
-      const spr = c.kind === 'page' ? S.page : S.sweets[Number(c.id) % S.sweets.length];
+      const spr = c.kind === 'page' ? S.page : S.sweets[sweetColor(c.id) % S.sweets.length];
       spr.draw(ctx, x + 8, y + 15);
       if (i === 0) {
         // name and key sit left of the whole row so they never overlap a second pocket item
