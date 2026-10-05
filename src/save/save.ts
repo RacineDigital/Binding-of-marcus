@@ -18,6 +18,8 @@ export interface Settings {
   discord?: boolean;
   /** First-run hints (see game/tutorial). */
   tutorial?: boolean;
+  /** Soften full-screen flashes to a faint glow. */
+  reduceFlash?: boolean;
 }
 export interface SaveData {
   version: number;

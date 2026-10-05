@@ -8,7 +8,7 @@ import { LASER_TIERS, overcharge } from '../projectiles/weapons';
 import { itemIconCanvas } from '../art/items';
 import { getItem, getConsumable } from '../items/registry';
 import { describeItem, DescLine } from '../items/describe';
-import { text, panel, paperStrip, wrap, COL, FONT_TITLE, FONT_BODY, measure } from './draw';
+import { text, panel, paperStrip, wrap, COL, FONT_TITLE, FONT_BODY, measure, setTextScale, textScale } from './draw';
 import { PixelArt } from '../render/pixel';
 import { ramp } from '../render/color';
 import { MAP_SIZE, VIEW_W, VIEW_H } from '../core/constants';
@@ -300,15 +300,20 @@ export class Hud {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
+    setTextScale(this.w.game.save.data.settings.hudScale || 1);
+    try { this.renderHud(ctx); } finally { setTextScale(1); }
+  }
+  private renderHud(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
-    // screen flashes & vignette
+    // screen flashes & vignette (softened, and never more than a glow, with Reduce flashing on)
+    const flashK = w.game.save.data.settings.reduceFlash ? 0.25 : 1;
     if (w.redFlash > 0) {
       // hurt: the edges of the screen flush red; the middle, where the fight is, stays clear
       const rg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.32, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.6);
-      rg.addColorStop(0, 'rgba(160,10,20,0)'); rg.addColorStop(1, `rgba(170,12,24,${Math.min(0.75, w.redFlash * 0.9).toFixed(3)})`);
+      rg.addColorStop(0, 'rgba(160,10,20,0)'); rg.addColorStop(1, `rgba(170,12,24,${Math.min(0.75 * flashK, w.redFlash * 0.9 * flashK).toFixed(3)})`);
       ctx.fillStyle = rg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     }
-    if (w.whiteFlash > 0) { ctx.fillStyle = `rgba(255,250,240,${(w.whiteFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (w.whiteFlash > 0) { ctx.fillStyle = `rgba(255,250,240,${Math.min(0.5 * flashK, w.whiteFlash * 0.5 * flashK).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.45, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.62);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -728,15 +733,16 @@ export class Hud {
     if (p && p.price > 0) lines.push({ t: `Costs ${p.price} buttons${w.player.buttons < p.price ? ` (you have ${w.player.buttons})` : ''}`, c: w.player.buttons >= p.price ? COL.gold : COL.down, size: 7, bullet: '¢', bc: COL.gold });
     if (p && p.data.swap && p.data.id) { const t = ticketFor(w, p); lines.push(t ? { t: `Leave behind: ${getItem(t)?.name ?? t}`, c: '#ffd8a0', size: 7, bullet: '⇄', bc: '#e0a860' } : { t: 'Free: you have nothing to leave', c: COL.up, size: 7, bullet: '⇄', bc: '#e0a860' }); }
     if (p && p.deal > 0) { const dc = dealCost(w, p); lines.push({ t: `Costs ${dealCostText(dc)}${dc.ok ? '' : ' (not enough)'}`, c: COL.down, size: 7, bullet: '♥', bc: COL.down }); }
-    let h = 11; for (const l of lines) h += l.size + 2.5;
+    const k = textScale();
+    let h = 11 * k; for (const l of lines) h += l.size * k + 2.5;
     ctx.save(); ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x - 3, y0 - 3, maxW + 6, h + 4);
     if (info.icon) { const iw = (info.icon as HTMLCanvasElement).width || 16; const k = Math.min(1, 12 / iw); ctx.drawImage(info.icon, x, y0, iw * k, ((info.icon as HTMLCanvasElement).height || 16) * k); }
     text(ctx, info.title, x + 16, y0 + 9, 9, qCol, 'left', FONT_BODY, 700);
     if (info.quality >= 0) text(ctx, `Q${info.quality}`, x + 16 + measure(ctx, info.title, 9, FONT_BODY, 700) + 4, y0 + 9, 6.5, qCol, 'left', FONT_BODY, 600);
-    let y = y0 + 11;
+    let y = y0 + 11 * k;
     for (const l of lines) {
-      y += l.size + 2.5;
+      y += l.size * k + 2.5;
       if (l.bullet) text(ctx, l.bullet, x + 1, y - 0.5, l.size, l.bc ?? COL.text, 'left', FONT_BODY, 700);
       text(ctx, l.t, x + 9, y - 0.5, l.size, l.c, 'left', FONT_BODY, 600);
     }
@@ -935,7 +941,8 @@ export class Hud {
       const a = Math.min(1, t.t * 5, (t.dur - t.t) * 3);
       ctx.globalAlpha = clamp(a, 0, 1);
       const lines = wrap(ctx, t.text, 8, 300);
-      lines.forEach((l, j) => text(ctx, l, VIEW_W / 2, VIEW_H - 40 - (this.toasts.length - 1 - i) * 12 - (lines.length - 1 - j) * 10, 8, COL.text, 'center'));
+      const k = textScale();
+      lines.forEach((l, j) => text(ctx, l, VIEW_W / 2, VIEW_H - 40 - (this.toasts.length - 1 - i) * 12 * k - (lines.length - 1 - j) * 10 * k, 8, COL.text, 'center'));
       ctx.globalAlpha = 1;
     });
   }

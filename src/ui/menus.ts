@@ -725,6 +725,8 @@ export class MenuSystem {
       { label: 'Music volume', value: () => pct(st().music), left: () => step('music', -0.1), right: () => step('music', 0.1) },
       { label: 'Effects volume', value: () => pct(st().sfx), left: () => step('sfx', -0.1), right: () => step('sfx', 0.1) },
       { label: 'Screen shake', value: () => pct(st().shake), left: () => step('shake', -0.1), right: () => step('shake', 0.1) },
+      { label: 'Reduce flashing', value: () => (st().reduceFlash ? 'On' : 'Off'), ok: () => { st().reduceFlash = !st().reduceFlash; g.save.markDirty(); } },
+      { label: 'HUD text size', value: () => pct(st().hudScale || 1), ok: () => { const v = [1, 1.15, 1.3]; st().hudScale = v[(v.indexOf(st().hudScale || 1) + 1) % v.length]; g.save.markDirty(); } },
       { label: 'Hit pause', value: () => ({ 0: 'Off', 0.5: 'Light', 1: 'Full' } as Record<number, string>)[st().hitPause ?? 1] ?? 'Full', ok: () => { const v = [1, 0.5, 0]; st().hitPause = v[(v.indexOf(st().hitPause ?? 1) + 1) % 3]; g.save.markDirty(); } },
       { label: 'Scaling', value: () => ({ sharp: 'Sharp (fit)', integer: 'Pixel perfect', stretch: 'Nearest (fit)' } as any)[st().scale], ok: () => { const m = ['sharp', 'integer', 'stretch'] as const; st().scale = m[(m.indexOf(st().scale) + 1) % 3]; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fullscreen', value: () => (isFullscreen() ? 'On' : 'Off'), ok: () => { const on = !isFullscreen(); setFullscreen(on); st().fullscreen = on; g.save.markDirty(); } },
