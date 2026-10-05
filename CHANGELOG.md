@@ -51,6 +51,8 @@ unlocks and synergies are unchanged, and your collection carries over.
   **Countdown Die** and the **Shifting Die**.
 
 **Comfort**
+- **A tip when you fall** (your first 30 deaths): drawn from how the run ended, like a charged
+  active item you never used, bombs still in your pocket, or a boss you could have hit while it was open.
 - **Pause when away** (Options, on by default): switching windows, hiding the tab or unplugging the
   controller pauses the run.
 - **Controller rumble** (Options): big hits, explosions and getting hurt rumble the controller.
@@ -65,7 +67,8 @@ unlocks and synergies are unchanged, and your collection carries over.
 - The downloaded game, opened by double-clicking `Lost Marcus.html`, now plays the recorded
   soundtrack in Chrome and other browsers that refused to read the music files from disk. Before, it
   quietly fell back to the synth tracks.
-- Restarting a Second Edition run from the pause menu started a normal run. It keeps the mode now,
+- Restarting a Second Edition run from the pause menu or with Begin again after a death started a
+  normal run. It keeps the mode now,
   and a Daily Run can't be restarted for a different seed.
 - Sweets and pages left in cursed rooms could crash the game when picked up, and a broken sweet
   could stop the room from drawing. Saves holding one load safely.

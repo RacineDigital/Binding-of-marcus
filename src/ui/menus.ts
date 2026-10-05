@@ -1075,8 +1075,12 @@ export class MenuSystem {
     const self = this, g = this.g;
     let sel = 0; const items = ['Begin again', 'Return to the menu'];
     const BX = 36, BY = 16, BW = 408, BH = 240, L = BX + 20, R = BX + BW / 2 + 16, cx = BX + BW / 4;
+    // for newer players: one tip drawn from how this run ended
+    const tip = (g.save.data.stats.deaths ?? 0) <= 30 ? deathTip(w) : null;
+    let tipLines: string[] | null = null;
     const act = () => {
-      if (sel === 0) g.fadeTo(() => { self.stack = []; g.newRun(w.run.charId, undefined, w.run.challenge); }, 0.5);
+      // the same reader, challenge and mode (a Daily Run, once lost, begins again as an ordinary run)
+      if (sel === 0) g.fadeTo(() => { self.stack = []; g.newRun(w.run.charId, undefined, w.run.challenge, w.run.mode === 'daily' ? 'normal' : w.run.mode); }, 0.5);
       else g.fadeTo(() => g.quitToMenu(), 0.5);
     };
     return {
@@ -1127,6 +1131,10 @@ export class MenuSystem {
         const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
         if (!ids.length) text(ctx, 'None.', R, 150, 7, 'rgba(90,70,54,0.7)', 'left', FONT_BODY, 600, false);
         ids.slice(0, 27).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), R + (i % 9) * 19, 141 + Math.floor(i / 9) * 19));
+        if (tip && ids.length <= 18) {
+          tipLines ??= wrap(ctx, 'Tip: ' + tip, 6.5, 170).slice(0, 2);
+          tipLines.forEach((s, i) => text(ctx, s, R, 186 + (ids.length > 9 ? 19 : 0) + i * 8, 6.5, '#6a4a2a', 'left', FONT_BODY, 600, false));
+        }
         items.forEach((it, i) => {
           const y = BY + BH - 36 + i * 16;
           if (i === sel) inkBlot(ctx, R + 70, y - 3.5, 160, 14, self.time, 'rgba(40,30,60,0.17)');
@@ -1439,4 +1447,23 @@ function drawReader(ctx: CanvasRenderingContext2D, sp: PlayerSprites, c: Charact
   drawCostume(fr, acc, 'back');
   body.draw(ctx, 0, 0); drawCostume(fr, acc, 'body'); drawCostume(fr, acc, 'hand');
   head.draw(ctx, 0, -10); drawCostume(fr, acc, 'face'); drawCostume(fr, acc, 'head');
+}
+
+/** A tip for the death screen, drawn from what the run was holding and what ended it. */
+function deathTip(w: World): string {
+  const pl = w.player, cause = w.run.stats.deathCause ?? '';
+  const act = pl.active ? getItem(pl.active) : null;
+  if (act?.active && pl.charge >= act.active.charge) return `your ${act.name} was charged. ${bindLabel('active')} uses it, and it recharges as you clear rooms.`;
+  if (pl.bombs >= 3) return `you fell holding ${pl.bombs} cherry bombs. ${bindLabel('bomb')} drops one, and they hurt monsters as much as rocks.`;
+  if (pl.consumables.length) return `you were carrying a ${pl.consumables[0].kind === 'page' ? 'torn page' : 'sweet'}. ${bindLabel('consumable')} uses it.`;
+  const byBoss = w.room.type === 'boss' || ALL_ENEMY_DEFS().some((d) => d.boss && cause.toLowerCase().includes(d.name.toLowerCase().replace(/^the /, '')));
+  if (byBoss) return 'when a boss\'s health bar turns gold, it is worn out and open: that is the moment to hit it.';
+  const general = [
+    `hold ${bindLabel('focus')} to move slowly and precisely through tight gaps in a hail of shots.`,
+    'a room with a closed door you never opened may be a shop or treasure. Keys open them.',
+    `hold ${bindLabel('map')} to see the map and exactly what each of your curios does.`,
+    'chalk-marked stones hide something. A cherry bomb opens them, and cracked walls too.',
+    'getting through a chapter without losing a red heart makes a bargain door likelier after its boss.',
+  ];
+  return general[(w.run.stats.kills + w.run.floorIndex) % general.length];
 }
