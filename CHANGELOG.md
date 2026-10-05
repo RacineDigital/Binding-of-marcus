@@ -18,6 +18,8 @@ Every version of Lost Marcus, newest first. Each release page only lists what's 
   short step from where it was instead of across the room.
 - It no longer borrows the bosses that burrow, sink or blink out of reach (Grubmother, Bilgemaw,
   Matron, Choirmaster, Thornwife).
+- It has less health (4,000, down from 9,500): measured fights with ordinary builds ran past five
+  minutes, more than twice as long as It Remembers.
 
 **First-run hints.** On your first few runs, a small card at the top of the screen shows one thing
 at a time (move, fire, doors, cherry bombs, the map, active items, pages) with your own keys or
@@ -36,6 +38,8 @@ unlocks and synergies are unchanged, and your collection carries over.
 - The blood set is now the **Night Count** (Seeing Red, Last Light, Blood Hymn, Peashooter, Held
   Breath, Power Chord, Slime Heart, Baby Talk).
 - The toddler set is now **Tantrum** (Oversized Nappy, Chewed Pencil, Bike Helmet).
+- Four dice have new names: **Grandfather's Die** (the six-sided one), the **Hollow Die**, the
+  **Countdown Die** and the **Shifting Die**.
 
 **Safer saves and better bug reports**
 - The browser version now keeps a backup of each save, like the desktop version, so one bad write

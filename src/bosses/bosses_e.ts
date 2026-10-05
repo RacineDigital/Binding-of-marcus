@@ -283,7 +283,7 @@ function arrive(e: Enemy, w: World): void {
 const patient: EnemyDef = {
   id: 'patient', name: 'The Patient', desc: 'The bed at the end of the ward. Everything Marcus was afraid he would find there, and it has forgotten which.', boss: true,
   borrows: FORMS,
-  hp: 9500, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
+  hp: 4000, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
   sprites: () => rig({ w: 92, h: 104, paint: G.paintPatient, phases: 3, aliases: { rage: 'idle' } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; e.data.shiftT = 12; },
   update(e, w, dt) {
