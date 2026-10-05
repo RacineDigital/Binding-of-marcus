@@ -121,10 +121,11 @@ Menus also work with the mouse: hover, click and scroll.
   blood set (Seeing Red, Last Light, Blood Hymn, Magnolia, Sky, Held Breath...) and internet-era
   objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug), plus a toddler's Oversized
   Nappy, Chewed Pencil and Bike Helmet.
-- **The dice.** Every die from Isaac: D1, D4, the D6, D7, D8, D10, D12, D20, D100, Eternal D6,
-  Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
-  charms. The strongest ones are earned: the D4 (two transformations at once), D8 (15 damage),
-  Spindown Dice (three challenges), D100 (beat the Author) and D Infinity (roll every other die).
+- **The dice.** A die for every face count, each rerolling something different: D1, D4,
+  Grandfather's Die (six sides), D7, D8, D9, D10, D12, D20 and D100, plus the Hollow Die, the
+  Countdown Die and the Shifting Die (which rolls whichever face it shows). The strongest ones are
+  earned: the D4 (two transformations at once), D8 (15 damage), Countdown Die (three challenges),
+  D100 (beat the Author) and the Shifting Die (roll every other die).
 - **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
   thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look.
   Tantrum throws a fit of pencils whenever you get hit.
@@ -166,7 +167,7 @@ Menus also work with the mouse: hover, click and scroll.
 - **Final bosses.** Only the bosses you can end the story on are hard: they hit harder, attack
   faster and have a bullet-hell last stand. The Unwritten and the Author are the Delirium fight:
   ten times the health, eight phases, layered bullet patterns and constant shape changes into any
-  boss you've beaten. Every boss opens with an Isaac-style VS screen.
+  boss you've beaten. Every boss opens with a VS screen.
 - **Transformations announce themselves** with a big title card and a sound.
 - **Echoes.** Where your last run died, your echo waits next time: a ghost of the reader you
   died as, in a room of its own, fighting the way you did. Lay it to rest and it leaves one of the
@@ -233,7 +234,7 @@ Menus also work with the mouse: hover, click and scroll.
   reader for everyone that day. Every run ends with a score and a personal best.
 - **Ten characters:** Marcus, Wren, Edda, Elias, The Blot, Ada (Grandmother, with slowing thorn shots;
   finish The Visit carrying her ring), and four hard-won readers who start with
-  items: Ozzie (the D6; beat It Remembers holding a die), Nell (the Burning Glass and a lantern;
+  items: Ozzie (Grandfather's Die; beat It Remembers holding a die), Nell (the Burning Glass and a lantern;
   beat the Unwritten), Bram (a bone folder and a tin heart; beat three bosses in one run without
   any of them hitting you) and Wick (flies, with two moths; finish the story as Mothkin). Each
   reader's card shows completion marks for the five endings (cream on Normal, red on Second

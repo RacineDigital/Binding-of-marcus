@@ -34,7 +34,7 @@ export function reroll(w: World): boolean {
 }
 
 export const ACTIVES: ItemDef[] = [
-  { id: 'old_dice', name: 'The D6', kind: 'active', quality: 4, pools: { shop: 1 }, tags: ['dice'],
+  { id: 'old_dice', name: 'Grandfather\'s Die', kind: 'active', quality: 4, pools: { shop: 1 }, tags: ['dice'],
     pickup: 'Reroll your fate', effect: ['Rerolls every item pedestal in the room into a new item.'], active: { charge: 6, type: 'room', use: (w) => { const ok = reroll(w); if (ok) markDie(w, 'old_dice'); return ok; } },
     icon: (p) => { const c = ramp('#e8dcc0'); p.rect(3, 4, 12, 12, c[2]); p.rect(3, 4, 12, 2, c[4]); p.rect(14, 5, 1, 11, c[0]); for (const [x, y] of [[5, 7], [9, 10], [12, 13], [12, 7], [5, 13]]) p.set(x, y, '#1a1010'); } },
   { id: 'stopped_watch', name: 'Stopped Watch', kind: 'active', quality: 3, pools: { shop: 0.8 }, tags: ['clock'], unlock: 'transform_clock',

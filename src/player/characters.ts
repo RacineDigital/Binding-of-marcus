@@ -57,7 +57,7 @@ export const CHARACTERS: CharacterDef[] = [
     desc: 'The neighbour\'s boy, who never once said no to a bet. He keeps a six-sided die in his pocket and trusts it more than his eyes.',
     base: { damage: 3.2, tears: 2.73, range: 230, shotSpeed: 1, speed: 1.05, luck: 2 },
     health: { red: 2, wax: 2 }, items: ['old_dice', 'loaded_dice'], buttons: 7, keys: 1, bombs: 1,
-    unlock: 'unlock_ozzie', unlockHint: 'Defeat It Remembers while holding a die.', passive: 'Loaded: every shot rolls a die, and a six hits for triple. Starts with the D6.',
+    unlock: 'unlock_ozzie', unlockHint: 'Defeat It Remembers while holding a die.', passive: 'Loaded: every shot rolls a die, and a six hits for triple. Starts with Grandfather\'s Die.',
   },
   {
     id: 'nell', name: 'Nell', title: 'The Lamplighter', look: 'nell',

@@ -1,5 +1,5 @@
-// The dice: one for every die in The Binding of Isaac (and a D9, which Isaac never had: it rerolls
-// your charms). The D6 ('old_dice') lives in actives.ts.
+// The dice: a die for every face count (D1 to D100) plus a few odd ones, each rerolling something
+// different. Grandfather's Die ('old_dice', the six-sided one) lives in actives.ts.
 import type { ItemDef } from '../types';
 import type { World } from '../../game/world';
 import { ramp, hex, P } from './kit';
@@ -161,7 +161,7 @@ function d9(w: World): boolean {
   pl.recompute(); w.hud.toast('Your charms have changed.');
   return true;
 }
-/** Eternal D6: rerolls pedestals, but each item has a 1 in 4 chance to vanish instead. */
+/** Hollow Die: rerolls pedestals, but each item has a 1 in 4 chance to vanish instead. */
 function eternal(w: World): boolean {
   let n = 0;
   for (const p of w.pickups) {
@@ -176,9 +176,9 @@ function eternal(w: World): boolean {
 const FACES: [string, (w: World) => boolean][] = [
   ['D1', d1], ['D4', d4], ['D6', reroll], ['D7', d7], ['D8', d8], ['D9', d9], ['D10', d10], ['D12', d12], ['D20', d20],
 ];
-/** The face D Infinity is showing right now. */
+/** The face the Shifting Die is showing right now. */
 export function diceFace(w: World): string { return FACES[(w.run.flags.dinf ?? 2) % FACES.length][0]; }
-/** D Infinity: rolls whichever face it shows, then lands on a new face for next time. */
+/** Shifting Die: rolls whichever face it shows, then lands on a new face for next time. */
 function dInfinity(w: World): boolean {
   const f = w.run.flags;
   const i = (f.dinf ?? 2) % FACES.length;
@@ -186,11 +186,11 @@ function dInfinity(w: World): boolean {
   if (!ok) return false;
   let j = Math.floor(Math.random() * FACES.length); if (j === i) j = (j + 1) % FACES.length;
   f.dinf = j;
-  w.hud.toast(`D Infinity rolled ${FACES[i][0]}. It now shows ${FACES[j][0]}.`, 2.2);
+  w.hud.toast(`The Shifting Die rolled ${FACES[i][0]}. It now shows ${FACES[j][0]}.`, 2.2);
   return true;
 }
 
-/** The nine faces whose rolls count toward Every Face (which unlocks D Infinity). */
+/** The nine faces whose rolls count toward Every Face (which unlocks the Shifting Die). */
 const FACE_IDS = ['d1', 'd4', 'old_dice', 'd7', 'd8', 'd9', 'd10', 'd12', 'd20'];
 /** Remember that this die has been rolled (across runs). */
 export function markDie(w: World, id: string): void {
@@ -208,14 +208,14 @@ export const DICE: ItemDef[] = [
   DIE('d4', 'D4', '4', '#a8c0f0', 'tri', 6, 3, 'Reroll yourself', ['Every passive item you carry turns into a random other item.'], d4, { shop: 0.6 }, 'two_transforms'),
   DIE('d7', 'D7', '7', '#f0a0a0', 7, 3, 2, 'Again!', ['In a room you already cleared, brings its enemies back so you can clear it again for another reward.'], d7, { shop: 0.5 }),
   DIE('d8', 'D8', '8', '#c8a8f0', 'diamond', 4, 2, 'Reroll your stats', ['Rerolls your damage and fire rate multipliers (x0.6 to x1.6), plus your range and speed. For good.'], d8, { shop: 0.5 }, 'dmg_15'),
-  DIE('d9', 'D9', '9', '#a0e8b8', 9, 2, 1, 'Reroll your charms', ['Each charm you carry becomes a different charm.', 'There is no D9 in Isaac. There is now.'], d9, { shop: 0.6 }),
+  DIE('d9', 'D9', '9', '#a0e8b8', 9, 2, 1, 'Reroll your charms', ['Each charm you carry becomes a different charm.'], d9, { shop: 0.6 }),
   DIE('d10', 'D10', '10', '#f0d890', 'kite', 2, 1, 'Reroll the monsters', ['Every enemy in the room becomes a different enemy from this chapter.'], d10, { shop: 0.5 }),
   DIE('d12', 'D12', '12', '#d8b890', 5, 2, 1, 'Reroll the furniture', ['Rocks, urns, heaps, kegs and blocks in the room turn into other obstacles.'], d12, { shop: 0.4 }),
   DIE('d20', 'D20', '20', '#90d0e8', 6, 4, 2, 'Reroll the floor', ['Every pickup lying in the room (not items or shop stock) turns into a different pickup.'], d20, { shop: 0.5 }),
   DIE('d100', 'D100', '100', '#f0c050', 'ball', 6, 4, 'Reroll everything', ['Rerolls your items, every item pedestal and every pickup in the room, all at once.'],
     (w) => { const a = d4(w), b = reroll(w), c = d20(w); return a || b || c; }, { shop: 0.4 }, 'beat_author'),
-  DIE('eternal_d6', 'Eternal D6', '6', '#f4f4f8', 'cube', 2, 2, 'Reroll your fate?', ['Rerolls every item pedestal in the room, but each item has a 1 in 4 chance to vanish instead.'], eternal, { shop: 0.6 }),
-  DIE('spindown', 'Spindown Dice', '', '#5a5a6a', 6, 6, 3, 'Count down', ['Every item pedestal in the room becomes the item listed just before it in the collection.'], spindown, { shop: 0.3 }, 'challenges_3'),
-  DIE('d_infinity', 'D Infinity', '', '#2a2a3a', 'cube', 4, 3, 'Every die at once', ['Rolls the face it shows (D1, D4, D6, D7, D8, D9, D10, D12 or D20), then lands on a new face for next time.'], dInfinity, { shop: 0.5 }, 'all_dice'),
+  DIE('eternal_d6', 'Hollow Die', '6', '#f4f4f8', 'cube', 2, 2, 'Reroll your fate?', ['Rerolls every item pedestal in the room, but each item has a 1 in 4 chance to vanish instead.'], eternal, { shop: 0.6 }),
+  DIE('spindown', 'Countdown Die', '', '#5a5a6a', 6, 6, 3, 'Count down', ['Every item pedestal in the room becomes the item listed just before it in the collection.'], spindown, { shop: 0.3 }, 'challenges_3'),
+  DIE('d_infinity', 'Shifting Die', '', '#2a2a3a', 'cube', 4, 3, 'Every die at once', ['Rolls the face it shows (D1, D4, Grandfather\'s Die, D7, D8, D9, D10, D12 or D20), then lands on a new face for next time.'], dInfinity, { shop: 0.5 }, 'all_dice'),
 ];
 void hex;
