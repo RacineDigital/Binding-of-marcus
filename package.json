@@ -17,7 +17,8 @@
     "build:single": "tsc --noEmit && vite build --mode single",
     "release": "bash scripts/package-release.sh",
     "desktop": "npm run build:single && electron .",
-    "dist:win": "npm run build:single && electron-builder --win --publish never"
+    "dist:win": "npm run build:single && electron-builder --win --publish never",
+    "dist:linux": "npm run build:single && electron-builder --linux --publish never"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
@@ -94,7 +95,9 @@
       "target": [
         "AppImage"
       ],
-      "category": "Game"
+      "category": "Game",
+      "icon": "electron/icon.png",
+      "artifactName": "Lost-Marcus-${version}.${ext}"
     },
     "publish": [
       {
