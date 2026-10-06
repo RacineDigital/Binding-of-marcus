@@ -103,7 +103,7 @@ export class Input {
       }
     });
     window.addEventListener('keyup', (e) => { this.down.delete(e.code); });
-    window.addEventListener('blur', () => { this.down.clear(); this.shootOrder = []; });
+    window.addEventListener('blur', () => this.reset());
     target.addEventListener('mousedown', () => target.focus());
     const pos = (e: PointerEvent | MouseEvent) => { if (this.toView) { const [x, y] = this.toView(e.clientX, e.clientY); this.mouse.x = x; this.mouse.y = y; } };
     target.addEventListener('pointermove', (e) => { pos(e); this.mouse.moved = true; this.mouse.active = true; });
@@ -111,6 +111,15 @@ export class Input {
     window.addEventListener('pointerup', () => { this.mouse.down = false; });
     target.addEventListener('wheel', (e) => { this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
     target.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  /** Forget held controls and queued actions when play is interrupted. */
+  reset(): void {
+    this.down.clear(); this.pressed.clear(); this.shootOrder = [];
+    this.padDown.clear(); this.padPrev.clear(); this.padPressed.clear();
+    this.padAxes = [0, 0, 0, 0]; this.padRepeat = 0; this.padMenuDir = null;
+    this.clearMenu(); this.anyKeyPressed = false;
+    this.mouse.down = false; this.mouse.clicked = false; this.mouse.wheel = 0;
   }
 
   private codeToMenu(code: string): MenuKey | null {

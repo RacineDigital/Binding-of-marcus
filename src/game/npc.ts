@@ -186,6 +186,7 @@ function touch(w: World, n: Npc): void {
       w.hud.showNote(note.title, note.text, note.by ?? 'Grandfather', { x: n.x, y: n.y });
       w.audio.play('pageGet', { x: n.x });
       if (fresh) {
+        (w.run.flags.notesFound ??= []).push(note.id);
         w.audio.play('secret', { x: n.x, vol: 0.4 }); w.after(0.6, () => w.hud.toast('A new note in the Journal.', 2));
         if (NOTES.every((x) => w.game.save.hasNote(x.id))) w.game.save.unlock('notes_all');
       }

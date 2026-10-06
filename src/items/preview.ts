@@ -43,11 +43,18 @@ export const COMBOS: Record<string, string> = {
   'burst+melee': 'A full spin also throws a spray of shots.',
   'charge+melee': 'Spins charge into a heavier blow.',
 };
+/** Stable keys for attack combinations that appeared together for the first time. */
+export function newComboKeys(before: Set<string>, after: Set<string>): string[] {
+  const out: string[] = [];
+  for (const m of after) if (!before.has(m)) for (const o of before) {
+    const key = [m, o].sort().join('+');
+    if (COMBOS[key] && !out.includes(key)) out.push(key);
+  }
+  return out;
+}
 /** What two attack styles now do together, for each style newly joined to the ones already held. */
 export function newCombos(before: Set<string>, after: Set<string>): string[] {
-  const out: string[] = [];
-  for (const m of after) if (!before.has(m)) for (const o of before) { const c = COMBOS[[m, o].sort().join('+')]; if (c) out.push(c); }
-  return out;
+  return newComboKeys(before, after).map((key) => COMBOS[key]);
 }
 const cache = new Map<string, DescLine[]>();
 

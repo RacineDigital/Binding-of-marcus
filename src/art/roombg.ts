@@ -1,3 +1,4 @@
+import { finishRoom } from './roomfinish';
 // Paints a room's static background: floor, perspective walls, ambient occlusion and decor.
 import { PixelArt, BAYER4 } from '../render/pixel';
 import { Col, hex, ramp, mix, darken, lighten, pack } from '../render/color';
@@ -566,7 +567,11 @@ function decor(c: Ctx): void {
   for (let i = 0; i < n; i++) {
     let k = rng.pick(list);
     if (k === 'candle' && ++candles > 2) k = 'debris';
-    const x = x0 + rng.int(6, w - 8), y = y0 + rng.int(6, h - 8);
+    let x = x0 + rng.int(6, w - 8), y = y0 + rng.int(6, h - 8);
+    // Leave the fighting space quiet; collect the small debris along the room's edges.
+    if (x > x0 + 35 && x < x0 + w - 35 && y > y0 + 28 && y < y0 + h - 28) {
+      y = rng.chance(0.5) ? y0 + rng.int(6, 23) : y0 + h - rng.int(7, 24);
+    }
     drawDecor(c, k, x, y);
   }
   // cobwebs in corners
@@ -710,7 +715,7 @@ export function paintRoomBackground(room: RoomData, theme: FloorTheme): HTMLCanv
   decor(c);
   specialFloor(c);
   ambientOcclusion(c);
-  return p.toCanvas();
+  return finishRoom(p.toCanvas(), room, theme, M);
 }
 
 /**

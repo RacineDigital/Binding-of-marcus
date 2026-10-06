@@ -3,6 +3,7 @@ import { Bindings, DEFAULT_BINDINGS } from '../core/input';
 
 export interface Settings {
   music: number; sfx: number; shake: number; /** Hit pause strength: 0 off, 0.5 light, 1 full. */ hitPause?: number; scale: 'sharp' | 'integer' | 'stretch'; diagonalAim: boolean;
+  /** Reduce screen-wide flashes and hurt vignette intensity. */ reduceFlashes?: boolean;
   showStats: boolean; showFps: boolean; fireDropChance: number; bindings: Bindings; fullscreen: boolean; hudScale: number;
   /** Blend frames between simulation steps (smooth on 120+ Hz displays). */
   interpolate: boolean;
@@ -21,6 +22,8 @@ export interface SaveData {
   version: number;
   unlocks: string[];               // achievement ids earned
   itemsSeen: string[];             // collection
+  /** Attack-style combinations the player has uncovered. */
+  discoveredCombos?: string[];
   bossesBeaten: string[];
   challengesDone: string[];
   stats: Record<string, number>;
@@ -49,7 +52,7 @@ export interface SaveData {
   /** Buttons put in shop donation boxes, ever. Every 50 raises the shop a level. */
   donated?: number;
 }
-export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[] }
+export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[]; ending?: string; unlocks?: string[]; notes?: string[]; route?: string[]; binding?: string; challenge?: string }
 
 /**
  * Where saves live. The desktop build writes JSON files in the user's app-data folder (through the
@@ -163,6 +166,7 @@ export class SaveManager {
     return v;
   }
   collectItem(id: string): void { if (!this.data.itemsSeen.includes(id)) { this.data.itemsSeen.push(id); this.markDirty(); } this.stat('itemsCollected', 1); }
+  discoverCombo(id: string): void { this.data.discoveredCombos ??= []; if (!this.data.discoveredCombos.includes(id)) { this.data.discoveredCombos.push(id); this.markDirty(); } }
   /** Returns true the first time a note is read. */
   readNote(id: string): boolean { const l = (this.data.notes ??= []); if (l.includes(id)) return false; l.push(id); this.markDirty(); return true; }
   hasNote(id: string): boolean { return !!this.data.notes?.includes(id); }

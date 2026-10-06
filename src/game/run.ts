@@ -3,6 +3,7 @@ import { RNG } from '../core/rng';
 import type { RoomData } from '../rooms/room';
 import type { FloorTheme } from '../data/floors';
 import { ItemPools } from '../items/pools';
+import { bindingById } from './bindings';
 
 export interface Floor {
   index: number; theme: FloorTheme; rooms: RoomData[]; map: Int16Array; size: number;
@@ -33,4 +34,11 @@ export class Run {
     this.sweetMap = sr.shuffle([...Array(12).keys()]);
   }
   floorRng(label: string): RNG { return new RNG(`${this.seed}:f${this.floorIndex}:${label}`); }
+  get binding() { return bindingById(this.flags.binding); }
+  /** Event counters survive Continue; cosmetic random calls cannot change the next loot roll. */
+  lootRng(label = 'drop'): RNG {
+    const n = this.flags.lootSerial ?? 0;
+    this.flags.lootSerial = n + 1;
+    return new RNG(`${this.seed}:loot:${label}:${n}`);
+  }
 }

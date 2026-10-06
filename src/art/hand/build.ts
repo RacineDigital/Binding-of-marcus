@@ -3,7 +3,7 @@ import { PixelArt } from '../../render/pixel';
 import { Sprite } from '../../render/sprite';
 import { grid, Palette } from '../grid';
 import type { PlayerSprites, HeadDir, HeadState } from '../marcus';
-import { ramp } from '../../render/color';
+import { ramp, mix, hex } from '../../render/color';
 
 export interface HandRig {
   pal: Palette;
@@ -40,6 +40,11 @@ function bodyArt(R: HandRig, dir: 'down' | 'up' | 'side', legs: string[], bob: n
   const L = grid(legs, R.pal, 'legs'), T = grid(R.torso[dir], R.pal, 'torso');
   p.stamp(L, 0, BH - L.h);
   p.stamp(T, 0, bob);
+  // Tailoring details remain attached to the torso as it bobs: collar, centre seam and cuff stitches.
+  const seam = hex(R.pal[R.outline]), stitch = hex(R.pal[R.skin]);
+  for (const x of [7, 10]) p.paint(x, bob + 2, mix(p.get(x, bob + 2), hex('#f2d7a8'), 0.2));
+  for (let y = 3; y < 8; y++) p.paint(dir === 'side' ? 10 : 8, bob + y, mix(p.get(dir === 'side' ? 10 : 8, bob + y), seam, 0.25));
+  for (const x of [3, 14]) { p.paint(x, bob + 5, mix(p.get(x, bob + 5), stitch, 0.24)); }
   if (R.ghost) for (let y = BH - 4; y < BH; y++) for (let x = 0; x < BW; x++) if ((x + y) % 2 || y === BH - 1) p.clear(x, y);
   return p;
 }

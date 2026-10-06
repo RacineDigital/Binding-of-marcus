@@ -29,11 +29,10 @@ export const FORTUNES = [
   'Read the notes in the margins, and the margins will read you.',
 ];
 export const INTRO_STORY = [
-  'Grandfather Elias bound books in the cellar of the old house on Harrow Lane.',
-  'He told Marcus that some stories are too frightening to leave loose,',
-  'so he stitched them shut, page by page, and kept them in the dark.',
-  'The week after the funeral, the cellar door would not stay closed.',
-  'Something below had come unbound.',
+  'Elias, Marcus\'s grandfather, made books in the cellar.',
+  'He wrote a storybook to help Marcus face the monsters he feared.',
+  'Elias died before he could finish it. His illness took him to St. Agnes Hospital.',
+  'A week after the funeral, Marcus opens the book and enters its story.',
 ];
 /** After the Last Page: the ending for going all the way through the Margins. */
 export const TRUE_ENDING_STORY = [
@@ -44,10 +43,10 @@ export const TRUE_ENDING_STORY = [
 ];
 /** After the Foreword: the ending for following the light. */
 export const LIGHT_ENDING_STORY = [
-  'Grandfather put the pen down and looked at him for a long time.',
+  'In the story, Grandfather put the pen down and looked at Marcus for a long time.',
   'Then he turned to the very first page, and wrote above everything else:',
   '"For Marcus, who finished it."',
-  'The light came in through the window. It was morning, and it was real.',
+  'In the bindery, morning light came through the window.',
 ];
 export const ENDING_STORY = [
   'The last page was blank.',

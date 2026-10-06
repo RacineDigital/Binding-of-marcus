@@ -136,7 +136,11 @@ export function bossUpdate(e: Enemy, w: World, dt: number, brain: BossBrain): vo
       if (seq?.length) { d.seqI ??= 0; const next = brain.attacks.find((a) => a.id === seq[d.seqI % seq.length]); d.seqI++; if (next) pick = next; }
       d.attack = pick; d.lastAttack = pick.id; d.lastUsed[pick.id] = now;
       // a short tell (shorter as the fight goes on), with a flash of the boss's colour on the floor
-      d.windT = OWN_FIGHT.has(e.def.id) ? 0 : Math.max(0.16, 0.34 - Math.max(d.phase, d.tier) * 0.07);
+      const pressure = Math.max(d.phase, d.tier);
+      const readable = w.run.mode === 'normal' && w.run.challenge !== 'hard' && !d.hard;
+      d.windT = OWN_FIGHT.has(e.def.id) ? 0 : readable
+        ? Math.max(0.3, 0.42 - pressure * 0.06)
+        : Math.max(0.16, 0.34 - pressure * 0.07);
       if (d.windT > 0) {
         e.setState('windup');
         w.fx.ring(e.x, e.y, 4, e.r + 14, d.tier >= 2 || d.cornered ? '#ff4050' : '#ffb060', d.windT);

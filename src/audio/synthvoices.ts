@@ -5,6 +5,8 @@ import { SR } from './inst';
 
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 const cache = new Map<string, Float32Array>();
+/** Release generated voices between offline soundtrack exports. */
+export function clearVoiceCache(): void { cache.clear(); }
 function cached(key: string, make: () => Float32Array): Float32Array {
   let b = cache.get(key); if (!b) { b = make(); cache.set(key, b); } return b;
 }

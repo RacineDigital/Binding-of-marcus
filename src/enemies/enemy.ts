@@ -1,7 +1,9 @@
 // Enemy runtime object. Behaviour lives in data-driven EnemyDefs.
 import type { World } from '../game/world';
 import { Sprite } from '../render/sprite';
+import { PixelArt } from '../render/pixel';
 import { detailed } from '../render/hd';
+import { finishMaterial, materialFor } from '../art/material';
 
 /** How much bigger regular enemies are than their original art (bosses keep their own size). */
 export const ENEMY_SCALE = 1.3;
@@ -101,8 +103,20 @@ export function getSprites(def: EnemyDef): SpriteSet {
     // regular enemies: doubled with detail, then drawn a bit bigger than they were
     if (!def.boss) {
       const hd: SpriteSet = {};
-      for (const [k, list] of Object.entries(s)) hd[k] = list.map((sp) => { const n = new Sprite(detailed(sp.art), sp.ox * 2, sp.oy * 2); n.scale = ENEMY_SCALE / 2; return n; });
+      for (const [k, list] of Object.entries(s)) hd[k] = list.map((sp) => { const n = new Sprite(finishMaterial(detailed(sp.art), materialFor(def.id)), sp.ox * 2, sp.oy * 2); n.scale = ENEMY_SCALE / 2; return n; });
       s = hd;
+    } else {
+      const polished: SpriteSet = {};
+      for (const [key, list] of Object.entries(s)) {
+        polished[key] = list.map(sp => {
+          const art = new PixelArt(sp.w, sp.h); art.data.set(sp.art.data); finishMaterial(art, materialFor(def.id));
+          const next = new Sprite(art, sp.ox, sp.oy); next.scale = sp.scale;
+          (next as any).eyes = (sp as any).eyes;
+          return next;
+        });
+        if ((list as any).fps) (polished[key] as any).fps = (list as any).fps;
+      }
+      s = polished;
     }
     spriteCache.set(def.id, s);
   }

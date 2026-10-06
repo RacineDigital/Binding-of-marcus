@@ -3,6 +3,7 @@
 // Covers: a fresh run, save & continue (bonus rooms, doors, floor effects, items, pickups, room),
 // death and restart, chapter transitions, music memory, and frame time in a busy fight.
 import { chromium, Page } from 'playwright-core';
+import { gameplayOverhaulChecks } from './gameplay-overhaul';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 let failures = 0;
 const ok = (cond: unknown, msg: string) => { console.log((cond ? '  ok   ' : '  FAIL ') + msg); if (!cond) failures++; };
@@ -19,6 +20,27 @@ const D = 'window.__bomDebug';
   await page.waitForTimeout(3000);
   await page.keyboard.press('Enter');   // unlock audio
   await page.waitForTimeout(300);
+
+  console.log('sprite roster');
+  const art = await ev<any>(page, `(async () => {
+    const { ALL_ENEMY_DEFS } = await import('/src/enemies/registry.ts');
+    const { getSprites } = await import('/src/enemies/enemy.ts');
+    const canvas = document.createElement('canvas'); canvas.width = 240; canvas.height = 240;
+    const ctx = canvas.getContext('2d'); let frames = 0, sets = 0;
+    for (const def of ALL_ENEMY_DEFS()) for (const list of Object.values(getSprites(def))) {
+      if (!list.length) continue; sets++;
+      for (const sprite of list) {
+        if (!sprite.w || !sprite.h || sprite.art.data.length !== sprite.w * sprite.h) throw new Error('Invalid sprite: ' + def.id);
+        frames++;
+      }
+      list[0].draw(ctx,120,200); list[0].draw(ctx,120,200,{ flip: true, flash: 0.5 });
+    }
+    return { sets, frames };
+  })()`);
+  ok(art.sets > 100 && art.frames > 500, `sprite roster renders normal and flipped/hurt poses (${art.frames} frames in ${art.sets} sets)`);
+
+  console.log('gameplay overhaul');
+  for (const [pass, label] of await gameplayOverhaulChecks(page)) ok(pass, label);
 
   console.log('fresh run');
   await ev(page, `(() => { const g = ${D}.game; g.menus.stack = []; g.newRun('marcus', 'E2ESEED1'); })()`);
@@ -37,6 +59,25 @@ const D = 'window.__bomDebug';
   ok(await ev(page, `${D}.game.menus.stack.length === 1`), 'Help & controls opens from the pause menu');
   await page.keyboard.press('Escape'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
   ok(await ev(page, `!${D}.game.paused && ${D}.game.menus.stack.length === 0`), 'Esc backs out of help, then resumes');
+
+  console.log('focus loss and safe restart');
+  await page.keyboard.down('KeyD');
+  await ev(page, `window.dispatchEvent(new Event('blur'))`);
+  const pausedAt = await ev<number>(page, `${D}.world.run.stats.time`);
+  await page.waitForTimeout(300);
+  ok(await ev(page, `${D}.game.paused && ${D}.world.run.stats.time === ${pausedAt}`), 'focus loss pauses simulation');
+  ok(await ev(page, `${D}.game.input.moveVector().x === 0`), 'focus loss clears held movement');
+  await page.keyboard.up('KeyD');
+  await ev(page, `window.dispatchEvent(new Event('focus'))`);
+  ok(await ev(page, `${D}.game.paused`), 'regaining focus waits for deliberate resume');
+  const seedBeforeRestart = await ev<string>(page, `${D}.world.run.seed`);
+  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter'); await page.waitForTimeout(200);
+  ok(await ev(page, `${D}.game.menus.stack.length === 1 && ${D}.game.paused`), 'restart asks for confirmation');
+  await page.keyboard.press('Enter'); await page.waitForTimeout(200); // No is selected by default
+  ok(await ev(page, `${D}.world.run.seed === ${JSON.stringify(seedBeforeRestart)} && ${D}.game.paused && ${D}.game.menus.stack.length === 0`), 'default No keeps the current run');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  ok(await ev(page, `!${D}.game.paused`), 'the preserved run resumes');
 
   console.log('save & continue');
   const before = await ev<any>(page, `(async () => {
@@ -122,6 +163,15 @@ const D = 'window.__bomDebug';
   console.log('music');
   const mus = await ev<any>(page, `(async () => { const m = await import('/src/audio/render.ts'); const a = ${D}.game.audio; return { cached: m.cachedSongs(), track: a.music && a.music.name, recs: a.music && a.music.recs.size }; })()`);
   console.log('   ', JSON.stringify(mus));
+  await page.waitForFunction(`${D}.game.audio.music?.cur?.recording`, null, { timeout: 10000 });
+  const gains = await ev<any>(page, `(() => {
+    const m = ${D}.game.audio.music, old = m.intensity;
+    m.intensity = 0.5; m.applyMix(true);
+    const total = m.cur.calm.gain.value + m.cur.combat.gain.value;
+    m.intensity = old; m.applyMix(true); return total;
+  })()`);
+  ok(Math.abs(gains - 1) < 0.001, 'recorded music crossfade avoids a volume surge');
+
   ok(mus.cached <= 5, 'rendered songs are capped');
   ok(mus.recs <= 2, 'decoded recordings are capped');
 

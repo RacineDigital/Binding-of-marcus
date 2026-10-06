@@ -454,5 +454,36 @@ console.log('content:', JSON.stringify(counts));
   }
   ok(small.length === 0, `every item icon is big and solid enough to read (${small.join(', ')})`);
 }
+// ------------------------------------------------------------ choices, replay rules and saved loot
+{
+  const { itemRole } = await import('../src/items/choice');
+  const { ItemPools } = await import('../src/items/pools');
+  const { dailySeed, dailyReader, todayKey } = await import('../src/game/progress');
+  const { flawlessReward } = await import('../src/game/bindings');
+  for (let seed = 0; seed < 80; seed++) {
+    const pools = new ItemPools(new RNG('choice:' + seed), () => false);
+    const pair = pools.choice(new RNG('draft:' + seed));
+    const items = pair.map((id) => ALL_ITEMS.find((i) => i.id === id)!);
+    ok(pair[0] !== pair[1] && items.every(Boolean), `choice ${seed}: two different real items`);
+    ok(items.every((i) => !i.unlock), `choice ${seed}: respects profile unlocks`);
+    ok(itemRole(items[0]) === 'offense' && itemRole(items[1]) !== 'offense', `choice ${seed}: distinct build directions`);
+  }
+  const r = new Run('LOOT2222', 'marcus', () => true);
+  r.lootRng().next(); r.lootRng().next();
+  const restored = new Run(r.seed, r.charId, () => true); restored.flags = JSON.parse(JSON.stringify(r.flags));
+  ok(r.lootRng('kill').next() === restored.lootRng('kill').next(), 'loot event sequence survives serialized flags');
+  const p = new ItemPools(new RNG('savedpool'), () => true); p.roll('treasure'); p.roll('shop');
+  const q = new ItemPools(new RNG('savedpool'), () => true); q.restore(p.serialize()); q.restoreRng(p.rngState());
+  for (let n = 0; n < 12; n++) ok(p.roll('treasure') === q.roll('treasure'), `saved item pool preserves future reward ${n}`);
+  ok(flawlessReward(3) && flawlessReward(6) && !flawlessReward(0) && !flawlessReward(2) && !flawlessReward(4), 'mastery rewards have a predictable three-room cadence');
+  const dateA = new Date('2026-10-06T00:15:00+02:00'), dateB = new Date('2026-10-05T15:15:00-07:00');
+  ok(todayKey(dateA) === '2026-10-05' && dailySeed(dateA) === dailySeed(dateB), 'Daily seed uses the same UTC day across timezones');
+  ok(dailyReader('DAILY222').id === dailyReader('DAILY222').id, 'Daily reader is deterministic');
+  const profile = { isUnlocked: () => true, data: { donated: 999, notes: [], echo: { floor: 0, items: ['split_nib'] } }, hasNote: () => false } as any;
+  const a = new Run('DAILY222', 'marcus', () => true), b = new Run('DAILY222', 'marcus', () => true);
+  a.mode = b.mode = 'daily'; a.floorIndex = b.floorIndex = FINAL_FLOOR;
+  const sig = (f: ReturnType<typeof generateFloor>) => JSON.stringify(f.rooms.map((r) => [r.type, r.bossId, r.pickups, r.npcs]));
+  ok(sig(generateFloor(a, FINAL_FLOOR)) === sig(generateFloor(b, FINAL_FLOOR, profile)), 'Daily final boss and rewards ignore completed story progress');
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

@@ -4,6 +4,7 @@ import type { Run } from './run';
 import type { SaveManager } from '../save/save';
 import { RNG } from '../core/rng';
 import { BOSSES } from '../bosses/registry';
+import { CHARACTERS } from '../player/characters';
 
 export type RunMode = 'normal' | 'hard' | 'daily' | 'endless';
 export const MODE_NAMES: Record<RunMode, string> = { normal: 'Normal', hard: 'Second Edition (Hard)', daily: 'Daily Run', endless: 'Endless' };
@@ -29,24 +30,30 @@ export function runScore(run: Run, won: boolean): { total: number; parts: [strin
 /** Record a finished run's score. Returns the previous best for comparison. */
 export function recordScore(save: SaveManager, run: Run, won: boolean): { score: number; best: number; isBest: boolean } {
   const { total } = runScore(run, won);
-  const key = run.mode === 'daily' ? 'best_daily_' + todayKey() : 'best_' + run.mode;
+  const key = run.mode === 'daily' ? 'best_daily_' + (run.flags.dailyDay ?? todayKey()) : 'best_' + run.mode;
   const best = save.data.stats[key] ?? 0;
   if (total > best) { save.data.stats[key] = total; save.markDirty(); }
   // run history (newest first, last 30)
   const h = save.data.history ?? (save.data.history = []);
-  h.unshift({ date: Date.now(), char: run.charId, mode: run.challenge ? 'challenge' : run.mode, seed: run.seed, floor: run.floorIndex, won, score: total, time: run.stats.time, cause: run.stats.deathCause, items: run.stats.items.slice(-16) });
+  h.unshift({ date: Date.now(), char: run.charId, mode: run.challenge ? 'challenge' : run.mode, seed: run.seed, floor: run.floorIndex, won, score: total, time: run.stats.time, cause: run.stats.deathCause, items: run.stats.items.slice(-16), ending: run.flags.ending, unlocks: [...(run.flags.unlockedNow ?? [])], notes: [...(run.flags.notesFound ?? [])], route: [...(run.flags.floorPath ?? [])], binding: run.binding.id, challenge: run.challenge ?? undefined });
   if (h.length > 30) h.length = 30;
   save.markDirty();
   return { score: total, best, isBest: total > best };
 }
 
-export function todayKey(d = new Date()): string { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-/** The same seed for everyone on a given calendar day. */
+export function todayKey(d = new Date()): string { return d.toISOString().slice(0, 10); }
+/** The same seed for everyone on a given UTC day. */
 export function dailySeed(d = new Date()): string {
   const r = new RNG('daily:' + todayKey(d));
   const A = 'ABCDEFGHJKLMNPQRSTVWXYZ23456789';
   let s = ''; for (let i = 0; i < 8; i++) s += A[r.int(0, A.length - 1)];
   return s;
+}
+
+/** Daily readers are loaned for the run, independently of profile unlocks. */
+export function dailyReader(seed: string) {
+  const pool = CHARACTERS.filter((c) => !c.tainted);
+  return new RNG(seed + ':char').pick(pool);
 }
 
 /** Achievements that depend on lifetime statistics or the current run state. Cheap to call often. */

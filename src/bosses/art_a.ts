@@ -22,6 +22,14 @@ export function paintGrub(p: PixelArt, s: Pose): void {
     const y = floor - r * 0.8 + sag * 0.3 - rear * i * 1.6 + Math.sin(s.t * TAU - i * 1.3) * 0.8 * (s.anim === 'move' ? 2 : 1);
     segs.push([x, y, r]);
   }
+  // A translucent egg-sack and crooked dorsal spines break the old smooth sausage silhouette.
+  for (let i = 1; i < 4; i++) {
+    const [x,y,r] = segs[i];
+    p.tube(x - 2, y - r * 0.6, x - 4, y - r - 5 - i, 1.3, fold);
+    p.line(x - 4, y - r - 5 - i, x - 6, y - r - 6 - i, '#e8dbc2');
+    p.ball(x + 2, y - r * 0.6, 3.2, 2.7, ramp('#ce9e8f'));
+    p.line(x, y - r * 0.5, x + 3, y - r * 0.75, '#824351');
+  }
   // baby hands along her belly, paddling with her crawl
   segs.slice(1).forEach(([x, , r], i) => {
     const sw = Math.sin(s.step * Math.PI + i * 1.7) * 2;
@@ -105,6 +113,16 @@ export function paintWardrobe(p: PixelArt, s: Pose): void {
   brow(p, cx - 4, y0 - 7, 3, 1.5 + s.phase, '#3a2418', 1); brow(p, cx + 1, y0 - 5.5, 3, -1.5 - s.phase, '#3a2418', 1);
   p.set(cx - 2, y0 - 5, '#ffd040'); p.set(cx + 2, y0 - 5, '#ffd040');
   p.line(cx - 3, y0 - 2, cx + 3, y0 - 2, '#1a0a08'); for (let i = -2; i <= 2; i += 2) p.set(cx + i, y0 - 2, '#efe2c0');
+  // Iron straps, inset studs and carved scrolling rails give the furniture a worked surface.
+  for (const xx of [x0 + 1, x0 + W - 3]) {
+    for (let y = y0 + 7; y < y0 + H - 5; y += 8) {
+      p.rect(xx, y, 2, 5, '#29212a'); p.set(xx, y, '#b59a72'); p.set(xx, y + 4, '#77664b');
+    }
+  }
+  for (const side of [-1, 1]) {
+    p.line(cx + side * 6, y0 - 4, cx + side * 13, y0 - 5, '#c39861');
+    p.line(cx + side * 13, y0 - 5, cx + side * 15, y0 - 2, '#39251f');
+  }
   // the dark inside
   const iw = W - 6, iy = y0 + 5, ih = H - 10;
   p.rect(x0 + 3, iy, iw, ih, '#0c0608');

@@ -87,6 +87,8 @@ function afterHospital(seed: string, fi: number): FloorTheme {
 }
 
 export function generateFloor(run: Run, fi: number, save?: SaveManager): Floor {
+  // Daily content must not depend on story progress, discovered notes, or the previous death.
+  if (run.mode === 'daily') save = undefined;
   const theme = pickTheme(run, fi);
   const base = new RNG(`${run.seed}:floor${fi}`);
   const isFinal = fi === FINAL_FLOOR;

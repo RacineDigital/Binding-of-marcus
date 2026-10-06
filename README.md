@@ -6,8 +6,8 @@ A top-down, room-by-room action roguelike for Windows and the browser. Marcus go
 grandfather's bindery, where the frightening stories the old bookbinder stitched shut have come
 unbound. He has to fight through eight chapters and bind the story again.
 
-Every sprite, room, sound effect and piece of music is generated in code at runtime. There are no
-image or audio asset files.
+Sprites, rooms and sound effects are generated in code. The original chapter soundtrack ships as
+looping OGG recordings, with a synthesized fallback when recordings are unavailable.
 
 ## Download and play
 
@@ -54,6 +54,9 @@ npm run build:single               # the whole game as one self-contained HTML f
 npm run release                    # build the release zips into release/
 npm run desktop                    # build and run the desktop (Electron) version
 npm run dist:win                   # Windows installer + portable .exe in release-desktop/ (run on Windows)
+npm run dist:steam                 # unpacked Windows Steam depot (run on Windows)
+npm run dist:itch                  # downloadable Windows itch.io zip (run on Windows)
+npm run package:itch               # browser upload zip with soundtrack in release-itch/
 npm run test:synergy               # every item x every attack mode in headless Chromium (needs the dev server)
 ```
 
@@ -68,6 +71,10 @@ GitHub Release tagged `v<version>`. A version that already has a release is skip
 URL options: `?play` skips the menu and starts a run, `&seed=ABCD2345` starts from a fixed seed,
 `&char=wren` picks a character. `?art=player|items|bosses|enemies0..3|props0..7|familiars` opens the
 sprite preview sheets.
+
+Store packaging and soundtrack regeneration instructions are in [docs/RELEASING.md](docs/RELEASING.md).
+For the prioritized Steam launch gates and current readiness audit, see
+[docs/STEAM_RELEASE_CHECKLIST.md](docs/STEAM_RELEASE_CHECKLIST.md).
 
 ## Controls (all rebindable in Options → Controls)
 

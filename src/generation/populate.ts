@@ -276,9 +276,8 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'treasure': {
       for (const [c, r] of [[1, 1], [13, 1], [1, 7], [13, 7]]) if (rng.chance(0.6)) room.setOb(c, r, Ob.Rock, 0, rng.int(0, 5));
-      const choice = run.mode === 'hard' ? fi >= 1 && rng.chance(0.5) : fi >= 2 && rng.chance(0.2);
-      if (choice) { item(cx - 36, cy + 4, 'treasure', 'treasure', { group: 1 }); item(cx + 36, cy + 4, 'treasure', 'treasure', { group: 1 }); }
-      else item(cx, cy + 4, 'treasure', 'treasure');
+      const choices = run.pools.choice(prng);
+      choices.forEach((id, i) => pk('item', cx + (i ? 44 : -44), cy + 4, { id, style: 'treasure', group: 1 }));
       break;
     }
     case 'shop': {

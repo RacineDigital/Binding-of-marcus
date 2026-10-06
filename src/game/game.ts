@@ -7,7 +7,8 @@ import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
 import { World } from './world';
 import { snapshotWorld, applyInterp, restoreInterp } from './interp';
 import { setFullscreen, onFullscreenChange } from '../core/fullscreen';
-import { recordScore, checkProgress, RunMode } from './progress';
+import { recordScore, checkProgress, RunMode, dailyReader, todayKey } from './progress';
+import { bindingById, type BindingId } from './bindings';
 import { endingFor } from '../data/endings';
 import { updatePresence } from './presence';
 import { Run } from './run';
@@ -66,8 +67,22 @@ export class Game {
     window.addEventListener('gamepadconnected', unlockAudio);
     // F9 (or F12) saves a screenshot: to Pictures/Lost Marcus on desktop, a download in the browser
     window.addEventListener('keydown', (e) => { if (e.code === 'F9' || e.code === 'F12') { e.preventDefault(); this.screenshot(cv); } });
+    // Returning from another window must require a deliberate Resume, not expose a live fight.
+    window.addEventListener('blur', () => this.pauseRun());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) this.pauseRun(); });
+    window.addEventListener('gamepaddisconnected', () => { if (this.input.usingPad) this.pauseRun(); });
     // closing the window mid-run keeps your exact spot
     window.addEventListener('beforeunload', () => { if (this.scene === 'run' && this.world && !this.world.player.dead && this.world.deathT < 0) this.saveSnapshot(); this.save.flush(); });
+  }
+
+  pauseRun(): void {
+    if (this.scene !== 'run' || !this.world || this.world.player.dead || this.world.deathT >= 0 || this.paused || this.fading) return;
+    this.paused = true; this.input.reset(); this.dropHold = 0;
+    this.menus.openPause(); this.audio.duck(0.4, 0.2);
+  }
+
+  resumeRun(): void {
+    this.paused = false; this.input.clearMenu(); this.audio.duck(1, 0.01);
   }
 
   screenshot(cv: HTMLCanvasElement): void {
@@ -133,12 +148,12 @@ export class Game {
     const w = this.world;
     if (this.paused) {
       // the pause key (Esc / P / Start) resumes from the top-level pause menu; inside Options it just goes back
-      if (this.input.wasPressed('pause') && !this.menus.inSubmenu() && !this.menus.pauseGuarded()) { this.paused = false; this.input.clearMenu(); this.audio.duck(1, 0.01); return; }
+      if (this.input.wasPressed('pause') && !this.menus.inSubmenu() && !this.menus.pauseGuarded()) { this.resumeRun(); return; }
       this.menus.update(dt); return;
     }
     const inp = this.input;
     // the key that opened the pause menu must not also count as 'back' inside it
-    if (inp.wasPressed('pause')) { this.paused = true; inp.clearMenu(); this.menus.openPause(); this.audio.duck(0.4, 0.2); return; }
+    if (inp.wasPressed('pause')) { this.pauseRun(); return; }
     w.hud.fullMap = inp.isDown('map');
     if (!w.inputLocked() && !w.player.dead) {
       if (inp.wasPressed('bomb')) placeBomb(w);
@@ -189,10 +204,13 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- run lifecycle
-  newRun(charId: string, seed?: string, challenge: string | null = null, mode: RunMode = 'normal'): void {
+  newRun(charId: string, seed?: string, challenge: string | null = null, mode: RunMode = 'normal', binding: BindingId = 'unbound'): void {
     const s = seed ? normalizeSeed(seed) : randomSeed();
-    const run = new Run(s.length ? s : randomSeed(), charId, (id) => this.save.isUnlocked(id));
+    if (mode === 'daily') charId = dailyReader(s).id;
+    const run = new Run(s.length ? s : randomSeed(), charId, (id) => mode === 'daily' || this.save.isUnlocked(id));
     run.challenge = challenge; run.mode = mode;
+    run.flags.binding = challenge || mode === 'daily' ? 'unbound' : bindingById(binding).id;
+    if (mode === 'daily') run.flags.dailyDay = todayKey();
     if (mode === 'daily') this.save.unlock('daily_first');
     const ch = charById(charId);
     const met = (this.save.data.readersMet ??= []); if (!met.includes(charId)) { met.push(charId); this.save.markDirty(); }
@@ -209,6 +227,11 @@ export class Game {
     for (const id of ch.items) flow.grantItem(this.world, id, true);
     if (challenge) for (const id of challengeItems(challenge)) flow.grantItem(this.world, id, true);
     if (challenge === 'swarm') pl.temp.push({ id: 'swarm_rule', stats: { damageMult: 0.5 } });
+    const cover = run.binding;
+    pl.temp.push({ id: 'run_binding', stats: { ...cover.stats } });
+    pl.keys = Math.min(99, pl.keys + (cover.keys ?? 0));
+    pl.bombs = Math.min(99, pl.bombs + (cover.bombs ?? 0));
+    if (cover.active && !pl.active) flow.grantItem(this.world, cover.active, true);
     pl.recompute();
     this.save.data.lastSeed = run.seed;
     this.save.stat('runs', 1);
@@ -218,6 +241,12 @@ export class Game {
   }
 
   private lastAutosave = 0;
+  /** Keep the rules the player chose; a Daily retry also keeps its original day and seed. */
+  restartRun(): void {
+    const previous = this.world?.run; if (!previous) return;
+    this.newRun(previous.charId, previous.mode === 'daily' ? previous.seed : undefined, previous.challenge, previous.mode, previous.binding.id);
+    if (previous.mode === 'daily') this.world!.run.flags.dailyDay = previous.flags.dailyDay ?? todayKey();
+  }
   /** Save the run (throttled) — called on every room change so progress is never lost. */
   autosave(): void {
     const now = performance.now();
@@ -234,7 +263,7 @@ export class Game {
       health: pl.health.serialize(), buttons: pl.buttons, keys: pl.keys, bombs: pl.bombs, goldKey: pl.goldKey, goldBomb: pl.goldBomb,
       items: [...pl.items.entries()], order: pl.itemOrder, active: pl.active, charge: pl.charge, consumables: pl.consumables, charms: pl.charms,
       consumableSlots: pl.consumableSlots, charmSlots: pl.charmSlots, temp: pl.temp.filter((t) => !t.room && t.time === undefined),   // effects for the rest of the floor carry over
-      transformations: [...pl.transformations], pools: w.run.pools.serialize(), stats: w.run.stats, flags: w.run.flags, identified: [...w.run.identified],
+      transformations: [...pl.transformations], pools: w.run.pools.serialize(), poolsRng: w.run.pools.rngState(), stats: w.run.stats, flags: w.run.flags, identified: [...w.run.identified],
       floorState: flow.serializeFloor(w), savedAt: Date.now(),
     };
     this.save.markDirty();
@@ -242,8 +271,9 @@ export class Game {
   continueRun(): boolean {
     const s = this.save.data.run; if (!s) return false;
     try {
-      const run = new Run(s.seed, s.charId, (id) => this.save.isUnlocked(id));
+      const run = new Run(s.seed, s.charId, (id) => s.mode === 'daily' || this.save.isUnlocked(id));
       run.challenge = s.challenge; run.mode = s.mode ?? 'normal'; run.floorIndex = s.floor; run.pools.restore(s.pools ?? []);
+      run.pools.restoreRng(s.poolsRng);
       run.stats = s.stats; run.flags = s.flags; run.identified = new Set(s.identified ?? []);
       const pl = new Player(charById(s.charId));
       pl.health = Health.from(s.health);

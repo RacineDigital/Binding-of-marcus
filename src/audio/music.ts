@@ -18,7 +18,7 @@ export function chapterTrack(id: string, old: string): string {
 
 interface Playing {
   name: string; master: GainNode; calm: GainNode; combat: GainNode;
-  srcs: AudioBufferSourceNode[]; only?: 'calm' | 'combat';
+  srcs: AudioBufferSourceNode[]; only?: 'calm' | 'combat'; recording?: boolean;
 }
 
 export class Music {
@@ -99,26 +99,28 @@ export class Music {
   }
   /**
    * A recording is one full mix, so calm and combat are the same take: exploring hears it through a
-   * low-pass (muffled, as if from the next room) and a little quieter; a fight opens it up.
+   * gentle low-pass (keeps the riff and drums present) and a little quieter; a fight opens it up.
    */
   private startRec(name: string, buf: AudioBuffer): void {
     const c = this.ctx, t = c.currentTime + 0.06;
     const master = c.createGain(); master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(0.8, t + 1.2); master.connect(this.out);
     const calm = c.createGain(), combat = c.createGain();
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = 0.5;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500; lp.Q.value = 0.5;
     const soft = c.createGain(); soft.gain.value = 0.85;
     lp.connect(soft); soft.connect(calm); calm.connect(master); combat.connect(master);
     const s = c.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = 0; s.loopEnd = buf.duration;
     s.connect(lp); s.connect(combat); s.start(t);
-    this.cur = { name, master, calm, combat, srcs: [s] };
+    this.cur = { name, master, calm, combat, srcs: [s], recording: true };
     this.applyMix(true);
   }
   setIntensity(i: number): void { this.target = i; }
   private applyMix(immediate = false): void {
     const p = this.cur; if (!p) return;
     const i = p.only === 'calm' ? 0 : p.only === 'combat' ? 1 : this.intensity;
-    // equal-power crossfade keeps the loudness steady through the blend
-    const gc = Math.cos((i * Math.PI) / 2), gx = Math.sin((i * Math.PI) / 2);
+    // Separate stems use equal-power fades; two versions of the same recording are correlated,
+    // so a linear fade avoids a volume surge halfway into combat.
+    const gc = p.recording ? 1 - i : Math.cos((i * Math.PI) / 2);
+    const gx = p.recording ? i : Math.sin((i * Math.PI) / 2);
     const t = this.ctx.currentTime;
     if (immediate) { p.calm.gain.value = gc; p.combat.gain.value = gx; return; }
     p.calm.gain.setTargetAtTime(gc, t, 0.08); p.combat.gain.setTargetAtTime(gx, t, 0.08);
