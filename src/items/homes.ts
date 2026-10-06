@@ -1,11 +1,11 @@
 // Where every item comes from. Each item lives in exactly one pool, and every item of a
 // transformation shares its pool, so you learn where to look:
 //   The Curio (treasure)   Mothkin, Needleworker, Live Wire (lasers), The Boys, and most shot changers
-//   Mott's Wares (shop)    Clockwork, Jeffy, the dice, keys, bombs and pocket things
+//   Mott's Wares (shop)    Clockwork, Tantrum, the dice, keys, bombs and pocket things
 //   The Inkwell (deal)     Inkblooded and every pact: the devil's pool, paid in hearts
 //   Wax Chapel (blessing)  Waxen Saint and Drainer: the angels' pool
 //   Hexed Room (curse)     Hollowed and Ossified, and things with a price on them
-//   Crawlspace (secret)    King Vamp, and whatever the house hides
+//   Crawlspace (secret)    Night Count, and whatever the house hides
 //   Chapter's End (boss)   food and plain stat-ups
 //   The Archive (library)  books
 import type { ItemDef, PoolId } from './types';

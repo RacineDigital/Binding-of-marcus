@@ -92,6 +92,10 @@ export function splashScreen(ms: MenuSystem, next: () => void): Screen {
         ctx.fillRect(cx - w / 2, cy + 57, w / 2 - 16, 0.6); ctx.fillRect(cx + 16, cy + 57, w / 2 - 16, 0.6);
         text(ctx, 'G A M E S', cx, cy + 60, 6.5, '#c9a46a', 'center', FONT_BODY, 600, false);
       }
+      // photosensitivity notice, under everything else
+      ctx.globalAlpha = out * Math.min(1, t / 0.6);
+      text(ctx, 'Photosensitivity notice: this game has flashing lights and screen shake.', cx, VIEW_H - 22, 6.5, 'rgba(220,205,180,0.75)', 'center', FONT_BODY, 600, false);
+      text(ctx, 'Options \u2192 Reduce flashing and Screen shake tone them down.', cx, VIEW_H - 13, 6.5, 'rgba(220,205,180,0.6)', 'center', FONT_BODY, 600, false);
       ctx.restore();
     },
   };

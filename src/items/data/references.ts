@@ -1,8 +1,8 @@
-// Niche real-life references. Two sets, each with a transformation:
-//   'drain' - Bladee / Drain Gang (Icedancer, Gluee, Red Light, 333, Spiderr, Be Nice 2 Me, Exeter...)
-//   'vamp'  - Playboi Carti (Whole Lotta Red, Die Lit, Vamp Anthem, Magnolia, Sky, Stop Breathing...)
-// plus a handful of internet-era objects (brick phone, pocket pet, lava lamp, Frutiger Aero, Y2K),
-// and 'jeffy' - Jeffy (SML): the diaper, the pencil up the nose and the blue bike helmet.
+// Three themed sets, each with a transformation (the tags and ids are older than the names):
+//   'drain' - Frostbitten: cold, glassy, weightless things (Frost Skate, Paste Pot, Icebox...)
+//   'vamp'  - Night Count: blood, rage and loud endings (Seeing Red, Blood Hymn, Held Breath...)
+//   'jeffy' - Tantrum: a toddler's kit (the nappy, the chewed pencil, the bike helmet)
+// plus a handful of internet-era objects (brick phone, pocket pet, lava lamp, aero bubble, Y2K).
 import type { ItemDef } from '../types';
 import { I, ramp, hex, P, conditional, counter } from './kit';
 import { TAU } from '../../core/math';
@@ -38,7 +38,7 @@ function forEachEnemy(w: World, fn: (e: Enemy) => void): number {
 
 export const REFERENCES: ItemDef[] = [
   // =============================================================== DRAIN
-  { id: 'icedancer', name: 'Icedancer', kind: 'passive', quality: 3, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'icedancer', name: 'Frost Skate', kind: 'passive', quality: 3, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Skate through it', effect: ['Shots chill enemies, slowing them (35% chance).', 'Chilled enemies shatter into 6 ice shards when they die.'],
     stats: { speed: 0.15 }, attack: { slow: 0.35, tint: '#9ad8ff' },
     lore: 'A skate boot laced with frost. It glides even on stone.',
@@ -56,7 +56,7 @@ export const REFERENCES: ItemDef[] = [
       p.rect(4, 13, 12, 1, hex('#c8d8e8')); p.set(15, 12, '#c8d8e8'); p.rect(7, 12, 1, 1, hex('#8aa0b8')); p.rect(13, 12, 1, 1, hex('#8aa0b8'));
       sparkle(p, 3, 4, '#c8f0ff');
     } },
-  { id: 'gluee', name: 'Gluee', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'gluee', name: 'Paste Pot', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Everything sticks', effect: ['Shots leave sticky puddles that hurt enemies.', 'Shots slow enemies (20% chance).', 'Fire rate up.'],
     stats: { tears: 0.3 }, attack: { creep: true, slow: 0.2, tint: '#7ab8ff' },
     icon: (p) => {
@@ -66,7 +66,7 @@ export const REFERENCES: ItemDef[] = [
       p.rect(6, 9, 6, 4, cap[3]); p.rect(7, 10, 4, 2, hex('#e8f0ff'));
       p.set(4, 13, cap[3]); p.set(4, 14, cap[3]); p.set(4, 16, cap[2]);
     } },
-  { id: 'red_light', name: 'Red Light', unlock: 'daily_first', kind: 'passive', quality: 3, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'red_light', name: 'Darkroom Lamp', unlock: 'daily_first', kind: 'passive', quality: 3, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Hold still', effect: ['While you stand still, damage x1.4.'],
     hooks: { onTick: (w) => { const pl = w.player; conditional(w, 'red_light', Math.hypot(pl.vx, pl.vy) < 12 && !pl.dead, { stats: { damageMult: 1.4 }, attack: { tint: '#ff3040' } }); } },
     icon: (p) => {
@@ -75,11 +75,11 @@ export const REFERENCES: ItemDef[] = [
       p.rect(7, 13, 5, 3, hex('#8a8a92')); p.rect(7, 14, 5, 1, hex('#5a5a62')); p.rect(8, 16, 3, 1, hex('#3a3a42'));
       p.set(3, 3, '#ff6070'); p.set(15, 3, '#ff6070'); p.set(2, 9, '#ff6070'); p.set(16, 9, '#ff6070');
     } },
-  { id: 'angel_333', name: '333', unlock: 'flawless_floor', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'angel_333', name: 'Lucky Threes', unlock: 'flawless_floor', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Angel numbers', effect: ['Luck up.', '15% chance for a bold critical hit (3x damage).'],
     stats: { luck: 3 }, attack: { crit: 0.15 },
     icon: (p) => { p.ring(9, 9, 7, '#5a4a8a', 1); digit3(p, 3, 7, '#f0e080'); digit3(p, 7, 7, '#f0e080'); digit3(p, 11, 7, '#f0e080'); sparkle(p, 14, 3, '#fff8c0'); } },
-  { id: 'drain_butterfly', name: 'Drain Butterfly', unlock: 'transform_drain', kind: 'passive', quality: 4, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'drain_butterfly', name: 'Rime Wings', unlock: 'transform_drain', kind: 'passive', quality: 4, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Weightless', effect: ['Flight.', 'Shots flutter and pass through rocks.', 'Damage up, speed up.'],
     flight: true, stats: { speed: 0.1, damage: 1, damageMult: 1.2 }, attack: { wiggle: 6, spectral: true, tint: '#c8e0ff' },
     icon: (p) => {
@@ -88,7 +88,7 @@ export const REFERENCES: ItemDef[] = [
       p.ball(4, 5, 1.5, 1.5, ramp('#5a7ad0')); p.ball(14, 5, 1.5, 1.5, ramp('#5a7ad0'));
       p.rect(8, 4, 2, 11, hex('#2a2440')); p.line(8, 4, 6, 1, hex('#2a2440')); p.line(9, 4, 11, 1, hex('#2a2440'));
     } },
-  { id: 'spiderr', name: 'Spiderr', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'spiderr', name: 'Cellar Spider', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Spin the web', effect: ['Shots slow enemies (25% chance).', '25% chance for killed enemies to leave an ink spider that fights for you.'],
     attack: { slow: 0.25 },
     hooks: { onKill: (w, e) => { if (Math.random() < 0.25) spawnInkling(w, e.x, e.y); } },
@@ -98,11 +98,11 @@ export const REFERENCES: ItemDef[] = [
       p.ball(9, 10, 3.5, 3.5, c); p.ball(9, 6, 2.2, 2, c);
       p.set(8, 6, '#9ad8ff'); p.set(10, 6, '#9ad8ff'); p.line(9, 1, 9, 4, hex('#c8c8d8'));
     } },
-  { id: 'be_nice_2_me', name: 'Be Nice 2 Me', kind: 'passive', quality: 3, pools: { blessing: 0.8 }, tags: ['drain'],
+  { id: 'be_nice_2_me', name: 'Kind Words', kind: 'passive', quality: 3, pools: { blessing: 0.8 }, tags: ['drain'],
     pickup: 'Please', effect: ['+1 Heart container.', 'Shots can charm enemies so they fight for you (12% chance).'],
     health: { containers: 1, heal: 2 }, attack: { charm: 0.12, tint: '#ffa0d0' },
     icon: (p) => { I.heart(p, '#ff8ac0', 9, 10, 1.1); sparkle(p, 14, 3); sparkle(p, 3, 4, '#ffd0e8'); p.set(6, 7, '#ffffff'); } },
-  { id: 'exeter', name: 'Exeter', unlock: 'supersecret', kind: 'active', quality: 3, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'exeter', name: 'Icebox', unlock: 'supersecret', kind: 'active', quality: 3, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'A cold room', effect: ['Freezes every enemy in the room solid for 4 seconds.'],
     active: { charge: 4, type: 'room', use: (w) => {
       const n = forEachEnemy(w, (e) => { e.freeze = Math.max(e.freeze, e.isBoss ? 1.5 : 4); w.fx.sparks(e.x, e.y - 8, 6, '#c8f0ff', 80); });
@@ -111,7 +111,7 @@ export const REFERENCES: ItemDef[] = [
       return n > 0;
     } },
     icon: (p) => { snowflake(p, 9, 9, 7, '#a8e0ff', '#e8f8ff'); } },
-  { id: 'trash_island', name: 'Trash Island', unlock: 'runs_5', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'trash_island', name: 'Flotsam', unlock: 'runs_5', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Washed ashore', effect: ['Each chapter, a pile of three random pickups washes up beside you.'],
     hooks: {
       onPickup: (w) => { for (let i = 0; i < 3; i++) spawnDrop(w, rollDropKind(new RNG(Math.random()), w.player.stats.luck, 'small') ?? 'button', w.player.x, w.player.y + 12); },
@@ -133,7 +133,7 @@ export const REFERENCES: ItemDef[] = [
       p.line(3, 3, 15, 3, s[4]);
       p.poly([9, 5, 10.2, 8, 13, 8.2, 10.8, 10, 11.6, 13, 9, 11.2, 6.4, 13, 7.2, 10, 5, 8.2, 7.8, 8], hex('#fff0a0'));
     } },
-  { id: 'cold_visions', name: 'Cold Visions', unlock: 'secrets_25', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
+  { id: 'cold_visions', name: 'Frosted Glass', unlock: 'secrets_25', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'See it all', effect: ['Reveals the layout of every chapter (not hidden rooms).', 'Range up.'],
     stats: { range: 40 },
     hooks: {
@@ -145,10 +145,10 @@ export const REFERENCES: ItemDef[] = [
       snowflake(p, 9, 9, 2.5, '#e8f8ff', '#ffffff');
       p.line(1, 9, 3, 6, hex('#2a3a5a')); p.line(17, 9, 15, 6, hex('#2a3a5a'));
     } },
-  { id: 'ginseng_strip', name: 'Ginseng Strip', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
-    pickup: 'Sad boy energy', effect: ['Fire rate up. Speed up.'],
+  { id: 'ginseng_strip', name: 'Ginseng Tonic', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
+    pickup: 'Bitter, but it works', effect: ['Fire rate up. Speed up.'],
     stats: { tears: 0.45, speed: 0.1 },
-    lore: 'From 2002, or so the label claims.',
+    lore: 'Grandfather swore by it. The label is in a language nobody in the house could read.',
     icon: (p) => {
       const b = ramp('#4a9a5a');
       p.rect(6, 5, 6, 11, b[2]); p.rect(6, 5, 1, 11, b[4]); p.rect(11, 5, 1, 11, b[1]);
@@ -167,7 +167,7 @@ export const REFERENCES: ItemDef[] = [
     } },
 
   // =============================================================== VAMP
-  { id: 'whole_lotta_red', name: 'Whole Lotta Red', unlock: 'transform_vamp', kind: 'passive', quality: 4, pools: { secret: 1 }, tags: ['vamp'],
+  { id: 'whole_lotta_red', name: 'Seeing Red', unlock: 'transform_vamp', kind: 'passive', quality: 4, pools: { secret: 1 }, tags: ['vamp'],
     pickup: 'Rage', effect: ['Damage up and damage x1.2. Shots burn (15% chance).', 'Taking damage sends you into a 5 second rage: fire rate x1.6.'],
     stats: { damage: 1, damageMult: 1.2 }, attack: { burn: 0.15, shape: 'blood', tint: '#e01a2a' },
     hooks: { onHurt: (w) => { w.player.clearTemp((t) => t.id === 'wlr_rage'); w.player.addTemp({ id: 'wlr_rage', time: 5, stats: { tearsMult: 1.6 } }); w.redFlash = 0.8; w.hud.toast('RAGE', 1); } },
@@ -176,7 +176,7 @@ export const REFERENCES: ItemDef[] = [
       p.ball(9, 9, 2.4, 2.4, ramp('#1a0a10')); p.set(9, 9, '#e8e0e0');
       p.line(4, 5, 6, 3, hex('#ff6a70'));
     } },
-  { id: 'die_lit', name: 'Die Lit', unlock: 'kills_2000', kind: 'passive', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
+  { id: 'die_lit', name: 'Last Light', unlock: 'kills_2000', kind: 'passive', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
     pickup: 'Go out loud', effect: ['Enemies explode when they die, hurting nearby enemies (never you).'],
     hooks: { onKill: (w, e) => { if (!e.isBoss) w.explode(e.x, e.y, 30, w.player.stats.damage * 2 + 4, { small: true, friendly: true, noPlayer: true, source: 'die_lit' }); } },
     icon: (p) => {
@@ -184,7 +184,7 @@ export const REFERENCES: ItemDef[] = [
       p.rect(6, 10, 2, 2, hex('#1a0a10')); p.rect(10, 10, 2, 2, hex('#1a0a10')); p.set(9, 13, '#1a0a10');
       for (let i = 0; i < 4; i++) p.poly([5 + i * 2.5, 7, 6 + i * 2.5, 1 + (i % 2) * 2, 7.5 + i * 2.5, 7], hex(i % 2 ? '#ffb040' : '#ff6a2a'));
     } },
-  { id: 'vamp_anthem', name: 'Vamp Anthem', kind: 'passive', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
+  { id: 'vamp_anthem', name: 'Blood Hymn', kind: 'passive', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
     pickup: 'Drink up', effect: ['Damage up.', 'Shots have a small chance to heal you.', 'Every 12 kills heals half a heart.'],
     stats: { damage: 0.6 }, attack: { lifesteal: 0.25 },
     hooks: { onKill: (w) => { if (counter(w, 'vamp_anthem') % 12 === 0) { w.player.healRed(1, true); w.fx.stars(w.player.x, w.player.y - 18, 4, '#ff4050'); } } },
@@ -193,7 +193,7 @@ export const REFERENCES: ItemDef[] = [
       p.poly([5, 7, 7, 7, 6, 12], hex('#f4f0e8')); p.poly([11, 7, 13, 7, 12, 12], hex('#f4f0e8'));
       p.set(6, 12, '#d01828'); p.set(12, 12, '#d01828'); p.set(12, 14, '#d01828');
     } },
-  { id: 'shoota', name: 'Shoota', unlock: 'fast_floor', kind: 'passive', quality: 2, pools: { secret: 1 }, tags: ['vamp'],
+  { id: 'shoota', name: 'Peashooter', unlock: 'fast_floor', kind: 'passive', quality: 2, pools: { secret: 1 }, tags: ['vamp'],
     pickup: 'Rapid', effect: ['Fire rate up. Shot speed up.'],
     stats: { tears: 0.6, shotSpeed: 0.25 },
     icon: (p) => {
@@ -217,7 +217,7 @@ export const REFERENCES: ItemDef[] = [
       p.rect(3, 13, 13, 1, c[1]);
       sparkle(p, 4, 3, '#fff0a0'); p.set(15, 2, '#fff0a0');
     } },
-  { id: 'stop_breathing', name: 'Stop Breathing', unlock: 'dmg_20', kind: 'active', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
+  { id: 'stop_breathing', name: 'Held Breath', unlock: 'dmg_20', kind: 'active', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
     pickup: 'Hold it', effect: ['Every enemy in the room chokes: frozen for 2.5 seconds and hit for heavy damage.'],
     active: { charge: 3, type: 'room', use: (w) => {
       const dmg = 20 + w.player.stats.damage * 4;
@@ -230,7 +230,7 @@ export const REFERENCES: ItemDef[] = [
       p.ball(5.5, 10, 3.5, 5.5, l); p.ball(12.5, 10, 3.5, 5.5, l); p.rect(8, 2, 2, 7, hex('#c8c0c8'));
       p.line(3, 3, 15, 15, hex('#1a0a10')); p.line(15, 3, 3, 15, hex('#1a0a10')); p.line(4, 3, 15, 14, hex('#1a0a10')); p.line(14, 3, 3, 14, hex('#1a0a10'));
     } },
-  { id: 'rockstar_made', name: 'Rockstar Made', unlock: 'all_bosses', kind: 'passive', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
+  { id: 'rockstar_made', name: 'Power Chord', unlock: 'all_bosses', kind: 'passive', quality: 3, pools: { secret: 1 }, tags: ['vamp'],
     pickup: 'Power chord', effect: ['Every 6th volley also fires a ring of 8 shots around you.'],
     hooks: { onFire: (w) => {
       if (counter(w, 'rockstar') % 6 !== 0) return;
@@ -244,15 +244,15 @@ export const REFERENCES: ItemDef[] = [
       p.line(10, 9, 16, 2, hex('#3a2a20')); p.line(11, 9, 16, 3, hex('#5a4a3a'));
       p.rect(15, 1, 2, 2, hex('#1a1014')); for (let i = 0; i < 3; i++) p.set(6 + i, 12 + i, '#e8e0d0');
     } },
-  { id: 'slatt', name: 'Slatt', unlock: 'deals_3', kind: 'passive', quality: 2, pools: { secret: 1 }, tags: ['vamp'],
-    pickup: 'Slime love', effect: ['Shots poison enemies (25% chance).', 'Shots leave toxic puddles.'],
+  { id: 'slatt', name: 'Slime Heart', unlock: 'deals_3', kind: 'passive', quality: 2, pools: { secret: 1 }, tags: ['vamp'],
+    pickup: 'Sticky affection', effect: ['Shots poison enemies (25% chance).', 'Shots leave toxic puddles.'],
     attack: { poison: 0.25, creep: true, tint: '#6ae04a' },
     icon: (p) => { I.heart(p, '#5ad040', 9, 9, 1.1); p.set(6, 14, '#5ad040'); p.set(6, 15, '#4ab030'); p.set(12, 15, '#5ad040'); p.set(12, 16, '#4ab030'); p.set(7, 6, '#d0ffc0'); } },
   { id: 'narcissist', name: 'Narcissist', unlock: 'win_hard', kind: 'familiar', quality: 3, pools: { secret: 0.8 }, tags: ['vamp'],
     pickup: 'Look at yourself', effect: ['A reflection follows you and copies your shots (with all their effects) at reduced damage.'],
     familiar: { kind: 'follower', shoot: { dmg: 0.35, rate: 2, inherit: true }, sprite: 'narcissist' }, icon: familiarIcon('narcissist') },
-  { id: 'baby_voice', name: 'Baby Voice', kind: 'passive', quality: 1, pools: { secret: 1 }, tags: ['vamp'],
-    pickup: 'What did he say?', effect: ['Shots confuse enemies (12% chance).', 'Speed up.'],
+  { id: 'baby_voice', name: 'Baby Talk', kind: 'passive', quality: 1, pools: { secret: 1 }, tags: ['vamp'],
+    pickup: 'Goo goo?', effect: ['Shots confuse enemies (12% chance).', 'Speed up.'],
     stats: { speed: 0.05 }, attack: { confuse: 0.12 },
     icon: (p) => {
       p.ellipse(9, 10, 6, 4, hex('#f4a0c8')); p.ellipse(9, 10, 4, 2.5, hex('#ffd0e4'));
@@ -306,8 +306,8 @@ export const REFERENCES: ItemDef[] = [
       p.rect(6, 8, 2, 3, hex('#0a1a0a')); p.rect(10, 8, 2, 3, hex('#0a1a0a')); p.set(6, 9, '#8aff8a'); p.set(10, 9, '#8aff8a');
     } },
   // ---------------------------------------------------------------- Jeffy
-  { id: 'big_boy_diaper', name: 'Big Boy Diaper', kind: 'passive', quality: 2, pools: { shop: 0.6 }, tags: ['jeffy'],
-    pickup: 'I\'m a big boy!', effect: ['Speed up.', 'Getting hit leaves a puddle that hurts enemies standing in it.'],
+  { id: 'big_boy_diaper', name: 'Oversized Nappy', kind: 'passive', quality: 2, pools: { shop: 0.6 }, tags: ['jeffy'],
+    pickup: 'Accidents happen', effect: ['Speed up.', 'Getting hit leaves a puddle that hurts enemies standing in it.'],
     stats: { speed: 0.15 },
     hooks: { onHurt: (w) => { w.addCreep(w.player.x, w.player.y, 20, 'player', w.player.stats.damage * 1.2, 5, '#e8d040'); w.hud.toast('Uh oh.', 1); } },
     icon: (p) => {
@@ -316,15 +316,15 @@ export const REFERENCES: ItemDef[] = [
       p.rect(2, 5, 15, 2, hex('#ffffff')); p.rect(1, 6, 3, 2, hex('#7ab8f0')); p.rect(15, 6, 3, 2, hex('#7ab8f0'));
       p.set(7, 10, '#f0d860'); p.set(10, 11, '#f0d860'); p.set(8, 12, '#e8c840');
     } },
-  { id: 'nose_pencil', name: 'Nose Pencil', kind: 'passive', quality: 2, pools: { shop: 1 }, tags: ['jeffy'],
-    pickup: 'Why\'d you have to do that?', effect: ['Damage up.', 'Your shots are sharpened pencils that pierce the first enemy.'],
+  { id: 'nose_pencil', name: 'Chewed Pencil', kind: 'passive', quality: 2, pools: { shop: 1 }, tags: ['jeffy'],
+    pickup: 'A sharp idea', effect: ['Damage up.', 'Your shots are sharpened pencils that pierce the first enemy.'],
     stats: { damage: 0.6 }, attack: { pierce: 1, shape: 'needle', tint: '#f0c030' },
     icon: (p) => {
       p.line(3, 15, 13, 5, hex('#e8b020'), 3); p.line(4, 15, 14, 5, hex('#f8d050'), 1);
       p.poly([13, 3, 16, 2, 15, 5], '#e8c8a0'); p.set(15, 3, '#2a2a2a');
       p.rect(1, 15, 3, 3, hex('#e88a9a')); p.rect(3, 14, 2, 2, hex('#b8b8c0'));
     } },
-  { id: 'bike_helmet', name: 'Blue Bike Helmet', kind: 'passive', quality: 2, pools: { shop: 0.8 }, tags: ['jeffy'],
+  { id: 'bike_helmet', name: 'Bike Helmet', kind: 'passive', quality: 2, pools: { shop: 0.8 }, tags: ['jeffy'],
     pickup: 'Safety first', effect: ['+1 wax heart.', 'Your own bombs can\'t hurt you.'],
     health: { wax: 2 },
     icon: (p) => {

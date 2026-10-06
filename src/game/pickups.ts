@@ -8,6 +8,7 @@ import { itemIconCanvas } from '../art/items';
 import { getItem } from '../items/registry';
 import { homePool } from '../items/homes';
 import type { PoolId } from '../items/types';
+import { sweetColor } from '../items/sweetcolor';
 
 export class Pickup {
   kind: string; x: number; y: number; z = 0; vx = 0; vy = 0; vz = 0; r = 5;
@@ -115,7 +116,7 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
     case 'spark': S.spark.draw(ctx, sx, y, o); break;
     case 'sparkBig': S.sparkBig.draw(ctx, sx, y, o); break;
     case 'page': S.page.draw(ctx, sx, y, o); break;
-    case 'sweet': S.sweets[(p.data.color ?? 0) % S.sweets.length].draw(ctx, sx, y, o); break;
+    case 'sweet': S.sweets[sweetColor(p.data.color) % S.sweets.length].draw(ctx, sx, y, o); break;
     case 'charm': {
       const icon = itemIconCanvas(p.data.id, false);
       ctx.globalAlpha = alpha;

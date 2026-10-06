@@ -13,17 +13,24 @@ import type { Enemy } from '../enemies/enemy';
 export const enum Team { Player = 0, Enemy = 1 }
 
 /** The dark ring and the light rim drawn around every enemy shot, pre-rendered once per size. */
-const haloCache = new Map<number, { dark: HTMLCanvasElement; rim: HTMLCanvasElement; h: number }>();
-function haloSprite(r: number): { dark: HTMLCanvasElement; rim: HTMLCanvasElement; h: number } {
+// (with High-contrast enemy shots on, a solid black ring and a thick steady white rim instead,
+// so they read by brightness alone, whatever colours you can tell apart)
+type Halo = { dark: HTMLCanvasElement; rim: HTMLCanvasElement; darkHi: HTMLCanvasElement; rimHi: HTMLCanvasElement; h: number };
+const haloCache = new Map<number, Halo>();
+function haloSprite(r: number): Halo {
   const key = Math.round(r * 4);
   let c = haloCache.get(key);
   if (!c) {
-    const h = Math.ceil(r + 3), S = h * 2;
+    const h = Math.ceil(r + 4), S = h * 2;
     const dark = document.createElement('canvas'); dark.width = dark.height = S;
     const d = dark.getContext('2d')!; d.fillStyle = 'rgba(8,4,10,0.6)'; d.beginPath(); d.arc(h, h, r + 1.6, 0, TAU); d.fill();
     const rim = document.createElement('canvas'); rim.width = rim.height = S;
     const g = rim.getContext('2d')!; g.strokeStyle = 'rgb(255,236,220)'; g.lineWidth = 0.6; g.beginPath(); g.arc(h, h, r + 0.6, 0, TAU); g.stroke();
-    c = { dark, rim, h }; haloCache.set(key, c);
+    const darkHi = document.createElement('canvas'); darkHi.width = darkHi.height = S;
+    const dh = darkHi.getContext('2d')!; dh.fillStyle = 'rgba(0,0,0,0.95)'; dh.beginPath(); dh.arc(h, h, r + 2.4, 0, TAU); dh.fill();
+    const rimHi = document.createElement('canvas'); rimHi.width = rimHi.height = S;
+    const gh = rimHi.getContext('2d')!; gh.strokeStyle = '#ffffff'; gh.lineWidth = 1.3; gh.beginPath(); gh.arc(h, h, r + 0.9, 0, TAU); gh.stroke();
+    c = { dark, rim, darkHi, rimHi, h }; haloCache.set(key, c);
   }
   return c;
 }
@@ -363,6 +370,7 @@ export class Projectiles {
     for (const p of this.list) if (p.active) { if (p.team === Team.Player) mine++; else enemyN++; }
     // the busier your side of the screen, the quieter your shots get, so the enemy's still stand out
     const busy = mine > 40, swarm = mine > 140;
+    const hi = !!w.game.save.data.settings.contrastShots;
     for (const pass of only !== undefined ? [only] : [Team.Player, Team.Enemy]) for (const p of this.list) {
       if (!p.active || (p.team === Team.Enemy) !== (pass === Team.Enemy)) continue;
       const sx = p.x - camX, sy = p.y - p.z - camY;
@@ -395,9 +403,9 @@ export class Projectiles {
         const pulse = 0.5 + 0.5 * Math.sin(p.t * 14 + p.x * 0.05);
         const base = p.delay > 0 ? 0.55 + 0.45 * Math.sin(p.t * 30) : 1;
         const halo = haloSprite(p.r);
-        ctx.globalAlpha = base; ctx.drawImage(halo.dark, sx - halo.h, sy - halo.h);
+        ctx.globalAlpha = base; ctx.drawImage(hi ? halo.darkHi : halo.dark, sx - halo.h, sy - halo.h);
         spr.draw(ctx, sx, sy);
-        ctx.globalAlpha = base * (0.35 + pulse * 0.4); ctx.drawImage(halo.rim, sx - halo.h, sy - halo.h);
+        ctx.globalAlpha = hi ? base : base * (0.35 + pulse * 0.4); ctx.drawImage(hi ? halo.rimHi : halo.rim, sx - halo.h, sy - halo.h);
         ctx.globalAlpha = 1;
         // their glow on the floor is decoration: drop it when the screen is full of them
         if (enemyN < 80) w.r.addLight(sx, sy, 14 + p.r * 2, 0.35);

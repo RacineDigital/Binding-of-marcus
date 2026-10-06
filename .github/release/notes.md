@@ -1,30 +1,37 @@
-## What's new in 3.13.0: every boss, redrawn
+## What's new in 3.15.0: choose your story
 
-Every boss in the book has been redesigned and reanimated from scratch. Their attacks, health,
-hitboxes and patterns are exactly as they were; what changed is how they look and move.
+**Four ways to bind a run.** Choose a playstyle before opening the book:
+- **Unbound:** the reader's original starting kit.
+- **Ember:** 25% more damage, with 15% slower fire rate.
+- **Wayfarer:** extra speed, two extra keys and a bomb, with 15% less damage.
+- **Clockwork:** an extra active-item charge per combat room, with 20% less damage.
+  Readers without a starting active receive a Tuning Fork.
 
-**New designs.** Each boss now has its own silhouette, face and colours, so you know who you're
-fighting at a glance even in a room full of shots. A few of the bigger changes:
-- **The Grubmother** rears out of her mound with one huge eye on her brow and a mouth full of teeth.
-- **The Wardrobe** scowls with a carved face and a yellow eye at the keyhole. Open, its doors are jaws.
-- **Furnace Heart** is a stove with a face, its gauges for eyes, scowling harder as it heats up.
-- **The Rat King** is a ring of rats knotted round one snarling, crowned rat.
-- **The Thornwife** sleeps with a little smile until her face splits open into a flower of thorns.
-- **The Rime Bride** watches you through her veil, then lifts it.
-- **The Pendulum's** dial is a face, with the clock hands for angry brows and a mouth full of teeth.
-- **The Bookbinder** is hunched and long-necked, his eyes and mouth sewn shut. Hurt him and the
-  stitches tear, one eye at a time.
-- **The Unwritten** is a hood with a hole full of eyes. **The Author** holds the quill and the book.
-- **The Iron Lung** drags itself along with arms pushed out through its portholes.
-- **The Patient's** sheet clings to a face, and it tears as the fight goes on.
+**Choose your treasure.** Every treasure room offers two curios. One leans toward firepower;
+its partner offers a different build direction when the pool allows. Take one, and the other
+returns to the book. Clear labels explain the choice before you commit.
 
-**Animation.** Every boss has idle, walking, wind-up, attack and recovery poses, flinches when you
-hit it, roars when it changes phase, and melts into a puddle when it dies. Most bosses rear back and wind
-up before they strike, so you can see an attack coming. (Your Echo still wears your own look.)
+**A reward you can work toward.** Clear three consecutive combat rooms without taking damage
+to earn an unlocked chest. The HUD tracks your progress. Bosses count; voluntary sacrifice
+payments do not break your streak, and repeated fights cannot farm it.
 
-**Eyes that follow you.** Boss eyes track Marcus around the room.
+**An illuminated book.** A redesigned reader-selection screen, engraved room borders, quieter
+floors, cool shadows and warm light, woven treasure-room runners, and a tidier resource display.
+The opening creatures have more distinctive sprites, and enemies and bosses have richer materials.
 
-**Phases show.** When a boss changes phase it looks different: cracked, torn, bloodied, angrier.
+**A harder soundtrack.** Twenty-eight chapter tracks now use an original driving arcade-rock
+score, with recorded playback and a matching synthesized fallback.
+
+**Keep your story straight.** The Journal includes a plain-language story guide and discovered
+item combinations. Run History records routes, endings, discoveries and the binding you chose.
+
+**Runs stay consistent.** Continue preserves future item-pool rolls and room damage instead of
+silently changing later rewards. Restart keeps the difficulty and binding. Daily Runs use one
+UTC day, a shared reader and the full item pool regardless of profile unlocks; retries retain
+that seed, and a finish after midnight counts toward the day the run began.
+
+**Previous release fixes retained.** Includes 3.14.0's clearer hospital-letter route, tutorial,
+accessibility settings, save backups, offline soundtrack support and Patient fight improvements.
 
 ## Download and play
 

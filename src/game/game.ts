@@ -19,6 +19,7 @@ import { getItem, getConsumable } from '../items/registry';
 import { placeBomb } from './bombs';
 import * as flow from './roomflow';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { sweetColor } from '../items/sweetcolor';
 import { MenuSystem } from '../ui/menus';
 import { Health } from '../player/health';
 import { spawnDrop } from './drops';
@@ -67,11 +68,12 @@ export class Game {
     window.addEventListener('gamepadconnected', unlockAudio);
     // F9 (or F12) saves a screenshot: to Pictures/Lost Marcus on desktop, a download in the browser
     window.addEventListener('keydown', (e) => { if (e.code === 'F9' || e.code === 'F12') { e.preventDefault(); this.screenshot(cv); } });
-    // Returning from another window must require a deliberate Resume, not expose a live fight.
-    window.addEventListener('blur', () => this.pauseRun());
-    document.addEventListener('visibilitychange', () => { if (document.hidden) this.pauseRun(); });
-    window.addEventListener('gamepaddisconnected', () => { if (this.input.usingPad) this.pauseRun(); });
     // closing the window mid-run keeps your exact spot
+    // alt-tab, a hidden tab or an unplugged controller pauses the run (Options -> Pause when away)
+    const away = () => this.autoPause();
+    window.addEventListener('blur', away);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) away(); });
+    window.addEventListener('gamepaddisconnected', away);
     window.addEventListener('beforeunload', () => { if (this.scene === 'run' && this.world && !this.world.player.dead && this.world.deathT < 0) this.saveSnapshot(); this.save.flush(); });
   }
 
@@ -100,6 +102,7 @@ export class Game {
     const s = this.save.data.settings;
     this.input.bindings = structuredClone(s.bindings);
     this.input.diagonalAim = s.diagonalAim;
+    this.input.rumbleScale = s.rumble ?? 1;
     this.r.mode = s.scale; this.r.resize();
     this.audio.setVolumes(s.music, s.sfx);
   }
@@ -204,6 +207,12 @@ export class Game {
   }
 
   // ---------------------------------------------------------------- run lifecycle
+  /** Pause the run as if the pause key were pressed, when the player has looked away. */
+  autoPause(): void {
+    if (this.save.data.settings.autoPause === false || this.scene !== 'run' || !this.world || this.paused || this.fading) return;
+    if (this.world.player.dead || this.world.deathT >= 0) return;
+    this.pauseRun();
+  }
   newRun(charId: string, seed?: string, challenge: string | null = null, mode: RunMode = 'normal', binding: BindingId = 'unbound'): void {
     const s = seed ? normalizeSeed(seed) : randomSeed();
     if (mode === 'daily') charId = dailyReader(s).id;
@@ -398,7 +407,7 @@ export class Game {
       d?.use?.(w);
       this.save.stat('pagesUsed', 1);
     } else {
-      const eff = SWEET_EFFECTS[w.run.sweetMap[Number(c.id) % 12]];
+      const eff = SWEET_EFFECTS[w.run.sweetMap[sweetColor(c.id)]];
       w.run.identified.add(eff.id);
       w.hud.banner(eff.name, eff.desc);
       this.audio.play(eff.good ? 'sweetGood' : 'sweetBad');

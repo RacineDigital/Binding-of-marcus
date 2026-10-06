@@ -8,7 +8,7 @@ import { LASER_TIERS, overcharge } from '../projectiles/weapons';
 import { itemIconCanvas } from '../art/items';
 import { getItem, getConsumable } from '../items/registry';
 import { describeItem, DescLine } from '../items/describe';
-import { text, panel, paperStrip, wrap, COL, FONT_TITLE, FONT_BODY, measure } from './draw';
+import { text, panel, paperStrip, wrap, COL, FONT_TITLE, FONT_BODY, measure, setTextScale, textScale } from './draw';
 import { PixelArt } from '../render/pixel';
 import { ramp } from '../render/color';
 import { MAP_SIZE, VIEW_W, VIEW_H } from '../core/constants';
@@ -24,6 +24,9 @@ import { bindLabel, fmtKeys, ACTION_ORDER } from '../core/input';
 import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
+import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
+import { tutorialLine } from '../game/tutorial';
+import { sweetColor } from '../items/sweetcolor';
 import { STING_HIT, StingKind } from '../audio/bossting';
 import { FLAWLESS_TARGET } from '../game/bindings';
 import { bindingSeal } from './bindingart';
@@ -205,6 +208,37 @@ export class Hud {
   readingNote(title: string): boolean { return !!this.note?.at && this.note.title === title && this.note.dur > this.note.t + 0.3; }
 
   /** Speedrun-style run clock under the map. */
+  /** A first-run hint, centred at the top of the screen; it ticks green for a moment once done. */
+  private drawTutorial(ctx: CanvasRenderingContext2D): void {
+    const t = tutorialLine(this.w);
+    if (!t) return;
+    const s = (t.done ? '\u2713 ' : '') + t.text, size = 8;
+    const wd = measure(ctx, s, size) + 18, x = VIEW_W / 2 - wd / 2, y = 8;
+    ctx.save();
+    ctx.fillStyle = 'rgba(14,10,20,0.82)'; ctx.fillRect(x, y, wd, 15);
+    ctx.strokeStyle = t.done ? 'rgba(158,224,138,0.8)' : 'rgba(255,224,140,0.55)'; ctx.lineWidth = 0.7; ctx.strokeRect(x + 0.5, y + 0.5, wd - 1, 14);
+    text(ctx, s, VIEW_W / 2, y + 10.5, size, t.done ? COL.up : '#ffe8b0', 'center');
+    ctx.restore();
+  }
+
+  /** On the hospital path: a two-line checklist for the halves of Grandfather's letter, and where each one is. */
+  private drawLetterHunt(ctx: CanvasRenderingContext2D): void {
+    const w = this.w, h = letterHunt(w);
+    if (!h) return;
+    let y = 64 + (w.floor.curse ? 8 : 0) + (w.game.save.data.settings.timer ? 12 : 0);
+    const rows: [boolean, string, string][] = [
+      [h.top, 'Top half', 'Lost & Found, after the boss'],
+      [h.bottom, 'Bottom half', 'Deep Crawlspace, on the map'],
+    ];
+    const lines = rows.map(([got, name, where]) => got ? `\u2713 ${name}: found` : `\u2022 ${name}: ${where}`);
+    const wd = Math.max(measure(ctx, 'Grandfather\'s letter', 6, FONT_BODY, 700), ...lines.map((s) => measure(ctx, s, 5.5))) + 6;
+    ctx.save();
+    ctx.fillStyle = 'rgba(8,6,12,0.55)'; ctx.fillRect(VIEW_W - 8 - wd, y, wd, 27);
+    text(ctx, 'Grandfather\'s letter', VIEW_W - 11, y + 7, 6, '#ffe08c', 'right', FONT_BODY, 700);
+    lines.forEach((s, i) => text(ctx, s, VIEW_W - 11, y + 16 + i * 9, 5.5, rows[i][0] ? COL.up : COL.text, 'right'));
+    ctx.restore();
+  }
+
   private drawTimer(ctx: CanvasRenderingContext2D): void {
     const t = this.w.run.stats.time;
     const m = Math.floor(t / 60), s = t % 60;
@@ -271,16 +305,20 @@ export class Hud {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
+    setTextScale(this.w.game.save.data.settings.hudScale || 1);
+    try { this.renderHud(ctx); } finally { setTextScale(1); }
+  }
+  private renderHud(ctx: CanvasRenderingContext2D): void {
     const w = this.w;
-    // screen flashes & vignette
-    const flashScale = w.game.save.data.settings.reduceFlashes ? 0.2 : 1;
+    // screen flashes & vignette (softened, and never more than a glow, with Reduce flashing on)
+    const flashK = w.game.save.data.settings.reduceFlash ? 0.25 : 1;
     if (w.redFlash > 0) {
       // hurt: the edges of the screen flush red; the middle, where the fight is, stays clear
       const rg = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.32, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.6);
-      rg.addColorStop(0, 'rgba(160,10,20,0)'); rg.addColorStop(1, `rgba(170,12,24,${Math.min(0.75, w.redFlash * 0.9 * flashScale).toFixed(3)})`);
+      rg.addColorStop(0, 'rgba(160,10,20,0)'); rg.addColorStop(1, `rgba(170,12,24,${Math.min(0.75 * flashK, w.redFlash * 0.9 * flashK).toFixed(3)})`);
       ctx.fillStyle = rg; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     }
-    if (w.whiteFlash > 0) { ctx.fillStyle = `rgba(255,250,240,${(w.whiteFlash * 0.5 * flashScale).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (w.whiteFlash > 0) { ctx.fillStyle = `rgba(255,250,240,${Math.min(0.5 * flashK, w.whiteFlash * 0.5 * flashK).toFixed(3)})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     const g = ctx.createRadialGradient(VIEW_W / 2, VIEW_H / 2, VIEW_H * 0.45, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.62);
     g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -296,6 +334,8 @@ export class Hud {
     this.drawConsumables(ctx);
     if (w.floor.curse === 'lost') { if (!this.fullMap) text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right'); }
     else if (!this.fullMap) this.drawMinimap(ctx, false);
+    if (!this.fullMap) this.drawLetterHunt(ctx);
+    if (!this.fullMap) this.drawTutorial(ctx);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);
@@ -452,6 +492,7 @@ export class Hud {
   private drawRunIdentity(ctx: CanvasRenderingContext2D): void {
     const w = this.w, b = w.run.binding;
     const streak = w.run.flags.cleanStreak ?? 0, progress = streak % FLAWLESS_TARGET;
+    if (!tutorialLine(w)) {
     panel(ctx, 180, 5, 120, 28, 1, '#566865', 'rgba(12,25,30,0.86)');
     bindingSeal(ctx, b, 191, 19, 16);
     text(ctx, b.name + ' binding', 203, 15, 7.5, b.color);
@@ -460,6 +501,7 @@ export class Hud {
       ctx.fillRect(203 + i * 8, 21, 5, 4);
     }
     text(ctx, '3 clean → chest', 233, 25, 6.5, '#c6d2c9');
+    }
     const offers = w.pickups.filter((p) => p.pedestal && p.data.id && p.data.group !== undefined && !p.dead);
     if (w.room.type === 'treasure' && offers.length > 1) {
       text(ctx, 'CHOOSE ONE CURIO', VIEW_W / 2, 52, 8, '#ecd9a7', 'center');
@@ -592,7 +634,7 @@ export class Hud {
     const S = pickupSprites();
     pl.consumables.forEach((c, i) => {
       const x = VIEW_W - 22 - i * 20, y = VIEW_H - 22;
-      const spr = c.kind === 'page' ? S.page : S.sweets[Number(c.id) % S.sweets.length];
+      const spr = c.kind === 'page' ? S.page : S.sweets[sweetColor(c.id) % S.sweets.length];
       spr.draw(ctx, x + 8, y + 15);
       if (i === 0) {
         // name and key sit left of the whole row so they never overlap a second pocket item
@@ -654,7 +696,15 @@ export class Hud {
         ctx.strokeRect(x - 0.6, y - 0.6, W + 1.2, Hh + 1.2);
       }
       const ic = mapIcon(r.type, Math.round(isz * dens));
-      if (ic) { ctx.globalAlpha = current ? 0.85 : 1; ctx.drawImage(ic, x + W / 2 - isz / 2, y + Hh / 2 - isz / 2, isz, isz); ctx.globalAlpha = 1; }
+      // half of Grandfather's letter is in here: show it, not the room's usual icon
+      const half = LETTER_HALVES.find((id) => (current ? w.pickups.some((p) => !p.dead && isWantedHalf(w, p.kind, p.data.id) && p.data.id === id) : r.pickups.some((p) => isWantedHalf(w, p.kind, p.data?.id) && p.data?.id === id)));
+      if (half) {
+        const s = isz * (1.15 + 0.12 * Math.sin(w.time * 5));
+        ctx.save(); ctx.imageSmoothingEnabled = false;
+        ctx.strokeStyle = `rgba(255,224,140,${0.6 + 0.4 * Math.sin(w.time * 5)})`; ctx.lineWidth = 0.8; ctx.strokeRect(x - 0.8, y - 0.8, W + 1.6, Hh + 1.6);
+        ctx.drawImage(itemIconCanvas(half), x + W / 2 - s / 2, y + Hh / 2 - s / 2, s, s);
+        ctx.restore();
+      } else if (ic) { ctx.globalAlpha = current ? 0.85 : 1; ctx.drawImage(ic, x + W / 2 - isz / 2, y + Hh / 2 - isz / 2, isz, isz); ctx.globalAlpha = 1; }
     }
     if (!full) ctx.restore();
     // curse label
@@ -711,15 +761,16 @@ export class Hud {
     if (p && p.data.swap && p.data.id) { const t = ticketFor(w, p); lines.push(t ? { t: `Leave behind: ${getItem(t)?.name ?? t}`, c: '#ffd8a0', size: 7, bullet: '⇄', bc: '#e0a860' } : { t: 'Free: you have nothing to leave', c: COL.up, size: 7, bullet: '⇄', bc: '#e0a860' }); }
     if (p && p.data.group !== undefined) lines.push({ t: 'Choose one. The other offer disappears.', c: COL.gold, size: 7, bullet: '◇', bc: COL.gold });
     if (p && p.deal > 0) { const dc = dealCost(w, p); lines.push({ t: `Costs ${dealCostText(dc)}${dc.ok ? '' : ' (not enough)'}`, c: COL.down, size: 7, bullet: '♥', bc: COL.down }); }
-    let h = 11; for (const l of lines) h += l.size + 2.5;
+    const k = textScale();
+    let h = 11 * k; for (const l of lines) h += l.size * k + 2.5;
     ctx.save(); ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x - 3, y0 - 3, maxW + 6, h + 4);
     if (info.icon) { const iw = (info.icon as HTMLCanvasElement).width || 16; const k = Math.min(1, 12 / iw); ctx.drawImage(info.icon, x, y0, iw * k, ((info.icon as HTMLCanvasElement).height || 16) * k); }
     text(ctx, info.title, x + 16, y0 + 9, 9, qCol, 'left', FONT_BODY, 700);
     if (info.quality >= 0) text(ctx, `Q${info.quality}`, x + 16 + measure(ctx, info.title, 9, FONT_BODY, 700) + 4, y0 + 9, 6.5, qCol, 'left', FONT_BODY, 600);
-    let y = y0 + 11;
+    let y = y0 + 11 * k;
     for (const l of lines) {
-      y += l.size + 2.5;
+      y += l.size * k + 2.5;
       if (l.bullet) text(ctx, l.bullet, x + 1, y - 0.5, l.size, l.bc ?? COL.text, 'left', FONT_BODY, 700);
       text(ctx, l.t, x + 9, y - 0.5, l.size, l.c, 'left', FONT_BODY, 600);
     }
@@ -927,7 +978,8 @@ export class Hud {
       const a = Math.min(1, t.t * 5, (t.dur - t.t) * 3);
       ctx.globalAlpha = clamp(a, 0, 1);
       const lines = wrap(ctx, t.text, 8, 300);
-      lines.forEach((l, j) => text(ctx, l, VIEW_W / 2, VIEW_H - 40 - (this.toasts.length - 1 - i) * 12 - (lines.length - 1 - j) * 10, 8, COL.text, 'center'));
+      const k = textScale();
+      lines.forEach((l, j) => text(ctx, l, VIEW_W / 2, VIEW_H - 40 - (this.toasts.length - 1 - i) * 12 * k - (lines.length - 1 - j) * 10 * k, 8, COL.text, 'center'));
       ctx.globalAlpha = 1;
     });
   }
@@ -1000,7 +1052,7 @@ export class Hud {
       if (spr) {
         const k = Math.min(1.8, 92 / Math.max(spr.h, 1)), sl = ease.outCubic(clamp(t / 0.5, 0, 1));
         ctx.save(); ctx.translate(VIEW_W + 70 - sl * (VIEW_W + 70 - bx), by + Math.sin(t * 3) * 1.5); ctx.scale(k, k);
-        const flash = hit ? Math.max(0, 1 - (t - H) * 3.5) * (w.game.save.data.settings.reduceFlashes ? 0.2 : 1) : 0;
+        const flash = hit ? Math.max(0, 1 - (t - H) * 3.5) * (w.game.save.data.settings.reduceFlash ? 0.2 : 1) : 0;
         spr.draw(ctx, 0, 0, hit ? { flash, tint: this.bossKind === 'echo' ? '#8ab8ff' : undefined, tintAmt: this.bossKind === 'echo' ? 0.35 : 0 } : { tint: '#000000', tintAmt: 1 });
         ctx.restore();
       }
@@ -1049,7 +1101,7 @@ export class Hud {
       if (this.bossKind === 'champion') text(ctx, 'CHAMPION', VIEW_W / 2 + 14, cy + 41, 6.5, ACC, 'center', FONT_BODY, 700);
     }
     // the white flash on the hit
-    if (hit && t - H < 0.18) { ctx.globalAlpha = (1 - (t - H) / 0.18) * (w.game.save.data.settings.reduceFlashes ? 0.1 : 0.55); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (hit && t - H < 0.18) { ctx.globalAlpha = (1 - (t - H) / 0.18) * (w.game.save.data.settings.reduceFlash ? 0.1 : 0.55); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     ctx.restore();
   }
 }

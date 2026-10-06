@@ -249,9 +249,11 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'boss': {
       if (floor.theme.id === 'lastpage' || floor.theme.id === 'foreword' || floor.theme.id === 'room4') {
-        // a huge bare arena with four pillars to hide behind
+        // a bare arena with four pillars to hide behind (Room 4 is one long room, the others huge)
         room.bossId = floor.theme.bosses[0];
-        for (const [c, r] of [[7, 5], [room.cols - 8, 5], [7, room.rows - 6], [room.cols - 8, room.rows - 6]]) room.setOb(c, r, Ob.Pillar);
+        const pillars = room.ch === 1 ? [[7, 2], [room.cols - 8, 2], [7, room.rows - 3], [room.cols - 8, room.rows - 3]]
+          : [[7, 5], [room.cols - 8, 5], [7, room.rows - 6], [room.cols - 8, room.rows - 6]];
+        for (const [c, r] of pillars) room.setOb(c, r, Ob.Pillar);
         break;
       }
       stamp(room, BOSS_TEMPLATE, 0, 0, false, false, rng, floor, slots);
@@ -356,7 +358,11 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
         const sl = [{ c: 2, r: 2, ch: 'M' }, { c: 12, r: 6, ch: 'M' }, { c: 2, r: 6, ch: 'F' }, { c: 12, r: 2, ch: 'F' }];
         room.spawns = castEnemies(room, floor, rng, sl, 1.3, run.mode === 'hard');
         freeSpawns(room, room.spawns);
-      } else for (let i = 0; i < 3; i++) pk(rng.pick(['ink', 'page', 'sweet', 'button5']), cx + (i - 1) * 24, cy);
+      } else for (let i = 0; i < 3; i++) {
+        // a page or a sweet needs to know which one it is
+        const k = rng.pick(['ink', 'page', 'sweet', 'button5']);
+        pk(k, cx + (i - 1) * 24, cy, k === 'page' ? { id: null, rollPage: true } : k === 'sweet' ? { color: rng.int(0, 11) } : undefined);
+      }
       break;
     }
     case 'library': {

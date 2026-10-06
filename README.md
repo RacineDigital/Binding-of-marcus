@@ -41,6 +41,18 @@ The game autosaves on every room you enter and when you close it, so **Continue*
 the exact room with the floor as you left it. There are three save slots (Save Slots on the title
 screen), each of which can be exported to a file, imported again, or erased. Settings are shared
 between slots.
+Each save keeps a backup copy, and the game loads the backup if the main copy is ever damaged.
+
+### Accessibility and comfort
+All in Options: **Reduce flashing** (full-screen flashes become a faint glow), **Screen shake**,
+**Hit pause**, **HUD text size** (100%, 115% or 130%), **High-contrast enemy shots** (a solid
+black-and-white ring on every enemy shot, readable without colour), **Effects: Low** (fewer
+decorative particles for slower computers) and **Tutorial hints** (first-run control hints).
+
+### Reporting a bug
+Options → **Error log** opens the folder holding `errors.log` on the desktop version (in the app's
+data folder, beside `saves`), or copies an error report to the clipboard in the browser. Attach it
+to an issue on GitHub.
 
 ## Running from source
 
@@ -57,12 +69,13 @@ npm run dist:win                   # Windows installer + portable .exe in releas
 npm run dist:steam                 # unpacked Windows Steam depot (run on Windows)
 npm run dist:itch                  # downloadable Windows itch.io zip (run on Windows)
 npm run package:itch               # browser upload zip with soundtrack in release-itch/
+npm run dist:linux                 # Linux AppImage in release-desktop/ (run on Linux)
 npm run test:synergy               # every item x every attack mode in headless Chromium (needs the dev server)
 ```
 
 The Release workflow also builds the Windows .exe files on a Windows runner, starts the packaged game
-in a self-test mode (`--smoke`), and attaches them to the release. The **Windows build check**
-workflow does the same on every push without publishing.
+in a self-test mode (`--smoke`), and attaches them to the release. The **Desktop build check**
+workflow does the same on every push, for Windows and a Linux AppImage, without publishing.
 
 To publish a new release, bump `version` in `package.json` and push, or push a tag such as `v1.1.0`. The
 **Release** GitHub Actions workflow tests, builds and packages the game, then attaches the files to a new
@@ -75,6 +88,8 @@ sprite preview sheets.
 Store packaging and soundtrack regeneration instructions are in [docs/RELEASING.md](docs/RELEASING.md).
 For the prioritized Steam launch gates and current readiness audit, see
 [docs/STEAM_RELEASE_CHECKLIST.md](docs/STEAM_RELEASE_CHECKLIST.md).
+The gameplay rules review and remaining balance playtests are in
+[docs/GAMEPLAY_OVERHAUL.md](docs/GAMEPLAY_OVERHAUL.md).
 
 ## Controls (all rebindable in Options → Controls)
 
@@ -124,19 +139,20 @@ Menus also work with the mouse: hover, click and scroll.
   changes, attack changes, health and resource grants, bomb modifiers, hooks and an icon. There are
   also 20 Torn Pages (cards), 12 Unmarked Sweets (pills, randomised per run and identified on use)
   and 17 Charms (trinkets).
-- **Reference items.** A Drain Gang / Bladee set (Icedancer, Gluee, Red Light, 333, Exeter...), a
-  Playboi Carti set (Whole Lotta Red, Die Lit, Vamp Anthem, Magnolia, Sky, Stop Breathing...) and
-  internet-era objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug), plus Jeffy's
-  Big Boy Diaper, Nose Pencil and Blue Bike Helmet.
-- **The dice.** Every die from Isaac: D1, D4, the D6, D7, D8, D10, D12, D20, D100, Eternal D6,
-  Spindown Dice and D Infinity (which rolls whichever face it shows), plus a D9 that rerolls your
-  charms. The strongest ones are earned: the D4 (two transformations at once), D8 (15 damage),
-  Spindown Dice (three challenges), D100 (beat the Author) and D Infinity (roll every other die).
+- **Themed sets.** A cold set (Frost Skate, Paste Pot, Darkroom Lamp, Lucky Threes, Icebox...), a
+  blood set (Seeing Red, Last Light, Blood Hymn, Magnolia, Sky, Held Breath...) and internet-era
+  objects (Brick Phone, Pocket Pet, Lava Lamp, Aero Bubble, Y2K Bug), plus a toddler's Oversized
+  Nappy, Chewed Pencil and Bike Helmet.
+- **The dice.** A die for every face count, each rerolling something different: D1, D4,
+  Grandfather's Die (six sides), D7, D8, D9, D10, D12, D20 and D100, plus the Hollow Die, the
+  Countdown Die and the Shifting Die (which rolls whichever face it shows). The strongest ones are
+  earned: the D4 (two transformations at once), D8 (15 damage), Countdown Die (three challenges),
+  D100 (beat the Author) and the Shifting Die (roll every other die).
 - **Ten transformations.** Collecting three items that share a tag (moth, ink, clock, wax,
-  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look. Jeffy
-  throws a tantrum of pencils whenever he gets hit.
+  thread, bone, void, drain, vamp, jeffy) triggers one, and each one changes how you look.
+  Tantrum throws a fit of pencils whenever you get hit.
 - **One pool per item.** Every item lives in exactly one pool, and a transformation's items all
-  share theirs. Inkblooded lives in the Inkwell, King Vamp in secret rooms, Clockwork in the shop,
+  share theirs. Inkblooded lives in the Inkwell, the Night Count in secret rooms, Clockwork in the shop,
   and so on. Each item's description says which pool it is from, and Inkwell, Hexed and Chapel
   items carry a glow of their room wherever they turn up.
 - **Twenty chapters in a different order every run.** A run is seven chapters drawn from twenty
@@ -173,7 +189,7 @@ Menus also work with the mouse: hover, click and scroll.
 - **Final bosses.** Only the bosses you can end the story on are hard: they hit harder, attack
   faster and have a bullet-hell last stand. The Unwritten and the Author are the Delirium fight:
   ten times the health, eight phases, layered bullet patterns and constant shape changes into any
-  boss you've beaten. Every boss opens with an Isaac-style VS screen.
+  boss you've beaten. Every boss opens with a VS screen.
 - **Transformations announce themselves** with a big title card and a sound.
 - **Echoes.** Where your last run died, your echo waits next time: a ghost of the reader you
   died as, in a room of its own, fighting the way you did. Lay it to rest and it leaves one of the
@@ -234,13 +250,13 @@ Menus also work with the mouse: hover, click and scroll.
   statistics, best scores and settings.
 - **Costumes.** Items that would show on you do (rings, spectacles, masks, crowns, halos, wings,
   capes), the strongest items restyle your whole outfit, and every transformation gives you a new
-  look (King Vamp: pale, red-eyed, crowned and caped).
+  look (the Night Count: pale, red-eyed, crowned and caped).
 - **Modes.** Normal; Second Edition (Hard) and Endless (the story keeps going after The Binding,
   harder each chapter), both unlocked by finishing the story; and a Daily Run with the same seed and
   reader for everyone that day. Every run ends with a score and a personal best.
 - **Ten characters:** Marcus, Wren, Edda, Elias, The Blot, Ada (Grandmother, with slowing thorn shots;
   finish The Visit carrying her ring), and four hard-won readers who start with
-  items: Ozzie (the D6; beat It Remembers holding a die), Nell (the Burning Glass and a lantern;
+  items: Ozzie (Grandfather's Die; beat It Remembers holding a die), Nell (the Burning Glass and a lantern;
   beat the Unwritten), Bram (a bone folder and a tin heart; beat three bosses in one run without
   any of them hitting you) and Wick (flies, with two moths; finish the story as Mothkin). Each
   reader's card shows completion marks for the five endings (cream on Normal, red on Second

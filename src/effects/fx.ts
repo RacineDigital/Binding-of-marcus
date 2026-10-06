@@ -39,14 +39,16 @@ export class FX {
   texts: TextFx[] = [];
   /** Decal sink set by the world: draws permanent marks onto the room floor. */
   decalSink: ((x: number, y: number, color: string, size: number) => void) | null = null;
+  /** Live particles before decorative ones start thinning out (lower with Options -> Effects: Low). */
+  budget = 600;
   constructor(n = 3500) {
     for (let i = 0; i < n; i++) { const p = new Particle(); this.parts.push(p); this.free.push(p); }
   }
   spawn(kind: PK, x: number, y: number): Particle | null {
-    // a particle budget: past 600 live, the purely decorative ones (dust, smoke, embers, droplets)
-    // thin out the busier it gets; sparks, rings, flashes and stars, which carry meaning, always spawn
-    const live = this.parts.length - this.free.length;
-    if (live > 600 && (kind === PK.Pix || kind === PK.Smoke || kind === PK.Ember || kind === PK.Bubble || kind === PK.Splat) && Math.random() < (live - 600) / 500) return null;
+    // a particle budget: past it, the purely decorative ones (dust, smoke, embers, droplets) thin
+    // out the busier it gets; sparks, rings, flashes and stars, which carry meaning, always spawn
+    const live = this.parts.length - this.free.length, B = this.budget;
+    if (live > B && (kind === PK.Pix || kind === PK.Smoke || kind === PK.Ember || kind === PK.Bubble || kind === PK.Splat) && Math.random() < (live - B) / (B * 0.85)) return null;
     const p = this.free.pop();
     if (!p) return null;
     (p as { _ix?: number })._ix = undefined; p.active = true; p.kind = kind; p.x = x; p.y = y; p.z = 0; p.vx = 0; p.vy = 0; p.vz = 0;

@@ -1,4 +1,7 @@
 // Front-end and overlay menus. Keyboard and controller navigable; drawn crisp over an animated scene.
+import { latestNews } from './whatsnew';
+import { GAME_VERSION } from '../core/constants';
+import { errorCount, shareErrorLog } from '../core/errorlog';
 import type { Game } from '../game/game';
 import type { World } from '../game/world';
 import { MenuKey, ACTION_ORDER, ACTION_LABELS, keyLabel, DEFAULT_BINDINGS, Action, bindLabel } from '../core/input';
@@ -175,6 +178,12 @@ export class MenuSystem {
     this.stack = [];
     if (!this.g.save.data.introSeen) { this.push(this.introScreen()); return; }
     this.push(mainMenuScreen(this));
+    // after an update, a returning player gets the new notes once (a brand new player doesn't need them)
+    const st = this.g.save.data.settings;
+    if (st.seenVersion !== GAME_VERSION) {
+      if ((this.g.save.data.stats.runs ?? 0) > 0 && latestNews().blocks.length) this.push(this.whatsNewScreen());
+      else { st.seenVersion = GAME_VERSION; this.g.save.markDirty(); }
+    }
     this.g.audio.setMusic('menu');
     this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
@@ -772,26 +781,34 @@ export class MenuSystem {
     const st = () => g.save.data.settings;
     type Opt = { label: string; value: () => string; left?: () => void; right?: () => void; ok?: () => void };
     const pct = (v: number) => Math.round(v * 100) + '%';
+    let logNote = '';
     const step = (k: 'music' | 'sfx' | 'shake', d: number) => { const s = st(); s[k] = clamp(Math.round((s[k] + d) * 10) / 10, 0, 1); g.applySettings(); g.save.markDirty(); g.audio.play('coin', { vol: 0.5 }); };
     const opts: Opt[] = [
       { label: 'Music volume', value: () => pct(st().music), left: () => step('music', -0.1), right: () => step('music', 0.1) },
       { label: 'Effects volume', value: () => pct(st().sfx), left: () => step('sfx', -0.1), right: () => step('sfx', 0.1) },
       { label: 'Screen shake', value: () => pct(st().shake), left: () => step('shake', -0.1), right: () => step('shake', 0.1) },
-      { label: 'Reduced screen flashes', value: () => (st().reduceFlashes ? 'On' : 'Off'), ok: () => { st().reduceFlashes = !st().reduceFlashes; g.save.markDirty(); } },
+      { label: 'Reduce flashing', value: () => (st().reduceFlash ? 'On' : 'Off'), ok: () => { st().reduceFlash = !st().reduceFlash; g.save.markDirty(); } },
+      { label: 'High-contrast enemy shots', value: () => (st().contrastShots ? 'On' : 'Off'), ok: () => { st().contrastShots = !st().contrastShots; g.save.markDirty(); } },
+      { label: 'HUD text size', value: () => pct(st().hudScale || 1), ok: () => { const v = [1, 1.15, 1.3]; st().hudScale = v[(v.indexOf(st().hudScale || 1) + 1) % v.length]; g.save.markDirty(); } },
       { label: 'Hit pause', value: () => ({ 0: 'Off', 0.5: 'Light', 1: 'Full' } as Record<number, string>)[st().hitPause ?? 1] ?? 'Full', ok: () => { const v = [1, 0.5, 0]; st().hitPause = v[(v.indexOf(st().hitPause ?? 1) + 1) % 3]; g.save.markDirty(); } },
       { label: 'Scaling', value: () => ({ sharp: 'Sharp (fit)', integer: 'Pixel perfect', stretch: 'Nearest (fit)' } as any)[st().scale], ok: () => { const m = ['sharp', 'integer', 'stretch'] as const; st().scale = m[(m.indexOf(st().scale) + 1) % 3]; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fullscreen', value: () => (isFullscreen() ? 'On' : 'Off'), ok: () => { const on = !isFullscreen(); setFullscreen(on); st().fullscreen = on; g.save.markDirty(); } },
       { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
       ...((window as any).bomDesktop?.setPresence ? [{ label: 'Discord status', value: () => (st().discord !== false ? 'On' : 'Off'), ok: () => { st().discord = st().discord === false; g.save.markDirty(); } }] : []),
+      { label: 'Tutorial hints', value: () => (st().tutorial !== false ? 'On' : 'Off'), ok: () => { st().tutorial = st().tutorial === false; g.save.markDirty(); } },
       { label: 'Run timer', value: () => (st().timer ? 'On' : 'Off'), ok: () => { st().timer = !st().timer; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },
       { label: 'Show stats on HUD', value: () => (st().showStats ? 'On' : 'Off'), ok: () => { st().showStats = !st().showStats; g.save.markDirty(); } },
       { label: 'Motion smoothing', value: () => (st().interpolate !== false ? 'On' : 'Off'), ok: () => { st().interpolate = st().interpolate === false; g.save.markDirty(); } },
       { label: 'Frame rate cap', value: () => (st().fpsCap ? st().fpsCap + ' fps' : 'Display rate'), ok: () => { const caps = [0, 60, 120, 144, 165, 240]; st().fpsCap = caps[(caps.indexOf(st().fpsCap ?? 0) + 1) % caps.length]; g.save.markDirty(); } },
+      { label: 'Effects', value: () => (st().lowFx ? 'Low (for slower computers)' : 'Full'), ok: () => { st().lowFx = !st().lowFx; g.save.markDirty(); } },
       { label: 'Show FPS', value: () => (st().showFps ? 'On' : 'Off'), ok: () => { st().showFps = !st().showFps; g.save.markDirty(); } },
+      { label: 'Controller rumble', value: () => pct(st().rumble ?? 1), left: () => { st().rumble = clamp(Math.round(((st().rumble ?? 1) - 0.25) * 4) / 4, 0, 1); g.applySettings(); g.save.markDirty(); g.input.rumble(0.6, 150); }, right: () => { st().rumble = clamp(Math.round(((st().rumble ?? 1) + 0.25) * 4) / 4, 0, 1); g.applySettings(); g.save.markDirty(); g.input.rumble(0.6, 150); } },
+      { label: 'Pause when away', value: () => (st().autoPause !== false ? 'On' : 'Off'), ok: () => { st().autoPause = st().autoPause === false; g.save.markDirty(); } },
       { label: 'Diagonal keyboard aiming', value: () => (st().diagonalAim ? 'On' : 'Off'), ok: () => { st().diagonalAim = !st().diagonalAim; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fire button-drop chance', value: () => pct(st().fireDropChance), left: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance - 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); }, right: () => { st().fireDropChance = clamp(Math.round((st().fireDropChance + 0.05) * 100) / 100, 0, 0.5); g.save.markDirty(); } },
       { label: 'Help & controls', value: () => '', ok: () => self.push(self.helpScreen(overlay)) },
+      { label: 'Error log', value: () => logNote || (errorCount() ? `${errorCount()} logged` : 'No errors'), ok: () => { void shareErrorLog().then((s) => { logNote = s; setTimeout(() => (logNote = ''), 2500); }); } },
     ];
     if (!overlay) opts.push({ label: 'Save slots', value: () => `Slot ${g.save.slot}`, ok: () => self.push(profilesScreen(self)) }, { label: 'Credits', value: () => '', ok: () => self.push(self.creditsScreen()) });
     if (!overlay) opts.push({ label: 'Erase all progress', value: () => '', ok: () => self.push(self.confirmScreen('Erase every unlock, statistic and saved run?', () => { g.save.reset(); self.openMain(); })) });
@@ -941,7 +958,8 @@ export class MenuSystem {
   // ------------------------------------------------------------ pause
   private pauseMenu(): Screen {
     const self = this, g = this.g;
-    const items = ['Resume', 'Help & controls', 'Options', 'Restart (same reader)', 'Save & quit to menu'];
+    const daily = g.world?.run.mode === 'daily';
+    const items = ['Resume', 'Help & controls', 'Options', daily ? "Retry today's seed" : 'Restart (same reader)', 'Save & quit to menu'];
     let sel = 0;
     const choose = () => {
       if (sel === 0) { g.resumeRun(); return; }
@@ -1002,6 +1020,70 @@ export class MenuSystem {
   }
 
   /** Help: the controls as you have them bound, and how to read the house. Opened from the pause menu, the title and Options. */
+  /** What's new: the newest changelog section, as pages of the book (left/right to turn them). */
+  whatsNewScreen(): Screen {
+    const self = this, g = this.g;
+    const BX = 36, BY = 14, BW = 408, BH = 244, COLW = 172, LH = 9, TOP = 58, ROWS = Math.floor((BY + BH - 22 - TOP) / LH);
+    const news = latestNews();
+    let cols: { s: string; kind: string }[][] | null = null, spread = 0;
+    const layout = (ctx: CanvasRenderingContext2D) => {
+      const out: { s: string; kind: string }[] = [];
+      for (const b of news.blocks) {
+        if (b.kind === 'gap') { out.push({ s: '', kind: 'gap' }); continue; }
+        const size = b.kind === 'head' ? 8 : 7, w = b.kind === 'bullet' ? COLW - 8 : COLW;
+        wrap(ctx, b.s, size, w, b.kind === 'head' ? FONT_TITLE : FONT_BODY).forEach((s, i) => out.push({ s, kind: b.kind === 'bullet' && i > 0 ? 'cont' : b.kind }));
+      }
+      cols = [];
+      let cur: { s: string; kind: string }[] = [];
+      for (const l of out) {
+        if (cur.length >= ROWS || (l.kind === 'head' && cur.length >= ROWS - 2)) { cols.push(cur); cur = []; }
+        if (l.kind === 'gap' && !cur.length) continue;
+        cur.push(l);
+      }
+      if (cur.length) cols.push(cur);
+    };
+    const spreads = () => Math.max(1, Math.ceil((cols?.length ?? 1) / 2));
+    const done = () => { g.save.data.settings.seenVersion = GAME_VERSION; g.save.markDirty(); self.pop(); };
+    return {
+      t: 0,
+      update(keys) {
+        for (const k of keys) {
+          if (k === 'back') { done(); return; }
+          if (k === 'left' || k === 'up') { if (spread > 0) { spread--; self.sfxMove(); } }
+          if (k === 'right' || k === 'down') { if (spread < spreads() - 1) { spread++; self.sfxMove(); } }
+          if (k === 'confirm') { if (spread < spreads() - 1) { spread++; self.sfxMove(); } else { done(); return; } }
+        }
+      },
+      pointer(x, _y, click) {
+        if (!click) return;
+        // the left page turns back (and does nothing on the first page); the right page turns on, or closes at the end
+        if (x < VIEW_W / 2) { if (spread > 0) spread--; } else if (spread < spreads() - 1) spread++; else done();
+      },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.8)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        if (!cols) layout(ctx);
+        book(ctx, BX, BY, BW, BH, 47);
+        // the title on the left page, its subtitle on the right: nothing runs across the spine
+        const [main, sub] = news.title.split(/:\s*/);
+        heading(ctx, main, BX + 18, 40, 10, INK, 'left', false);
+        if (sub) text(ctx, spread === 0 ? sub[0].toUpperCase() + sub.slice(1) : 'continued', BX + BW / 2 + 14, 40, 9, '#6a2a1a', 'left', FONT_TITLE, 400, false);
+        [0, 1].forEach((side) => {
+          const col = cols![spread * 2 + side]; if (!col) return;
+          const x0 = side === 0 ? BX + 18 : BX + BW / 2 + 14;
+          col.forEach((l, i) => {
+            const y = TOP + i * LH;
+            if (l.kind === 'head') text(ctx, l.s, x0, y, 8, '#6a2a1a', 'left', FONT_TITLE, 400, false);
+            else if (l.kind === 'bullet') { text(ctx, '\u2022', x0 + 1, y, 7, '#8a5a3a', 'left', FONT_BODY, 700, false); text(ctx, l.s, x0 + 8, y, 7, INK2, 'left', FONT_BODY, 600, false); }
+            else if (l.kind === 'cont') text(ctx, l.s, x0 + 8, y, 7, INK2, 'left', FONT_BODY, 600, false);
+            else if (l.kind === 'body') text(ctx, l.s, x0, y, 7, INK2, 'left', FONT_BODY, 600, false);
+          });
+        });
+        text(ctx, `${spread + 1} / ${spreads()}`, BX + BW - 18, BY + BH - 10, 6.5, '#8a6a4a', 'right', FONT_BODY, 600, false);
+        hint(ctx, spread < spreads() - 1 ? '\u2190 \u2192 turn the page \u00b7 Esc close' : 'Enter or Esc to close');
+      },
+    };
+  }
+
   helpScreen(overlay: boolean): Screen {
     const self = this, g = this.g;
     const BX = 36, BY = 14, BW = 408, BH = 244, L = BX + 20, R = BX + BW / 2 + 16;
@@ -1051,6 +1133,9 @@ export class MenuSystem {
     const self = this, g = this.g;
     let sel = 0; const items = ['Begin again', 'Return to the menu'];
     const BX = 36, BY = 16, BW = 408, BH = 240, L = BX + 20, R = BX + BW / 2 + 16, cx = BX + BW / 4;
+    // for newer players: one tip drawn from how this run ended
+    const tip = (g.save.data.stats.deaths ?? 0) <= 30 ? deathTip(w) : null;
+    let tipLines: string[] | null = null;
     const act = () => {
       if (sel === 0) g.fadeTo(() => { self.stack = []; g.restartRun(); }, 0.5);
       else g.fadeTo(() => g.quitToMenu(), 0.5);
@@ -1103,6 +1188,10 @@ export class MenuSystem {
         const ids = [...w.player.itemOrder, ...(w.player.active ? [w.player.active] : [])];
         if (!ids.length) text(ctx, 'None.', R, 150, 7, 'rgba(90,70,54,0.7)', 'left', FONT_BODY, 600, false);
         ids.slice(0, 27).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), R + (i % 9) * 19, 141 + Math.floor(i / 9) * 19));
+        if (tip && ids.length <= 18) {
+          tipLines ??= wrap(ctx, 'Tip: ' + tip, 6.5, 170).slice(0, 2);
+          tipLines.forEach((s, i) => text(ctx, s, R, 186 + (ids.length > 9 ? 19 : 0) + i * 8, 6.5, '#6a4a2a', 'left', FONT_BODY, 600, false));
+        }
         items.forEach((it, i) => {
           const y = BY + BH - 36 + i * 16;
           if (i === sel) inkBlot(ctx, R + 70, y - 3.5, 160, 14, self.time, 'rgba(40,30,60,0.17)');
@@ -1118,6 +1207,8 @@ export class MenuSystem {
     const epilogue = EPILOGUES[w.run.charId] ?? '';
     const fresh = !!w.run.flags.newEnding;
     const found = g.save.data.endings?.length ?? 0;
+    // the next ending still to find, and its clue: a reason to pick the book up again
+    const next = ENDINGS.find((e) => !g.save.hasEnding(e.id));
     // lay the story out once: wrapped lines, each fading in after the last
     let laid: { s: string; y: number; at: number; big: boolean; dim?: boolean }[] | null = null;
     let doneAt = 0;
@@ -1155,7 +1246,8 @@ export class MenuSystem {
           text(ctx, `Score ${sc.score}`, VIEW_W / 2, ey + 36, 10, '#efe2c8', 'center', FONT_TITLE, 400);
           text(ctx, sc.isBest ? 'New personal best!' : `Best ${sc.best}`, VIEW_W / 2, ey + 45, 6.5, sc.isBest ? COL.gold : COL.dim, 'center');
         }
-        if (ey + 80 < VIEW_H - 14) unlockedThisRun(ctx, w.run.flags.unlockedNow, VIEW_W / 2, ey + 58, COL.gold, '#e6d6bc');
+        if (ey + 80 < VIEW_H - (next ? 28 : 14)) unlockedThisRun(ctx, w.run.flags.unlockedNow, VIEW_W / 2, ey + 58, COL.gold, '#e6d6bc');
+        if (next) text(ctx, `Ending ${next.num} is still out there. ${next.clue}`, VIEW_W / 2, VIEW_H - 22, 6.5, 'rgba(220,200,160,0.8)', 'center');
         ctx.globalAlpha = 1;
         if (this.t > 4) hint(ctx, 'Press Enter');
       },
@@ -1412,4 +1504,23 @@ function drawReader(ctx: CanvasRenderingContext2D, sp: PlayerSprites, c: Charact
   drawCostume(fr, acc, 'back');
   body.draw(ctx, 0, 0); drawCostume(fr, acc, 'body'); drawCostume(fr, acc, 'hand');
   head.draw(ctx, 0, -10); drawCostume(fr, acc, 'face'); drawCostume(fr, acc, 'head');
+}
+
+/** A tip for the death screen, drawn from what the run was holding and what ended it. */
+function deathTip(w: World): string {
+  const pl = w.player, cause = w.run.stats.deathCause ?? '';
+  const act = pl.active ? getItem(pl.active) : null;
+  if (act?.active && pl.charge >= act.active.charge) return `your ${act.name} was charged. ${bindLabel('active')} uses it, and it recharges as you clear rooms.`;
+  if (pl.bombs >= 3) return `you fell holding ${pl.bombs} cherry bombs. ${bindLabel('bomb')} drops one, and they hurt monsters as much as rocks.`;
+  if (pl.consumables.length) return `you were carrying a ${pl.consumables[0].kind === 'page' ? 'torn page' : 'sweet'}. ${bindLabel('consumable')} uses it.`;
+  const byBoss = w.room.type === 'boss' || ALL_ENEMY_DEFS().some((d) => d.boss && cause.toLowerCase().includes(d.name.toLowerCase().replace(/^the /, '')));
+  if (byBoss) return 'when a boss\'s health bar turns gold, it is worn out and open: that is the moment to hit it.';
+  const general = [
+    `hold ${bindLabel('focus')} to move slowly and precisely through tight gaps in a hail of shots.`,
+    'a room with a closed door you never opened may be a shop or treasure. Keys open them.',
+    `hold ${bindLabel('map')} to see the map and exactly what each of your curios does.`,
+    'chalk-marked stones hide something. A cherry bomb opens them, and cracked walls too.',
+    'getting through a chapter without losing a red heart makes a bargain door likelier after its boss.',
+  ];
+  return general[(w.run.stats.kills + w.run.floorIndex) % general.length];
 }

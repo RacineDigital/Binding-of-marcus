@@ -55,6 +55,16 @@ ipcMain.on('save:read', (e, key) => { e.returnValue = readSave(key); });
 ipcMain.on('save:write', (_e, key, json) => { try { writeSave(key, json); } catch (err) { console.error('save failed', err); } });
 ipcMain.on('save:delete', (_e, key) => { for (const ext of ['.json', '.json.bak']) { try { fs.unlinkSync(path.join(savesDir(), safeName(key) + ext)); } catch { /* ignore */ } } });
 ipcMain.handle('save:folder', () => { shell.openPath(savesDir()); return savesDir(); });
+// the error log: appended to logs/errors.log, trimmed to its newest half past 256 KB
+function logsDir() { const d = path.join(app.getPath('userData'), 'logs'); fs.mkdirSync(d, { recursive: true }); return d; }
+ipcMain.on('log:error', (_e, line) => {
+  try {
+    const file = path.join(logsDir(), 'errors.log');
+    fs.appendFileSync(file, String(line).slice(0, 4000) + '\n', 'utf8');
+    if (fs.statSync(file).size > 256 * 1024) { const s = fs.readFileSync(file, 'utf8'); fs.writeFileSync(file, s.slice(s.length / 2), 'utf8'); }
+  } catch { /* never let logging crash the game */ }
+});
+ipcMain.handle('log:folder', () => { shell.openPath(logsDir()); return logsDir(); });
 ipcMain.handle('screenshot', async (_e, dataUrl) => {
   const dir = path.join(app.getPath('pictures'), 'Lost Marcus');
   fs.mkdirSync(dir, { recursive: true });

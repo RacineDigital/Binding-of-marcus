@@ -270,7 +270,7 @@ console.log('content:', JSON.stringify(counts));
   for (const c of CHARACTERS) { ok(LOOKS[c.look]?.hand === 'marcus', `${c.id} is drawn on Marcus's rig`); for (const id of c.items) ok(!!ALL_ITEMS.find((x) => x.id === id), `${c.id} starts with real item ${id}`); }
   for (const id of ['ink_horns', 'the_signature', 'ink_wings']) ok(homePool(ALL_ITEMS.find((x) => x.id === id)!) === 'deal', `${id} is an Inkwell item`);
   for (const id of ['black_cat', 'hex_doll', 'cracked_mirror']) ok(homePool(ALL_ITEMS.find((x) => x.id === id)!) === 'curse', `${id} is a Hexed item`);
-  ok(ALL_ITEMS.filter((i) => i.tags?.includes('vamp')).every((i) => homePool(i) === 'secret'), 'King Vamp lives in secret rooms');
+  ok(ALL_ITEMS.filter((i) => i.tags?.includes('vamp')).every((i) => homePool(i) === 'secret'), 'Night Count items live in secret rooms');
 }
 {
   const { GAME_VERSION } = await import('../src/core/constants');

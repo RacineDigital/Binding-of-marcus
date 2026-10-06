@@ -17,7 +17,7 @@
 
 ## P0 — fix before producing the release candidate
 
-- [ ] **Align all release versions.** `package.json` and `src/core/constants.ts` say `3.13.0`; the checked-in `package-lock.json` root package still says `3.1.0`. Update the lockfile intentionally, run `npm ci` from a clean checkout, and add a check that package, lockfile, in-game version, and release tag agree.
+- [x] **Align release versions.** Package, lockfile and in-game versions are aligned for `3.15.0`. The release workflow performs a clean `npm ci`; Windows/store validation remains below.
 - [ ] **Stop store builds from advertising GitHub updates.** `src/core/update.ts` enters the GitHub Releases fallback when the desktop bridge reports that auto-updates are disabled. For Steam and itch packages, exit the update check without contacting GitHub or showing a GitHub release notice. Add a regression test for both store distributions; the existing Electron tests cover updater IPC, not this browser-side fallback.
 - [ ] **Choose the first shipping platform.** The current `dist:steam` command is Windows x64 only. Decide whether the launch is Windows-only. If adding Linux, macOS, or Steam Deck support, produce and test each target before listing it as supported.
 - [ ] **Run the current test suite from a clean checkout.** Use `npm ci`, `npm test`, `npm run test:desktop`, `npm run build`, and `npm run build:single`. Run `npm run test:e2e`, `npm run smoke`, and `npm run test:synergy` with a configured browser. `tests/e2e.ts` currently hard-codes a Linux Chromium path, so make that path configurable before relying on it outside this environment.

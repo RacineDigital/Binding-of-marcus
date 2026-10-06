@@ -1,7 +1,7 @@
 {
   "name": "lost-marcus",
   "private": true,
-  "version": "3.13.0",
+  "version": "3.15.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "tsx tests/run.ts",
     "smoke": "tsx tests/smoke.ts",
+    "test:boot": "tsx tests/boot.ts",
     "test:e2e": "tsx tests/e2e.ts",
     "test:soak": "tsx tests/soak.ts",
     "test:extreme": "tsx tests/tools/extreme.ts",
@@ -22,7 +23,8 @@
     "dist:steam": "npm run build:single && electron-builder --win --dir --publish never --config.extraMetadata.distribution=steam --config.directories.output=release-steam",
     "dist:itch": "npm run build:single && electron-builder --win zip --publish never --config.extraMetadata.distribution=itch --config.directories.output=release-itch",
     "package:itch": "bash scripts/package-itch.sh",
-    "music:render": "node scripts/render-soundtrack.mjs"
+    "music:render": "node scripts/render-soundtrack.mjs",
+    "dist:linux": "npm run build:single && electron-builder --linux --publish never"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",
@@ -45,7 +47,7 @@
   "build": {
     "appId": "com.racinedigital.lostmarcus",
     "productName": "Lost Marcus",
-    "copyright": "\u00a9 Papermoth Games",
+    "copyright": "© Papermoth Games",
     "directories": {
       "output": "release-desktop",
       "buildResources": "electron"
@@ -100,7 +102,9 @@
       "target": [
         "AppImage"
       ],
-      "category": "Game"
+      "category": "Game",
+      "icon": "electron/icon.png",
+      "artifactName": "Lost-Marcus-${version}.${ext}"
     },
     "publish": [
       {

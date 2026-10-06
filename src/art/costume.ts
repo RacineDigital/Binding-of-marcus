@@ -45,7 +45,7 @@ export const ITEM_ACC: Record<string, Acc[]> = {
 
 /** The strongest items change your whole outfit. */
 export const ITEM_OUTFIT: Record<string, Outfit> = {
-  whole_lotta_red: { id: 'wlr', name: 'Whole Lotta Red', pal: {
+  whole_lotta_red: { id: 'wlr', name: 'Seeing Red', pal: {
     c: '#4a0810', C: '#7a0e1c', D: '#a8162a', E: '#d83040', R: '#1a0a0e', q: '#0a0406', t: '#1a1014',
     L: '#7a0e1c', l: '#d01830', j: '#141016', J: '#221a24', n: '#1a1418', N: '#100c10', x: '#060406' } },
   black_quill: { id: 'quill', name: 'Black Quill', acc: ['quill'], pal: {
@@ -53,17 +53,17 @@ export const ITEM_OUTFIT: Record<string, Outfit> = {
   the_debt: { id: 'debt', name: 'The Debt', pal: {
     c: '#1e1608', C: '#3a2a10', D: '#5a4418', E: '#8a6a28', R: '#e8c050', q: '#9a7a20', t: '#f0d878',
     v: '#e8c050', j: '#2a2014', J: '#3a2e1c' } },
-  drain_butterfly: { id: 'butterfly', name: 'Drain Butterfly', pal: {
+  drain_butterfly: { id: 'butterfly', name: 'Rime Wings', pal: {
     c: '#8aa4c0', C: '#bcd0e4', D: '#dce8f4', E: '#ffffff', R: '#8ac8f0', q: '#4a88b8', t: '#ffffff', j: '#7a94b8', J: '#9ab4d8' } },
 };
 
 /** Every transformation is a new look (they win over item outfits). */
 export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
-  // Jeffy: no shirt, just the diaper, the helmet and the pencil
-  jeffy: { id: 'jeffy', name: 'Jeffy', acc: ['bikeHelmet', 'nosePencil', 'diaper'], pal: {
+  // Tantrum: no shirt, just the nappy, the helmet and the pencil
+  jeffy: { id: 'jeffy', name: 'Tantrum', acc: ['bikeHelmet', 'nosePencil', 'diaper'], pal: {
     c: '#b8876a', C: '#d8a684', D: '#e8b896', E: '#f1c7a1', R: '#f1c7a1', q: '#c8987a',
     j: '#dcdcd6', J: '#f4f4f0' } },
-  vamp: { id: 'vamp', name: 'King Vamp', acc: ['crown', 'capeVamp'], pal: {
+  vamp: { id: 'vamp', name: 'Night Count', acc: ['crown', 'capeVamp'], pal: {
     S: '#ece0e0', s: '#cbbcc0', d: '#9c8890', W: '#fff6f6', v: '#e01828', r: '#d8a0a8', m: '#5a0a18',
     K: '#06040a', h: '#0e0a12', H: '#16121c', L: '#5a1020', l: '#a01830',
     c: '#0e080c', C: '#1c1016', D: '#2c1620', E: '#46202c', R: '#d01830', q: '#6a0a18', t: '#d8b048',
@@ -91,7 +91,7 @@ export const TRANSFORM_OUTFIT: Record<string, Outfit> = {
   laser: { id: 'laser', name: 'Live Wire', acc: ['goggles'], pal: {
     e: '#ffd0d0', w: '#ffd0d0', v: '#ff3a4a', k: '#ff8a8a',
     c: '#1e1a20', C: '#2c262e', D: '#3e3640', E: '#544a56', R: '#d0702a', q: '#8a4418', t: '#ffb060' } },
-  drain: { id: 'drain', name: 'Drainer', acc: ['wingsAngel', 'haloWhite'], pal: {
+  drain: { id: 'drain', name: 'Frostbitten', acc: ['wingsAngel', 'haloWhite'], pal: {
     K: '#8a8478', h: '#b8b0a0', H: '#d8d0c0', L: '#f0ead8', l: '#ffffff',
     c: '#8aa4c0', C: '#bcd0e4', D: '#dce8f4', E: '#ffffff', R: '#7ab8e8', q: '#4a7aa8', t: '#ffffff', j: '#8aa0c0', J: '#aac0e0' } },
 };

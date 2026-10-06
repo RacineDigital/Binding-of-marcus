@@ -2,6 +2,112 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.15.0: choose your story
+
+**Four ways to bind a run.** Choose a playstyle before opening the book:
+- **Unbound:** the reader's original starting kit.
+- **Ember:** 25% more damage, with 15% slower fire rate.
+- **Wayfarer:** extra speed, two extra keys and a bomb, with 15% less damage.
+- **Clockwork:** an extra active-item charge per combat room, with 20% less damage.
+  Readers without a starting active receive a Tuning Fork.
+
+**Choose your treasure.** Every treasure room offers two curios. One leans toward firepower;
+its partner offers a different build direction when the pool allows. Take one, and the other
+returns to the book. Clear labels explain the choice before you commit.
+
+**A reward you can work toward.** Clear three consecutive combat rooms without taking damage
+to earn an unlocked chest. The HUD tracks your progress. Bosses count; voluntary sacrifice
+payments do not break your streak, and repeated fights cannot farm it.
+
+**An illuminated book.** A redesigned reader-selection screen, engraved room borders, quieter
+floors, cool shadows and warm light, woven treasure-room runners, and a tidier resource display.
+The opening creatures have more distinctive sprites, and enemies and bosses have richer materials.
+
+**A harder soundtrack.** Twenty-eight chapter tracks now use an original driving arcade-rock
+score, with recorded playback and a matching synthesized fallback.
+
+**Keep your story straight.** The Journal includes a plain-language story guide and discovered
+item combinations. Run History records routes, endings, discoveries and the binding you chose.
+
+**Runs stay consistent.** Continue preserves future item-pool rolls and room damage instead of
+silently changing later rewards. Restart keeps the difficulty and binding. Daily Runs use one
+UTC day, a shared reader and the full item pool regardless of profile unlocks; retries retain
+that seed, and a finish after midnight counts toward the day the run began.
+
+**Previous release fixes retained.** Includes 3.14.0's clearer hospital-letter route, tutorial,
+accessibility settings, save backups, offline soundtrack support and Patient fight improvements.
+
+## What's new in 3.14.0: getting ready for everyone
+
+**Grandfather's letter is easy to follow.** On the hospital path:
+- The **Lost & Found** door always opens after a hospital boss while it's holding the top half, and
+  the letter costs nothing to take.
+- The **Deep Crawlspace** holding the bottom half is open (no bombing) and marked on your map from
+  the start of the chapter. Rooms holding a half you still need show the letter on the map.
+- A checklist under the minimap says where each half is and ticks them off; each chapter opens
+  with a tip, and the Room 4 door says which half is still missing.
+
+**The Patient (Room 4)**
+- Room 4 is one long ward room, two screens wide, instead of a huge hall.
+- It forgets itself about half as often, is gone for less time when it does, and comes back a
+  short step from where it was instead of across the room.
+- It no longer borrows the bosses that burrow, sink or blink out of reach (Grubmother, Bilgemaw,
+  Matron, Choirmaster, Thornwife).
+- It has less health (4,000, down from 9,500): measured fights with ordinary builds ran past five
+  minutes, more than twice as long as It Remembers.
+
+**First-run hints.** On your first few runs, a small card at the top of the screen shows one thing
+at a time (move, fire, doors, cherry bombs, the map, active items, pages) with your own keys or
+controller buttons, and ticks it off when you do it. Options -> Tutorial hints turns them off.
+
+**Secrets you can follow.** Once the story is finished, the boarded back stair behind Chapter II's
+boss announces itself (and says a cherry bomb opens it) until you've climbed it once. The ending
+screen now gives the clue for the next ending you haven't found.
+
+**What's new, in the game.** After an update, returning players see these notes once as pages of the
+book, and the title screen has a **What's new** entry to read them again.
+
+**Accessibility and comfort**
+- **Reduce flashing** (Options) softens every full-screen flash to a faint glow. The boot screen
+  now carries a photosensitivity notice.
+- **HUD text size** (Options): 100%, 115% or 130% for everything you read during a run.
+- **High-contrast enemy shots** (Options) gives every enemy shot a solid black ring and a thick
+  white rim, so they stand out by brightness alone, whatever colours you can tell apart.
+- **Effects: Low** (Options) thins out decorative particles for slower computers.
+
+**Renamed sets.** Three item sets named after real people now have names of their own. Effects,
+unlocks and synergies are unchanged, and your collection carries over.
+- The cold set is now **Frostbitten** (Frost Skate, Paste Pot, Darkroom Lamp, Lucky Threes, Rime
+  Wings, Cellar Spider, Kind Words, Icebox, Flotsam, Frosted Glass, Ginseng Tonic).
+- The blood set is now the **Night Count** (Seeing Red, Last Light, Blood Hymn, Peashooter, Held
+  Breath, Power Chord, Slime Heart, Baby Talk).
+- The toddler set is now **Tantrum** (Oversized Nappy, Chewed Pencil, Bike Helmet).
+- Four dice have new names: **Grandfather's Die** (the six-sided one), the **Hollow Die**, the
+  **Countdown Die** and the **Shifting Die**.
+
+**Comfort**
+- **A tip when you fall** (your first 30 deaths): drawn from how the run ended, like a charged
+  active item you never used, bombs still in your pocket, or a boss you could have hit while it was open.
+- **Pause when away** (Options, on by default): switching windows, hiding the tab or unplugging the
+  controller pauses the run.
+- **Controller rumble** (Options): big hits, explosions and getting hurt rumble the controller.
+
+**Safer saves and better bug reports**
+- The browser version now keeps a backup of each save, like the desktop version, so one bad write
+  can't wipe a slot.
+- Errors are logged (on the desktop next to your saves, in `logs/errors.log`). Options -> Error log
+  opens the folder, or copies a report in the browser, ready to send with a bug report.
+
+**Fixed**
+- The downloaded game, opened by double-clicking `Lost Marcus.html`, now plays the recorded
+  soundtrack in Chrome and other browsers that refused to read the music files from disk. Before, it
+  quietly fell back to the synth tracks.
+- Restarting a Second Edition run from the pause menu or with Begin again after a death started a
+  normal run. It keeps the mode now,
+  and a Daily Run can't be restarted for a different seed.
+- Sweets and pages left in cursed rooms could crash the game when picked up, and a broken sweet
+  could stop the room from drawing. Saves holding one load safely.
+
 ## What's new in 3.13.0: every boss, redrawn
 
 Every boss in the book has been redesigned and reanimated from scratch. Their attacks, health,

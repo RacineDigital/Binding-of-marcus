@@ -42,6 +42,8 @@ export function doorOdds(w: World): DoorOdds {
   if (fi === 0) { c = 0; parts.push({ label: 'No doors in Chapter I', value: '0%', good: false }); }
   else if (fi === FINAL_FLOOR && w.run.mode !== 'endless') { c = 0; parts.push({ label: 'No doors in the final chapter', value: '0%', good: false }); }
   else if (f.margins && fi > FINAL_FLOOR) { c = 0; parts.push({ label: 'No doors past the Binding', value: '0%', good: false }); }
+  // while it's holding half of Grandfather's letter, the lost property desk always opens
+  if (letterAtDesk(w) && c < 1) { c = 1; parts.push({ label: 'Lost property is holding your letter', value: '100%', good: true }); }
   return { total: Math.max(0, Math.min(1, c)), parts, split: doorSplit(w) };
 }
 
@@ -155,7 +157,8 @@ function tradeable(w: World): string[] {
  * leave (then it's free). Each pedestal picks its own, and keeps it as long as you still carry it.
  */
 export function ticketFor(w: World, p: Pickup): string | null {
-  if (!p.data.swap || !p.data.id) return null;
+  // half of Grandfather's letter is his to collect: it costs nothing
+  if (!p.data.swap || !p.data.id || getItem(p.data.id)?.tags?.includes('quest')) return null;
   const own = tradeable(w).filter((id) => id !== p.data.id);
   if (!own.length) return null;
   if (p.data.ticket && own.includes(p.data.ticket)) return p.data.ticket;

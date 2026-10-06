@@ -8,7 +8,7 @@ import * as G from './art_e';
 import { TAU, angleTo, angleDiff, dist } from '../core/math';
 import { enemyBeam, Beam } from '../projectiles/weapons';
 import type { World } from '../game/world';
-import { moveBody } from '../rooms/collide';
+import { moveBody, solidCell } from '../rooms/collide';
 import { TILE } from '../core/constants';
 import { charById } from '../player/characters';
 import { getEnemy } from '../enemies/registry';
@@ -218,11 +218,13 @@ const patientBrain: BossBrain = {
   },
 };
 // ------------------------------------------------------------------ forgetting
-// The Patient doesn't remember who it is. Every few seconds it slips away and comes back as
+// The Patient doesn't remember who it is. Every so often it slips away and comes back as
 // something else from the book (any boss Marcus has fought), still with its monitor beeping
-// underneath, faster each phase: Delirium, in a hospital bed.
-const FORMS = ['grubmother', 'furnaceheart', 'oldstoker', 'bilgemaw', 'matron', 'sleepwalker', 'ossuaryknight', 'mothmother', 'bellringer',
-  'choirmaster', 'thornwife', 'rimebride', 'pendulum', 'typesetter', 'ironlung', 'wardrobe'];
+// underneath, faster each phase: Delirium, in a hospital bed. Only bosses that stay where you can
+// hit them: the ones that burrow, sink or blink out (Grubmother, Bilgemaw, Matron, Choirmaster,
+// Thornwife) would leave it untouchable too often.
+const FORMS = ['furnaceheart', 'oldstoker', 'sleepwalker', 'ossuaryknight', 'mothmother', 'bellringer',
+  'rimebride', 'pendulum', 'typesetter', 'ironlung', 'wardrobe'];
 /** The fields a borrowed form keeps for itself; swapped in while it acts and draws. */
 const KEEP = ['def', 'data', 'r', 'hitY', 'anim', 'frame', 'ftime', 'state', 'st', 'z', 'sx', 'sy', 'alpha', 'hidden', 'cd', 'cd2', 'tx', 'ty', 'mode'] as const;
 type Snapshot = Record<string, unknown>;
@@ -236,19 +238,31 @@ function asForm(e: Enemy, fn: (fd: EnemyDef) => void): void {
   e.data.phase = Math.min(e.data.phase ?? 0, 1); e.data.hard = true;
   try { fn(f.def); } finally { f.body = snapshot(e); restore(e, mine); }
 }
-const SHIFT = [9, 7, 5.5, 4.5];
+/** Seconds between shifts, by phase (it only starts shifting in phase 2). */
+const SHIFT = [18, 16, 13, 11];
+/** How long it is gone (and untouchable) while it shifts. */
+const VANISH = 0.3;
 function shiftForm(e: Enemy, w: World): void {
   const pd = e.data, last = pd.form?.def.id;
   // fade out where it stands...
   w.fx.smoke(e.x, e.y - 30, 14, 'rgba(20,16,40,', 9, 0.9);
   w.audio.play('bossRoar', { x: e.x, pitch: 1.6, vol: 0.5 });
-  // ...and come back somewhere else, as something else (or, now and then, as itself)
-  const p = randomFloorPoint(w, 90);
+  // ...and come back as something else (or, now and then, as itself), a short step from where it was
+  const p = nearPoint(w, e.x, e.y);
   telegraph(w, p.x, p.y, 26, 0.5, '#80c0ff');
-  pd.vanish = 0.55; pd.to = p; e.invuln = true;
+  pd.vanish = VANISH; pd.to = p; e.invuln = true;
   const pool = FORMS.filter((id) => id !== last && getEnemy(id));
   const next = pd.phase === 0 || Math.random() < 0.25 || !pool.length ? null : pool[Math.floor(Math.random() * pool.length)];
   pd.nextForm = next;
+}
+/** A spot on the floor a short step from (x, y), or (x, y) itself if nothing nearby is open. */
+function nearPoint(w: World, x: number, y: number): { x: number; y: number } {
+  for (let i = 0; i < 12; i++) {
+    const a = Math.random() * Math.PI * 2, d = 20 + Math.random() * 30, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+    const [c, r] = w.room.cellAt(px, py);
+    if (inRoom(w, px, py) && !solidCell(w.room, c, r, 'walk') && dist(px, py, w.player.x, w.player.y) > 60) return { x: px, y: py };
+  }
+  return { x, y };
 }
 function arrive(e: Enemy, w: World): void {
   const pd = e.data;
@@ -269,14 +283,14 @@ function arrive(e: Enemy, w: World): void {
 const patient: EnemyDef = {
   id: 'patient', name: 'The Patient', desc: 'The bed at the end of the ward. Everything Marcus was afraid he would find there, and it has forgotten which.', boss: true,
   borrows: FORMS,
-  hp: 9500, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
+  hp: 4000, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
   sprites: () => rig({ w: 92, h: 104, paint: G.paintPatient, phases: 3, aliases: { rage: 'idle' } }),
-  init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; e.data.shiftT = 8; },
+  init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; e.data.shiftT = 12; },
   update(e, w, dt) {
     const pd = e.data;
     pd.phase ??= 0;
     // vanishing between forms
-    if (pd.vanish > 0) { pd.vanish -= dt; e.alpha = Math.max(0, pd.vanish / 0.55); if (pd.vanish <= 0) { e.alpha = 1; arrive(e, w); } return; }
+    if (pd.vanish > 0) { pd.vanish -= dt; e.alpha = Math.max(0, pd.vanish / VANISH); if (pd.vanish <= 0) { e.alpha = 1; arrive(e, w); } return; }
     // a phase line crossed while it was someone else: it snaps back to itself to scream about it
     const th = patientBrain.phases!;
     if (pd.form && pd.phase < th.length && e.hpFrac() <= th[pd.phase]) { pd.form = null; e.state = 'idle'; e.anim = 'idle'; e.z = 6; e.hidden = false; }
@@ -289,7 +303,7 @@ const patient: EnemyDef = {
     } else bossUpdate(e, w, dt, patientBrain);
     if (Math.random() < dt * 5) w.fx.burst(e.x + (Math.random() - 0.5) * 40, e.y, 2, 1, pd.phase >= 2 ? '#14112a' : '#dce4e0', 20, 0.8);
     // time to forget again (not mid-phase-change)
-    if (pd.phase >= 1 && e.state !== 'phase') { pd.shiftT = (pd.shiftT ?? 6) - dt; if (pd.shiftT <= 0) shiftForm(e, w); }
+    if (pd.phase >= 1 && e.state !== 'phase') { pd.shiftT = (pd.shiftT ?? 12) - dt; if (pd.shiftT <= 0) shiftForm(e, w); }
   },
   draw(e, ctx, w, sx, sy) {
     const pd = e.data;

@@ -1,6 +1,7 @@
 // Room lifecycle: entering, doors, clearing, rewards, special rooms and floor progression.
 import { newComboKeys, newCombos } from '../items/preview';
 import { describeItem } from '../items/describe';
+import { bindLabel } from '../core/input';
 import type { World, DoorRT } from './world';
 import type { Run } from './run';
 import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef, SpawnDef } from '../rooms/room';
@@ -17,12 +18,14 @@ import { getItem, getConsumable } from '../items/registry';
 import { makeNpc } from './npc';
 import { familiarsOnRoomEnter, familiarsOnRoomClear, syncFamiliars } from '../items/familiar_rt';
 import { generateFloor, pickTheme, addBargainRoom } from '../generation/floorgen';
-import { rollBargain, onLeaveFloor, ticketFor } from './bargain';
+import { rollBargain, onLeaveFloor, ticketFor, letterAtDesk } from './bargain';
+import { onLetterFloor, room4Refusal } from './letter';
 import { itemIconCanvas } from '../art/items';
 import { dist2, TAU } from '../core/math';
 import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
+import { sweetColor } from '../items/sweetcolor';
 import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, ROOM4_FLOOR, HOSPITAL_FIRST, enemyHpMul } from '../data/floors';
 import { HOSPITAL_THEMES } from '../data/notes';
 import { checkProgress, onChapterCleared } from './progress';
@@ -78,6 +81,7 @@ export function startFloor(w: World): void {
   w.trapdoor = null;
   enterRoom(w, floor.startId, null, false);
   w.itemHook('onFloor');
+  onLetterFloor(w);
   if (w.player.transformations.has('bone')) w.player.health.addExtra('wax', 2);
   if (floor.curse === 'lost') { /* map hidden */ }
   if (floor.curse === 'seen') revealMap(w, false);
@@ -699,20 +703,24 @@ export function onBossKilled(w: World, e: Enemy): void {
     if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily' && !w.run.flags.hospital) {
       const sx = c.x + 76, sy = c.y + 22;
       w.backStair = { x: sx, y: sy, t: 0, boarded: true }; room.flags.stair = { x: sx, y: sy, boarded: true };
+      // until it has been climbed once, say it's there and how to open it
+      if (!w.game.save.isUnlocked('back_stair')) w.after(2.4, () => { if (w.room === room) w.hud.toast(`Behind the boss: a back stair, boarded over. A cherry bomb (${bindLabel('bomb')}) would open it.`, 4.5); });
     }
     // the end of the hospital: Room 4, which opens for Grandfather's letter
     if (w.run.flags.hospital && fi === ROOM4_FLOOR - 1) {
       w.exitDoor = { x: c.x - 76, y: c.y + 30, t: 0, kind: 'room4' }; room.flags.exit = { x: c.x - 76, y: c.y + 30, kind: 'room4' };
-      w.after(1.5, () => w.hud.toast(w.player.has('grandfathers_letter') ? 'At the end of the ward: Room 4. The door is open a crack.' : 'At the end of the ward: Room 4. It is locked.', 3));
+      w.after(1.5, () => w.hud.toast(w.player.has('grandfathers_letter') ? 'At the end of the ward: Room 4. The door is open a crack.' : 'At the end of the ward: Room 4. It is locked until you bring both halves of the letter.', 3.5));
     }
-    // a chance for a bargain door (the odds are on the HUD)
+    // a chance for a bargain door (the odds are on the HUD; certain while lost property holds the letter)
+    const forLetter = letterAtDesk(w);
     const door = rollBargain(w, room);
     if (door) {
       const d = room.doors[room.doors.length - 1];
       const p = room.doorPos(d.side, d.slot);
       w.doors.push({ def: d, open: 0, x: p.x, y: p.y, revealed: true });
+      door.room.seen = true;
       w.audio.stinger(door.kind);
-      w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : 'A door with a claim ticket on it has opened.');
+      w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : forLetter ? 'Lost & Found has opened. They are holding half of Grandfather\'s letter for you.' : 'A door with a claim ticket on it has opened.', forLetter ? 3.5 : undefined);
     }
   });
 }
@@ -794,7 +802,7 @@ export function updateSpecial(w: World, dt: number): void {
     if (x.t > 0.8 && Math.abs(pl.x - x.x) < 10 && pl.y - x.y < 6 && pl.y - x.y > -10 && !w.transition && w.deathT < 0 && !w.game.fading) {
       if (x.kind === 'room4') {
         if (!pl.has('grandfathers_letter')) {
-          if (x.cd <= 0) { x.cd = 4; w.audio.play('deny'); w.hud.toast('Locked. A card on the door says: VISITORS, PLEASE BRING YOUR LETTER.', 3); }
+          if (x.cd <= 0) { x.cd = 5; w.audio.play('deny'); w.hud.toast(room4Refusal(w), 4); }
         } else {
           pl.controlLock = 2; pl.vx = pl.vy = 0;
           w.run.flags.room4 = true; w.audio.play('door'); w.exitDoor = null;
@@ -913,7 +921,7 @@ export function touchPickup(w: World, p: Pickup): void {
         const q = new Pickup(old.kind, pl.x, pl.y); q.data = old.kind === 'page' ? { id: old.id } : { color: Number(old.id) }; q.noCollect = 1.2; popPickup(q, 0.6);
         w.pickups.push(q);
       }
-      pl.consumables.push({ kind: p.kind as 'page' | 'sweet', id: p.kind === 'page' ? p.data.id : String(p.data.color) });
+      pl.consumables.push({ kind: p.kind as 'page' | 'sweet', id: p.kind === 'page' ? p.data.id : String(sweetColor(p.data.color)) });
       collect('pageGet');
       if (p.kind === 'page') w.hud.toast(getConsumable(p.data.id)?.name ?? 'A torn page', 1.6);
       else w.hud.toast(sweetName(w, p.data.color), 1.6);
@@ -937,7 +945,7 @@ export function touchPickup(w: World, p: Pickup): void {
 }
 
 export function sweetName(w: World, color: number): string {
-  const eff = SWEET_EFFECTS[w.run.sweetMap[color % 12]];
+  const eff = SWEET_EFFECTS[w.run.sweetMap[sweetColor(color)]];
   return w.run.identified.has(eff.id) ? eff.name : 'Unmarked Sweet';
 }
 

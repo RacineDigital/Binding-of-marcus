@@ -154,7 +154,7 @@ const D = 'window.__bomDebug';
   const un = await ev<any>(page, `(() => { const s = ${D}.game.save; s.data.unlocks = s.data.unlocks.filter((u) => u !== 'runs_5'); s.data.seenUnlocks = s.data.unlocks.slice();
     s.unlock('runs_5');
     const raw = localStorage.getItem('slot' + s.slot) || Object.keys(localStorage).map((k) => localStorage.getItem(k)).join('');
-    return { stored: raw.includes('"runs_5"'), fresh: !s.data.seenUnlocks.includes('runs_5'), toast: ${D}.game.unlockQueue.some((u) => u.reward.includes('Trash Island')),
+    return { stored: raw.includes('"runs_5"'), fresh: !s.data.seenUnlocks.includes('runs_5'), toast: ${D}.game.unlockQueue.some((u) => u.reward.includes('Flotsam')),
       thisRun: (${D}.world.run.flags.unlockedNow || []).includes('runs_5') }; })()`);
   ok(un.stored, 'an unlock is written to storage at once, not at the next save');
   ok(un.fresh && un.toast, 'a new unlock is marked NEW and its toast says what it unlocks');

@@ -32,11 +32,11 @@ function joinLetter(w: World): void {
 
 export const STORY_ITEMS: ItemDef[] = [
   { id: 'letter_top', name: 'Letter (first half)', kind: 'passive', quality: 0, pools: {}, tags: ['quest'],
-    pickup: '"Dear Marcus..."', effect: ['The top half of a letter in Grandfather\'s handwriting.', 'Find the other half on this path, and Room 4 will open.'],
+    pickup: '"Dear Marcus..."', effect: ['The top half of a letter in Grandfather\'s handwriting.', 'The bottom half is down a Deep Crawlspace on a hospital chapter: it\'s marked on your map.', 'Bring both to Room 4, after the Intensive Care boss.'],
     hooks: { onPickup: joinLetter }, icon: (p) => paper(p, 'top'),
     lore: 'Kept at the lost property desk, in an envelope with his name on it.' },
   { id: 'letter_bottom', name: 'Letter (second half)', kind: 'passive', quality: 0, pools: {}, tags: ['quest'],
-    pickup: '"...saved you the good chair."', effect: ['The bottom half of a letter in Grandfather\'s handwriting.', 'Find the other half on this path, and Room 4 will open.'],
+    pickup: '"...saved you the good chair."', effect: ['The bottom half of a letter in Grandfather\'s handwriting.', 'The top half is at Lost & Found: beat a hospital boss and take the door with the claim ticket.', 'Bring both to Room 4, after the Intensive Care boss.'],
     hooks: { onPickup: joinLetter }, icon: (p) => paper(p, 'bottom'),
     lore: 'Hidden somewhere deep, where only a brave boy would dig.' },
   { id: 'grandfathers_letter', name: 'Grandfather\'s Letter', kind: 'passive', quality: 2, pools: {}, tags: ['quest'],

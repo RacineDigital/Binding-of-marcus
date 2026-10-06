@@ -17,6 +17,20 @@ export interface Settings {
   timer?: boolean;
   /** Show what you're playing in Discord (desktop). */
   discord?: boolean;
+  /** First-run hints (see game/tutorial). */
+  tutorial?: boolean;
+  /** Soften full-screen flashes to a faint glow. */
+  reduceFlash?: boolean;
+  /** Fewer decorative particles, for slow machines. */
+  lowFx?: boolean;
+  /** Pause the run when the window loses focus, the tab is hidden or the controller unplugs. */
+  autoPause?: boolean;
+  /** Controller rumble strength 0..1. */
+  rumble?: number;
+  /** The version whose What's new notes were last shown. */
+  seenVersion?: string;
+  /** Enemy shots get a solid black ring and a thick white rim (readable without colour). */
+  contrastShots?: boolean;
 }
 export interface SaveData {
   version: number;
@@ -51,6 +65,8 @@ export interface SaveData {
   readersMet?: string[];
   /** Buttons put in shop donation boxes, ever. Every 50 raises the shop a level. */
   donated?: number;
+  /** First-run hints already done (ids from game/tutorial). */
+  tutorial?: string[];
 }
 export interface RunRecord { date: number; char: string; mode: string; seed: string; floor: number; won: boolean; score: number; time: number; cause?: string; items: string[]; ending?: string; unlocks?: string[]; notes?: string[]; route?: string[]; binding?: string; challenge?: string }
 
@@ -67,9 +83,22 @@ export const store: Store = desktop
   ? { kind: 'file', read: (k) => desktop.readSave(k), write: (k, j) => desktop.writeSave(k, j), remove: (k) => desktop.deleteSave(k) }
   : {
     kind: 'browser',
-    read: (k) => { try { return localStorage.getItem('bom:' + k); } catch { return null; } },
-    write: (k, j) => { try { localStorage.setItem('bom:' + k, j); } catch (e) { console.warn('save failed', e); } },
-    remove: (k) => { try { localStorage.removeItem('bom:' + k); } catch { /* ignore */ } },
+    // like the desktop files: the previous good copy is kept as a backup, and read when the main
+    // copy won't parse, so one bad write can't wipe a slot
+    read: (k) => {
+      for (const key of ['bom:' + k, 'bom:' + k + '.bak']) {
+        try { const s = localStorage.getItem(key); if (s !== null) { JSON.parse(s); return s; } } catch { /* try the backup */ }
+      }
+      return null;
+    },
+    write: (k, j) => {
+      try {
+        const old = localStorage.getItem('bom:' + k);
+        if (old !== null && old !== j) { try { JSON.parse(old); localStorage.setItem('bom:' + k + '.bak', old); } catch { /* don't back up a broken copy */ } }
+        localStorage.setItem('bom:' + k, j);
+      } catch (e) { console.warn('save failed', e); }
+    },
+    remove: (k) => { try { localStorage.removeItem('bom:' + k); localStorage.removeItem('bom:' + k + '.bak'); } catch { /* ignore */ } },
   };
 export const SLOTS = 3;
 
@@ -101,6 +130,7 @@ export class SaveManager {
       } catch { /* ignore */ }
     }
     try { const raw = store.read('settings'); if (raw) { const st = JSON.parse(raw); this.settings = { ...def.settings, ...st, bindings: { ...def.settings.bindings, ...(st.bindings ?? {}) } }; } } catch (e) { console.warn('settings load failed', e); }
+    this.settings.reduceFlash ??= this.settings.reduceFlashes ?? false;
     try { const meta = JSON.parse(store.read('meta') ?? '{}'); if (meta.slot >= 1 && meta.slot <= SLOTS) this.slot = meta.slot; } catch { /* ignore */ }
     this.data = this.loadSlot(this.slot);
     setInterval(() => this.flush(), 2000);

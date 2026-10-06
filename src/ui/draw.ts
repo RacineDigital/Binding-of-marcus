@@ -6,7 +6,12 @@ export const COL = {
   gold: '#f0c860', note: '#b8a8ff', red: '#e04a4a',
 };
 
+/** Extra scale for text drawn while it is set (the HUD sets it from Options -> HUD text size). */
+let TS = 1;
+export function setTextScale(k: number): void { TS = k; }
+export function textScale(): number { return TS; }
 export function text(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, size: number, color = COL.text, align: CanvasTextAlign = 'left', font = FONT_BODY, weight = 600, shadow = true): number {
+  size *= TS;
   ctx.font = `${weight} ${size}px ${font}`;
   ctx.textAlign = align; ctx.textBaseline = 'alphabetic';
   if (shadow) { ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillText(s, x + size * 0.07, y + size * 0.07); }
@@ -41,11 +46,11 @@ export function heading(ctx: CanvasRenderingContext2D, s: string, x: number, y: 
   return w;
 }
 export function measure(ctx: CanvasRenderingContext2D, s: string, size: number, font = FONT_BODY, weight = 600): number {
-  ctx.font = `${weight} ${size}px ${font}`; return ctx.measureText(s).width;
+  ctx.font = `${weight} ${size * TS}px ${font}`; return ctx.measureText(s).width;
 }
 /** Wrap text into lines that fit maxW. */
 export function wrap(ctx: CanvasRenderingContext2D, s: string, size: number, maxW: number, font = FONT_BODY): string[] {
-  ctx.font = `600 ${size}px ${font}`;
+  ctx.font = `600 ${size * TS}px ${font}`;
   const words = s.split(' '); const lines: string[] = []; let cur = '';
   for (const w of words) {
     const t = cur ? cur + ' ' + w : w;

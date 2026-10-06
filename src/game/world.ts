@@ -1,4 +1,6 @@
 // The in-run simulation: owns every entity in the current room and all cross-system interactions.
+import { tutorialTick } from './tutorial';
+import { logError } from '../core/errorlog';
 import type { Game } from './game';
 import type { Renderer } from '../render/renderer';
 import type { Input } from '../core/input';
@@ -97,6 +99,7 @@ export class World {
 
   update(dtReal: number): void {
     this.hud.update(dtReal);
+    this.fx.budget = this.game.save.data.settings.lowFx ? 160 : 600;
     (this.audio as any).listenerX = this.camX + 240;
     if (this.transition) {
       this.transition.t += dtReal;
@@ -144,9 +147,10 @@ export class World {
     flow.checkExit(this);
     flow.updateSpecial(this, dt);
     this.itemHook('onTick', dt);
+    tutorialTick(this, dt);
     for (let i = 0; i < this.tasks.length; i++) {
       const k = this.tasks[i]; k.t -= dt;
-      if (k.t <= 0) { this.tasks.splice(i--, 1); try { k.fn(); } catch (e) { console.error('task', e); } }
+      if (k.t <= 0) { this.tasks.splice(i--, 1); try { k.fn(); } catch (e) { console.error('task', e); logError(e, 'task'); } }
     }
     for (const t of this.telegraphs) t.t += dt;
     this.telegraphs = this.telegraphs.filter((t) => t.t < t.dur);
@@ -417,6 +421,7 @@ export class World {
     this.shake(4);
     this.redFlash = 0.6;
     this.audio.play('hurt', { x: pl.x });
+    this.game.input.rumble(0.75, 180);
     this.fx.spray(pl.x, pl.y, 12, -Math.PI / 2, TAU, 8, '#a01e2a', 70, 0.4, '#6a1420');
     if (res.inkLost > 0) this.inkBurst();
     if (res.gildedBroke > 0) for (let i = 0; i < 3 * res.gildedBroke; i++) spawnDrop(this, 'button', pl.x, pl.y);
@@ -432,11 +437,11 @@ export class World {
     // paying the Pincushion never counts
     if (pl.health.red < red0 && !o.redFirst) { this.run.flags.redHit = true; if (this.room.type === 'boss') this.run.flags.bossRedHit = true; }
     if (!o.redFirst) this.itemHook('onHurt');
-    // Jeffy throws a tantrum: pencils everywhere and a burst of speed
+    // Tantrum: pencils everywhere and a burst of speed
     if (pl.transformations.has('jeffy') && !res.dead) {
       for (let i = 0; i < 14; i++) this.proj.player(this, pl.prof, pl.x, pl.y - 6, 10, (i / 14) * TAU, pl.stats.damage * 1.3, 240, 170, 1);
       pl.clearTemp((t) => t.id === 'tantrum'); pl.addTemp({ id: 'tantrum', time: 3, stats: { speed: 0.4, tearsMult: 1.4 } });
-      this.hud.toast(['WHY\'D YOU HAVE TO DO THAT?!', 'DADDY!', 'I\'M A BIG BOY!', 'THAT\'S MINE!'][Math.floor(Math.random() * 4)], 1.2);
+      this.hud.toast(['NOT FAIR!', 'MINE!', 'I DON\'T WANNA!', 'NO NO NO!'][Math.floor(Math.random() * 4)], 1.2);
       this.audio.play('bossRoar', { x: pl.x, pitch: 2.2, vol: 0.4 });
     }
     if (res.dead) this.onPlayerDied(source);
@@ -722,7 +727,11 @@ export class World {
   pullPickups(x: number, y: number, r: number): void {
     for (const p of this.pickups) if (!p.pedestal && !p.isChest() && dist2(p.x, p.y, x, y) < r * r) { p.vx += (x - p.x) * 0.5; p.vy += (y - p.y) * 0.5; }
   }
-  shake(amt: number): void { this.trauma = Math.min(1, this.trauma + amt * 0.08 * (this.game.save.data.settings.shake ?? 1)); }
+  shake(amt: number): void {
+    this.trauma = Math.min(1, this.trauma + amt * 0.08 * (this.game.save.data.settings.shake ?? 1));
+    // the big ones reach your hands too
+    if (amt >= 3) this.game.input.rumble(amt / 10, 70 + amt * 12);
+  }
   /**
    * A short freeze on impact. Scaled by the Hit pause setting, and drawn from a budget that refills at
    * 0.15s per second: a big hit always lands, but a hail of small ones never makes the controls stick.
