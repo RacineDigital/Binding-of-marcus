@@ -20,7 +20,7 @@ import { SWEET_EFFECTS } from '../items/data/consumables';
 import { drawHitboxes } from '../game/worldrender';
 import { ticketFor, doorOdds } from '../game/bargain';
 import { diceFace } from '../items/data/dice';
-import { bindLabel, fmtKeys } from '../core/input';
+import { bindLabel, fmtKeys, ACTION_ORDER } from '../core/input';
 import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
@@ -28,6 +28,9 @@ import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
 import { tutorialLine } from '../game/tutorial';
 import { sweetColor } from '../items/sweetcolor';
 import { STING_HIT, StingKind } from '../audio/bossting';
+import { FLAWLESS_TARGET } from '../game/bindings';
+import { bindingSeal } from './bindingart';
+import { itemRole, ROLE_COLOR, ROLE_LABEL } from '../items/choice';
 
 /** How long a boss title card holds the screen. */
 const BOSS_CARD = 2.9;
@@ -37,7 +40,7 @@ const GIFT_POP = 0.45, GIFT_HOLD = 1.7, GIFT_FLY_END = 2.3;
 /** How close you must stand to a pinned note to keep reading it (world px). */
 const NOTE_READ_RANGE = 34;
 
-interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null; note?: string; kicker?: string }
+interface Banner { title: string; sub: string; t: number; icon: HTMLCanvasElement | null; note?: string; kicker?: string; dismissible?: boolean }
 
 /** 8x8 stat icons drawn from character maps (palette letters below). */
 const STAT_ICON_MAPS: Record<string, string[]> = {
@@ -243,7 +246,7 @@ export class Hud {
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(VIEW_W - 50, 63, 44, 11);
     text(ctx, str, VIEW_W - 8, 71, 7, this.w.run.won ? '#ffd060' : '#e8e0d0', 'right');
   }
-  banner(title: string, sub: string, icon: HTMLCanvasElement | null = null, note?: string, kicker?: string): void { this.banners = [{ title, sub, t: 0, icon, note, kicker }]; }
+  banner(title: string, sub: string, icon: HTMLCanvasElement | null = null, note?: string, kicker?: string, dismissible = false): void { this.banners = [{ title, sub, t: 0, icon, note, kicker, dismissible }]; }
   /** A boss's name struck through in ink: the chapter's keeper is done. */
   bossDown(name: string): void { this.dcard = { name, t: 0 }; }
   dcard: { name: string; t: number } | null = null;
@@ -263,7 +266,8 @@ export class Hud {
 
   update(dt: number): void {
     for (const b of this.banners) b.t += dt;
-    this.banners = this.banners.filter((b) => b.t < (b.note ? 4 : 3));
+    if (this.banners.some((b) => b.dismissible && b.t > 0.35 && ACTION_ORDER.some((action) => this.w.input.wasPressed(action)))) this.banners = this.banners.filter((b) => !b.dismissible);
+    this.banners = this.banners.filter((b) => b.t < (b.dismissible ? 8 : b.note ? 4 : 3));
     if (this.dcard && (this.dcard.t += dt) > 2.6) this.dcard = null;
     if (this.note && (this.note.t += dt) > this.note.dur) this.note = null;
     // a pinned note stays open while you stand by it, and fades the moment you walk away
@@ -324,6 +328,7 @@ export class Hud {
     this.drawActive(ctx);
     this.drawHearts(ctx);
     this.drawResources(ctx);
+    if (!this.fullMap) this.drawRunIdentity(ctx);
     const eid = w.game.save.data.settings.descStyle !== 'card';
     if (w.game.save.data.settings.showStats && !(eid && this.panelFade > 0.05)) this.drawStats(ctx);
     this.drawConsumables(ctx);
@@ -474,14 +479,34 @@ export class Hud {
     const H = pickupSprites().hud;
     const rows = Math.ceil((pl.health.redMax / 2 + pl.health.extra.length + (pl.count('dust_jacket') > 0 ? 1 : 0)) / 6);
     const y0 = Math.max(30, 8 + Math.max(1, rows) * 10 + 4);
-    const x = 6;
-    const line = (spr: HTMLCanvasElement, n: number, y: number, special = false) => {
-      ctx.drawImage(spr, x, y - 1);
-      text(ctx, String(n).padStart(2, '0'), x + 15, y + 8, 9, special ? COL.gold : COL.text);
+    panel(ctx, 4, y0 - 3, 101, 17, 1, '#4d6160', 'rgba(12,25,30,0.83)');
+    const line = (spr: HTMLCanvasElement, n: number, x: number, special = false) => {
+      ctx.drawImage(spr, x, y0 - 1);
+      text(ctx, String(n).padStart(2, '0'), x + 12, y0 + 8, 8, special ? COL.gold : COL.text);
     };
-    line(H.button.canvas, pl.buttons, y0);
-    line(H.bomb.canvas, pl.bombs, y0 + 13, false);
-    line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, y0 + 26, pl.goldKey);
+    line(H.button.canvas, pl.buttons, 8);
+    line(H.bomb.canvas, pl.bombs, 41);
+    line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, 74, pl.goldKey);
+  }
+
+  private drawRunIdentity(ctx: CanvasRenderingContext2D): void {
+    const w = this.w, b = w.run.binding;
+    const streak = w.run.flags.cleanStreak ?? 0, progress = streak % FLAWLESS_TARGET;
+    if (!tutorialLine(w)) {
+    panel(ctx, 180, 5, 120, 28, 1, '#566865', 'rgba(12,25,30,0.86)');
+    bindingSeal(ctx, b, 191, 19, 16);
+    text(ctx, b.name + ' binding', 203, 15, 7.5, b.color);
+    for (let i = 0; i < FLAWLESS_TARGET; i++) {
+      ctx.fillStyle = i < progress ? '#ddc48b' : '#34484b';
+      ctx.fillRect(203 + i * 8, 21, 5, 4);
+    }
+    text(ctx, '3 clean → chest', 233, 25, 6.5, '#c6d2c9');
+    }
+    const offers = w.pickups.filter((p) => p.pedestal && p.data.id && p.data.group !== undefined && !p.dead);
+    if (w.room.type === 'treasure' && offers.length > 1) {
+      text(ctx, 'CHOOSE ONE CURIO', VIEW_W / 2, 52, 8, '#ecd9a7', 'center');
+      text(ctx, 'The other returns to the book.', VIEW_W / 2, 62, 7, '#b7cac4', 'center');
+    }
   }
 
   /** Stat values as shown, keyed by icon. */
@@ -515,6 +540,7 @@ export class Hud {
 
   private drawStats(ctx: CanvasRenderingContext2D): void {
     const y0 = 112, x = 6;
+    panel(ctx, 3, 101, 35, 85, 0.76, '#435754', 'rgba(12,25,30,0.76)');
     const rows = this.statRows();
     rows.forEach(([k, v], i) => {
       const y = y0 + i * 10;
@@ -733,6 +759,7 @@ export class Hud {
     if (info.itemId && !w.game.save.data.itemsSeen.includes(info.itemId)) lines.push({ t: 'New to your collection!', c: COL.gold, size: 7, bullet: '★', bc: COL.gold });
     if (p && p.price > 0) lines.push({ t: `Costs ${p.price} buttons${w.player.buttons < p.price ? ` (you have ${w.player.buttons})` : ''}`, c: w.player.buttons >= p.price ? COL.gold : COL.down, size: 7, bullet: '¢', bc: COL.gold });
     if (p && p.data.swap && p.data.id) { const t = ticketFor(w, p); lines.push(t ? { t: `Leave behind: ${getItem(t)?.name ?? t}`, c: '#ffd8a0', size: 7, bullet: '⇄', bc: '#e0a860' } : { t: 'Free: you have nothing to leave', c: COL.up, size: 7, bullet: '⇄', bc: '#e0a860' }); }
+    if (p && p.data.group !== undefined) lines.push({ t: 'Choose one. The other offer disappears.', c: COL.gold, size: 7, bullet: '◇', bc: COL.gold });
     if (p && p.deal > 0) { const dc = dealCost(w, p); lines.push({ t: `Costs ${dealCostText(dc)}${dc.ok ? '' : ' (not enough)'}`, c: COL.down, size: 7, bullet: '♥', bc: COL.down }); }
     const k = textScale();
     let h = 11 * k; for (const l of lines) h += l.size * k + 2.5;
@@ -773,7 +800,7 @@ export class Hud {
       const t = ticketFor(this.w, p);
       foot = t ? `Leave ${getItem(t)?.name ?? t} in exchange` : 'Free (you have nothing to leave)'; footCol = '#ffd8a0'; footIcon = t ? itemIconCanvas(t) : null;
     } else if (p?.data.locked) { foot = 'Win the challenge to claim it'; }
-    else foot = 'Walk into it to take it';
+    else foot = p?.data.group !== undefined ? 'Choose one · the other offer disappears' : 'Walk into it to take it';
     const titleH = 28, lineH = 10.5;
     const H = titleH + 4 + body.length * lineH + 18;
     // keep clear of the item and Marcus: bottom of the screen unless the item is low, then the top
@@ -840,6 +867,14 @@ export class Hud {
     for (const p of w.pickups) {
       if (p.dead) continue;
       const sx = p.x - w.renderCamX, sy = p.y - w.renderCamY;
+      if (p.pedestal && p.data.id && p.data.group !== undefined && !w.blindItems()) {
+        const it = getItem(p.data.id);
+        if (it) {
+          const role = itemRole(it);
+          panel(ctx, sx - 27, sy + 7, 54, 11, 1, '#526763', 'rgba(12,25,30,0.9)');
+          text(ctx, ROLE_LABEL[role], sx, sy + 15, 6.5, ROLE_COLOR[role], 'center');
+        }
+      }
       if (p.price > 0) {
         const afford = w.player.buttons >= p.price;
         const label = String(p.price), tw = measure(ctx, label, 8.5) + 14;
@@ -871,7 +906,7 @@ export class Hud {
       const a = b.t < 0.25 ? ease.outBack(b.t / 0.25) : b.t > end ? 1 - (b.t - end) / 0.5 : 1;
       const alpha = clamp(a, 0, 1);
       const tw = Math.max(measure(ctx, b.title, 14, FONT_TITLE, 400), measure(ctx, b.sub, 8), b.note ? measure(ctx, b.note, 7) : 0) + (b.icon ? 34 : 24);
-      const H = b.note ? 41 : 32, x = VIEW_W / 2 - tw / 2, y = 30;
+      const H = b.dismissible ? 51 : b.note ? 41 : 32, x = VIEW_W / 2 - tw / 2, y = 30;
       ctx.save();
       ctx.translate(VIEW_W / 2, y + 16); ctx.scale(1, 0.6 + 0.4 * a); ctx.translate(-VIEW_W / 2, -(y + 16));
       paperStrip(ctx, x, y, tw, H, alpha, b.title.length);
@@ -886,6 +921,7 @@ export class Hud {
       text(ctx, b.title, tx, y + 16, 14, '#2a1a14', 'left', FONT_TITLE, 400, false);
       text(ctx, b.sub, tx, y + 26, 8, '#5a4636', 'left', FONT_BODY, 600, false);
       if (b.note) text(ctx, '✦ ' + b.note, tx, y + 36, 7, '#5a2a7a', 'left', FONT_BODY, 700, false);
+      if (b.dismissible) text(ctx, 'PRESS ANY GAME CONTROL TO CLOSE', x + tw - 7, y + 46, 5.5, '#7a6a58', 'right', FONT_BODY, 600, false);
       ctx.restore();
     }
   }
@@ -949,6 +985,7 @@ export class Hud {
   }
   private drawRoomName(ctx: CanvasRenderingContext2D): void {
     if (this.roomNameT <= 0) return;
+    if (this.w.room.type === 'treasure' && this.w.pickups.filter((p) => p.data.group !== undefined && p.data.id && !p.dead).length > 1) return;
     const a = Math.min(1, this.roomNameT * 2, (2.2 - this.roomNameT) * 4);
     ctx.globalAlpha = clamp(a, 0, 1);
     text(ctx, this.roomNameText, VIEW_W / 2, this.banners.length ? 82 : 58, 12, '#e8dcc8', 'center', FONT_TITLE, 400);
@@ -1015,7 +1052,7 @@ export class Hud {
       if (spr) {
         const k = Math.min(1.8, 92 / Math.max(spr.h, 1)), sl = ease.outCubic(clamp(t / 0.5, 0, 1));
         ctx.save(); ctx.translate(VIEW_W + 70 - sl * (VIEW_W + 70 - bx), by + Math.sin(t * 3) * 1.5); ctx.scale(k, k);
-        const flash = hit ? Math.max(0, 1 - (t - H) * 3.5) : 0;
+        const flash = hit ? Math.max(0, 1 - (t - H) * 3.5) * (w.game.save.data.settings.reduceFlash ? 0.2 : 1) : 0;
         spr.draw(ctx, 0, 0, hit ? { flash, tint: this.bossKind === 'echo' ? '#8ab8ff' : undefined, tintAmt: this.bossKind === 'echo' ? 0.35 : 0 } : { tint: '#000000', tintAmt: 1 });
         ctx.restore();
       }
@@ -1064,7 +1101,7 @@ export class Hud {
       if (this.bossKind === 'champion') text(ctx, 'CHAMPION', VIEW_W / 2 + 14, cy + 41, 6.5, ACC, 'center', FONT_BODY, 700);
     }
     // the white flash on the hit
-    if (hit && t - H < 0.18) { ctx.globalAlpha = (1 - (t - H) / 0.18) * 0.55; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
+    if (hit && t - H < 0.18) { ctx.globalAlpha = (1 - (t - H) / 0.18) * (w.game.save.data.settings.reduceFlash ? 0.1 : 0.55); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, VIEW_W, VIEW_H); }
     ctx.restore();
   }
 }

@@ -2,6 +2,7 @@
 import { EnemyDef, Enemy } from './enemy';
 import { gridFrames, scaledFrames, glowEye } from '../art/creature';
 import * as H from '../art/hand/cellar';
+import { cellarSprites } from '../art/cellar-creatures';
 import { chase, buzz, wander, aimAngle, shoot, spreadShot, hasLOS, aligned, distToPlayer, ringShot, keepDistance } from './ai';
 import { TAU, angleTo, clamp, dist2 } from '../core/math';
 import type { World } from '../game/world';
@@ -17,7 +18,7 @@ const mite: EnemyDef = {
 const moth: EnemyDef = {
   id: 'moth', name: 'Dust Moth', desc: 'Loops round to your side, shivers, then dives. Sheds choking dust when struck.', hp: 9, r: 6, speed: 42, flying: true, role: 'flyer', cost: 1, hitY: 12,
   gore: '#a89a7a',
-  sprites: () => { const [up, dn] = gridFrames(H.MOTH, H.MOTH_PAL, 19); return { idle: [up, up, dn, dn] }; },
+  sprites: () => { const { fly } = cellarSprites('dustmoth'); return { idle: fly }; },
   // a flanker: it picks a side and loops round to it, then dives in, then peels away and loops again
   update(e, w, dt) {
     const P = w.player, side = (e.data.side ??= e.id % 2 ? 1 : -1);
@@ -47,7 +48,7 @@ const moth: EnemyDef = {
 const ragcrawler: EnemyDef = {
   id: 'ragcrawler', name: 'Rag Crawler', desc: 'A bundle of rags that learned to pull itself along. Bunches up, then lurches straight at you: step aside.', hp: 11, r: 7, speed: 44, role: 'melee', cost: 1, hitY: 8,
   gore: '#6a4a3a',
-  sprites: () => ({ walk: gridFrames(H.RAG, H.RAG_PAL) }),
+  sprites: () => cellarSprites('ragcrawler'),
   init(e) { e.anim = 'walk'; e.cd = 0.4 + Math.random() * 0.6; },
   // a chaser: it drags itself after you, gathers (a squash, a beat of stillness), then lurches in a
   // straight line where you were. Step sideways when it bunches up.
@@ -71,11 +72,7 @@ const ragcrawler: EnemyDef = {
 const gasper: EnemyDef = {
   id: 'gasper', name: 'Gasper', desc: 'A wheezing sack on stubby legs. Swells up before it spits.', hp: 13, r: 8, speed: 30, role: 'shooter', cost: 1.5, hitY: 11,
   gore: '#8a2a3a',
-  sprites: () => ({
-    idle: scaledFrames(H.GAS, H.GAS_PAL, [[1, 1], [1.03, 0.97]]),
-    charge: scaledFrames(H.GAS, H.GAS_PAL, [[1.03, 1.03], [1.07, 1.05], [1.12, 1.08]]),
-    spit: scaledFrames(H.GAS, H.GAS_PAL, [[1.12, 0.86]]),
-  }),
+  sprites: () => cellarSprites('gasper'),
   init(e) { e.anim = 'idle'; e.cd = 1 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -104,11 +101,7 @@ const gasper: EnemyDef = {
 const dripling: EnemyDef = {
   id: 'dripling', name: 'Dripling', desc: 'A one-eyed blot that hops toward you. Watch it crouch.', hp: 11, r: 7, speed: 0, role: 'melee', cost: 1.2, hitY: 8,
   gore: '#2a2e70', goreDecal: '#1e2050',
-  sprites: () => ({
-    idle: scaledFrames(H.DRIP, H.DRIP_PAL, [[1, 1]]),
-    crouch: scaledFrames(H.DRIP, H.DRIP_PAL, [[1.18, 0.78]]),
-    air: scaledFrames(H.DRIP, H.DRIP_PAL, [[0.88, 1.12]]),
-  }),
+  sprites: () => cellarSprites('dripling'),
   init(e) { e.cd = 0.6 + Math.random() * 0.8; e.anim = 'idle'; },
   update(e, w, dt) {
     if (e.state === 'idle') {

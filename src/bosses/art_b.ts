@@ -19,6 +19,17 @@ export function paintFurnace(p: PixelArt, s: Pose): void {
   // arteries / stovepipes rising from the lobes; the right one is the chimney
   p.tube(cx - 9, top + 6, cx - 13, top - 4, 3, ramp('#7a2a34')); p.ellipse(cx - 13, top - 5, 3, 1.4, '#3a0a10');
   p.tube(cx + 8, top + 6, cx + 10, top - 6, 3.4, band); p.rect(cx + 6, top - 9, 8, 3, band[3]); p.rect(cx + 6, top - 9, 8, 1, band[4]);
+  // Flanged side pipes and hanging chain links make the machine feel assembled and heavy.
+  for (const side of [-1, 1]) {
+    const xx = cx + side * 22, yy = top + 23;
+    p.tube(cx + side * 16, yy - 4, xx, yy - 4, 2.1, band);
+    p.tube(xx, yy - 4, xx, yy + 8, 2.1, band);
+    p.rect(xx - 3, yy - 5, 6, 2, '#91817a');
+    for (let y = yy + 8; y < floor - 7; y += 4) {
+      p.ring(xx + Math.sin(s.t * TAU + side) * 0.6, y, 1.6, '#aa8970', 0.7);
+      p.set(xx - 1, y - 1, '#e0bf92');
+    }
+  }
   // the heart: two lobes over a tapering body
   p.ball(cx - 8, top + 13, 12 * beat, 11 * beat, iron, { dither: 0.35 });
   p.ball(cx + 8, top + 13, 12 * beat, 11 * beat, iron, { dither: 0.35 });

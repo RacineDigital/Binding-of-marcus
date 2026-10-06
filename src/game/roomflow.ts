@@ -1,6 +1,7 @@
 // Room lifecycle: entering, doors, clearing, rewards, special rooms and floor progression.
+import { newComboKeys, newCombos } from '../items/preview';
+import { describeItem } from '../items/describe';
 import { bindLabel } from '../core/input';
-import { newCombos } from '../items/preview';
 import type { World, DoorRT } from './world';
 import type { Run } from './run';
 import { RoomData, Side, opposite, Ob, ROOM_NAMES, DoorDef, SpawnDef } from '../rooms/room';
@@ -32,6 +33,7 @@ import { BOSS_ALIASES } from '../bosses/aliases';
 import { CHALLENGES } from '../data/achievements';
 import { charById } from '../player/characters';
 import { chapterTrack } from '../audio/music';
+import { flawlessReward } from './bindings';
 
 /** Each chapter's own recorded theme (by chapter id, so alternates never share one); its old track where it can't load. */
 export function themeMusic(t: { id: string; music: string }): string {
@@ -70,6 +72,7 @@ export function startFloor(w: World): void {
   const run = w.run;
   const floor = generateFloor(run, run.floorIndex, w.game.save);
   w.floor = floor; w.theme = floor.theme; w.props = propsFor(floor.theme);
+  (run.flags.floorPath ??= []).push(floor.theme.name);
   run.flags.hitThisFloor = false; run.flags.bossHit = false; run.flags.redHit = false; run.flags.bossRedHit = false; run.flags.floorStartTime = run.stats.time;
   w.player.clearTemp((t) => !!t.floor);
   const start = floor.rooms[floor.startId];
@@ -89,8 +92,9 @@ export function startFloor(w: World): void {
     if (new RNG(run.seed + ':blotheart:' + run.floorIndex).next() < 0.45) w.after(2.4, () => w.hud.giftHeart(), true);
   }
   // the end game announces itself: the Binding is not the Binding you remember
-  const endgame = floor.theme.id === 'binding' && run.floorIndex === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless';
+  const endgame = floor.theme.id === 'binding' && run.floorIndex === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !run.challenge && run.mode !== 'endless' && run.mode !== 'daily';
   w.hud.floorCard(floor.label, endgame ? 'It remembers you.' : floor.theme.subtitle, floor.curse, endgame);
+  if (run.floorIndex === (run.mode === 'hard' ? 3 : 5)) w.after(3.3, () => w.hud.toast('The stakes rise: enemy hits now cost a full heart.', 4), true);
   warmBosses(w);
   w.audio.setMusic(themeMusic(floor.theme));
   w.audio.prepareMusic(bossMusic(w.run));
@@ -106,7 +110,7 @@ export function serializeFloor(w: World): any {
   if (!w.floor || !w.room) return null;
   persistRoom(w);
   return {
-    floor: w.run.floorIndex, room: w.room.id, px: Math.round(w.player.x), py: Math.round(w.player.y),
+    floor: w.run.floorIndex, room: w.room.id, px: Math.round(w.player.x), py: Math.round(w.player.y), roomHit: w.roomHit, roomTime: w.roomTime,
     added: w.floor.added ?? [],
     rooms: w.floor.rooms.map((r) => ({
       c: r.cleared, v: r.visited, s: r.seen, d: r.discovered,
@@ -120,11 +124,14 @@ export function serializeFloor(w: World): any {
 /** Rebuild a floor from its seed and lay a saved state over it, resuming in the saved room. */
 export function restoreFloor(w: World, st: any): void {
   const run = w.run;
+  const taken = run.pools.serialize(), poolRng = run.pools.rngState();
   const floor = generateFloor(run, run.floorIndex, w.game.save);
   w.floor = floor; w.theme = floor.theme; w.props = propsFor(floor.theme);
   // rooms that were opened during play (bargain doors) aren't in the seed: open them again, in the
   // same order beside the same rooms, so their ids, doors and saved contents line up
   for (const a of st.added ?? []) { const beside = floor.rooms[a.beside]; if (beside) addBargainRoom(run, floor, beside, a.kind); }
+  // Regeneration only reconstructs geometry. Saved pedestals already consumed their pool entries.
+  run.pools.restore(taken); run.pools.restoreRng(poolRng);
   floor.rooms.forEach((r, i) => {
     const s = st.rooms[i]; if (!s) return;
     r.cleared = s.c; r.visited = s.v; r.seen = s.s; r.discovered = s.d;
@@ -135,6 +142,7 @@ export function restoreFloor(w: World, st: any): void {
   w.trapdoor = null;
   const id = floor.rooms[st.room] ? st.room : floor.startId;
   enterRoom(w, id, null, false);
+  w.roomHit = !!st.roomHit; w.roomTime = st.roomTime ?? 0;
   w.player.x = st.px; w.player.y = st.py; w.player.vx = w.player.vy = 0;
   w.snapCamera();
   w.floorIntroT = 0.8;
@@ -162,6 +170,7 @@ export function nextFloor(w: World): void {
 function persistRoom(w: World): void {
   const room = w.room;
   if (!room) return;
+  room.flags.combatHit = w.roomHit; room.flags.combatTime = w.roomTime;
   room.pickups = w.pickups.filter((p) => !p.dead && p.collectT < 0).map((p) => ({ kind: p.kind, x: p.x, y: p.y, data: { ...p.data, price: p.price, deal: p.deal, shop: p.shop, opened: p.opened } }));
   room.npcs = w.npcs.filter((n) => !n.dead).map((n) => ({ kind: n.kind, x: n.x, y: n.y, data: n.data }));
 }
@@ -184,7 +193,7 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
   w.exitDoor = room.flags.exit ? { x: room.flags.exit.x, y: room.flags.exit.y, t: 2, kind: room.flags.exit.kind } : null;
   w.lightBeam = room.flags.beam ? { x: room.flags.beam.x, y: room.flags.beam.y, t: 2, kind: room.flags.beam.kind } : null;
   w.backStair = room.flags.stair ? { x: room.flags.stair.x, y: room.flags.stair.y, t: 2, boarded: room.flags.stair.boarded } : null;
-  w.roomTime = 0; w.roomHit = false; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
+  w.roomTime = room.flags.combatTime ?? 0; w.roomHit = !!room.flags.combatHit; w.stuckT = 0; w.roomRng = new RNG(room.seed + ':rt');
   // a beat to read the room before anything fires; enemy shots are slower on early chapters
   w.proj.enemyGrace = room.cleared ? 0 : 0.9;
   w.proj.enemySpeedMul = [0.8, 0.86, 0.92, 0.96, 1, 1.02, 1.05, 1.08][Math.min(7, w.run.floorIndex)] * (w.run.mode === 'hard' ? 1.12 : 1);
@@ -490,7 +499,8 @@ function onClear(w: World, reward: boolean): void {
     }
     clearBonuses(w, rng);
   }
-  chargeActive(w, room.cw * room.ch >= 4 ? 2 : 1);
+  awardFlawless(w);
+  chargeActive(w, (room.cw * room.ch >= 4 ? 2 : 1) + (w.run.binding.roomCharge ?? 0));
   checkProgress(w);
   familiarsOnRoomClear(w);
   w.itemHook('onRoomClear');
@@ -498,8 +508,8 @@ function onClear(w: World, reward: boolean): void {
 }
 
 /**
- * Extra rewards on top of the normal clear drop: big rooms roll twice, a flawless clear (no hits)
- * builds a streak that pays out in pickups and chests, a fast clear tosses a button, and every so
+ * Extra rewards on top of the normal clear drop: big rooms roll twice,
+ * a fast clear tosses a button, and every so
  * often a room pays out a jackpot.
  */
 function clearBonuses(w: World, rng: RNG): void {
@@ -511,18 +521,6 @@ function clearBonuses(w: World, rng: RNG): void {
   let line = 0;
   // big rooms: one more roll from the room table
   if (cells >= 2) { const k = rollDropKind(rng, luck, 'room'); if (k) drop(k, -28, 10); }
-  // flawless streak
-  const fl = w.run.flags;
-  if (!w.roomHit) {
-    fl.cleanStreak = (fl.cleanStreak ?? 0) + 1;
-    const n = fl.cleanStreak as number;
-    fl.bestStreak = Math.max(fl.bestStreak ?? 0, n);
-    if (n % 5 === 0) { drop(n % 10 === 0 ? 'chest:locked' : 'chest', 30, 10); say(`FLAWLESS x${n}!`, '#ffd060', line); line -= 10; w.audio.play('coinBig'); }
-    else if (n >= 2 && rng.chance(Math.min(0.6, 0.18 + n * 0.06 + luck * 0.02))) {
-      drop(rng.pick(['button', 'button', 'key', 'bomb', 'heart', 'sweet', 'page']), 30, -8);
-      say(n >= 3 ? `FLAWLESS x${n}` : 'FLAWLESS', '#a8e8ff', line); line -= 10;
-    }
-  } else if ((fl.cleanStreak ?? 0) > 0) fl.cleanStreak = 0;
   // swift clear
   if (w.roomTime < 7 + cells * 4 && rng.chance(0.5)) { drop('button', -20, -14); say('SWIFT', '#c8f0a0', line); line -= 10; }
   // rare jackpot: a spray of buttons, or something special
@@ -534,6 +532,20 @@ function clearBonuses(w: World, rng: RNG): void {
     else drop('sparkBig', 0, 20);
     say('JACKPOT!', '#ffe070', line); w.audio.play('coinBig');
   }
+}
+
+/** All first-time combat clears count, including bosses and completed challenge waves. */
+function awardFlawless(w: World): void {
+  const f = w.run.flags;
+  if (w.roomHit) { f.cleanStreak = 0; return; }
+  if (w.room.flags.refights) return;
+  const n = f.cleanStreak = (f.cleanStreak ?? 0) + 1;
+  f.bestStreak = Math.max(f.bestStreak ?? 0, n);
+  if (!flawlessReward(n)) return;
+  const c = w.room.center(), spot = freeSpotNear(w, c.x + 44, c.y + 12);
+  spawnDrop(w, 'chest:tin', spot.x, spot.y, true, new RNG(w.room.seed + ':mastery'));
+  w.hud.toast(`Flawless ${n} · an unlocked chest is yours.`, 2.5);
+  w.audio.play('coinBig');
 }
 
 export function freeSpotNear(w: World, x: number, y: number): { x: number; y: number } {
@@ -602,7 +614,7 @@ export function onBossKilled(w: World, e: Enemy): void {
   w.after(1.8, () => { if (w.room === room && w.game.scene === 'run') { w.audio.setMusic(themeMusic(w.theme)); w.audio.setIntensity(0); } }, true);
   const fi = w.run.floorIndex;
   // finished the story before? then the Binding offers a way out and a way further in
-  const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless';
+  const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily';
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
   if (!w.run.flags.bossHit) {
@@ -688,7 +700,7 @@ export function onBossKilled(w: World, e: Enemy): void {
     room.flags.trap = { x: c.x, y: c.y + 26 };
     w.audio.play('trapdoor');
     // once the story is finished: a boarded back stair behind Chapter II's boss, up to St. Agnes
-    if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && !w.run.flags.hospital) {
+    if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily' && !w.run.flags.hospital) {
       const sx = c.x + 76, sy = c.y + 22;
       w.backStair = { x: sx, y: sy, t: 0, boarded: true }; room.flags.stair = { x: sx, y: sy, boarded: true };
       // until it has been climbed once, say it's there and how to open it
@@ -954,13 +966,13 @@ function openChest(w: World, p: Pickup): void {
     const r = rng.next();
     if (r < 0.3) { w.hurtPlayer(1, 'a crimson box', { ignoreIframes: false }); w.fx.spray(p.x, p.y, 6, -Math.PI / 2, 1, 10, '#a01e2a'); }
     else if (r < 0.5) spawnPedestal(w, p.x, p.y, w.run.pools.roll('curse'), 'deal');
-    else for (let i = 0; i < rng.int(2, 3); i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'crimson') ?? 'ink', p.x, p.y);
+    else { const n = rng.int(2, 3); for (let i = 0; i < n; i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'crimson') ?? 'ink', p.x, p.y, true, rng); }
   } else if (kind === 'reliquary') {
     spawnPedestal(w, p.x, p.y, w.run.pools.roll(rng.chance(0.5) ? 'treasure' : 'blessing'), 'treasure');
   } else {
     const n = kind === 'locked' ? rng.int(2, 4) : rng.int(1, 3);
     if (kind === 'locked' && rng.chance(0.12)) { spawnPedestal(w, p.x, p.y, w.run.pools.roll('treasure'), 'normal'); return; }
-    for (let i = 0; i < n; i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'chest') ?? 'button', p.x, p.y);
+    for (let i = 0; i < n; i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'chest') ?? 'button', p.x, p.y, true, rng);
   }
   w.after(2.5, () => { p.dead = true; });
 }
@@ -1023,23 +1035,27 @@ export function takeItem(w: World, p: Pickup): void {
     q.data.id = null; w.fx.smoke(q.x, q.y - 16, 6);
   }
   const oldActive = it.kind === 'active' ? pl.active : null;
+  const firstCollection = !w.game.save.data.itemsSeen.includes(id);
   const storedCharge: number | undefined = p.data.charge;
   p.data.id = oldActive; p.data.charge = oldActive ? pl.charge : undefined;
   p.price = 0; p.deal = 0; p.shop = false;
   if (oldActive) { p.noCollect = 1.0; }
   const modesBefore = new Set<string>(pl.prof.modes);
   grantItem(w, id, false, storedCharge);
-  presentItem(w, id, it, modesBefore);
+  presentItem(w, id, it, modesBefore, firstCollection);
 }
 
-function presentItem(w: World, id: string, it: NonNullable<ReturnType<typeof getItem>>, modesBefore?: Set<string>): void {
+function presentItem(w: World, id: string, it: NonNullable<ReturnType<typeof getItem>>, modesBefore?: Set<string>, firstCollection = false): void {
   const pl = w.player;
   // (under Blight of the Unread the pedestal hid it; picking it up shows what it was)
   pl.pickupT = 1.1; pl.pickupSprite = itemIconCanvas(id);
   // a new attack style meeting one you already have: say what they now do together
+  if (modesBefore) for (const key of newComboKeys(modesBefore, pl.prof.modes)) w.game.save.discoverCombo(key);
   const combo = modesBefore ? newCombos(modesBefore, pl.prof.modes)[0] : undefined;
+  const effect = describeItem(it).find((line) => line.text.trim())?.text;
+  const note = combo ?? (firstCollection && effect ? effect.slice(0, 68) : undefined);
   const rare = it.quality >= 4;
-  w.hud.banner(it.name, it.pickup, itemIconCanvas(id), combo, rare ? 'A RARE CURIO' : undefined);
+  w.hud.banner(it.name, it.pickup, itemIconCanvas(id), note, rare ? 'A RARE CURIO' : firstCollection ? 'NEW TO YOUR COLLECTION' : undefined, firstCollection);
   w.audio.play(it.quality >= 3 ? 'itemGetBig' : 'itemGet');
   w.fx.stars(pl.x, pl.y - 30, 14, '#ffe8a0', 60);
   w.fx.ring(pl.x, pl.y - 20, 4, 26, '#fff0c0', 0.4);

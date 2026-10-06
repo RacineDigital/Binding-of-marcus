@@ -25,9 +25,9 @@ export const FLOORS: FloorTheme[] = [
   {
     id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Chapter I',
     floor: 'flag', wall: 'stone', ambience: 'dust',
-    pal: { floor: '#48403a', floor2: '#3a332f', grout: '#1c1616', wall: '#4d4448', wall2: '#3a3238', mortar: '#1c1618',
-      rock: '#6d625c', accent: '#b0894f', stain: '#2e3a2a', heap: '#d8ccb0', heapKind: 'paper' },
-    ambient: '#0a0610', darkness: 0.5, playerLight: 100,
+    pal: { floor: '#435354', floor2: '#334147', grout: '#202a30', wall: '#495a60', wall2: '#303e48', mortar: '#18232c',
+      rock: '#72807a', accent: '#c5a46d', stain: '#2d4940', heap: '#d8ccb0', heapKind: 'paper' },
+    ambient: '#0d1724', darkness: 0.38, playerLight: 112,
     enemies: { mite: 10, moth: 7, ragcrawler: 9, gasper: 7, dripling: 6, pillbug: 5, mitenest: 3, spool: 4, candlewick: 2 },
     bosses: ['grubmother', 'wardrobe', 'twinsnips'],
     music: 'cellar', hazards: { spikes: 0.15, pits: 0.3, fires: 0.45, kegs: 0.15 }, fireVariants: [0, 0, 0, 2],

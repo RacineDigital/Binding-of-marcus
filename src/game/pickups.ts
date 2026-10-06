@@ -80,6 +80,11 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
       const style = p.data.style ?? 'treasure';
       (S.pedestal[style] ?? S.pedestal.normal).draw(ctx, sx, sy + 2);
       if (p.data.id) {
+        if (p.data.group !== undefined) {
+          const near = Math.hypot(w.player.x - p.x, w.player.y - p.y) < 40;
+          ctx.save(); ctx.strokeStyle = near ? '#eddaaa' : '#8aab9f'; ctx.globalAlpha = near ? 0.85 : 0.38;
+          ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(sx, sy + 1, 20, 8, 0, 0, TAU); ctx.stroke(); ctx.restore();
+        }
         const blind = w.blindItems();
         const icon = itemIconCanvas(p.data.id, blind);
         const bob = Math.sin(p.t * 3 + p.phase) * 2;

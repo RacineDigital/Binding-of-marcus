@@ -60,7 +60,7 @@ export function wrap(ctx: CanvasRenderingContext2D, s: string, size: number, max
   return lines;
 }
 /** Chamfered ink panel with a thin warm border. */
-export function panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, alpha = 1, border = COL.border, fill = COL.panel): void {
+export function panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, alpha = 1, border = COL.border, fill: string | CanvasGradient = COL.panel): void {
   const c = 3;
   ctx.save();
   ctx.globalAlpha *= alpha;

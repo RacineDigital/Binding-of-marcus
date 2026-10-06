@@ -44,6 +44,8 @@ jobs:
         run: npm ci
       - if: steps.version.outputs.skip != 'true'
         run: npm test
+      - if: steps.version.outputs.skip != 'true'
+        run: npm run test:desktop
       - name: Build and package
         if: steps.version.outputs.skip != 'true'
         run: bash scripts/package-release.sh "${{ steps.version.outputs.tag }}"

@@ -60,6 +60,10 @@ export class RNG {
   }
   /** Derive an independent generator from this one plus a label. */
   fork(label: string): RNG { return new RNG(`${this.int(0, 0x7fffffff)}:${label}`); }
+  snapshot(): number[] { return [this.a, this.b, this.c, this.d]; }
+  restore(state: number[]): void {
+    if (state.length === 4 && state.every(Number.isFinite)) [this.a, this.b, this.c, this.d] = state;
+  }
 }
 
 const SEED_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

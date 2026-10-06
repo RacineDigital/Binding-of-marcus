@@ -5,6 +5,9 @@ const { app, BrowserWindow, ipcMain, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { DiscordPresence } = require('./discord.cjs');
+const { supportsAutoUpdates } = require('./distribution.cjs');
+const distribution = require('../package.json').distribution;
+const canAutoUpdate = () => supportsAutoUpdates({ packaged: app.isPackaged, smoke: SMOKE, portable: !!process.env.PORTABLE_EXECUTABLE_DIR, distribution });
 
 // Discord Rich Presence: the Application ID from https://discord.com/developers/applications
 // ("Playing <name>" shows that application's name). Set it to '' to turn Rich Presence off.
@@ -125,7 +128,7 @@ function create() {
 // Auto-update (the installed version only; the portable .exe can't replace itself): check GitHub
 // releases at launch, download a newer version in the background, and install it on quit.
 function startUpdater() {
-  if (!app.isPackaged || SMOKE || process.env.PORTABLE_EXECUTABLE_DIR) return;
+  if (!canAutoUpdate()) return;
   try {
     const { autoUpdater } = require('electron-updater');
     autoUpdater.autoDownload = true;
@@ -137,8 +140,8 @@ function startUpdater() {
     autoUpdater.checkForUpdates().catch((err) => console.error('update check failed', err && err.message));
   } catch (err) { console.error('updater unavailable', err); }
 }
-ipcMain.on('update:auto', (e) => { e.returnValue = app.isPackaged && !process.env.PORTABLE_EXECUTABLE_DIR; });
-ipcMain.on('update:install', () => { try { require('electron-updater').autoUpdater.quitAndInstall(); } catch (err) { console.error(err); } });
+ipcMain.on('update:auto', (e) => { e.returnValue = canAutoUpdate(); });
+ipcMain.on('update:install', () => { if (!canAutoUpdate()) return; try { require('electron-updater').autoUpdater.quitAndInstall(); } catch (err) { console.error(err); } });
 
 app.whenReady().then(() => { migrateOldSaves(); discord.start(); create(); setTimeout(startUpdater, 4000); });
 app.on('window-all-closed', () => { discord.stop(); app.quit(); });

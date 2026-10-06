@@ -1,5 +1,5 @@
-// The endings. Each path through the book ends in its own way; together they tell what really
-// happened in the house on Harrow Lane. Seen endings are kept in the save and listed in the Journal.
+// The endings. Each path through the book gives Marcus a different way to face his grief.
+// Seen endings are kept in the save and listed in the Journal.
 import { ENDING_STORY, TRUE_ENDING_STORY, LIGHT_ENDING_STORY } from './lore';
 import type { Run } from '../game/run';
 import { FINAL_FLOOR } from './floors';
@@ -22,7 +22,7 @@ export const ENDINGS: EndingDef[] = [
     clue: 'The light only reaches down for someone who has been to the Last Page twice.' },
   { id: 'the_visit', num: 4, name: 'The Visit', key: 2,
     lines: [
-      'The thing in the bed was not a monster.',
+      'In the book’s version of St. Agnes, the shape in the bed was not a monster.',
       'It was Grandad: small, and tired, with the paper upside down on his lap.',
       '"There you are," he said. "I saved you the good chair."',
       'Marcus sat in it, and held his hand, and stayed until the nurse dimmed the lights.',
@@ -42,16 +42,16 @@ export const ENDING_BY_ID = Object.fromEntries(ENDINGS.map((e) => [e.id, e])) as
 
 /** One line per reader, added after whichever ending they reach. */
 export const EPILOGUES: Record<string, string> = {
-  marcus: 'Marcus kept the book. He did not open it again for a long time, and then one day he did, just to visit.',
-  wren: 'Wren pinned her slingshot above the press, next to the drawing of Grandad with the crown.',
-  edda: 'Edda sewed the spine back up with red thread, so it would never come loose again.',
-  elias: 'Elias set down the awl. For the first time since the hospital, he rested.',
-  blot: 'The Blot curled up on the last page and dried there: a full stop at the end of everything.',
-  ozzie: 'Ozzie rolled the die one last time, and put it away without looking at how it landed.',
-  nell: 'Nell had visited every single day. She never told Marcus. She never needed to.',
-  bram: 'Bram walked home the long way, past Harrow Lane, just to make sure the cellar door was shut.',
-  ada: 'Ada\'s rose came back through the greenhouse roof that spring. Nobody ever cut it again.',
-  wick: 'Wick flew to the lamp in the window and stayed there, keeping it lit for whoever came next.',
+  marcus: 'Back in the bindery, Marcus kept the book. Years later, he opened it again to remember Grandad, not because anything was trapped inside.',
+  wren: 'In the book, Wren pinned her slingshot above the press, next to the drawing of Grandad with the crown.',
+  edda: 'In the book, Edda sewed the spine back up with red thread, so it would never come loose again.',
+  elias: 'In Marcus’s story, Elias set down the awl. The old bookbinder could rest at last.',
+  blot: 'On the book’s last page, the Blot curled up and dried: a full stop at the end of the story.',
+  ozzie: 'In the book, Ozzie rolled the die one last time, then put it away without looking at how it landed.',
+  nell: 'Back at home, Nell had visited Elias every day. She never blamed Marcus for being afraid, and never needed to tell him so.',
+  bram: 'In the book, Bram walked home past Harrow Lane to make sure the cellar door was shut.',
+  ada: 'In the book, Ada’s rose came back through the greenhouse roof that spring. Nobody cut it again.',
+  wick: 'In the book, Wick flew to the lamp in the window and stayed there, keeping it lit for whoever came next.',
 };
 
 /** Which ending a finished run reached. */

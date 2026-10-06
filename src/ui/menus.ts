@@ -14,9 +14,10 @@ import { LOOKS } from '../art/look';
 import { ALL_ITEMS, getItem, CONSUMABLES } from '../items/registry';
 import { itemIconCanvas } from '../art/items';
 import { describeItem } from '../items/describe';
+import { COMBOS } from '../items/preview';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
 import { formatSeed, normalizeSeed, RNG } from '../core/rng';
-import { dailySeed, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
+import { dailySeed, dailyReader, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
 import { INTRO_STORY } from '../data/lore';
 import { ENDINGS, ENDING_BY_ID, EPILOGUES, EndingId } from '../data/endings';
 import { NOTES, NoteDef } from '../data/notes';
@@ -35,6 +36,9 @@ import { TRANSFORM_EFFECTS } from '../player/player';
 import { drawPaper, wornFrame } from './paper';
 import { isFullscreen, setFullscreen } from '../core/fullscreen';
 import { doorSymbol } from '../art/roomicons';
+import { BINDINGS, bindingById, type BindingId } from '../game/bindings';
+import { bindingSeal } from './bindingart';
+import { computeStats } from '../player/stats';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -278,8 +282,7 @@ export class MenuSystem {
   dailyScreen(): Screen {
     const self = this, g = this.g;
     const seed = dailySeed(), day = todayKey();
-    const pool = CHARACTERS.filter((c) => !c.unlock || g.save.isUnlocked(c.unlock));
-    const ch = pool[new RNG(seed + ':char').int(0, pool.length - 1)];
+    const ch = dailyReader(seed);
     return {
       t: 0,
       update(keys) {
@@ -292,7 +295,7 @@ export class MenuSystem {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 70, 26, 340, 212, 1, 17);
         heading(ctx, 'Daily Run', 240, 56, 14, INK);
-        text(ctx, day, 240, 70, 8.5, INK2, 'center', FONT_BODY, 600, false);
+        text(ctx, day + ' · UTC', 240, 70, 8.5, INK2, 'center', FONT_BODY, 600, false);
         const sp = self.sprites(ch);
         ctx.save(); ctx.translate(150, 170); ctx.scale(3.5, 3.5);
         drawReader(ctx, sp, ch, self.time);
@@ -300,7 +303,7 @@ export class MenuSystem {
         const S = g.save.data.stats;
         const rows: [string, string][] = [['Reader', ch.name], ['Seed', formatSeed(seed)], ['Today\'s best', S['best_daily_' + day] ? String(S['best_daily_' + day]) : '—'], ['Best ever (Normal)', S.best_normal ? String(S.best_normal) : '—']];
         rows.forEach(([k, v], i) => { text(ctx, k, 230, 104 + i * 16, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 380, 104 + i * 16, 9, INK, 'right', FONT_TITLE, 400, false); });
-        text(ctx, 'Everyone gets the same floors, items and bosses today.', 240, 186, 7, INK2, 'center', FONT_BODY, 600, false);
+        text(ctx, 'One UTC seed, a loaned reader, and the full item pool.', 240, 186, 7, INK2, 'center', FONT_BODY, 600, false);
         inkBlot(ctx, 240, 208, 90, 14, self.time, 'rgba(40,30,60,0.2)');
         text(ctx, 'Begin', 240, 212, 11, INK, 'center', FONT_TITLE, 400, false);
         hint(ctx, 'Enter to begin · Esc back');
@@ -309,103 +312,119 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ new run
-  newRunScreen(challenge: string | null = null, forceChar?: string, presetSeed?: string): Screen {
+  newRunScreen(challenge: string | null = null, forceChar?: string, presetSeed?: string, presetMode: RunMode = 'normal', presetBinding: string = 'unbound'): Screen {
     const self = this, g = this.g;
-    let ci = forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0;
-    let row = 0; // 0 = character, 1 = mode, 2 = seed, 3 = start
-    let seed = presetSeed ?? ''; let editing = false;
-    // Hard and Endless open up after the first win
-    const modes: RunMode[] = g.save.isUnlocked('beat_final') && !challenge ? ['normal', 'hard', 'endless'] : ['normal'];
-    const hardOpen = modes.length > 1;
-    let mi = 0;
-    const MODE_DESC: Partial<Record<RunMode, string>> = {
-      hard: 'Tougher enemies, harsher hits, more champions; better treasure. Score x1.5.',
-      endless: 'After the Binding the story keeps going: chapters loop, harder each time.',
-    };
+    let ci = Math.max(0, forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0);
+    let row = 0, seed = presetSeed ?? '', editing = false;
+    let bi = challenge ? 0 : BINDINGS.indexOf(bindingById(presetBinding));
+    const modes: RunMode[] = !challenge && g.save.isUnlocked('beat_final') ? ['normal', 'hard', 'endless'] : ['normal'];
+    let mi = Math.max(0, modes.indexOf(presetMode));
     const unlocked = (c: CharacterDef) => !c.unlock || g.save.isUnlocked(c.unlock);
+    const rows = [0, ...(!challenge ? [1] : []), ...(modes.length > 1 ? [2] : []), 3, 4];
+    const character = (direction: number) => {
+      if (forceChar) return;
+      do ci = (ci + direction + CHARACTERS.length) % CHARACTERS.length; while (CHARACTERS[ci].tainted && !unlocked(CHARACTERS[ci]));
+      self.sfxMove();
+    };
+    const begin = () => {
+      const c = CHARACTERS[ci];
+      if (!unlocked(c)) { g.audio.play('deny'); return; }
+      g.audio.play('itemGet', { vol: 0.5 });
+      g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, modes[mi], BINDINGS[bi].id); }, 0.5);
+    };
+    const editSeed = () => {
+      editing = true; g.input.textCapture = (key) => {
+        if (key === 'Enter' || key === 'Escape') { editing = false; g.input.textCapture = null; g.input.clearMenu(); return; }
+        if (key === 'Backspace') seed = seed.slice(0, -1);
+        else if (/^[a-zA-Z0-9]$/.test(key) && seed.length < 8) seed = normalizeSeed(seed + key);
+      };
+    };
     const scr: Screen = {
       t: 0,
       update(keys) {
         if (editing) return;
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
-          if (k === 'up') { row = (row + 3) % 4; if (row === 1 && !hardOpen) row = 0; self.sfxMove(); }
-          if (k === 'down') { row = (row + 1) % 4; if (row === 1 && !hardOpen) row = 2; self.sfxMove(); }
-          if ((k === 'left' || k === 'right') && row === 0 && !forceChar) {
-            // the mirrored only join the line-up once they're unlocked
-            do ci = (ci + (k === 'left' ? -1 : 1) + CHARACTERS.length) % CHARACTERS.length; while (CHARACTERS[ci].tainted && !unlocked(CHARACTERS[ci]));
-            self.sfxMove();
+          if (k === 'up' || k === 'down') { row = rows[(rows.indexOf(row) + (k === 'up' ? rows.length - 1 : 1)) % rows.length]; self.sfxMove(); }
+          if (k === 'left' || k === 'right') {
+            const d = k === 'left' ? -1 : 1;
+            if (row === 0) character(d);
+            if (row === 1) { bi = (bi + d + BINDINGS.length) % BINDINGS.length; self.sfxMove(); }
+            if (row === 2) { mi = (mi + d + modes.length) % modes.length; self.sfxMove(); }
           }
-          if ((k === 'left' || k === 'right' || k === 'confirm') && row === 1) { mi = (mi + (k === 'left' ? modes.length - 1 : 1)) % modes.length; self.sfxMove(); continue; }
           if (k === 'confirm') {
-            if (row === 2) {
-              editing = true; g.input.textCapture = (key) => {
-                if (key === 'Enter' || key === 'Escape') { editing = false; g.input.textCapture = null; g.input.clearMenu(); return; }
-                if (key === 'Backspace') seed = seed.slice(0, -1);
-                else if (/^[a-zA-Z0-9]$/.test(key) && seed.length < 8) seed = normalizeSeed(seed + key);
-              };
-              continue;
-            }
-            const c = CHARACTERS[ci];
-            if (!unlocked(c)) { g.audio.play('deny'); continue; }
-            g.audio.play('itemGet', { vol: 0.5 });
-            g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, modes[mi]); }, 0.5);
+            if (row === 0) { row = challenge ? 4 : 1; self.sfxMove(); }
+            else if (row === 1) { row = 4; self.sfxMove(); }
+            else if (row === 2) { mi = (mi + 1) % modes.length; self.sfxMove(); }
+            else if (row === 3) editSeed();
+            else begin();
           }
         }
       },
-      render(ctx) {
-        ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        const c = CHARACTERS[ci];
-        const un = unlocked(c);
-        page(ctx, 40, 22, 400, 220, 1, ci + 2);
-        text(ctx, challenge ? 'Challenge: ' + (CHALLENGES.find((x) => x.id === challenge)?.name ?? '') : 'Choose your reader', 240, 40, 9, INK2, 'center', FONT_BODY, 600, false);
-        // portrait
-        const sp = self.sprites(c);
-        ctx.save(); ctx.translate(110, 150); ctx.scale(4, 4);
-        ctx.fillStyle = 'rgba(60,40,30,0.25)'; ctx.beginPath(); ctx.ellipse(0, 0, 9, 2.5, 0, 0, TAU); ctx.fill();
-        if (!un) ctx.filter = 'brightness(0)';
-        drawReader(ctx, sp, c, self.time);
-        ctx.restore();
-        if (!forceChar) { text(ctx, '◀', 62, 112, 12, INK2, 'center', FONT_BODY, 600, false); text(ctx, '▶', 158, 112, 12, INK2, 'center', FONT_BODY, 600, false); }
-        if (un) drawMarks(ctx, g, c.id, 110, 172);
-        // info
-        const x0 = 190;
-        text(ctx, un ? c.name : '???', x0, 70, 20, INK, 'left', FONT_TITLE, 400, false);
-        if (un && !(g.save.data.readersMet ?? []).includes(c.id)) text(ctx, 'NEW', x0 + measure(ctx, c.name, 20, FONT_TITLE, 400) + 6, 58, 7, '#a02a2a', 'left', FONT_BODY, 700, false);
-        // a gold star once the story has been finished with this reader
-        if (un && (c.id === 'marcus' ? g.save.isUnlocked('beat_final') : g.save.isUnlocked('win_' + c.id))) text(ctx, '★', x0 + measure(ctx, c.name, 20, FONT_TITLE, 400) + 6, 66, 12, '#c89a2a', 'left', FONT_BODY, 700, false);
-        text(ctx, un ? c.title : 'Locked', x0, 82, 8, '#8a3a2a', 'left', FONT_BODY, 600, false);
-        const lines = wrap(ctx, un ? c.desc : c.unlockHint, 7.5, 220);
-        lines.forEach((l, i) => text(ctx, l, x0, 96 + i * 9, 7.5, INK2, 'left', FONT_BODY, 600, false));
-        if (un) {
-          const yb = 100 + lines.length * 9;
-          const stats: [string, number, number][] = [['Damage', c.base.damage, 5], ['Fire rate', c.base.tears, 4.5], ['Speed', c.base.speed, 1.6], ['Range', c.base.range / 24, 12]];
-          stats.forEach(([n, v, max], i) => {
-            text(ctx, n, x0, yb + i * 9, 7, INK2, 'left', FONT_BODY, 600, false);
-            ctx.fillStyle = 'rgba(60,40,30,0.2)'; ctx.fillRect(x0 + 40, yb + i * 9 - 5, 80, 4);
-            ctx.fillStyle = '#6a2a22'; ctx.fillRect(x0 + 40, yb + i * 9 - 5, 80 * clamp(v / max, 0, 1), 4);
-          });
-          // health preview
-          const H = pickupSprites().hud; let hx = x0;
-          const hy = yb + 38;
-          for (let i = 0; i < c.health.red; i++) { ctx.drawImage(H.red.canvas, hx, hy); hx += 11; }
-          for (let i = 0; i < (c.health.wax ?? 0) / 2; i++) { ctx.drawImage(H.wax.canvas, hx, hy); hx += 11; }
-          for (let i = 0; i < (c.health.ink ?? 0) / 2; i++) { ctx.drawImage(H.ink.canvas, hx, hy); hx += 11; }
-          text(ctx, c.passive, x0, hy + 20, 7, '#4a3a6a', 'left', FONT_BODY, 600, false);
-          // starting items, shown as their icons
-          c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), x0 + 240 - (c.items.length - i) * 18, hy - 4, 16, 16); });
+      pointer(x, y, click, moved, wheel) {
+        if (editing) return;
+        if (x >= 26 && x < 162 && y >= 48 && y < 210) { row = 0; if (click || wheel) character(wheel || (x < 94 ? -1 : 1)); return; }
+        if (!challenge && x >= 178 && x < 438 && y >= 117 && y <= 173) {
+          if (moved || click) row = 1;
+          if (click) { bi = Math.min(3, Math.floor((x - 178) / 65)); self.sfxMove(); }
         }
-        // seed & start
-        const opts = [`Mode: ${MODE_NAMES[modes[mi]]}`, `Seed: ${editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random'}`, 'Begin'];
-        [1, 2, 3].forEach((r) => {
-          const y = 192 + (r - 1) * 13;
-          const on = row === r;
-          if (on) inkBlot(ctx, 300, y - 3, 150, 12, self.time, 'rgba(40,30,60,0.2)');
-          text(ctx, opts[r - 1], 300, y, on ? 9 : 8, r === 1 && !hardOpen ? 'rgba(90,70,54,0.5)' : on ? (r === 1 && modes[mi] !== 'normal' ? '#8a1a1a' : INK) : INK2, 'center', FONT_TITLE, 400, false);
+        if (y >= 218 && y <= 245) {
+          if (x >= 30 && x < 182) { row = 2; if (click) { mi = (mi + 1) % modes.length; self.sfxMove(); } }
+          else if (x >= 187 && x < 329) { row = 3; if (click) editSeed(); }
+          else if (x >= 340 && x < 449) { row = 4; if (click) begin(); }
+        }
+      },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,8,12,0.86)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        panel(ctx, 16, 14, 448, 240, 1, '#8f7954', '#111d22');
+        heading(ctx, challenge ? CHALLENGES.find((c) => c.id === challenge)?.name ?? 'Challenge' : 'Choose your story', 240, 36, 13, '#ead6ab');
+        const c = CHARACTERS[ci], un = unlocked(c), b = BINDINGS[bi];
+        // The reader sits inside a foil-stamped book cover.
+        const cover = ctx.createLinearGradient(26, 48, 160, 211); cover.addColorStop(0, '#284044'); cover.addColorStop(1, '#101c24');
+        panel(ctx, 26, 48, 136, 163, 1, row === 0 ? '#e5c88d' : '#52676a', cover);
+        ctx.fillStyle = '#32494a'; ctx.fillRect(29, 51, 5, 157);
+        heading(ctx, un ? c.name : 'Unknown', 96, 68, 11, '#ead6ab');
+        const glow = ctx.createRadialGradient(96, 114, 3, 96, 114, 53); glow.addColorStop(0, '#496361'); glow.addColorStop(1, 'rgba(24,39,43,0)');
+        ctx.fillStyle = glow; ctx.fillRect(38, 76, 115, 78);
+        ctx.save(); ctx.translate(96, 150); ctx.scale(2.5, 2.5);
+        if (!un) ctx.filter = 'brightness(0)'; drawReader(ctx, self.sprites(c), c, self.time); ctx.restore();
+        if (!forceChar) { text(ctx, '‹', 42, 116, 20, COL.gold, 'center'); text(ctx, '›', 148, 116, 20, COL.gold, 'center'); }
+        if (un) {
+          ctx.fillStyle = '#c9c4a9'; ctx.fillRect(51, 153, 90, 18);
+          drawMarks(ctx, g, c.id, 96, 164);
+        }
+        const stats = computeStats(c.base, [b.stats]);
+        text(ctx, `DMG ${stats.damage.toFixed(1)}    RATE ${stats.fireRate.toFixed(2)}`, 96, 179, 7, '#e7d9bd', 'center');
+        text(ctx, `SPEED ${stats.speed.toFixed(2)}    RANGE ${Math.round(stats.range / 24)}`, 96, 191, 7, '#a5b9b4', 'center');
+        text(ctx, '‹  READER  ›', 96, 204, 6, row === 0 ? COL.gold : '#889e9c', 'center');
+        text(ctx, un ? c.title : 'A story still to unlock', 178, 59, 12, '#efe4cc', 'left', FONT_TITLE, 400);
+        wrap(ctx, un ? c.desc : c.unlockHint, 7.5, 258).slice(0, 3).forEach((l, i) => text(ctx, l, 178, 73 + i * 9, 7.5, '#b9c7c3'));
+        if (un) {
+          const H = pickupSprites().hud; let hx = 178;
+          for (let i = 0; i < c.health.red; i++) { ctx.drawImage(H.red.canvas, hx, 95, 8, 8); hx += 9; }
+          for (const [n, spr] of [[c.health.wax ?? 0, H.wax], [c.health.ink ?? 0, H.ink]] as const) for (let i = 0; i < n; i += 2) { ctx.drawImage(spr.canvas, hx, 95, 8, 8); hx += 9; }
+          c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), 424 - i * 14, 92, 12, 12); });
+        }
+        text(ctx, challenge ? 'CHALLENGE KIT · FIXED BINDING' : 'THE BINDING · CHOOSE A PLAYSTYLE', 178, 110, 6.5, '#d4b779');
+        BINDINGS.forEach((v, i) => {
+          const x = 178 + i * 65, selected = bi === i;
+          ctx.save(); ctx.globalAlpha = challenge && i ? 0.22 : 1;
+          panel(ctx, x, 118, 60, 55, 1, selected ? v.color : '#35484d', selected ? v.dark : '#15252a');
+          if (selected) { ctx.fillStyle = v.color; ctx.fillRect(x + 7, 119, 46, 1); }
+          bindingSeal(ctx, v, x + 30, 138, 24);
+          text(ctx, v.name, x + 30, 163, 8, selected ? '#fff0d6' : '#aab9b5', 'center', FONT_TITLE, 400);
+          ctx.restore();
         });
-        if (row === 1 && MODE_DESC[modes[mi]]) text(ctx, MODE_DESC[modes[mi]]!, 300, 233, 6.5, '#8a2a2a', 'center', FONT_BODY, 600, false);
-        if (row === 0) text(ctx, '— character —', 110, 192, 7, INK2, 'center', FONT_BODY, 600, false);
-        hint(ctx, editing ? 'Type an 8-character seed · Enter to confirm' : '←/→ character · ↑/↓ options · Enter to begin · Esc back');
+        text(ctx, b.title, 178, 186, 6.5, b.color);
+        text(ctx, b.benefit, 178, 197, 7.2, '#e7e5cd');
+        text(ctx, b.cost, 178, 207, 7, '#b8c4c0');
+        const modeName = modes[mi] === 'hard' ? 'Hard · score ×1.5' : modes[mi] === 'endless' ? 'Endless · looping chapters' : 'Normal';
+        const seedText = editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : '') : seed.length === 8 ? formatSeed(seed) : 'Random';
+        for (const [x, width, r, label] of [[30, 152, 2, `Mode: ${modeName}`], [187, 142, 3, `Seed: ${seedText}`], [340, 109, 4, 'OPEN THE BOOK']] as const) {
+          panel(ctx, x, 220, width, 23, 1, row === r ? '#e5c88d' : '#405456', r === 4 ? '#36534e' : '#17272c');
+          text(ctx, label, x + width / 2, 235, r === 4 ? 8 : 7.5, row === r ? '#fff0d6' : '#c0cdc6', 'center');
+        }
+        hint(ctx, editing ? 'Type an 8-character seed · Enter to confirm' : '↑/↓ focus · ←/→ choose · Enter confirm · Esc back');
       },
     };
     return scr;
@@ -627,6 +646,34 @@ export class MenuSystem {
     };
   }
 
+  /** Archive of attack styles the player has personally combined. */
+  synergiesScreen(): Screen {
+    const self = this, g = this.g;
+    const combos = Object.entries(COMBOS);
+    const discovered = new Set(g.save.data.discoveredCombos ?? []);
+    const label = (key: string) => key.split('+').map((s) => s[0].toUpperCase() + s.slice(1)).join(' + ');
+    return {
+      t: 0,
+      update(keys) { if (keys.includes('back') || keys.includes('confirm')) self.pop(); },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        page(ctx, 20, 14, 440, 244, 1, 21);
+        heading(ctx, 'Attack combinations', 40, 38, 12, INK, 'left');
+        const n = discovered.size;
+        text(ctx, `${n} / ${combos.length} discovered`, 440, 38, 8, INK2, 'right', FONT_BODY, 600, false);
+        const cols = [40, 250], top = 64, rowH = 35;
+        combos.forEach(([key, desc], i) => {
+          const x = cols[Math.floor(i / 5)], y = top + (i % 5) * rowH;
+          const got = discovered.has(key);
+          text(ctx, got ? label(key) : 'Unknown combination', x, y, 8.5, got ? INK : '#9a8a7a', 'left', FONT_TITLE, 400, false);
+          const lines = wrap(ctx, got ? desc : 'Combine two different attack styles to discover what they do together.', 7, 184);
+          lines.slice(0, 2).forEach((line, j) => text(ctx, line, x, y + 11 + j * 8, 7, INK2, 'left', FONT_BODY, 600, false));
+        });
+        hint(ctx, 'Discover combinations during a run · Esc back');
+      },
+    };
+  }
+
   // ------------------------------------------------------------ statistics & achievements
   historyScreen(): Screen {
     const self = this, g = this.g;
@@ -640,14 +687,14 @@ export class MenuSystem {
           if (k === 'back') { self.pop(); return; }
           if (k === 'up') sel = Math.max(0, sel - 1);
           if (k === 'down') sel = Math.min(Math.max(0, n - 1), sel + 1);
-          if (k === 'confirm' && list()[sel]) { const r = list()[sel]; self.push(self.newRunScreen(null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed)); return; }
+          if (k === 'confirm' && list()[sel]) { const r = list()[sel]; self.push(self.newRunScreen(r.challenge ?? null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed, r.mode === 'hard' || r.mode === 'endless' ? r.mode : 'normal', r.binding)); return; }
         }
-        if (sel < scroll) scroll = sel; if (sel >= scroll + 9) scroll = sel - 8;
+        if (sel < scroll) scroll = sel; if (sel >= scroll + 8) scroll = sel - 7;
       },
       pointer(_x, y, click, _m, wheel) {
         if (wheel) { sel = clamp(sel + wheel, 0, Math.max(0, list().length - 1)); return; }
-        const i = Math.floor((y - 58) / 19) + scroll;
-        if (i >= 0 && i < list().length && y >= 50) { sel = i; if (click) { const r = list()[sel]; self.push(self.newRunScreen(null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed)); } }
+        const i = Math.floor((y - 58) / 22) + scroll;
+        if (i >= 0 && i < list().length && y >= 50) { sel = i; if (click) { const r = list()[sel]; self.push(self.newRunScreen(r.challenge ?? null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed, r.mode === 'hard' || r.mode === 'endless' ? r.mode : 'normal', r.binding)); } }
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -655,15 +702,20 @@ export class MenuSystem {
         heading(ctx, 'Run History', 40, 38, 12, INK, 'left');
         const L = list();
         if (!L.length) text(ctx, 'No finished runs yet. Every story you finish or lose is written down here.', 240, 120, 8, INK2, 'center', FONT_BODY, 600, false);
-        L.slice(scroll, scroll + 9).forEach((r, k) => {
-          const i = k + scroll, y = 58 + k * 19, on = i === sel;
-          if (on) inkBlot(ctx, 240, y + 3, 410, 17, self.time, 'rgba(40,30,60,0.15)');
+        L.slice(scroll, scroll + 8).forEach((r, k) => {
+          const i = k + scroll, y = 58 + k * 22, on = i === sel;
+          if (on) inkBlot(ctx, 240, y + 5, 410, 21, self.time, 'rgba(40,30,60,0.15)');
           const ch = CHARACTERS.find((c) => c.id === r.char);
-          text(ctx, r.won ? 'Won' : 'Lost', 40, y + 6, 9, r.won ? '#3a6a2a' : '#8a2a2a', 'left', FONT_TITLE, 400, false);
-          text(ctx, `${ch?.name ?? r.char} · ${r.mode === 'hard' ? 'Hard' : r.mode === 'daily' ? 'Daily' : r.mode === 'endless' ? 'Endless' : 'Normal'} · Chapter ${r.floor + 1}`, 78, y + 2, 7.5, INK, 'left', FONT_BODY, 600, false);
-          text(ctx, `${new Date(r.date).toLocaleDateString()} · ${fmtTime(r.time)} · Seed ${formatSeed(r.seed)}${r.cause && !r.won ? ' · ' + r.cause : ''}`, 78, y + 10, 6, INK2, 'left', FONT_BODY, 600, false);
+          const ending = r.ending ? ENDINGS.find((e) => e.id === r.ending)?.name : undefined;
+          text(ctx, r.won ? ending ?? 'Won' : 'Lost', 40, y + 7, 8, r.won ? '#3a6a2a' : '#8a2a2a', 'left', FONT_TITLE, 400, false);
+          text(ctx, `${ch?.name ?? r.char} · ${r.mode === 'hard' ? 'Hard' : r.mode === 'daily' ? 'Daily' : r.mode === 'endless' ? 'Endless' : r.mode === 'challenge' ? 'Challenge' : 'Normal'} · Chapter ${r.floor + 1}`, 78, y + 2, 7.5, INK, 'left', FONT_BODY, 600, false);
+          const extras = [r.unlocks?.length ? `${r.unlocks.length} unlock${r.unlocks.length === 1 ? '' : 's'}` : '', r.notes?.length ? `${r.notes.length} new note${r.notes.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
+          const runNote = `${new Date(r.date).toLocaleDateString()} · ${fmtTime(r.time)} · ${bindingById(r.binding).name} · Seed ${formatSeed(r.seed)}${r.cause && !r.won ? ' · ' + r.cause : ''}${extras ? ' · ' + extras : ''}`;
+          text(ctx, runNote, 78, y + 10, 6, INK2, 'left', FONT_BODY, 600, false);
+          const route = r.route?.length ? `Route · ${r.route.join(' → ')}` : '';
+          if (route) text(ctx, route.length > 66 ? route.slice(0, 65) + '…' : route, 78, y + 18, 5.5, '#806c58', 'left', FONT_BODY, 500, false);
           r.items.slice(0, 8).forEach((id, j) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), 300 + j * 13, y - 4, 12, 12); });
-          text(ctx, String(r.score), 444, y + 6, 9, INK, 'right', FONT_TITLE, 400, false);
+          text(ctx, String(r.score), 444, y + 7, 9, INK, 'right', FONT_TITLE, 400, false);
         });
         hint(ctx, '↑/↓ browse · Enter to replay that seed · Esc back');
       },
@@ -907,13 +959,18 @@ export class MenuSystem {
   private pauseMenu(): Screen {
     const self = this, g = this.g;
     const daily = g.world?.run.mode === 'daily';
-    const items = ['Resume', 'Help & controls', 'Options', daily ? 'Restart (not in the Daily Run)' : 'Restart (same reader)', 'Save & quit to menu'];
+    const items = ['Resume', 'Help & controls', 'Options', daily ? "Retry today's seed" : 'Restart (same reader)', 'Save & quit to menu'];
     let sel = 0;
     const choose = () => {
-      if (sel === 0) { g.paused = false; return; }
+      if (sel === 0) { g.resumeRun(); return; }
       if (sel === 1) { self.push(self.helpScreen(true)); return; }
       if (sel === 2) { self.push(self.optionsScreen(true)); return; }
-      if (sel === 3) { if (daily) { g.audio.play('deny'); return; } const r = g.world!.run, c = r.charId, ch = r.challenge, mode = r.mode; g.paused = false; g.fadeTo(() => g.newRun(c, undefined, ch, mode), 0.4); return; }
+      if (sel === 3) {
+        self.push(self.confirmScreen('Abandon this run and restart? Your current run will be lost.', () => {
+          g.resumeRun(); g.fadeTo(() => g.restartRun(), 0.4);
+        }));
+        return;
+      }
       if (sel === 4) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => g.quitToMenu(), 0.4); }
     };
     const BX = 36, BY = 18, BW = 408, BH = 236, L = BX + 22, R = BX + BW / 2 + 18;
@@ -922,7 +979,7 @@ export class MenuSystem {
       update(keys) {
         if (self.stack.length) return;
         for (const k of keys) {
-          if (k === 'back') { g.paused = false; g.audio.duck(1, 0.01); return; }
+          if (k === 'back') { g.resumeRun(); return; }
           if (k === 'up' || k === 'down') { sel = (sel + (k === 'up' ? -1 : 1) + items.length) % items.length; self.sfxMove(); }
           if (k === 'confirm') { choose(); return; }
         }
@@ -1058,12 +1115,13 @@ export class MenuSystem {
         text(ctx, `${pad ? 'A' : 'Enter'}: change key bindings`, L, BY + BH - 13, 6.5, '#8a2a2a', 'left', FONT_BODY, 700, false);
         // reading the house
         heading(ctx, 'Reading the house', R, 40, 11, INK, 'left', false);
-        const doors: [string, string][] = [['treasure', 'Treasure: one curio'], ['shop', 'Shop: spend buttons'], ['boss', 'The chapter\'s keeper'], ['library', 'Library: pages and books'],
+        const doors: [string, string][] = [['treasure', 'Treasure: choose one of two'], ['shop', 'Shop: spend buttons'], ['boss', 'The chapter\'s keeper'], ['library', 'Library: pages and books'],
           ['deal', 'Inkwell: pay in hearts'], ['blessing', 'Chapel: a gift'], ['challenge', 'Challenge: a fight for a prize'], ['secret', 'Hidden: bomb the walls']];
         doors.forEach(([k, s], i) => { const y = 56 + i * 13; const sp = doorSymbol(k); if (sp) sp.draw(ctx, R + 5, y + 2); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
         const H = pickupSprites().hud;
         const hearts: [Sprite, string][] = [[H.red, 'Red: refills when you heal'], [H.wax, 'Wax: extra, gone once lost'], [H.ink, 'Ink: extra, bursts when lost']];
         hearts.forEach(([sp, s], i) => { const y = 168 + i * 13; ctx.drawImage(sp.canvas, R, y - 7); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
+        text(ctx, '3 unhurt combat rooms earn an unlocked chest.', R, 217, 6.5, INK2, 'left', FONT_BODY, 600, false);
         text(ctx, 'Stand by a curio to read what it does to you.', R, BY + BH - 13, 6.5, INK2, 'left', FONT_BODY, 600, false);
         hint(ctx, `${pad ? 'A' : 'Enter'} to rebind · Esc back`);
       },
@@ -1079,8 +1137,7 @@ export class MenuSystem {
     const tip = (g.save.data.stats.deaths ?? 0) <= 30 ? deathTip(w) : null;
     let tipLines: string[] | null = null;
     const act = () => {
-      // the same reader, challenge and mode (a Daily Run, once lost, begins again as an ordinary run)
-      if (sel === 0) g.fadeTo(() => { self.stack = []; g.newRun(w.run.charId, undefined, w.run.challenge, w.run.mode === 'daily' ? 'normal' : w.run.mode); }, 0.5);
+      if (sel === 0) g.fadeTo(() => { self.stack = []; g.restartRun(); }, 0.5);
       else g.fadeTo(() => g.quitToMenu(), 0.5);
     };
     return {

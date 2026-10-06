@@ -388,12 +388,13 @@ export class World {
     // kill-charged actives
     const act = this.player.active ? getItem(this.player.active) : null;
     if (act?.active?.type === 'kill') this.player.charge = Math.min(act.active.charge, this.player.charge + 1);
-    if (!e.noDrop && !e.isBoss && !e.parent && Math.random() < luckChance(0.035, this.player.stats.luck)) {
-      const k = rollDropKind(new RNG(Math.random()), this.player.stats.luck, 'small');
-      if (k) spawnDrop(this, k, e.x, e.y);
+    const loot = this.run.lootRng('kill');
+    if (!e.noDrop && !e.isBoss && !e.parent && loot.chance(luckChance(0.035, this.player.stats.luck))) {
+      const k = rollDropKind(loot, this.player.stats.luck, 'small');
+      if (k) spawnDrop(this, k, e.x, e.y, true, loot);
     }
-    if (e.champion) spawnDrop(this, Math.random() < 0.5 ? 'heart' : 'button', e.x, e.y);
-    else if (this.room.flags.variant === 'gilded' && !e.friendly && Math.random() < 0.45) spawnDrop(this, Math.random() < 0.15 ? 'button5' : 'button', e.x, e.y);
+    if (!e.noDrop && !e.parent && !e.friendly && e.champion) spawnDrop(this, loot.chance(0.5) ? 'heart' : 'button', e.x, e.y, true, loot);
+    else if (!e.noDrop && !e.parent && this.room.flags.variant === 'gilded' && !e.friendly && loot.chance(0.45)) spawnDrop(this, loot.chance(0.15) ? 'button5' : 'button', e.x, e.y, true, loot);
     if (e.isBoss) flow.onBossKilled(this, e);
   }
 
@@ -425,9 +426,13 @@ export class World {
     if (res.inkLost > 0) this.inkBurst();
     if (res.gildedBroke > 0) for (let i = 0; i < 3 * res.gildedBroke; i++) spawnDrop(this, 'button', pl.x, pl.y);
     this.run.stats.damageTaken += res.taken;
-    this.run.flags.hitThisFloor = true;
-    this.roomHit = true;
-    if (this.room.type === 'boss') this.run.flags.bossHit = true;
+    // Paying health at a sacrifice is a choice, not a failed combat dodge.
+    if (!o.redFirst) {
+      this.run.flags.hitThisFloor = true;
+      this.roomHit = true;
+      this.run.flags.cleanStreak = 0;
+      if (this.room.type === 'boss') this.run.flags.bossHit = true;
+    }
     // only losing red hearts costs you the bargain door (wax and ink soak hits for free), and
     // paying the Pincushion never counts
     if (pl.health.red < red0 && !o.redFirst) { this.run.flags.redHit = true; if (this.room.type === 'boss') this.run.flags.bossRedHit = true; }

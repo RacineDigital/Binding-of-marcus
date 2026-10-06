@@ -1,6 +1,39 @@
-## What's new in 3.15.0: every creature, drawn by hand
+## What's new in 3.16.0: choose your story, drawn by hand
 
-Every regular creature from Chapter II to Chapter VII has been redrawn by hand, pixel by pixel, in
+Everything from the last two updates, together in one build for the first time: new ways to play,
+and every creature redrawn by hand.
+
+**Four ways to bind a run.** Choose a playstyle before opening the book:
+- **Unbound:** the reader's original starting kit.
+- **Ember:** 25% more damage, with 15% slower fire rate.
+- **Wayfarer:** extra speed, two extra keys and a bomb, with 15% less damage.
+- **Clockwork:** an extra active-item charge per combat room, with 20% less damage.
+  Readers without a starting active receive a Tuning Fork.
+
+**Choose your treasure.** Every treasure room offers two curios. One leans toward firepower;
+its partner offers a different build direction when the pool allows. Take one, and the other
+returns to the book. Clear labels explain the choice before you commit.
+
+**A reward you can work toward.** Clear three consecutive combat rooms without taking damage
+to earn an unlocked chest. The HUD tracks your progress. Bosses count; voluntary sacrifice
+payments do not break your streak, and repeated fights cannot farm it.
+
+**An illuminated book.** A redesigned reader-selection screen, engraved room borders, quieter
+floors, cool shadows and warm light, woven treasure-room runners, and a tidier resource display.
+The opening creatures have more distinctive sprites, and enemies and bosses have richer materials.
+
+**A harder soundtrack.** Twenty-eight chapter tracks now use an original driving arcade-rock
+score, with recorded playback and a matching synthesized fallback.
+
+**Keep your story straight.** The Journal includes a plain-language story guide and discovered
+item combinations. Run History records routes, endings, discoveries and the binding you chose.
+
+**Runs stay consistent.** Continue preserves future item-pool rolls and room damage instead of
+silently changing later rewards. Restart keeps the difficulty and binding. Daily Runs use one
+UTC day, a shared reader and the full item pool regardless of profile unlocks; retries retain
+that seed, and a finish after midnight counts toward the day the run began.
+
+**Every creature, drawn by hand.** Every regular creature from Chapter II to Chapter VII has been redrawn by hand, pixel by pixel, in
 the style of the cellar's moths and mites: clean outlines, a few flat colours lit from the top left,
 and faces you can read at a glance. Their sizes, hitboxes and timing are exactly as before.
 
@@ -18,6 +51,11 @@ and faces you can read at a glance. Their sizes, hitboxes and timing are exactly
   in its vents, the hooded **Penitent** (its eye turns gold when it kneels) and the **Cherub Moth**.
 - **The Hollow:** the **Blot** and **Blotlet** wobbling with white eyes, the **Void Eye**, the
   **Page Wraith** with torn pages wheeling round it, and the **Hollow Maw** ringed with teeth.
+
+**Also since 3.13** (from 3.14.0): Grandfather's letter is easy to follow on the hospital path, the
+Patient's Room 4 fight is fairer, first-run hints, Reduce flashing, HUD text size, high-contrast
+enemy shots, Pause when away, controller rumble, a tip when you fall, safer saves, an error log,
+the soundtrack in the downloaded game, and in-game What's new pages.
 
 ## Download and play
 

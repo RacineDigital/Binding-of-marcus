@@ -344,6 +344,14 @@ export function paintUnwritten(p: PixelArt, s: Pose): void {
     p.poly([x, y, x + 6 * Math.cos(a), y - 3, x + 7 * Math.cos(a), y + 5, x + 1, y + 7], pg[2 + (i % 2)]);
     for (let k = 1; k < 4; k++) p.line(x + 1, y + k * 1.6, x + 5 * Math.cos(a), y - 1 + k * 1.6, '#4a4a6a');
   }
+  // The unfinished skeleton presses through the robe: asymmetrical, quill-like ribs.
+  for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const yy = sh + 10 + i * 7, root = cx + lean + side * (12 + i * 2);
+    const bend = Math.sin(s.t * TAU + i) * 1.3;
+    p.tube(root, yy, root + side * 8, yy - 4 + bend, 1.1, pg);
+    p.line(root + side * 8, yy - 4 + bend, root + side * 11, yy - 9 + bend, '#a89aaf');
+    p.set(root, yy + 1, '#0d081c');
+  }
   // long arms reaching out of the robe, with claws like pen nibs, dripping
   for (const side of [-1, 1]) {
     const shx = cx + side * 13 + lean, shy = sh + 2, a = Math.PI / 2 + side * (0.55 - s.raise * 1.5 + Math.max(0, s.lean) * 0.3);

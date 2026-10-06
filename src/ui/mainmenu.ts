@@ -16,6 +16,7 @@ import { SLOTS, store } from '../save/save';
 import { CHALLENGES, ACHIEVEMENTS } from '../data/achievements';
 import { NOTES } from '../data/notes';
 import { ENDINGS } from '../data/endings';
+import { STORY_GUIDE } from '../data/storyguide';
 
 // ---------------------------------------------------------------------------- scene painting
 interface SceneLayers { far: HTMLCanvasElement; mid: HTMLCanvasElement; near: HTMLCanvasElement; pages: { x: number; y: number; w: number; h: number; c: string }[] }
@@ -289,7 +290,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
   );
   if (CHALLENGES.some((c) => !c.unlock || g.save.isUnlocked(c.unlock))) entries.push({ id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) });
   entries.push(
-    { id: 'journal', label: 'Journal', icon: I.book, desc: () => { const n = newUnlocks(g); return n ? `${n} new achievement${n > 1 ? 's' : ''} to read under Statistics.` : 'Readers, collection, past runs, statistics, notes and endings.'; }, act: () => ms.push(journalScreen(ms)) },
+    { id: 'journal', label: 'Journal', icon: I.book, desc: () => { const n = newUnlocks(g); return n ? `${n} new achievement${n > 1 ? 's' : ''} to read under Statistics.` : 'Story guide, readers, curios, combinations, notes and endings.'; }, act: () => ms.push(journalScreen(ms)) },
     { id: 'news', label: 'What\'s new', icon: I.scroll, desc: () => `What changed in v${GAME_VERSION}.`, act: () => ms.push(ms.whatsNewScreen()) },
     { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls, save slots and credits.', act: () => ms.push(ms.optionsScreen()) },
   );
@@ -298,18 +299,92 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
 }
 
 const newUnlocks = (g: { save: { data: { unlocks: string[]; seenUnlocks?: string[] } } }) => { const s = g.save.data.seenUnlocks ?? []; return g.save.data.unlocks.filter((u) => !s.includes(u) && ACHIEVEMENTS.some((a) => a.id === u)).length; };
+function nextGoal(g: MenuSystem['g']): string {
+  const has = (id: string) => g.save.isUnlocked(id);
+  if (!has('beat_final')) {
+    const chapter = ['beat_ch1', 'beat_ch2', 'beat_ch3', 'beat_ch4', 'beat_ch5', 'beat_ch6', 'beat_ch7'].findIndex((id) => !has(id));
+    return chapter >= 0 ? `NEXT GOAL · Defeat the Chapter ${chapter + 1} boss.` : 'NEXT GOAL · Finish the story at the Binding.';
+  }
+  if (!has('back_stair')) return 'NEXT GOAL · Look for the boarded back stair near the boilers.';
+  if (!has('both_halves')) return 'NEXT GOAL · Find both halves of Elias’s letter in the hospital.';
+  if (!has('beat_patient')) return 'NEXT GOAL · Use the letter to open Room 4 and stay for the visit.';
+  const endings = new Set(g.save.data.endings ?? []);
+  if (!endings.has('goodnight')) {
+    const otherFour = ['morning', 'own_hand', 'for_marcus', 'the_visit'].every((id) => endings.has(id));
+    return otherFour ? 'NEXT GOAL · See the other endings, then visit once more.' : 'NEXT GOAL · Explore the book for its other endings.';
+  }
+  return 'NEXT GOAL · Fill another reader’s five ending marks.';
+}
 /** The Journal: everything you have seen and done, one level down from the title. */
 export function journalScreen(ms: MenuSystem): Screen {
   const g = ms.g;
   const entries: Entry[] = [
+    { id: 'story', label: 'Story so far', icon: I.scroll, desc: () => 'A plain-language guide to the family, the book and every ending. Spoilers.', act: () => ms.push(storyGuideScreen(ms)) },
     { id: 'characters', label: 'Readers', icon: I.person, desc: () => 'Every reader you have met in the cellar.', act: () => ms.push(ms.charactersScreen()) },
     { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press Enter inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
+    { id: 'synergies', label: 'Attack combinations', icon: I.chart, desc: () => `${g.save.data.discoveredCombos?.length ?? 0} attack combinations discovered.`, act: () => ms.push(ms.synergiesScreen()) },
     { id: 'history', label: 'Run History', icon: I.history, desc: () => `Your last ${Math.min(30, g.save.data.history?.length ?? 0)} stories, good and bad.`, act: () => ms.push(ms.historyScreen()) },
     { id: 'stats', label: newUnlocks(g) ? `Statistics (${newUnlocks(g)} new)` : 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements: what each one asks and what it gives.', act: () => ms.push(ms.statsScreen()) },
     { id: 'notes', label: 'Notes', icon: I.scroll, desc: () => `Grandfather's notes found: ${g.save.data.notes?.length ?? 0} of ${NOTES.length}.`, act: () => ms.push(ms.notesScreen()) },
     { id: 'endings', label: 'Endings', icon: I.bookmark, desc: () => `Endings found: ${g.save.data.endings?.length ?? 0} of ${ENDINGS.length}.`, act: () => ms.push(ms.endingsScreen()) },
   ];
   return entryList(ms, entries, { title: 'Journal', back: true });
+}
+
+/** A spoiler-marked story guide, available from the Journal at any time. */
+function storyGuideScreen(ms: MenuSystem): Screen {
+  let selected = 0;
+  const choose = (i: number) => { if (i !== selected) { selected = i; ms.sfxMove(); } };
+  return {
+    t: 0,
+    update(keys) {
+      for (const k of keys) {
+        if (k === 'back') { ms.pop(); return; }
+        if (k === 'up' || k === 'left') choose((selected + STORY_GUIDE.length - 1) % STORY_GUIDE.length);
+        if (k === 'down' || k === 'right') choose((selected + 1) % STORY_GUIDE.length);
+      }
+    },
+    pointer(x, y, click) {
+      const i = Math.floor((y - 88) / 20);
+      if (x < 164 && i >= 0 && i < STORY_GUIDE.length) {
+        choose(i);
+        if (click) ms.sfxOk();
+      }
+    },
+    render(ctx) {
+      ctx.fillStyle = 'rgba(4,2,6,0.91)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+      heading(ctx, 'Story so far', 24, 34, 15, '#efe2c8', 'left');
+      text(ctx, 'SPOILERS · PLAIN-LANGUAGE GUIDE', 24, 48, 6.5, '#c79c73', 'left', FONT_BODY, 600);
+      ctx.fillStyle = 'rgba(201,164,106,0.35)'; ctx.fillRect(24, 56, VIEW_W - 48, 0.7);
+      STORY_GUIDE.forEach((section, i) => {
+        const y = 88 + i * 20, on = i === selected;
+        if (on) { ctx.fillStyle = 'rgba(120,22,34,0.55)'; ctx.fillRect(18, y - 10, 143, 16); }
+        text(ctx, section.title, 28, y, on ? 9 : 8, on ? '#fff2dc' : '#b8a890', 'left', FONT_TITLE, 400);
+      });
+      ctx.fillStyle = 'rgba(225,210,190,0.12)'; ctx.fillRect(170, 68, 0.7, VIEW_H - 96);
+      const section = STORY_GUIDE[selected];
+      heading(ctx, section.title, 190, 80, 12, '#ead8ba', 'left');
+      const wrapLine = (s: string, maxWidth: number, fontSize: number): string[] => {
+        const out: string[] = []; let line = '';
+        for (const word of s.split(/\s+/)) {
+          const next = line ? `${line} ${word}` : word;
+          if (line && measure(ctx, next, fontSize, FONT_BODY, 400) > maxWidth) { out.push(line); line = word; }
+          else line = next;
+        }
+        if (line) out.push(line);
+        return out;
+      };
+      let y = 104;
+      for (const paragraph of section.lines) {
+        for (const line of wrapLine(paragraph, 260, 8)) {
+          text(ctx, line, 190, y, 8, '#d2c5b0', 'left', FONT_BODY, 400); y += 11;
+        }
+        y += 9;
+      }
+      text(ctx, `${selected + 1} / ${STORY_GUIDE.length}`, VIEW_W - 25, VIEW_H - 11, 6.5, 'rgba(200,185,165,0.5)', 'right');
+      text(ctx, ms.g.input.usingPad ? '↑↓ browse  ·  B back' : '↑↓ browse  ·  Esc back', 24, VIEW_H - 11, 6.5, 'rgba(200,185,165,0.5)', 'left');
+    },
+  };
 }
 
 /** A vertical list of menu entries over the title scene (the title menu and its submenus). */
@@ -367,6 +442,8 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
       ctx.restore();
       if (o.back) text(ctx, g.input.usingPad ? 'B back' : 'Esc back', X0 - 13, VIEW_H - 10, 6.5, 'rgba(200,185,165,0.45)', 'left');
       if (o.logo) {
+        const goal = nextGoal(g);
+        text(ctx, goal, 24, VIEW_H - 9, 6.5, 'rgba(230,205,170,0.62)', 'left', FONT_BODY, 600);
         const info = g.save.slotInfo(g.save.slot);
         text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'right');
         text(ctx, `v${GAME_VERSION.split('.').slice(0, 2).join('.')}  ·  Papermoth Games`, VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');

@@ -39,12 +39,12 @@ export function resolveKind(rng: RNG, kind: string, luck = 0): { kind: string; d
 }
 
 export function spawnDrop(w: World, kind: string, x: number, y: number, pop = true, rng?: RNG): Pickup {
-  const r = rng ?? new RNG(Math.random() * 1e9);
+  const r = rng ?? w.run.lootRng();
   const res = resolveKind(r, kind, w.player.stats.luck);
   if (res.kind === 'charm' && res.data) {
     // avoid duplicates of charms already held
     const owned = new Set(w.player.charms);
-    const free = CHARMS.filter((c) => !owned.has(c.id) && (!c.unlock || w.game.save.isUnlocked(c.unlock)));
+    const free = CHARMS.filter((c) => !owned.has(c.id) && (!c.unlock || w.run.mode === 'daily' || w.game.save.isUnlocked(c.unlock)));
     if (free.length) res.data.id = r.pick(free).id;
   }
   const p = new Pickup(res.kind, x, y);

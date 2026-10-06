@@ -19,7 +19,9 @@ const exe = process.env.CHROME_PATH ?? ['/opt/pw-browsers/chromium-1194/chrome-l
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   // a resource that can't load (the update check offline, music beside the page) is not a broken game
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|favicon|music\/[^ ]*\.ogg.*blocked by CORS/.test(m.text())) errors.push('console: ' + m.text()); });
-  await page.goto(pathToFileURL(file).href + '?play&seed=BOOTTEST');
+  // Managed browsers may block file://. BOOT_URL can point to this built directory served locally;
+  // CI retains the default direct-from-disk test used by the downloadable browser package.
+  await page.goto((process.env.BOOT_URL ?? pathToFileURL(file).href) + '?play&seed=BOOTTEST');
   let up = false;
   for (let i = 0; i < 40 && !up; i++) { await page.waitForTimeout(250); up = await page.evaluate(`!!(window.__bomDebug && window.__bomDebug.world)`); }
   if (up) {
