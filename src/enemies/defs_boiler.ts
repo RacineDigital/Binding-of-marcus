@@ -2,6 +2,7 @@
 import type { EnemyDef } from './enemy';
 import { frames, eye, teeth, ramp, hex, glowEye, sprinkle, pack, gridFrames, scaledFrames } from '../art/creature';
 import * as H from '../art/hand/boiler';
+import * as H2 from '../art/hand/boiler2';
 import { chase, buzz, wander, aimAngle, shoot, spreadShot, ringShot, hasLOS, aligned, distToPlayer, randomFloorPoint, keepDistance } from './ai';
 import { TAU, angleTo, angleDiff, clamp } from '../core/math';
 import { telegraph } from '../bosses/boss';
@@ -56,23 +57,7 @@ const valvehead: EnemyDef = {
 const stoker: EnemyDef = {
   id: 'stoker', name: 'Stoker', desc: 'Lifts its shovel when you line up, then barrels across the room. Dazed and open if it hits a wall.', hp: 22, r: 9, speed: 34, role: 'heavy', cost: 2, hitY: 12, mass: 3,
   gore: '#3a2a22',
-  sprites: () => {
-    const paint = (p: any, f: number, raise: number) => {
-      const body = ramp('#4a3a34'), skin = ramp('#7a5a4a'), sh = ramp('#8a8a92');
-      const st = [0, 1, 0, -1][f % 4];
-      p.rect(7 + st, 22, 4, 4, body[0]); p.rect(14 - st, 22, 4, 4, body[0]);
-      p.ball(13, 15, 9, 8, body, { dither: 0.6 });
-      p.ball(13, 8, 5, 4.5, skin);
-      p.rect(9, 5, 8, 2, hex('#2a2224'));
-      glowEye(p, 11, 8, '#ffb040'); p.set(15, 8, '#ffb040');
-      // shovel
-      const sy = 14 - raise * 10;
-      p.line(20, 18, 23, sy, hex('#6a4a2a')); p.poly([21, sy, 26, sy - 2, 26, sy - 7, 21, sy - 5], sh[2]);
-      p.tube(20, 15, 20, 18, 2, skin);
-      sprinkle(p, '#1a1416', 12, 4 + f);
-    };
-    return { walk: frames(28, 28, 4, (p, f) => paint(p, f, 0)), raise: frames(28, 28, 1, (p) => paint(p, 0, 1)), charge: frames(28, 28, 2, (p, f) => paint(p, f * 2, 0.4)) };
-  },
+  sprites: () => ({ walk: gridFrames(H2.STOKER_WALK, H2.STOKER_PAL), raise: gridFrames(H2.STOKER_RAISE, H2.STOKER_PAL), charge: gridFrames(H2.STOKER_CHARGE, H2.STOKER_PAL) }),
   init(e) { e.anim = 'walk'; e.cd = 1; },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -129,14 +114,7 @@ const cinderhopper: EnemyDef = {
 const pipeworm: EnemyDef = {
   id: 'pipeworm', name: 'Pipe Worm', desc: 'Bursts out of the floor, sprays a ring of scalding shots, and sinks again.', hp: 16, r: 8, speed: 0, role: 'turret', cost: 1.6, hitY: 14, mass: 99, noKnock: true,
   gore: '#6a6a72',
-  sprites: () => ({
-    up: frames(18, 32, 3, (p, f) => {
-      const m = ramp('#6a6a72'), r = ramp('#8a4a2a');
-      const h = [10, 20, 28][f];
-      for (let y = 30; y > 30 - h; y -= 4) { p.ball(9, y, 6, 3, m); p.line(3, y, 15, y, r[1]); }
-      if (f === 2) { p.ball(9, 6, 6, 5, m); p.ball(9, 6, 3, 2.5, ramp('#1a0a0a')); for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; p.set(9 + Math.cos(a) * 3, 6 + Math.sin(a) * 2.5, '#f0e0d0'); } }
-    }, 31),
-  }),
+  sprites: () => ({ up: gridFrames(H2.PIPEWORM, H2.PIPE_PAL, 31) }),
   init(e) { e.hidden = true; e.invuln = true; e.cd = 0.8 + Math.random(); e.alpha = 1; },
   update(e, w, dt) {
     if (e.state === 'idle') {

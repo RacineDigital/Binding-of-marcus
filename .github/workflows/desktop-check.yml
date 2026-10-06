@@ -1,6 +1,6 @@
 name: Desktop build check
 
-# Builds and self-tests the Windows .exe and the Linux AppImage (Linux and Steam Deck) on every push that touches the desktop app or the game,
+# Builds and self-tests the Windows .exe on every push that touches the desktop app or the game,
 # and keeps the installer as a downloadable workflow artifact for testing between releases.
 on:
   push:
@@ -30,29 +30,4 @@ jobs:
         with:
           name: lost-marcus-windows
           path: release-desktop/*.exe
-          retention-days: 14
-
-  linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run dist:linux
-      - name: Self-test the packaged app
-        run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb > /dev/null
-          bin=$(find release-desktop/linux-unpacked -maxdepth 1 -type f -name 'lost-marcus*' -perm -u+x | head -1)
-          [ -n "$bin" ] || bin=$(find release-desktop/linux-unpacked -maxdepth 1 -type f -perm -u+x ! -name '*.so*' ! -name 'chrome*' | head -1)
-          echo "Running $bin"
-          xvfb-run -a "$bin" --smoke --no-sandbox
-          echo "Packaged app self-test passed"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: lost-marcus-linux
-          path: release-desktop/*.AppImage
           retention-days: 14

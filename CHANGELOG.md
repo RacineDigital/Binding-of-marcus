@@ -2,7 +2,10 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
-## What's new in 3.15.0: choose your story
+## What's new in 3.16.0: choose your story, drawn by hand
+
+Everything from the last two updates, together in one build for the first time: new ways to play,
+and every creature redrawn by hand.
 
 **Four ways to bind a run.** Choose a playstyle before opening the book:
 - **Unbound:** the reader's original starting kit.
@@ -34,8 +37,50 @@ silently changing later rewards. Restart keeps the difficulty and binding. Daily
 UTC day, a shared reader and the full item pool regardless of profile unlocks; retries retain
 that seed, and a finish after midnight counts toward the day the run began.
 
-**Previous release fixes retained.** Includes 3.14.0's clearer hospital-letter route, tutorial,
-accessibility settings, save backups, offline soundtrack support and Patient fight improvements.
+**Every creature, drawn by hand.** Every regular creature from Chapter II to Chapter VII has been redrawn by hand, pixel by pixel, in
+the style of the cellar's moths and mites: clean outlines, a few flat colours lit from the top left,
+and faces you can read at a glance. Their sizes, hitboxes and timing are exactly as before.
+
+- **The Boiler Rooms:** the goggled **Stoker** hauling his shovel, and the riveted **Pipe Worm**
+  rising out of the floor until its toothed mouth opens.
+- **The Underworks:** the **Sewer Rat**, the **Sump Leech** with its ring of teeth, the pustuled
+  **Bloater**, the **Grate Eye** peering up through the bars, **the Drowned** raising a pale light,
+  and the **Sludges** in all three sizes, wobbling and grinning.
+- **The Ward:** the masked **Night Orderly**, the **Wheelchair Wraith** with its wheels turning,
+  the **Porcelain Nurse**, the **Bedsheet** with its rippling hem, the **Mimic Chest** (shut, ajar,
+  wide open) and the walking **Drip Sentinel**.
+- **The Depths:** the **Skull Mote** and its green-eyed **Ossuary Lantern**, the **Gravedigger**
+  in his wide hat, the **Bone Spider** on eight bony legs, and the **Marrow Maw** opening in the floor.
+- **The Chapel:** the haloed **Choirboy** (he opens his mouth to sing), the **Censer** with embers
+  in its vents, the hooded **Penitent** (its eye turns gold when it kneels) and the **Cherub Moth**.
+- **The Hollow:** the **Blot** and **Blotlet** wobbling with white eyes, the **Void Eye**, the
+  **Page Wraith** with torn pages wheeling round it, and the **Hollow Maw** ringed with teeth.
+
+**Also since 3.13** (from 3.14.0): Grandfather's letter is easy to follow on the hospital path, the
+Patient's Room 4 fight is fairer, first-run hints, Reduce flashing, HUD text size, high-contrast
+enemy shots, Pause when away, controller rumble, a tip when you fall, safer saves, an error log,
+the soundtrack in the downloaded game, and in-game What's new pages.
+
+## What's new in 3.15.0: every creature, drawn by hand
+
+Every regular creature from Chapter II to Chapter VII has been redrawn by hand, pixel by pixel, in
+the style of the cellar's moths and mites: clean outlines, a few flat colours lit from the top left,
+and faces you can read at a glance. Their sizes, hitboxes and timing are exactly as before.
+
+- **The Boiler Rooms:** the goggled **Stoker** hauling his shovel, and the riveted **Pipe Worm**
+  rising out of the floor until its toothed mouth opens.
+- **The Underworks:** the **Sewer Rat**, the **Sump Leech** with its ring of teeth, the pustuled
+  **Bloater**, the **Grate Eye** peering up through the bars, **the Drowned** raising a pale light,
+  and the **Sludges** in all three sizes, wobbling and grinning.
+- **The Ward:** the masked **Night Orderly**, the **Wheelchair Wraith** with its wheels turning,
+  the **Porcelain Nurse**, the **Bedsheet** with its rippling hem, the **Mimic Chest** (shut, ajar,
+  wide open) and the walking **Drip Sentinel**.
+- **The Depths:** the **Skull Mote** and its green-eyed **Ossuary Lantern**, the **Gravedigger**
+  in his wide hat, the **Bone Spider** on eight bony legs, and the **Marrow Maw** opening in the floor.
+- **The Chapel:** the haloed **Choirboy** (he opens his mouth to sing), the **Censer** with embers
+  in its vents, the hooded **Penitent** (its eye turns gold when it kneels) and the **Cherub Moth**.
+- **The Hollow:** the **Blot** and **Blotlet** wobbling with white eyes, the **Void Eye**, the
+  **Page Wraith** with torn pages wheeling round it, and the **Hollow Maw** ringed with teeth.
 
 ## What's new in 3.14.0: getting ready for everyone
 

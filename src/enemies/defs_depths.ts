@@ -1,6 +1,7 @@
 // Chapter V enemies: bones, diggers and maws.
 import type { EnemyDef, Enemy } from './enemy';
-import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle } from '../art/creature';
+import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle, gridFrames } from '../art/creature';
+import * as H from '../art/hand/depths';
 import { chase, aimAngle, shoot, spreadShot, ringShot, distToPlayer, randomFloorPoint, hasLOS } from './ai';
 import { TAU, angleTo, angleDiff, clamp } from '../core/math';
 import { telegraph } from '../bosses/boss';
@@ -9,7 +10,7 @@ const bone = () => ramp('#e0d6c0');
 
 const skullmote: EnemyDef = {
   id: 'skullmote', name: 'Skull Mote', desc: '', hp: 6, r: 4, speed: 0, flying: true, role: 'swarm', cost: 0.5, hitY: 10, gore: '#e0d6c0', noSeparate: true,
-  sprites: () => ({ idle: frames(12, 12, 1, (p) => { p.ball(6, 6, 4, 3.6, bone()); p.set(4, 6, '#1a0a0a'); p.set(7, 6, '#1a0a0a'); p.rect(5, 9, 3, 1, ramp('#c8b8a0')[1]); }) }),
+  sprites: () => ({ idle: gridFrames(H.MOTE, H.BONE_PAL) }),
   update(e, w, dt) {
     const core: Enemy | null = e.parent;
     if (core && !core.dead) {
@@ -24,14 +25,7 @@ const skullmote: EnemyDef = {
 const skullorbit: EnemyDef = {
   id: 'skullorbit', name: 'Ossuary Lantern', desc: 'A skull wreathed in orbiting skulls. Break the ring, or break the centre and face the motes.', hp: 18, r: 7, speed: 26, flying: true, role: 'special', cost: 2.2, hitY: 12,
   gore: '#e0d6c0', light: [36, '#c0ff90'],
-  sprites: () => ({
-    idle: frames(18, 18, 2, (p, f) => {
-      p.ball(9, 9, 6.5, 6, bone(), { dither: 0.6 });
-      glowEye(p, 6, 8, '#a0ff60'); glowEye(p, 11, 8, '#a0ff60');
-      p.rect(7, 12, 5, 2, hex('#1a0a0a')); for (let x = 7; x < 12; x += 2) p.set(x, 12, '#e0d6c0');
-      if (f) p.set(9, 2, '#c0ff90');
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.ORB, H.BONE_PAL) }),
   init(e, w) { e.cd = 2.5; for (let i = 0; i < 4; i++) { const m = w.spawnEnemy('skullmote', e.x, e.y, true); if (m) { m.parent = e; m.data.a = (i / 4) * TAU; m.spawnT = e.spawnT; } } },
   update(e, w, dt) {
     chase(e, w, e.def.speed, dt); e.animate(dt, 3); e.z = 8;
@@ -43,16 +37,7 @@ const skullorbit: EnemyDef = {
 const gravedigger: EnemyDef = {
   id: 'gravedigger', name: 'Gravedigger', desc: 'Sinks into the earth and flings clods of dirt that burst where they land.', hp: 18, r: 7, speed: 30, role: 'shooter', cost: 1.7, hitY: 12,
   gore: '#6a5040',
-  sprites: () => ({
-    idle: frames(22, 28, 2, (p, f) => {
-      const c = ramp('#5a4a3a'), s = ramp('#a89070');
-      p.poly([5, 26, 7, 12, 15, 12, 17, 26], c[2]); p.shadeV(5, 12, 12, 14, c, 0.6);
-      p.ball(11, 8, 4.5, 4.5, s);
-      p.poly([4, 6, 11, 0, 18, 6], hex('#3a2a20')); p.rect(3, 5, 16, 2, hex('#2a1e18'));
-      glowEye(p, 9, 8, '#f0d040'); p.set(13, 8, '#f0d040');
-      p.line(17, 10 + f, 20, 26, hex('#6a4a2a')); p.poly([18, 24, 22, 24, 21, 28, 19, 28], ramp('#8a8a92')[2]);
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.GRAVE, H.GRAVE_PAL) }),
   init(e) { e.cd = 1.5; },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -82,14 +67,7 @@ const gravedigger: EnemyDef = {
 const ossspider: EnemyDef = {
   id: 'ossspider', name: 'Ossuary Spider', desc: 'Skitters about, then marks a spot and leaps on it.', hp: 12, r: 7, speed: 80, role: 'melee', cost: 1.3, hitY: 7,
   gore: '#e0d6c0',
-  sprites: () => ({
-    walk: frames(26, 18, 4, (p, f) => {
-      legs(p, 13, 10, 8, 0.45, 11, f * 1.6, hex('#d0c4aa'));
-      p.ball(13, 9, 5.5, 4.5, bone());
-      p.ball(13, 13, 3.5, 2.5, ramp('#c8b8a0'));
-      glowEye(p, 11, 8, '#e04040'); p.set(15, 8, '#e04040'); p.set(13, 7, '#e04040');
-    }),
-  }),
+  sprites: () => ({ walk: gridFrames(H.SPIDER, H.BONE_PAL) }),
   init(e) { e.anim = 'walk'; e.cd = 1 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -114,16 +92,7 @@ const ossspider: EnemyDef = {
 const marrowmaw: EnemyDef = {
   id: 'marrowmaw', name: 'Marrow Maw', desc: 'A mouth in the floor. It coughs up crawlers and gnashes before it spits.', hp: 30, r: 11, speed: 0, role: 'turret', cost: 2.2, hitY: 6, mass: 99, noKnock: true,
   gore: '#8a2a2a', goreDecal: '#4a1418',
-  sprites: () => ({
-    idle: frames(30, 20, 3, (p, f) => {
-      const c = ramp('#8a3a3a');
-      p.ball(15, 11, 13, 8, c, { dither: 0.8 });
-      const o = [2, 4, 6][f];
-      p.ellipse(15, 11, 8, o * 0.7 + 1, hex('#1a0408'));
-      for (let i = 0; i < 9; i++) { const x = 8 + i * 1.8; p.set(x, 11 - o * 0.7, '#e8e0d0'); p.set(x + 0.9, 11 + o * 0.7, '#e8e0d0'); }
-      sprinkle(p, '#c8a090', 12, 3);
-    }, 16),
-  }),
+  sprites: () => ({ idle: gridFrames(H.MAW, H.MAW_PAL, 16) }),
   init(e) { e.cd = 2; e.data.kids = []; },
   update(e, w, dt) {
     e.cd -= dt;

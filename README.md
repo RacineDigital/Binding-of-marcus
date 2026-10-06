@@ -75,7 +75,7 @@ npm run test:synergy               # every item x every attack mode in headless 
 
 The Release workflow also builds the Windows .exe files on a Windows runner, starts the packaged game
 in a self-test mode (`--smoke`), and attaches them to the release. The **Desktop build check**
-workflow does the same on every push, for Windows and a Linux AppImage, without publishing.
+workflow does the same on every push without publishing.
 
 To publish a new release, bump `version` in `package.json` and push, or push a tag such as `v1.1.0`. The
 **Release** GitHub Actions workflow tests, builds and packages the game, then attaches the files to a new

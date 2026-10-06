@@ -1,6 +1,7 @@
 // Chapter VII enemies: the torn page and what leaks through.
 import type { EnemyDef } from './enemy';
-import { frames, ramp, hex, glowEye, eye, sprinkle } from '../art/creature';
+import { frames, ramp, hex, glowEye, eye, sprinkle, gridFrames, scaledFrames } from '../art/creature';
+import * as H from '../art/hand/hollow';
 import { chase, aimAngle, shoot, spreadShot, ringShot, distToPlayer, randomFloorPoint } from './ai';
 import { TAU, angleTo, clamp, dist2 } from '../core/math';
 import { telegraph } from '../bosses/boss';
@@ -10,16 +11,8 @@ function blotDef(id: string, big: boolean): EnemyDef {
   return {
     id, name: big ? 'Blot' : 'Blotlet', desc: big ? 'A walking ink stain. Leaves puddles; splits when popped.' : '', hp: big ? 20 : 7, r, speed: big ? 34 : 60, role: big ? 'melee' : 'swarm', cost: big ? 1.6 : 0.5, hitY: r,
     gore: '#1a1830', goreDecal: '#0e0c1c',
-    sprites: () => ({
-      idle: frames(r * 2 + 10, r * 2 + 10, 4, (p, f) => {
-        const c = ramp('#26234a');
-        const cx = r + 5, cy = r + 5;
-        const wob = Math.sin((f / 4) * TAU);
-        p.ball(cx, cy, r + wob, r - wob * 0.5, c, { dither: 0.7 });
-        for (let i = 0; i < (big ? 5 : 3); i++) { const a = (i / (big ? 5 : 3)) * TAU + f * 0.3; p.ball(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.7, 2, 2, c); }
-        eye(p, cx - r * 0.35, cy - 1, big ? 2.2 : 1.4, 0, 0, '#1a1830', '#f2f0ff'); eye(p, cx + r * 0.35, cy - 1, big ? 2.2 : 1.4, 0, 0, '#1a1830', '#f2f0ff');
-      }, r * 2 + 6),
-    }),
+    // hand-drawn per size; it wobbles by squashing and stretching about its base
+    sprites: () => ({ idle: scaledFrames(big ? H.BLOT_BIG[0] : H.BLOT_SMALL[0], H.BLOT_PAL, [[1, 1], [1.05, 0.95], [1, 1], [0.95, 1.05]]) }),
     init(e) { e.anim = 'idle'; e.data.cr = 0; },
     update(e, w, dt) {
       chase(e, w, e.def.speed, dt); e.animate(dt, 7);
@@ -32,16 +25,7 @@ function blotDef(id: string, big: boolean): EnemyDef {
 const voideye: EnemyDef = {
   id: 'voideye', name: 'Void Eye', desc: 'Opens a rift, blinks to a new spot, and fires in a cross.', hp: 16, r: 8, speed: 0, flying: true, role: 'shooter', cost: 1.8, hitY: 14,
   gore: '#6a3ad0', light: [40, '#8a5aff'],
-  sprites: () => ({
-    idle: frames(22, 22, 2, (p, f) => {
-      const v = ramp('#2a1a4a');
-      p.ball(11, 11, 10, 8, v, { dither: 0.9 });
-      p.ball(11, 11, 7, 5 - f, ramp('#e8e0f0'));
-      p.ball(11, 11, 3, 3 - f * 0.5, ramp('#8a3ad0')); p.set(11, 11, '#0a0412');
-      p.set(8, 9, '#ffffff');
-      for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; p.set(11 + Math.cos(a) * 10, 11 + Math.sin(a) * 8, '#8a5aff'); }
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.VOIDEYE, H.VOID_PAL) }),
   init(e) { e.cd = 1.5; },
   update(e, w, dt) {
     e.z = 10 + Math.sin(e.t * 3) * 2;
@@ -68,18 +52,7 @@ const voideye: EnemyDef = {
 const pagewraith: EnemyDef = {
   id: 'pagewraith', name: 'Page Wraith', desc: 'A spirit of torn pages. Its shots bend as they fly.', hp: 16, r: 7, speed: 45, flying: true, role: 'flyer', cost: 1.7, hitY: 14,
   gore: '#e6dcc0',
-  sprites: () => ({
-    idle: frames(22, 26, 4, (p, f) => {
-      const pg = ramp('#e6dcc0');
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * TAU + f * 0.4; const x = 11 + Math.cos(a) * 6, y = 13 + Math.sin(a) * 7;
-        p.poly([x - 3, y - 3, x + 3, y - 2, x + 2, y + 4, x - 3, y + 3], pg[2 + (i % 2)]);
-        p.line(x - 2, y, x + 1, y, hex('#5a4a3a'));
-      }
-      p.ball(11, 10, 3.5, 4, ramp('#1a1420'));
-      glowEye(p, 10, 10, '#c8b0ff'); p.set(12, 10, '#c8b0ff');
-    }),
-  }),
+  sprites: () => ({ idle: gridFrames(H.PAGEWRAITH, H.PAGE_PAL) }),
   init(e) { e.cd = 1.5 + Math.random(); },
   update(e, w, dt) {
     const a = angleTo(e.x, e.y, w.player.x, w.player.y) + Math.sin(e.t * 1.2 + e.id) * 1.4;
@@ -119,14 +92,7 @@ const mirrorshade: EnemyDef = {
 const hollowmaw: EnemyDef = {
   contact: 2, id: 'hollowmaw', name: 'Hollow Maw', desc: 'A hole in the page that breathes in. Don\'t let it pull you close.', hp: 30, r: 12, speed: 0, role: 'turret', cost: 2, hitY: 3, mass: 99, noKnock: true, noSeparate: true,
   gore: '#14122a', goreDecal: '#0e0c1c',
-  sprites: () => ({
-    idle: frames(34, 22, 2, (p, f) => {
-      p.ellipse(17, 11, 15, 9, hex('#0a0814'));
-      p.ellipse(17, 11, 12, 7, hex('#000000'));
-      for (let i = 0; i < 14; i++) { const a = (i / 14) * TAU; p.set(17 + Math.cos(a) * (13 - (i % 2)), 11 + Math.sin(a) * (8 - (i % 2)), i % 2 ? '#e8e0d0' : '#8a7cff'); }
-      if (f) sprinkle(p, '#6a5ad0', 6, 9, 8, 6, 18, 10);
-    }, 14),
-  }),
+  sprites: () => ({ idle: gridFrames(H.HOLLOWMAW, H.HMAW_PAL, 14) }),
   init(e) { e.cd = 2; },
   update(e, w, dt) {
     e.animate(dt, 3);
