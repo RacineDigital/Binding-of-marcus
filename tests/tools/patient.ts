@@ -3,12 +3,13 @@
 // frame time goes during the fight (logic vs drawing, worst frames, what was on screen then).
 //   npx tsx tests/tools/patient.ts [seconds] [god]
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 const secs = Number(process.argv[2] ?? 180), god = process.argv[3] === 'god';
 const OP = ['powder_ink', 'prism', 'split_nib', 'lamp_lure', 'long_needle', 'static_heart', 'ink_pact', 'ink_horns', 'grandpas_pipe', 'black_quill',
   'hot_cocoa', 'gavyns_pouch', 'marrow', 'iron_filings', 'spectacles', 'shadow_twin', 'moth_friend', 'thimble', 'lodestone', 'tin_heart', 'sunday_roast'];
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors: string[] = []; page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 4).join(' | ')); });
   await page.goto(base); await page.waitForTimeout(2500);

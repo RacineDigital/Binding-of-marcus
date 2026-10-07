@@ -62,6 +62,8 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     plugins: single ? [chapterMusic(), singleFile()] : [chapterMusic()],
+    // a build made for a store (LOST_MARCUS_DISTRIBUTION=itch for the itch.io web zip) skips the GitHub update check
+    define: { __LM_DISTRIBUTION__: JSON.stringify(process.env.LOST_MARCUS_DISTRIBUTION ?? '') },
     build: {
       target: 'es2022',
       chunkSizeWarningLimit: 4000,

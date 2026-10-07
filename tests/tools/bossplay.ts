@@ -4,13 +4,14 @@
 // Also records which rig sets were shown, the frame rate and any page errors.
 //   npx tsx tests/tools/bossplay.ts <outDir> [id,id,...] [--hitboxes]
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 import * as fs from 'fs';
 const out = process.argv[2] ?? 'test-output/bossplay';
 const ids = (process.argv[3] ?? 'grubmother,wardrobe,snipA+snipB,furnaceheart,oldstoker,ratking,bilgemaw,matron,sleepwalker,ossuaryknight,mothmother,bellringer,choirmaster,blottedman,unbound,itremembers,thornwife,rimebride,pendulum,typesetter,bookbinder,ironlung,patient,unwritten,author').split(',');
 const hit = process.argv.includes('--hitboxes');
 (async () => {
   fs.mkdirSync(out, { recursive: true });
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors: string[] = []; page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 4).join(' | ')); });
   await page.goto('http://localhost:5173/'); await page.waitForTimeout(2500);

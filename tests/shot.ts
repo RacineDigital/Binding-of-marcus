@@ -1,10 +1,11 @@
 // Usage: tsx tests/shot.ts <query> <out.png> [waitMs] [script.json]
 import { chromium } from 'playwright-core';
+import { CHROME } from './browser';
 import * as fs from 'fs';
 const [query = '', out = 'test-output/shot.png', wait = '1500', scriptPath] = process.argv.slice(2);
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: Number(process.env.VW || 1440), height: Number(process.env.VH || 810) } });
   const errors: string[] = [];
   page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text()}`); if (m.type() === 'log') console.log('LOG', m.text()); });

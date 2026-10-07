@@ -1,11 +1,12 @@
 // Contact sheets of every item icon, big, with its name, for reviewing how recognizable they are.
 //   npx tsx tests/tools/iconsheet.ts [outDir] [redrawn | id,id,...]  (npm run dev first)
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 import * as fs from 'fs';
 const out = process.argv[2] ?? 'test-output/icons', only = process.argv[3] ?? '';
 (async () => {
   fs.mkdirSync(out, { recursive: true });
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const b = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
   await p.goto('http://localhost:5173/'); await p.waitForTimeout(2000);
   const n: number = await p.evaluate(`(async () => {

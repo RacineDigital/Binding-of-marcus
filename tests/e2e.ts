@@ -3,6 +3,7 @@
 // Covers: a fresh run, save & continue (bonus rooms, doors, floor effects, items, pickups, room),
 // death and restart, chapter transitions, music memory, and frame time in a busy fight.
 import { chromium, Page } from 'playwright-core';
+import { CHROME } from './browser';
 import { gameplayOverhaulChecks } from './gameplay-overhaul';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 let failures = 0;
@@ -11,7 +12,7 @@ const ev = <T>(p: Page, js: string): Promise<T> => p.evaluate(js) as Promise<T>;
 const D = 'window.__bomDebug';
 
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));

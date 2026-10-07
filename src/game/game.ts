@@ -25,6 +25,7 @@ import { Health } from '../player/health';
 import { spawnDrop } from './drops';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { text, COL, FONT_TITLE, FONT_BODY } from '../ui/draw';
+import { steamAchieve, steamSync, onSteam } from '../core/platform';
 
 export type Scene = 'menu' | 'run' | 'dead' | 'ending';
 
@@ -54,6 +55,7 @@ export class Game {
     this.save.onUnlock = (id) => {
       const a = ACHIEVEMENTS.find((x) => x.id === id);
       if (!a) return;
+      steamAchieve(id);
       // what you got, not just what you did; a new reader is a bigger moment
       const big = /Unlocks [A-Z][a-z]+, the|Unlocks (The Blot|Mirrored)/.test(a.unlocks);
       this.unlockQueue.push({ name: a.name, reward: a.unlocks, t: 0, big });
@@ -62,12 +64,16 @@ export class Game {
     };
     // readers whose marks were all earned before the mirrored existed get theirs now
     this.save.checkTainted();
+    // Steam catches up with everything this save had already earned (and any slot switched to later)
+    const syncSteam = () => steamSync(this.save.data.unlocks.filter((id) => ACHIEVEMENTS.some((a) => a.id === id)));
+    syncSteam(); this.save.onLoad = syncSteam;
     const unlockAudio = () => { this.audio.unlock(); };
     window.addEventListener('keydown', unlockAudio);
     window.addEventListener('pointerdown', unlockAudio);
     window.addEventListener('gamepadconnected', unlockAudio);
-    // F9 (or F12) saves a screenshot: to Pictures/Lost Marcus on desktop, a download in the browser
-    window.addEventListener('keydown', (e) => { if (e.code === 'F9' || e.code === 'F12') { e.preventDefault(); this.screenshot(cv); } });
+    // F9 (or F12) saves a screenshot: to Pictures/Lost Marcus on desktop, a download in the browser.
+    // On Steam, F12 is Steam's own screenshot key, so it's left to Steam.
+    window.addEventListener('keydown', (e) => { if (e.code === 'F9' || (e.code === 'F12' && !onSteam())) { e.preventDefault(); this.screenshot(cv); } });
     // closing the window mid-run keeps your exact spot
     // alt-tab, a hidden tab or an unplugged controller pauses the run (Options -> Pause when away)
     const away = () => this.autoPause();

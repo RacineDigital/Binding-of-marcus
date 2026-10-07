@@ -1,12 +1,13 @@
 // Desktop shell for Lost Marcus: a single window running the self-contained game build,
 // with saves written as JSON files in the user's app-data folder.
 //   Windows: %APPDATA%\Lost Marcus\saves\
-const { app, BrowserWindow, ipcMain, shell, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeImage, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { DiscordPresence } = require('./discord.cjs');
 const { supportsAutoUpdates } = require('./distribution.cjs');
-const distribution = require('../package.json').distribution;
+const pkg = require('../package.json');
+const distribution = pkg.distribution;
 const canAutoUpdate = () => supportsAutoUpdates({ packaged: app.isPackaged, smoke: SMOKE, portable: !!process.env.PORTABLE_EXECUTABLE_DIR, distribution });
 
 // Discord Rich Presence: the Application ID from https://discord.com/developers/applications
@@ -16,6 +17,14 @@ const DISCORD_CLIENT_ID = process.env.LOST_MARCUS_DISCORD_ID || '155508129025071
 const SMOKE = process.argv.includes('--smoke');
 let win = null;
 app.setName('Lost Marcus');
+
+// Steam build only: achievements, Rich Presence and the overlay (see steam.cjs). Steam sets SteamAppId
+// for games it launches; otherwise package.json "steam.appId". The --smoke self-test checks that the
+// library loads with Valve's public test app (480), which can't connect without a running Steam.
+const STEAM_APP_ID = Number(process.env.SteamAppId || (pkg.steam && pkg.steam.appId) || 0);
+const steam = distribution === 'steam' ? require('./steam.cjs') : null;
+const steamStatus = steam ? steam.start({ appId: SMOKE ? (STEAM_APP_ID || 480) : STEAM_APP_ID, overlay: !SMOKE && !process.argv.includes('--no-steam-overlay') }) : null;
+if (SMOKE && steamStatus) console.log('STEAM ' + (steamStatus.running ? 'connected' : steamStatus.reason));
 
 // The game used to be called Binding of Marcus: bring those saves across once.
 function migrateOldSaves() {
@@ -57,13 +66,14 @@ ipcMain.on('save:delete', (_e, key) => { for (const ext of ['.json', '.json.bak'
 ipcMain.handle('save:folder', () => { shell.openPath(savesDir()); return savesDir(); });
 // the error log: appended to logs/errors.log, trimmed to its newest half past 256 KB
 function logsDir() { const d = path.join(app.getPath('userData'), 'logs'); fs.mkdirSync(d, { recursive: true }); return d; }
-ipcMain.on('log:error', (_e, line) => {
+function logLine(line) {
   try {
     const file = path.join(logsDir(), 'errors.log');
     fs.appendFileSync(file, String(line).slice(0, 4000) + '\n', 'utf8');
     if (fs.statSync(file).size > 256 * 1024) { const s = fs.readFileSync(file, 'utf8'); fs.writeFileSync(file, s.slice(s.length / 2), 'utf8'); }
   } catch { /* never let logging crash the game */ }
-});
+}
+ipcMain.on('log:error', (_e, line) => logLine(line));
 ipcMain.handle('log:folder', () => { shell.openPath(logsDir()); return logsDir(); });
 ipcMain.handle('screenshot', async (_e, dataUrl) => {
   const dir = path.join(app.getPath('pictures'), 'Lost Marcus');
@@ -77,25 +87,59 @@ ipcMain.on('win:fullscreen', () => { if (win) win.setFullScreen(!win.isFullScree
 ipcMain.on('win:setfs', (_e, on) => { if (win) win.setFullScreen(!!on); });
 ipcMain.on('win:isfs', (e) => { e.returnValue = !!win && win.isFullScreen(); });
 ipcMain.on('win:quit', () => app.quit());
+// which store delivers this copy ('github' for the GitHub downloads), so the game can leave updates to it
+ipcMain.on('app:distribution', (e) => { e.returnValue = distribution || 'github'; });
+// Steam: achievements mirror the save's own (and catch up on launch), plus what's running on (a Steam Deck?)
+ipcMain.on('steam:info', (e) => { e.returnValue = steam ? steam.info() : null; });
+ipcMain.on('steam:achieve', (_e, id) => { if (steam) steam.achieve(id); });
+ipcMain.on('steam:sync', (_e, ids) => { if (steam) steam.sync(ids); });
 
 const discord = new DiscordPresence(SMOKE ? '' : DISCORD_CLIENT_ID);
 /** The game reports what you're doing; this turns it into a Discord activity. */
 ipcMain.on('presence', (_e, p) => {
+  if (steam) steam.presence(p);
   if (!p) { discord.set(null); return; }
   const clip = (t) => (t && String(t).length >= 2 ? String(t).slice(0, 128) : undefined);
   discord.set({
     details: clip(p.details), state: clip(p.state),
     timestamps: p.start ? { start: Math.floor(p.start) } : undefined,
-    assets: { large_image: 'logo', large_text: 'Lost Marcus (Beta)', ...(p.small ? { small_image: p.small, small_text: clip(p.smallText) } : {}) },
-    // a button at the bottom of the card, so anyone who sees you playing can find the game
-    buttons: [{ label: 'Lost Marcus on GitHub', url: 'https://github.com/RacineDigital/Binding-of-marcus' }],
+    assets: { large_image: 'logo', large_text: distribution ? 'Lost Marcus' : 'Lost Marcus (Beta)', ...(p.small ? { small_image: p.small, small_text: clip(p.smallText) } : {}) },
+    // a button at the bottom of the card, so anyone who sees you playing can find the game where this copy came from
+    buttons: storeButton(),
     instance: false,
   });
 });
 
+function storeButton() {
+  if (distribution === 'steam') return STEAM_APP_ID ? [{ label: 'Lost Marcus on Steam', url: `https://store.steampowered.com/app/${STEAM_APP_ID}/` }] : undefined;
+  if (distribution === 'itch') return pkg.itchUrl ? [{ label: 'Lost Marcus on itch.io', url: pkg.itchUrl }] : undefined;
+  return [{ label: 'Lost Marcus on GitHub', url: 'https://github.com/RacineDigital/Binding-of-marcus' }];
+}
+
+// The window comes back where you left it: same size and place (if that screen is still there),
+// maximized or fullscreen as it was, so there's no windowed flash before fullscreen kicks in.
+const winStateFile = () => path.join(app.getPath('userData'), 'window.json');
+function loadWinState() {
+  try {
+    const s = JSON.parse(fs.readFileSync(winStateFile(), 'utf8'));
+    const b = s.bounds;
+    if (b && [b.x, b.y, b.width, b.height].every(Number.isFinite)) {
+      const a = screen.getDisplayMatching(b).workArea;
+      const onScreen = b.x < a.x + a.width - 64 && b.x + b.width > a.x + 64 && b.y >= a.y - 16 && b.y < a.y + a.height - 64;
+      if (!onScreen || b.width < 640 || b.height < 360) delete s.bounds;
+    } else delete s.bounds;
+    return s;
+  } catch { return {}; }
+}
+function saveWinState() {
+  if (!win || win.isDestroyed() || SMOKE) return;
+  try { fs.writeFileSync(winStateFile(), JSON.stringify({ bounds: win.getNormalBounds(), maximized: win.isMaximized(), fullscreen: win.isFullScreen() })); } catch { /* not worth failing over */ }
+}
+
 function create() {
+  const ws = SMOKE ? {} : loadWinState();
   win = new BrowserWindow({
-    width: 1440, height: 810, minWidth: 640, minHeight: 360,
+    width: 1440, height: 810, ...(ws.bounds || {}), minWidth: 640, minHeight: 360, fullscreen: !!ws.fullscreen,
     title: 'Lost Marcus', backgroundColor: '#07050a', show: false,
     autoHideMenuBar: true, icon: path.join(__dirname, 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
@@ -104,13 +148,26 @@ function create() {
   // tell the game whenever fullscreen changes (F11 included) so it can remember it for next time
   win.on('enter-full-screen', () => win.webContents.send('fullscreen', true));
   win.on('leave-full-screen', () => win.webContents.send('fullscreen', false));
-  win.once('ready-to-show', () => { if (!SMOKE) win.show(); });
+  win.once('ready-to-show', () => { if (SMOKE) return; if (ws.maximized && !ws.fullscreen) win.maximize(); win.show(); });
+  win.on('close', saveWinState);
+  win.on('enter-full-screen', saveWinState);
+  win.on('leave-full-screen', saveWinState);
   win.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown') return;
     if (input.key === 'F11' || (input.key === 'Enter' && input.alt)) { win.setFullScreen(!win.isFullScreen()); event.preventDefault(); }
   });
   const page = app.isPackaged ? path.join(process.resourcesPath, 'game', 'index.html') : path.join(__dirname, '..', 'dist-single', 'index.html');
   win.loadFile(page, { query: SMOKE ? { play: '1', seed: 'SMOKE123' } : {} });
+  // links in the game (the store page, credits) open in the browser, never inside the game window
+  win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' }; });
+  win.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('file:')) e.preventDefault(); });
+  // if the page ever crashes, log it and bring the game back (the save is flushed on every unlock and room)
+  let crashes = 0;
+  win.webContents.on('render-process-gone', (_e, d) => {
+    logLine(`renderer gone: ${d.reason} (${d.exitCode})`);
+    if (SMOKE || d.reason === 'clean-exit' || win.isDestroyed()) return;
+    if (++crashes <= 3) win.loadFile(page); else app.quit();
+  });
   if (SMOKE) {
     // CI self-test: start a run, let it play for a few seconds, fail on any page error
     const errors = [];
@@ -143,5 +200,12 @@ function startUpdater() {
 ipcMain.on('update:auto', (e) => { e.returnValue = canAutoUpdate(); });
 ipcMain.on('update:install', () => { if (!canAutoUpdate()) return; try { require('electron-updater').autoUpdater.quitAndInstall(); } catch (err) { console.error(err); } });
 
-app.whenReady().then(() => { migrateOldSaves(); discord.start(); create(); setTimeout(startUpdater, 4000); });
+// One copy at a time: launching again (a second double-click, Play pressed twice) brings the open
+// window forward instead of starting a second game that writes the same save files.
+const primary = SMOKE || app.requestSingleInstanceLock();
+if (!primary) app.quit();
+else {
+  app.on('second-instance', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
+  app.whenReady().then(() => { migrateOldSaves(); discord.start(); create(); setTimeout(startUpdater, 4000); });
+}
 app.on('window-all-closed', () => { discord.stop(); app.quit(); });

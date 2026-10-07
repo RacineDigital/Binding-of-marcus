@@ -3,6 +3,7 @@
 // Each scene is cropped to a 1080x1080 square that follows the action and saved as numbered JPEGs.
 //   npx tsx tests/tools/reel.ts <outDir> [scene,...]   (npm run dev first)
 import { chromium, type Page } from 'playwright-core';
+import { CHROME } from '../browser';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -221,7 +222,7 @@ const SCENES: Record<string, (page: Page, dir: string) => Promise<void>> = {
 };
 
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   const errors: string[] = []; page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(CLOCK);

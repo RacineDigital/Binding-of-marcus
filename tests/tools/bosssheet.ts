@@ -2,11 +2,12 @@
 // background, with the hitbox drawn over the first frame (circle = body radius, line = hit height).
 //   npx tsx tests/tools/bosssheet.ts [outDir] [id,id,...]   (npm run dev first)
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 import * as fs from 'fs';
 const out = process.argv[2] ?? 'test-output/bosses', only = process.argv[3] ?? '';
 (async () => {
   fs.mkdirSync(out, { recursive: true });
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const b = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
   const errs: string[] = []; p.on('pageerror', (e) => errs.push(e.message));
   await p.goto('http://localhost:5173/'); await p.waitForTimeout(2500);

@@ -485,5 +485,33 @@ console.log('content:', JSON.stringify(counts));
   const sig = (f: ReturnType<typeof generateFloor>) => JSON.stringify(f.rooms.map((r) => [r.type, r.bossId, r.pickups, r.npcs]));
   ok(sig(generateFloor(a, FINAL_FLOOR)) === sig(generateFloor(b, FINAL_FLOOR, profile)), 'Daily final boss and rewards ignore completed story progress');
 }
+// ------------------------------------------------------------ store copies never point players at GitHub for updates
+{
+  const { watchForUpdates, distribution } = await import('../src/core/update');
+  const G = globalThis as any;
+  const keep = { window: G.window, location: G.location, fetch: G.fetch, bomDesktop: G.bomDesktop };
+  const nav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { value: { webdriver: false }, configurable: true, writable: true });
+  G.window = G; G.location = { search: '' };
+  const fetches = (desk: unknown): number => {
+    let n = 0;
+    G.fetch = () => { n++; return Promise.resolve({ ok: false }); };
+    G.bomDesktop = desk;
+    watchForUpdates();
+    return n;
+  };
+  for (const store of ['steam', 'itch']) {
+    ok(fetches({ distribution: () => store, autoUpdates: () => false, onUpdate: () => {} }) === 0, `${store} desktop copy skips the GitHub update check`);
+    ok(distribution() === store, `${store} desktop copy reports its store`);
+  }
+  ok(fetches({ autoUpdates: () => false }) === 1, 'GitHub portable copy (an older shell with no store channel) still checks GitHub');
+  ok(fetches({ distribution: () => 'github', autoUpdates: () => false }) === 1, 'GitHub portable copy checks GitHub');
+  let listened = 0;
+  ok(fetches({ distribution: () => 'github', autoUpdates: () => true, onUpdate: () => { listened++; } }) === 0 && listened === 1, 'installed GitHub copy uses its own updater');
+  ok(fetches(undefined) === 1 && distribution() === 'github', 'browser build checks GitHub');
+  ok(fetches({ distribution: () => { throw new Error('old shell'); }, autoUpdates: () => false }) === 1, 'a shell that cannot say its store counts as GitHub');
+  G.window = keep.window; G.location = keep.location; G.fetch = keep.fetch; G.bomDesktop = keep.bomDesktop;
+  if (nav) Object.defineProperty(globalThis, 'navigator', nav); else delete G.navigator;
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

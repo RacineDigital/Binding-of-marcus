@@ -4,10 +4,11 @@
 // hand at each shop and at the end of each chapter.
 //   npx tsx tests/tools/runbot.ts [seeds] [chapters] [char]
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 const [nSeeds = '4', nCh = '7', char = 'marcus', first = '0'] = process.argv.slice(2);
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage();
   const errors: string[] = []; page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 6).join(' | ')); });
   await page.goto(base); await page.waitForTimeout(2500);

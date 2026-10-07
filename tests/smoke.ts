@@ -1,11 +1,12 @@
 // Automated smoke playthrough: visits every room on every floor, fights each boss, grants random items.
 import { chromium } from 'playwright-core';
+import { CHROME } from './browser';
 import * as fs from 'fs';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 const seed = process.argv[2] || 'SMOKE001';
 const floors = Number(process.argv[3] || 8);
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors: string[] = [];
   let failed = 0;

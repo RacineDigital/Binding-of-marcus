@@ -3,6 +3,7 @@
 // peak projectiles / particles / familiars and frame times.
 //   npx tsx tests/tools/extreme.ts
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 const BUILDS: Record<string, string[]> = {
   rapid: ['fine_nib', 'triple_seam', 'prism', 'long_needle', 'lamp_lure', 'hot_cocoa', 'gavyns_pouch', 'clock_spring', 'twin_wick', 'weathervane'],
@@ -13,7 +14,7 @@ const BUILDS: Record<string, string[]> = {
 };
 let failures = 0;
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors: string[] = []; page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 4).join(' | ')); });
   await page.goto(base); await page.waitForTimeout(2500);

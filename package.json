@@ -20,7 +20,7 @@
     "desktop": "npm run build:single && electron .",
     "dist:win": "npm run build:single && electron-builder --win --publish never",
     "test:desktop": "node --test tests/desktop-distribution.test.cjs",
-    "dist:steam": "npm run build:single && electron-builder --win --dir --publish never --config.extraMetadata.distribution=steam --config.directories.output=release-steam",
+    "dist:steam": "npm run build:single && electron-builder --win --dir --publish never --config steam/electron-builder.cjs",
     "dist:itch": "npm run build:single && electron-builder --win zip --publish never --config.extraMetadata.distribution=itch --config.directories.output=release-itch",
     "package:itch": "bash scripts/package-itch.sh",
     "music:render": "node scripts/render-soundtrack.mjs",
@@ -39,10 +39,15 @@
     "vite": "^6.4.3"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.9",
+    "steamworks.js": "0.4.0"
   },
   "main": "electron/main.cjs",
   "description": "Lost Marcus - a dark top-down roguelike",
+  "steam": {
+    "appId": 0,
+    "depotId": 0
+  },
   "author": "Papermoth Games",
   "build": {
     "appId": "com.racinedigital.lostmarcus",
@@ -57,9 +62,11 @@
       "electron/preload.cjs",
       "electron/discord.cjs",
       "electron/distribution.cjs",
+      "electron/steam.cjs",
       "electron/icon.png",
       "package.json",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "!node_modules/steamworks.js/**"
     ],
     "extraResources": [
       {

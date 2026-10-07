@@ -2,7 +2,7 @@
 # Upload the resulting zip as an HTML game on itch.io.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-npm run build
+LOST_MARCUS_DISTRIBUTION=itch npm run build
 VERSION="$(node -p "require('./package.json').version")"
 mkdir -p release-itch
 ARCHIVE="Lost-Marcus-${VERSION}-web.zip"

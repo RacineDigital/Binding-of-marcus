@@ -1,11 +1,11 @@
 name: Desktop build check
 
-# Builds and self-tests the Windows .exe on every push that touches the desktop app or the game,
-# and keeps the installer as a downloadable workflow artifact for testing between releases.
+# Builds and self-tests the Windows .exe and the Steam depot on every push that touches the desktop
+# app or the game, and keeps both as downloadable workflow artifacts for testing between releases.
 on:
   push:
     branches: ['**']
-    paths: ['electron/**', 'src/**', 'package.json', 'package-lock.json', 'vite.config.ts', '.github/workflows/desktop-check.yml']
+    paths: ['electron/**', 'src/**', 'steam/**', 'package.json', 'package-lock.json', 'vite.config.ts', '.github/workflows/desktop-check.yml']
 
 jobs:
   windows:
@@ -30,4 +30,35 @@ jobs:
         with:
           name: lost-marcus-windows
           path: release-desktop/*.exe
+          retention-days: 14
+
+  steam:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist:steam
+      - name: Self-test the Steam depot
+        shell: pwsh
+        # no Steam on the runner: the game must still start, with the Steamworks library loaded and idle
+        run: |
+          $dir = "release-steam/win-unpacked"
+          if (-not (Test-Path "$dir/steam_api64.dll")) { Write-Error "steam_api64.dll is missing beside the exe"; exit 1 }
+          if (-not (Test-Path "$dir/resources/app.asar.unpacked/node_modules/steamworks.js/dist/win64/steamworksjs.win32-x64-msvc.node")) { Write-Error "the Steamworks module was not unpacked"; exit 1 }
+          $exe = Get-ChildItem $dir -Filter "*.exe" | Select-Object -First 1
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke" -Wait -PassThru -RedirectStandardOutput smoke.txt
+          $out = Get-Content smoke.txt -Raw
+          Write-Host $out
+          if ($p.ExitCode -ne 0) { Write-Error "Steam depot self-test failed ($($p.ExitCode))"; exit 1 }
+          if ($out -match "steamworks.js unavailable") { Write-Error "the Steamworks library did not load"; exit 1 }
+          Write-Host "Steam depot self-test passed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lost-marcus-steam-depot
+          path: release-steam/win-unpacked
           retention-days: 14

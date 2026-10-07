@@ -2,9 +2,10 @@
 // situation it's about, and check that the thing it promises actually happens.
 //   npx tsx tests/tools/itemprobe.ts  (npm run dev first, or BASE_URL=... for a preview build)
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors: string[] = []; page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(base); await page.waitForTimeout(2500);

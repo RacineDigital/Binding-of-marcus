@@ -4,6 +4,7 @@
 // windows, the attack order it used, frame rate and page errors.
 //   npx tsx tests/tools/bossbench.ts grubmother,wardrobe [weak,normal,strong]
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 const bosses = (process.argv[2] ?? 'grubmother,wardrobe,snipA+snipB,oldstoker,furnaceheart').split(',');
 const builds = (process.argv[3] ?? 'weak,normal,strong').split(',');
@@ -14,7 +15,7 @@ const BUILDS: Record<string, string[]> = {
 };
 const CH2 = new Set(['oldstoker', 'furnaceheart']);
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors: string[] = []; page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR', e.message, (e.stack ?? '').split('\n').slice(0, 4).join(' | ')); });
   await page.goto(base); await page.waitForTimeout(2500);

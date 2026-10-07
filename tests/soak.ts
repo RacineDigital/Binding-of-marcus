@@ -2,9 +2,10 @@
 // floor for a few minutes, watching frame rate, live objects and JS heap for leaks.
 //   npx tsx tests/soak.ts [minutes]
 import { chromium } from 'playwright-core';
+import { CHROME } from './browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/', minutes = Number(process.argv[2] ?? 3);
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--enable-precise-memory-info', '--js-flags=--expose-gc'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--autoplay-policy=no-user-gesture-required', '--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--enable-precise-memory-info', '--js-flags=--expose-gc'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors: string[] = []; page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(base); await page.waitForTimeout(3000); await page.keyboard.press('Enter');

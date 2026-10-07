@@ -7,9 +7,10 @@ import { chromium } from 'playwright-core';
 import * as fs from 'fs';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
+import { CHROME } from './browser';
 
 const file = path.resolve(process.argv[2] ?? 'dist-single/index.html');
-const exe = process.env.CHROME_PATH ?? ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome', '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].find((p) => fs.existsSync(p));
+const exe = CHROME;
 (async () => {
   if (!fs.existsSync(file)) { console.error(`boot test: ${file} not found (run npm run build:single first)`); process.exit(1); }
   if (!exe) { console.error('boot test: no Chrome/Chromium found (set CHROME_PATH)'); process.exit(1); }

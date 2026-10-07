@@ -118,6 +118,8 @@ export class SaveManager {
   settings: Settings;
   slot = 1;
   onUnlock: ((id: string) => void) | null = null;
+  /** Another slot's data was loaded (switched to, or imported). */
+  onLoad: (() => void) | null = null;
   private dirty = false; private settingsDirty = false;
   constructor() {
     const def = defaultSave();
@@ -151,6 +153,7 @@ export class SaveManager {
     this.markDirty(); this.flush();
     this.slot = n; this.data = this.loadSlot(n);
     store.write('meta', JSON.stringify({ slot: n }));
+    this.onLoad?.();
   }
   slotInfo(n: number): SlotInfo {
     let o: any = null;
@@ -169,7 +172,7 @@ export class SaveManager {
     try {
       const o = JSON.parse(json); const d = o.save ?? o;
       if (!Array.isArray(d.unlocks) || typeof d.stats !== 'object') return false;
-      this.data = { ...defaultSave(), ...d, settings: this.settings }; this.markDirty(); this.flush(); return true;
+      this.data = { ...defaultSave(), ...d, settings: this.settings }; this.markDirty(); this.flush(); this.onLoad?.(); return true;
     } catch { return false; }
   }
   markDirty(): void { this.dirty = true; this.settingsDirty = true; }

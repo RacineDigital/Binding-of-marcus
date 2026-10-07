@@ -2,12 +2,13 @@
 // modes), plus random multi-item builds. Each combo is simulated against dummies; it must not throw
 // and must deal damage. Usage: tsx tests/synergy.ts [frames] [randomBuilds]
 import { chromium } from 'playwright-core';
+import { CHROME } from './browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 const frames = Number(process.argv[2] || 150);
 const randomBuilds = Number(process.argv[3] || 150);
 const MODE_ITEMS: Record<string, string> = { beam: 'burning_glass', laser: 'copper_filament', melee: 'bone_folder', burst: 'bellows_lung', charge: 'held_breath' };
 (async () => {
-  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
+  const browser = await chromium.launch({ executablePath: CHROME, args: ['--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const pageErrors: string[] = [];
   page.on('pageerror', (e) => pageErrors.push(e.message));

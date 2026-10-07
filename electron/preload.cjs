@@ -1,4 +1,4 @@
-// Bridge between the game page and the desktop shell (file saves, fullscreen, screenshots, Discord status, updates).
+// Bridge between the game page and the desktop shell (file saves, fullscreen, screenshots, Discord/Steam status, updates, Steam achievements).
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('bomDesktop', {
   readSave: (key) => ipcRenderer.sendSync('save:read', key),
@@ -19,4 +19,12 @@ contextBridge.exposeInMainWorld('bomDesktop', {
   onUpdate: (fn) => ipcRenderer.on('update', (_e, msg) => fn(msg)),
   installUpdate: () => ipcRenderer.send('update:install'),
   autoUpdates: () => ipcRenderer.sendSync('update:auto'),
+  // which store this copy came from ('steam', 'itch' or 'github'): stores deliver their own updates
+  distribution: () => ipcRenderer.sendSync('app:distribution'),
+  // Steam build: achievements mirrored to Steam, and whether it's running on a Steam Deck
+  steam: {
+    info: () => ipcRenderer.sendSync('steam:info'),
+    achieve: (id) => ipcRenderer.send('steam:achieve', String(id)),
+    sync: (ids) => ipcRenderer.send('steam:sync', Array.isArray(ids) ? ids.map(String) : []),
+  },
 });

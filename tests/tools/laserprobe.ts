@@ -3,6 +3,7 @@
 // rays, lashes, searchlights, colours, embers, heat, damage). Each scenario names what it expects.
 //   npx tsx tests/tools/laserprobe.ts  (npm run dev first)
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 
 const SCENARIOS: [string, string[], string][] = [
@@ -25,7 +26,7 @@ const SCENARIOS: [string, string[], string][] = [
 ];
 
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const b = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage({ viewport: { width: 960, height: 540 } });
   const errs: string[] = []; p.on('pageerror', (e) => errs.push(e.message));
   await p.goto(base); await p.waitForTimeout(2500);

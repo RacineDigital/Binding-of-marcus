@@ -39,6 +39,7 @@ import { doorSymbol } from '../art/roomicons';
 import { BINDINGS, bindingById, type BindingId } from '../game/bindings';
 import { bindingSeal } from './bindingart';
 import { computeStats } from '../player/stats';
+import { onSteam } from '../core/platform';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -794,7 +795,7 @@ export class MenuSystem {
       { label: 'Scaling', value: () => ({ sharp: 'Sharp (fit)', integer: 'Pixel perfect', stretch: 'Nearest (fit)' } as any)[st().scale], ok: () => { const m = ['sharp', 'integer', 'stretch'] as const; st().scale = m[(m.indexOf(st().scale) + 1) % 3]; g.applySettings(); g.save.markDirty(); } },
       { label: 'Fullscreen', value: () => (isFullscreen() ? 'On' : 'Off'), ok: () => { const on = !isFullscreen(); setFullscreen(on); st().fullscreen = on; g.save.markDirty(); } },
       { label: 'Item descriptions', value: () => (st().descStyle === 'card' ? 'Large card' : 'Compact (EID style)'), ok: () => { st().descStyle = st().descStyle === 'card' ? 'eid' : 'card'; g.save.markDirty(); } },
-      ...((window as any).bomDesktop?.setPresence ? [{ label: 'Discord status', value: () => (st().discord !== false ? 'On' : 'Off'), ok: () => { st().discord = st().discord === false; g.save.markDirty(); } }] : []),
+      ...((window as any).bomDesktop?.setPresence ? [{ label: onSteam() ? 'Status for friends' : 'Discord status', value: () => (st().discord !== false ? 'On' : 'Off'), ok: () => { st().discord = st().discord === false; g.save.markDirty(); } }] : []),
       { label: 'Tutorial hints', value: () => (st().tutorial !== false ? 'On' : 'Off'), ok: () => { st().tutorial = st().tutorial === false; g.save.markDirty(); } },
       { label: 'Run timer', value: () => (st().timer ? 'On' : 'Off'), ok: () => { st().timer = !st().timer; g.save.markDirty(); } },
       { label: 'Show items on HUD', value: () => (st().showItems !== false ? 'On' : 'Off'), ok: () => { st().showItems = st().showItems === false; g.save.markDirty(); } },

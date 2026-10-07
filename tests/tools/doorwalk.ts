@@ -1,9 +1,10 @@
 // Walk into a boss room through its door while firing (the path that hung Snap and Old Stoker in 3.5-3.7).
 //   BOSS=twinsnips npx tsx tests/tools/doorwalk.ts
 import { chromium } from 'playwright-core';
+import { CHROME } from '../browser';
 const base = process.env.BASE_URL || 'http://localhost:5173/';
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader','--enable-unsafe-swiftshader'] });
+  const b = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader','--enable-unsafe-swiftshader'] });
   for (const fire of ['same']) for (const seed of ['FREEZE1']) {
     const p = await b.newPage({ viewport: { width: 960, height: 540 } }); const errs: string[] = []; const hb: string[] = [];
     p.on('pageerror', e => errs.push(e.message + ' | ' + (e.stack ?? '').split('\n').slice(0, 6).join(' | ')));
