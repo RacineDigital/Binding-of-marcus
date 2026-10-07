@@ -176,6 +176,8 @@ function persistRoom(w: World): void {
 }
 
 export function enterRoom(w: World, id: number, from: Side | null, transition: boolean): void {
+  // a boss reward still owed in the room being left lands now, so it is there when Marcus comes back
+  if (w.room) settleRoomReward(w, w.room, true);
   const snap = transition ? w.game.snapshotWorld() : null;
   persistRoom(w);
   const room = w.floor.rooms[id];
@@ -276,6 +278,8 @@ export function enterRoom(w: World, id: number, from: Side | null, transition: b
     if (room.type === 'lostfound') w.audio.stinger('lostfound');
   }
   if (room.type === 'boss' && room.cleared && prevType !== 'boss') w.audio.setMusic(themeMusic(w.theme));
+  // a reward still owed here (the run was saved in the beat after a boss fell): it lands shortly
+  if (room.flags.reward) w.after(0.6, () => settleRoomReward(w, room), true);
   // last room's effects end first, so anything granted on entering this one lasts the room
   w.player.clearTemp((t) => !!t.room);
   w.itemHook('onRoomEnter');
@@ -598,14 +602,8 @@ export function onBossKilled(w: World, e: Enemy): void {
     w.lockdown = false;
     const ec = w.game.save.data.echo;
     const left = (ec?.items ?? []).filter((id) => getItem(id) && !w.player.has(id));
-    const c = room.center();
-    w.after(1.2, () => {
-      if (w.room !== room) return;
-      const id = left.length ? left[Math.floor(Math.random() * left.length)] : w.run.pools.roll('treasure');
-      spawnPedestal(w, c.x, c.y - 10, id, 'treasure');
-      w.hud.toast('The echo fades. It left something behind.', 3);
-      w.audio.setMusic(themeMusic(w.theme));
-    }, true);
+    room.flags.reward = { kind: 'echo', left };
+    w.after(1.2, () => settleRoomReward(w, room), true);
     w.game.save.data.echo = null; w.game.save.markDirty();
     w.game.save.unlock('echo_rest');
     return;
@@ -613,8 +611,6 @@ export function onBossKilled(w: World, e: Enemy): void {
   // the fight is over: the boss theme gives way to the chapter's own music
   w.after(1.8, () => { if (w.room === room && w.game.scene === 'run') { w.audio.setMusic(themeMusic(w.theme)); w.audio.setIntensity(0); } }, true);
   const fi = w.run.floorIndex;
-  // finished the story before? then the Binding offers a way out and a way further in
-  const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily';
   w.game.save.unlock('beat_ch' + (fi + 1));
   w.game.save.unlock('beat_' + e.def.id);
   if (!w.run.flags.bossHit) {
@@ -627,102 +623,136 @@ export function onBossKilled(w: World, e: Enemy): void {
   const pl0 = w.player, hasDie = (id: string | null) => !!id && !!getItem(id)?.tags?.includes('dice');
   if (e.def.id === 'itremembers' && (hasDie(pl0.active) || pl0.itemOrder.some((id) => (pl0.items.get(id) ?? 0) > 0 && hasDie(id)))) w.game.save.unlock('unlock_ozzie');
   const endless = w.run.mode === 'endless' && !w.run.challenge;
-  const goal = endless ? Infinity : w.run.challenge ? CHALLENGES.find((c) => c.id === w.run.challenge)?.goal ?? FINAL_FLOOR : FINAL_FLOOR;
   if (endless && fi === FINAL_FLOOR) { w.game.creditWin(); w.hud.banner('The story goes on', 'Endless: the chapters loop, and they bite harder'); }
-  w.after(1.3, () => {
-    if (w.room !== room) return;
+  // the reward lands a beat later, but it is the room's from this moment: walking out (or saving)
+  // before the beat can't lose it (see settleRoomReward)
+  room.flags.reward = { kind: 'boss', champ: e.data.champ ?? null };
+  w.after(1.3, () => settleRoomReward(w, room), true);
+}
+
+/**
+ * A boss's (or an echo's) reward, recorded on the room when it dies and handed out a beat later: when
+ * the delay runs out, or the moment Marcus leaves the room, whichever comes first (enterRoom settles
+ * it on the way out), or soon after he comes back to a room saved with one still owed. Before this,
+ * walking out in the first second left the room with no trapdoor and the run with no way on.
+ */
+export function settleRoomReward(w: World, room: RoomData, leaving = false): void {
+  const pend = room.flags.reward;
+  if (!pend || w.room !== room) return;
+  delete room.flags.reward;
+  // a room from a floor already left behind (dropped through the floor mid-beat): nothing to pay
+  if (w.floor.rooms[room.id] !== room) return;
+  if (pend.kind === 'echo') {
+    const left: string[] = pend.left ?? [];
     const c = room.center();
-    if (w.run.flags.room4 && fi === ROOM4_FLOOR) {
-      // Room 4: it was only ever Grandad. With every other ending already seen, the morning comes
-      // in through the window, and he points at it.
-      const sv = w.game.save;
-      if (!w.run.challenge && ['morning', 'own_hand', 'for_marcus', 'the_visit'].every((id) => sv.hasEnding(id))) {
-        w.lightBeam = { x: c.x + 60, y: c.y + 30, t: 0, kind: 'home' }; room.flags.beam = { x: c.x + 60, y: c.y + 30, kind: 'home' };
-        w.exitDoor = { x: c.x - 60, y: c.y + 30, t: 0, kind: 'exit' }; room.flags.exit = { x: c.x - 60, y: c.y + 30, kind: 'exit' };
-        w.audio.stinger('blessing');
-        w.hud.banner('Morning', 'Grandad points at the window. Or you could stay a little longer.');
-        return;
-      }
-      w.hud.toast('It was only Grandad. It was only ever Grandad.', 3);
-      w.after(1.6, () => w.game.onVictory()); return;
-    }
-    if (w.run.flags.margins && fi === LASTPAGE_FLOOR) {
-      if (w.run.flags.light) w.game.save.unlock('beat_author');
-      else { w.game.save.unlock('beat_unwritten'); w.game.save.stat('unwrittenWins', 1); }
-      w.game.onVictory(); return;
-    }
-    if (w.run.flags.margins && fi === MARGINS_FLOOR) {
-      // every boss in the Margins pays out; only one opens the way to the Last Page
-      spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
-      const rng = new RNG(room.seed + ':bossdrop');
-      spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
-      if (room.flags.trueBoss && w.run.flags.light) {
-        w.lightBeam = { x: c.x, y: c.y + 30, t: 0 }; room.flags.beam = { x: c.x, y: c.y + 30 };
-        w.audio.stinger('blessing'); w.hud.toast('The light comes down.');
-      } else if (room.flags.trueBoss) {
-        w.trapdoor = { x: c.x, y: c.y + 30, t: 0, kind: 'portal' };
-        room.flags.trap = { x: c.x, y: c.y + 30, kind: 'portal' };
-        w.audio.stinger('lostfound'); w.hud.toast('The page tears open.');
-      } else w.hud.toast('Nothing beyond this one. Not this door.');
+    const id = left.length ? left[Math.floor(Math.random() * left.length)] : w.run.pools.roll('treasure');
+    spawnPedestal(w, c.x, c.y - 10, id, 'treasure');
+    w.hud.toast('The echo fades. It left something behind.', 3);
+    if (!leaving) w.audio.setMusic(themeMusic(w.theme));
+    return;
+  }
+  bossReward(w, room, pend, leaving);
+}
+
+function bossReward(w: World, room: RoomData, pend: { champ?: string | null }, leaving: boolean): void {
+  const fi = w.run.floorIndex;
+  const beyond = fi === FINAL_FLOOR && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily';
+  const endless = w.run.mode === 'endless' && !w.run.challenge;
+  const goal = endless ? Infinity : w.run.challenge ? CHALLENGES.find((c) => c.id === w.run.challenge)?.goal ?? FINAL_FLOOR : FINAL_FLOOR;
+  // the story ending while Marcus is already on his way out: let him arrive first
+  const victory = () => { if (leaving) w.after(0.05, () => w.game.onVictory(), true); else w.game.onVictory(); };
+  const c = room.center();
+  // finished the story before? then the Binding offers a way out and a way further in (beyond)
+  if (w.run.flags.room4 && fi === ROOM4_FLOOR) {
+    // Room 4: it was only ever Grandad. With every other ending already seen, the morning comes
+    // in through the window, and he points at it.
+    const sv = w.game.save;
+    if (!w.run.challenge && ['morning', 'own_hand', 'for_marcus', 'the_visit'].every((id) => sv.hasEnding(id))) {
+      w.lightBeam = { x: c.x + 60, y: c.y + 30, t: 0, kind: 'home' }; room.flags.beam = { x: c.x + 60, y: c.y + 30, kind: 'home' };
+      w.exitDoor = { x: c.x - 60, y: c.y + 30, t: 0, kind: 'exit' }; room.flags.exit = { x: c.x - 60, y: c.y + 30, kind: 'exit' };
+      w.audio.stinger('blessing');
+      w.hud.banner('Morning', 'Grandad points at the window. Or you could stay a little longer.');
       return;
     }
-    if (fi >= goal && beyond) {
-      // the story can end here (EXIT), or go on through the tear
-      spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
-      w.exitDoor = { x: c.x - 56, y: c.y + 30, t: 0 };
-      room.flags.exit = { x: c.x - 56, y: c.y + 30 };
-      w.trapdoor = { x: c.x + 56, y: c.y + 30, t: 0, kind: 'portal' };
-      room.flags.trap = { x: c.x + 56, y: c.y + 30, kind: 'portal' };
-      // the light only reaches down once the Unwritten has fallen twice
-      const wins = w.game.save.data.stats.unwrittenWins ?? 0;
-      if (wins >= 2) {
-        w.lightBeam = { x: c.x, y: c.y + 52, t: 0 };
-        room.flags.beam = { x: c.x, y: c.y + 52 };
-        w.audio.stinger('blessing');
-        w.hud.banner('Three ways on', 'The EXIT ends the story. The tear goes down into the ink. The light goes up.');
-      } else {
-        w.hud.banner('Two ways on', 'The EXIT ends the story. The tear goes further in.');
-        if (wins > 0) w.after(3.2, () => w.hud.toast(`A crack of light above you, still too far to reach (${wins}/2).`, 3));
-      }
-      w.audio.stinger('lostfound');
-      return;
-    }
-    if (fi >= goal) { w.game.onVictory(); return; }
+    w.hud.toast('It was only Grandad. It was only ever Grandad.', 3);
+    w.after(1.6, () => w.game.onVictory(), true); return;
+  }
+  if (w.run.flags.margins && fi === LASTPAGE_FLOOR) {
+    if (w.run.flags.light) w.game.save.unlock('beat_author');
+    else { w.game.save.unlock('beat_unwritten'); w.game.save.stat('unwrittenWins', 1); }
+    victory(); return;
+  }
+  if (w.run.flags.margins && fi === MARGINS_FLOOR) {
+    // every boss in the Margins pays out; only one opens the way to the Last Page
     spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
     const rng = new RNG(room.seed + ':bossdrop');
     spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
-    // champions pay better
-    const champ = e.data.champ as ChampKind | undefined;
-    if (champ === 'gilded') { for (let i = 0; i < 3; i++) spawnDrop(w, 'button10', c.x + 30, c.y); spawnDrop(w, 'chest:locked', c.x + 44, c.y + 4); }
-    if (champ === 'crimson') { spawnDrop(w, 'heart', c.x + 30, c.y); spawnDrop(w, 'wax', c.x + 40, c.y); }
-    if (champ === 'inked') { spawnDrop(w, 'page', c.x + 30, c.y); spawnDrop(w, 'charm', c.x + 40, c.y); }
-    w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
-    room.flags.trap = { x: c.x, y: c.y + 26 };
-    w.audio.play('trapdoor');
-    // once the story is finished: a boarded back stair behind Chapter II's boss, up to St. Agnes
-    if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily' && !w.run.flags.hospital) {
-      const sx = c.x + 76, sy = c.y + 22;
-      w.backStair = { x: sx, y: sy, t: 0, boarded: true }; room.flags.stair = { x: sx, y: sy, boarded: true };
-      // until it has been climbed once, say it's there and how to open it
-      if (!w.game.save.isUnlocked('back_stair')) w.after(2.4, () => { if (w.room === room) w.hud.toast(`Behind the boss: a back stair, boarded over. A cherry bomb (${bindLabel('bomb')}) would open it.`, 4.5); });
+    if (room.flags.trueBoss && w.run.flags.light) {
+      w.lightBeam = { x: c.x, y: c.y + 30, t: 0 }; room.flags.beam = { x: c.x, y: c.y + 30 };
+      w.audio.stinger('blessing'); w.hud.toast('The light comes down.');
+    } else if (room.flags.trueBoss) {
+      w.trapdoor = { x: c.x, y: c.y + 30, t: 0, kind: 'portal' };
+      room.flags.trap = { x: c.x, y: c.y + 30, kind: 'portal' };
+      w.audio.stinger('lostfound'); w.hud.toast('The page tears open.');
+    } else w.hud.toast('Nothing beyond this one. Not this door.');
+    return;
+  }
+  if (fi >= goal && beyond) {
+    // the story can end here (EXIT), or go on through the tear
+    spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
+    w.exitDoor = { x: c.x - 56, y: c.y + 30, t: 0 };
+    room.flags.exit = { x: c.x - 56, y: c.y + 30 };
+    w.trapdoor = { x: c.x + 56, y: c.y + 30, t: 0, kind: 'portal' };
+    room.flags.trap = { x: c.x + 56, y: c.y + 30, kind: 'portal' };
+    // the light only reaches down once the Unwritten has fallen twice
+    const wins = w.game.save.data.stats.unwrittenWins ?? 0;
+    if (wins >= 2) {
+      w.lightBeam = { x: c.x, y: c.y + 52, t: 0 };
+      room.flags.beam = { x: c.x, y: c.y + 52 };
+      w.audio.stinger('blessing');
+      w.hud.banner('Three ways on', 'The EXIT ends the story. The tear goes down into the ink. The light goes up.');
+    } else {
+      w.hud.banner('Two ways on', 'The EXIT ends the story. The tear goes further in.');
+      if (wins > 0) w.after(3.2, () => w.hud.toast(`A crack of light above you, still too far to reach (${wins}/2).`, 3));
     }
-    // the end of the hospital: Room 4, which opens for Grandfather's letter
-    if (w.run.flags.hospital && fi === ROOM4_FLOOR - 1) {
-      w.exitDoor = { x: c.x - 76, y: c.y + 30, t: 0, kind: 'room4' }; room.flags.exit = { x: c.x - 76, y: c.y + 30, kind: 'room4' };
-      w.after(1.5, () => w.hud.toast(w.player.has('grandfathers_letter') ? 'At the end of the ward: Room 4. The door is open a crack.' : 'At the end of the ward: Room 4. It is locked until you bring both halves of the letter.', 3.5));
-    }
-    // a chance for a bargain door (the odds are on the HUD; certain while lost property holds the letter)
-    const forLetter = letterAtDesk(w);
-    const door = rollBargain(w, room);
-    if (door) {
-      const d = room.doors[room.doors.length - 1];
-      const p = room.doorPos(d.side, d.slot);
-      w.doors.push({ def: d, open: 0, x: p.x, y: p.y, revealed: true });
-      door.room.seen = true;
-      w.audio.stinger(door.kind);
-      w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : forLetter ? 'Lost & Found has opened. They are holding half of Grandfather\'s letter for you.' : 'A door with a claim ticket on it has opened.', forLetter ? 3.5 : undefined);
-    }
-  });
+    w.audio.stinger('lostfound');
+    return;
+  }
+  if (fi >= goal) { victory(); return; }
+  spawnPedestal(w, c.x, c.y - 44, room.flags.bossItem ?? w.run.pools.roll('boss'), 'treasure');
+  const rng = new RNG(room.seed + ':bossdrop');
+  spawnDrop(w, rollDropKind(rng, w.player.stats.luck, 'boss') ?? 'heart', c.x - 30, c.y, true, rng);
+  // champions pay better
+  const champ = (pend.champ ?? undefined) as ChampKind | undefined;
+  if (champ === 'gilded') { for (let i = 0; i < 3; i++) spawnDrop(w, 'button10', c.x + 30, c.y); spawnDrop(w, 'chest:locked', c.x + 44, c.y + 4); }
+  if (champ === 'crimson') { spawnDrop(w, 'heart', c.x + 30, c.y); spawnDrop(w, 'wax', c.x + 40, c.y); }
+  if (champ === 'inked') { spawnDrop(w, 'page', c.x + 30, c.y); spawnDrop(w, 'charm', c.x + 40, c.y); }
+  w.trapdoor = { x: c.x, y: c.y + 26, t: 0, kind: 'down' };
+  room.flags.trap = { x: c.x, y: c.y + 26 };
+  w.audio.play('trapdoor');
+  // once the story is finished: a boarded back stair behind Chapter II's boss, up to St. Agnes
+  if (fi === HOSPITAL_FIRST - 1 && w.game.save.isUnlocked('beat_final') && !w.run.challenge && w.run.mode !== 'endless' && w.run.mode !== 'daily' && !w.run.flags.hospital) {
+    const sx = c.x + 76, sy = c.y + 22;
+    w.backStair = { x: sx, y: sy, t: 0, boarded: true }; room.flags.stair = { x: sx, y: sy, boarded: true };
+    // until it has been climbed once, say it's there and how to open it
+    if (!w.game.save.isUnlocked('back_stair')) w.after(2.4, () => { if (w.room === room) w.hud.toast(`Behind the boss: a back stair, boarded over. A cherry bomb (${bindLabel('bomb')}) would open it.`, 4.5); });
+  }
+  // the end of the hospital: Room 4, which opens for Grandfather's letter
+  if (w.run.flags.hospital && fi === ROOM4_FLOOR - 1) {
+    w.exitDoor = { x: c.x - 76, y: c.y + 30, t: 0, kind: 'room4' }; room.flags.exit = { x: c.x - 76, y: c.y + 30, kind: 'room4' };
+    w.after(1.5, () => w.hud.toast(w.player.has('grandfathers_letter') ? 'At the end of the ward: Room 4. The door is open a crack.' : 'At the end of the ward: Room 4. It is locked until you bring both halves of the letter.', 3.5));
+  }
+  // a chance for a bargain door (the odds are on the HUD; certain while lost property holds the letter)
+  const forLetter = letterAtDesk(w);
+  const door = rollBargain(w, room);
+  if (door) {
+    const d = room.doors[room.doors.length - 1];
+    const p = room.doorPos(d.side, d.slot);
+    w.doors.push({ def: d, open: 0, x: p.x, y: p.y, revealed: true });
+    door.room.seen = true;
+    w.audio.stinger(door.kind);
+    w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : forLetter ? 'Lost & Found has opened. They are holding half of Grandfather\'s letter for you.' : 'A door with a claim ticket on it has opened.', forLetter ? 3.5 : undefined);
+  }
 }
 
 /**

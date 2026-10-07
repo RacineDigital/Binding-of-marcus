@@ -142,6 +142,34 @@ const D = 'window.__bomDebug';
   // the game's own work per frame (headless software GL adds a large, machine-dependent cost on top)
   ok(perf.updateMs < 6 && perf.renderMs < 16, `busy fight: game logic ${perf.updateMs} ms and drawing ${perf.renderMs} ms a frame`);
 
+  console.log('boss rewards');
+  // the trapdoor and the boss's curio must be there whatever Marcus does in the beat after the kill
+  const bossCase = async (seed: string, after: 'stay' | 'leave' | 'save') => ev<any>(page, `(async () => {
+    const d = ${D}, g = d.game, sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    g.menus.stack = []; g.newRun('marcus', '${seed}'); await sleep(1500);
+    let w = d.world; const boss = w.floor.rooms.find((r) => r.type === 'boss');
+    d.goto(boss.id); await sleep(300);
+    await new Promise((r) => { const t = setInterval(() => { if (!d.world.hud.bossIntroT) { clearInterval(t); r(); } }, 50); });
+    const b = d.world.enemies.find((e) => e.isBoss); d.world.damageEnemy(b, 1e6, { ang: 0, knock: 0 });
+    await sleep(120);
+    if ('${after}' === 'leave') {
+      const door = boss.doors.find((x) => !x.hidden && d.world.floor.rooms[x.to].type !== 'lostfound');
+      d.world.enterRoom(door.to, door.side, false); await sleep(2500);
+      const back = d.world.floor.rooms[door.to].doors.find((x) => x.to === boss.id);
+      d.world.enterRoom(boss.id, back.side, false); await sleep(400);
+    } else if ('${after}' === 'save') {
+      g.saveSnapshot(); g.save.flush(); g.quitToMenu(); await sleep(500);
+      g.continueRun(); await sleep(2500);
+    } else await sleep(2500);
+    w = d.world;
+    return { room: w.room.type, trap: !!w.trapdoor && !!w.room.flags.trap, owed: !!w.room.flags.reward,
+      curios: w.pickups.filter((p) => p.kind === 'item' && p.data.style === 'treasure').length };
+  })()`);
+  for (const [seed, after, label] of [['E2EBOSSA', 'stay', 'staying'], ['E2EBOSSB', 'leave', 'walking straight out and back'], ['E2EBOSSC', 'save', 'saving and continuing']] as const) {
+    const r = await bossCase(seed, after);
+    ok(r.room === 'boss' && r.trap && !r.owed && r.curios === 1, `after ${label} the boss room has its trapdoor and one curio (${JSON.stringify(r)})`);
+  }
+
   console.log('death & restart');
   await ev(page, `(() => { const w = ${D}.world; w.player.iframes = 0; w.player.health.red = 1; w.player.health.extra = []; w.hurtPlayer(2, 'test', { ignoreIframes: true }); })()`);
   await page.waitForFunction(`${D}.game.scene === 'dead'`, null, { timeout: 8000 }).catch(() => {});
