@@ -10,6 +10,6 @@ module.exports = {
   extraMetadata: { distribution: 'steam' },
   files: base.files.filter((f) => !f.startsWith('!node_modules/steamworks.js')).concat(['!node_modules/steamworks.js/dist/osx/**', '!node_modules/steamworks.js/dist/linux64/**', '!node_modules/steamworks.js/dist/win64/*.lib']),
   asarUnpack: ['node_modules/steamworks.js/**'],
-  extraFiles: [{ from: 'node_modules/steamworks.js/dist/win64/steam_api64.dll', to: 'steam_api64.dll' }],
+  extraFiles: [...(base.extraFiles ?? []), { from: 'node_modules/steamworks.js/dist/win64/steam_api64.dll', to: 'steam_api64.dll' }],
   publish: null,
 };

@@ -5,23 +5,23 @@ For a prioritized Steam launch plan and repository readiness audit, see
 
 Build from a clean checkout with the lockfile (`npm ci`), then run `npm test`,
 `npm run test:desktop`, `npm run build`, and `npm run build:single`.
-Start `npm run dev` before `npm run test:e2e` and `npm run smoke`.
-The browser tests currently hard-code a Chromium path; this cloud environment's
-startup instructions provide a helper that uses its installed browser.
+Start `npm run dev` before `npm run test:e2e` (which includes the controller tests)
+and `npm run smoke`. The browser tests find Chrome or Chromium themselves; set
+`CHROME_PATH` to choose one.
 
 ## Store packages (Windows runner)
 
-- `npm run dist:steam`: unpacked application in `release-steam/win-unpacked`.
-  Upload that directory as the Windows Steam depot. Configure Steam's launch
-  executable as `Lost Marcus.exe` and the Windows platform.
+- `npm run dist:steam`: unpacked application in `release-steam/win-unpacked`, with
+  the Steamworks library and `steam_api64.dll`. Upload it with
+  `npm run steam:upload` or the *Steam upload* workflow; [steam/README.md](../steam/README.md)
+  covers the Steamworks setup (App ID, achievements, Rich Presence, Cloud, Steam Input).
 - `npm run dist:itch`: downloadable Windows zip in `release-itch`.
 - `npm run dist:win`: existing GitHub installer/portable builds in `release-desktop`.
 
 Steam and itch packages embed their distribution in package metadata. The
-Electron updater IPC route is disabled for those builds, while existing GitHub
-installed packages keep their updater. The browser-side update notice still
-needs a store-build regression test; see the checklist before release. The store
-client owns Steam updates.
+Electron updater is disabled for those builds and the page never checks GitHub
+for updates (unit-tested), while GitHub installed packages keep their updater.
+The store client owns Steam updates.
 
 Before uploading, run the generated Windows executable with `--smoke`, then play
 it normally from the packaged folder. Check first launch, controller input,
@@ -30,7 +30,8 @@ The Windows store targets need validation on a Windows runner before release.
 
 ## itch.io browser upload
 
-Run `npm run package:itch`. Upload `release-itch/Lost-Marcus-<version>-web.zip`
+Run `npm run package:itch` (built as the itch.io distribution, so it never checks
+GitHub for updates). Upload `release-itch/Lost-Marcus-<version>-web.zip`
 as an HTML game and select **This file will be played in the browser**. The zip
 has `index.html` at its root and includes fonts, game bundles and chapter music.
 Allow fullscreen, use a 16:9 embed, and test keyboard focus, audio after a click,
@@ -54,12 +55,19 @@ run `python3 scripts/prepare-music.py` afterwards to refresh recording durations
 The home and Room 4 themes retain their quiet ending arrangements. Synth fallback
 scores match the rock recordings, and exploration preserves their upper frequencies.
 
+## Store material and licences
+
+`npm run steam:media` remakes the screenshots, capsules, library art, app icon and
+achievement icons in `steam/media/`; `steam/STORE_PAGE.md` is the store text.
+`THIRD_PARTY_NOTICES.txt` ships beside every desktop build and in the browser zips;
+regenerate it with `npm run notices` after changing dependencies (`npm test` fails
+until you do).
+
 ## Remaining launch work
 
-This repository does not yet integrate Steamworks achievements, Steam Cloud account
-separation, overlay support, or store publishing. Configure App/depot IDs and Cloud
-paths in Steamworks, and test two accounts before enabling Cloud. Local desktop
-saves currently use the user's application-data `Lost Marcus/saves` directory.
-Verify distribution rights for soundtrack and fonts, prepare store images/trailers,
-and run a player playtest for readability, controller navigation and difficulty.
-Do not label store features as supported until their packaged behavior is tested.
+Configure the App ID, depot, achievements, Rich Presence, Cloud and Steam Input in
+Steamworks (steam/README.md), then test everything through the Steam client with two
+accounts before advertising it. Verify distribution rights for the soundtrack, replace
+the drafted capsules with key art if you can, and run a player playtest for
+readability, controller navigation and difficulty. Do not label store features as
+supported until their packaged behavior is tested.

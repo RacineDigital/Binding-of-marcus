@@ -1,0 +1,82 @@
+name: Steam upload
+
+# Run by hand (Actions -> Steam upload -> Run workflow). Builds the Steam depot on Windows, starts it
+# in self-test mode, then uploads it to Steam and sets it live on the branch you choose. Steam never
+# lets an upload go live on the default branch: test the beta, then set it live in Steamworks.
+# Needs package.json "steam.appId" (and "steam.depotId" if your first depot isn't appId + 1) and the
+# repository secrets STEAM_USERNAME, STEAM_PASSWORD and STEAM_CONFIG_VDF; steam/README.md explains them.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Steam branch to set the build live on (not default)
+        required: true
+        default: beta
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist:steam
+      - name: Self-test the Steam depot
+        shell: pwsh
+        run: |
+          $dir = "release-steam/win-unpacked"
+          foreach ($f in @("steam_api64.dll", "THIRD_PARTY_NOTICES.txt", "resources/game/index.html", "resources/game/music/cellar.ogg")) { if (-not (Test-Path "$dir/$f")) { Write-Error "$f is missing from the depot"; exit 1 } }
+          if (Test-Path "$dir/steam_appid.txt") { Write-Error "steam_appid.txt must not ship in the depot"; exit 1 }
+          $exe = Get-ChildItem $dir -Filter "*.exe" | Select-Object -First 1
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke" -Wait -PassThru -RedirectStandardOutput smoke.txt
+          $out = Get-Content smoke.txt -Raw
+          Write-Host $out
+          if ($p.ExitCode -ne 0) { Write-Error "Steam depot self-test failed ($($p.ExitCode))"; exit 1 }
+          if ($out -match "steamworks.js unavailable") { Write-Error "the Steamworks library did not load"; exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: steam-depot
+          path: release-steam/win-unpacked
+          retention-days: 7
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the Steam IDs
+        id: ids
+        run: |
+          echo "app=$(node -p "Number(require('./package.json').steam?.appId) || 0")" >> "$GITHUB_OUTPUT"
+          echo "depot=$(node -p "Number(require('./package.json').steam?.depotId) || ''")" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Check the Steam setup
+        env:
+          APP: ${{ steps.ids.outputs.app }}
+          BRANCH: ${{ inputs.branch }}
+          HAS_USER: ${{ secrets.STEAM_USERNAME != '' }}
+          HAS_VDF: ${{ secrets.STEAM_CONFIG_VDF != '' }}
+        run: |
+          if [ "$APP" = "0" ]; then echo "::error::Set steam.appId in package.json to your Steam App ID."; exit 1; fi
+          if [ "$HAS_USER" != "true" ] || [ "$HAS_VDF" != "true" ]; then echo "::error::Add the STEAM_USERNAME, STEAM_PASSWORD and STEAM_CONFIG_VDF repository secrets (see steam/README.md)."; exit 1; fi
+          if [ "$BRANCH" = "default" ] || [ -z "$BRANCH" ]; then echo "::error::Choose a beta branch: Steam never sets an upload live on the default branch."; exit 1; fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: steam-depot
+          path: depot/windows
+      - uses: game-ci/steam-deploy@v3
+        with:
+          username: ${{ secrets.STEAM_USERNAME }}
+          password: ${{ secrets.STEAM_PASSWORD }}
+          configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
+          appId: ${{ steps.ids.outputs.app }}
+          firstDepotIdOverride: ${{ steps.ids.outputs.depot }}
+          buildDescription: v${{ steps.ids.outputs.version }}
+          rootPath: depot
+          depot1Path: windows
+          releaseBranch: ${{ inputs.branch }}

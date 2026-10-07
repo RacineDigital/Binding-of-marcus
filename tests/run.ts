@@ -485,6 +485,15 @@ console.log('content:', JSON.stringify(counts));
   const sig = (f: ReturnType<typeof generateFloor>) => JSON.stringify(f.rooms.map((r) => [r.type, r.bossId, r.pickups, r.npcs]));
   ok(sig(generateFloor(a, FINAL_FLOOR)) === sig(generateFloor(b, FINAL_FLOOR, profile)), 'Daily final boss and rewards ignore completed story progress');
 }
+// ------------------------------------------------------------ third-party notices cover everything shipped
+{
+  const notices = fs.readFileSync('THIRD_PARTY_NOTICES.txt', 'utf8');
+  const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+  const shipped = Object.entries(lock.packages as Record<string, any>).filter(([k, v]) => k.startsWith('node_modules/') && !v.dev && !v.devOptional && !k.includes('@types/') && !k.endsWith('undici-types'));
+  for (const [k, v] of shipped) ok(notices.includes(`${k.replace(/^.*node_modules\//, '')} ${v.version}`), `THIRD_PARTY_NOTICES.txt lists ${k} ${v.version} (run node scripts/notices.mjs)`);
+  for (const f of ['Cinzel', 'Pirata One', 'Barlow Condensed']) ok(notices.includes(`${f} (typeface)`) && notices.includes('SIL OPEN FONT LICENSE'), `THIRD_PARTY_NOTICES.txt carries the ${f} licence`);
+}
+
 // ------------------------------------------------------------ store copies never point players at GitHub for updates
 {
   const { watchForUpdates, distribution } = await import('../src/core/update');

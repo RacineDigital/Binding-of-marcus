@@ -2,6 +2,35 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.17.0: ready for Steam
+
+**Fixed: the way down after a boss.** Walking out of a boss room straight after the kill could
+leave no trapdoor to the next chapter (and no curio or reward) when you came back. The reward now
+always appears, whether you stay, leave at once, or save and quit in between.
+
+**Full controller support.** Everything in the game now works on a controller alone:
+- Button prompts show the controller in your hands: Xbox colours, PlayStation shapes, and Switch
+  Pro and Steam Deck labels, in every menu hint, the Help page and the Controls page.
+- Controller buttons can be rebound in Options -> Controls, next to the keyboard keys.
+  Menu always pauses, and the sticks always move and aim.
+- **RT swaps your pocket items** (there was no controller button for it before).
+- Seeds can be picked on a controller, a character at a time. Rebinding or choosing a seed on a
+  controller no longer waits for a keyboard that isn't there.
+- The mouse cursor hides while you play with a controller, or leave the mouse still.
+
+**Ready for Steam.** The Steam version unlocks your achievements on Steam as you earn them (and
+catches up on any you earned before), shows friends what you're doing, works with the Steam
+overlay, and leaves F12 to Steam's screenshots. Steam and itch.io copies no longer check GitHub
+for updates: the store keeps them up to date.
+
+**A steadier desktop app.** Only one copy runs at a time, so a second launch can't write over your
+saves. The window reopens at the size and place you left it (and straight into fullscreen, with no
+flash). If the game page ever crashes it reloads instead of leaving a blank window. The pause menu
+can save and quit straight to the desktop.
+
+**Also:** typing a seed no longer reopens the box when you press Enter, or leaves the page when you
+press Esc; licences for the typefaces and libraries now ship with the game.
+
 ## What's new in 3.16.0: choose your story, drawn by hand
 
 Everything from the last two updates, together in one build for the first time: new ways to play,

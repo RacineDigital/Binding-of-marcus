@@ -131,6 +131,8 @@ export class MenuSystem {
   portraits = new Map<string, PlayerSprites>();
   moths: { a: number; r: number; s: number; y: number }[] = [];
   pauseScreen: Screen | null = null;
+  /** The title scene darkens its left side for the menu (off when it's drawn as store art). */
+  sceneShade = true;
   constructor(g: Game) {
     this.g = g;
     for (let i = 0; i < 4; i++) this.moths.push({ a: Math.random() * TAU, r: 20 + Math.random() * 25, s: 0.8 + Math.random() * 1.2, y: Math.random() * 10 });
@@ -1000,6 +1002,7 @@ export class MenuSystem {
       ['Design, code, pixel art, music and sound', 'h'], ['Generated in-engine — every sprite, room, sound and song', ''], ['is painted or synthesised procedurally at runtime.', ''], ['', ''],
       ['Built with Claude Code', 'h'], ['', ''],
       ['Typefaces', 'h'], ['Cinzel — Natanael Gama (SIL OFL)', ''], ['Pirata One — Rodrigo Fuenzalida & Nicolás Massi (SIL OFL)', ''], ['Barlow Condensed — Jeremy Tribby (SIL OFL)', ''], ['', ''],
+      ['Licences', 'h'], ['The typefaces\' and libraries\' licences are in', ''], ['THIRD_PARTY_NOTICES.txt, beside the game.', ''], ['', ''],
       ['With gratitude to', 'h'], ['Every grandparent who read the scary parts quietly', ''], ['and the room-by-room roguelikes that came before.', ''], ['', ''],
       ['Thank you for reading.', 'title'],
     ];
@@ -1575,7 +1578,7 @@ function drawBeast(ctx: CanvasRenderingContext2D, d: EnemyDef, x: number, y: num
 }
 
 /** A reader standing at (0, 0), with whatever they always wear (a braid, a beard, wings if they fly). */
-function drawReader(ctx: CanvasRenderingContext2D, sp: PlayerSprites, c: CharacterDef, t: number): void {
+export function drawReader(ctx: CanvasRenderingContext2D, sp: PlayerSprites, c: CharacterDef, t: number): void {
   const body = (c.flight ? sp.fly : sp.bodyIdle).down[Math.floor(t * 1.5) % 2], head = sp.head.down[(t % 4) < 0.15 ? 'blink' : 'normal'];
   const acc = costumeFor([], [], [], !!c.flight, c.look).acc;
   const fr: Frame = { ctx, t, hx: -head.ox, hy: -10 - head.oy, hw: head.w, hflip: false, hdir: 'down', bx: -body.ox, by: -body.oy, bw: body.w, bflip: false, bdir: 'down' };

@@ -24,6 +24,9 @@
     "dist:itch": "npm run build:single && electron-builder --win zip --publish never --config.extraMetadata.distribution=itch --config.directories.output=release-itch",
     "package:itch": "bash scripts/package-itch.sh",
     "music:render": "node scripts/render-soundtrack.mjs",
+    "steam:media": "tsx scripts/steam-media.ts",
+    "steam:upload": "node scripts/steam-upload.mjs",
+    "notices": "node scripts/notices.mjs",
     "dist:linux": "npm run build:single && electron-builder --linux --publish never"
   },
   "devDependencies": {
@@ -67,6 +70,12 @@
       "package.json",
       "node_modules/**/*",
       "!node_modules/steamworks.js/**"
+    ],
+    "extraFiles": [
+      {
+        "from": "THIRD_PARTY_NOTICES.txt",
+        "to": "THIRD_PARTY_NOTICES.txt"
+      }
     ],
     "extraResources": [
       {

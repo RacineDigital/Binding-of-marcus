@@ -48,7 +48,7 @@ jobs:
         # no Steam on the runner: the game must still start, with the Steamworks library loaded and idle
         run: |
           $dir = "release-steam/win-unpacked"
-          if (-not (Test-Path "$dir/steam_api64.dll")) { Write-Error "steam_api64.dll is missing beside the exe"; exit 1 }
+          foreach ($f in @("steam_api64.dll", "THIRD_PARTY_NOTICES.txt", "resources/game/index.html", "resources/game/music/cellar.ogg")) { if (-not (Test-Path "$dir/$f")) { Write-Error "$f is missing from the depot"; exit 1 } }
           if (-not (Test-Path "$dir/resources/app.asar.unpacked/node_modules/steamworks.js/dist/win64/steamworksjs.win32-x64-msvc.node")) { Write-Error "the Steamworks module was not unpacked"; exit 1 }
           $exe = Get-ChildItem $dir -Filter "*.exe" | Select-Object -First 1
           $p = Start-Process -FilePath $exe.FullName -ArgumentList "--smoke" -Wait -PassThru -RedirectStandardOutput smoke.txt

@@ -43,6 +43,13 @@ screen), each of which can be exported to a file, imported again, or erased. Set
 between slots.
 Each save keeps a backup copy, and the game loads the backup if the main copy is ever damaged.
 
+### Controllers
+Every screen works on a controller alone. Prompts show the buttons of the controller in your hands
+(Xbox, PlayStation, Switch Pro or Steam Deck), and Options -> Controls rebinds both keyboard keys
+and controller buttons. Defaults: left stick or D-pad to move, right stick or the face buttons to
+fire, RB active item, LB cherry bomb, LT page or sweet, RT swap pocket items, View for the map,
+Menu to pause.
+
 ### Accessibility and comfort
 All in Options: **Reduce flashing** (full-screen flashes become a faint glow), **Screen shake**,
 **Hit pause**, **HUD text size** (100%, 115% or 130%), **High-contrast enemy shots** (a solid
@@ -66,7 +73,10 @@ npm run build:single               # the whole game as one self-contained HTML f
 npm run release                    # build the release zips into release/
 npm run desktop                    # build and run the desktop (Electron) version
 npm run dist:win                   # Windows installer + portable .exe in release-desktop/ (run on Windows)
-npm run dist:steam                 # unpacked Windows Steam depot (run on Windows)
+npm run dist:steam                 # unpacked Windows Steam depot (run on Windows); see steam/README.md
+npm run steam:upload               # upload the Steam depot with SteamCMD (steam/README.md)
+npm run steam:media                # store screenshots, capsules, library art and achievement icons
+npm run notices                    # regenerate THIRD_PARTY_NOTICES.txt after changing dependencies
 npm run dist:itch                  # downloadable Windows itch.io zip (run on Windows)
 npm run package:itch               # browser upload zip with soundtrack in release-itch/
 npm run dist:linux                 # Linux AppImage in release-desktop/ (run on Linux)

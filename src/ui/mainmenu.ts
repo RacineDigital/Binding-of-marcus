@@ -189,10 +189,12 @@ export function renderMenuScene(ms: MenuSystem, dt: number): void {
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = '#e2d6b8'; ctx.fillRect(-4, -5, 8, 10); ctx.fillStyle = 'rgba(70,50,40,0.4)'; for (let k = -3; k < 4; k += 2) ctx.fillRect(-3, k, 6, 0.6); ctx.restore();
     if (p.y > 220) floater = null;
   }
-  // darken the left side so the menu reads
-  const shade = ctx.createLinearGradient(0, 0, 230, 0);
-  shade.addColorStop(0, 'rgba(4,2,8,0.92)'); shade.addColorStop(0.6, 'rgba(4,2,8,0.6)'); shade.addColorStop(1, 'rgba(4,2,8,0)');
-  ctx.fillStyle = shade; ctx.fillRect(0, 0, 230, VIEW_H);
+  // darken the left side so the menu reads (not when the scene is store art, npm run steam:media)
+  if (ms.sceneShade) {
+    const shade = ctx.createLinearGradient(0, 0, 230, 0);
+    shade.addColorStop(0, 'rgba(4,2,8,0.92)'); shade.addColorStop(0.6, 'rgba(4,2,8,0.6)'); shade.addColorStop(1, 'rgba(4,2,8,0)');
+    ctx.fillStyle = shade; ctx.fillRect(0, 0, 230, VIEW_H);
+  }
 }
 
 // ---------------------------------------------------------------------------- main menu
