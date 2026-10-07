@@ -22,7 +22,10 @@ app.setName('Lost Marcus');
 // for games it launches; otherwise package.json "steam.appId". The --smoke self-test checks that the
 // library loads with Valve's public test app (480), which can't connect without a running Steam.
 const STEAM_APP_ID = Number(process.env.SteamAppId || (pkg.steam && pkg.steam.appId) || 0);
-const steam = distribution === 'steam' ? require('./steam.cjs') : null;
+// One copy at a time: launching again (a second double-click, Play pressed twice) brings the open
+// window forward instead of starting a second game that writes the same save files.
+const primary = SMOKE || app.requestSingleInstanceLock();
+const steam = distribution === 'steam' && primary ? require('./steam.cjs') : null;
 const steamStatus = steam ? steam.start({ appId: SMOKE ? (STEAM_APP_ID || 480) : STEAM_APP_ID, overlay: !SMOKE && !process.argv.includes('--no-steam-overlay') }) : null;
 if (SMOKE && steamStatus) console.log('STEAM ' + (steamStatus.running ? 'connected' : steamStatus.reason));
 
@@ -118,7 +121,8 @@ function storeButton() {
 }
 
 // The window comes back where you left it: same size and place (if that screen is still there),
-// maximized or fullscreen as it was, so there's no windowed flash before fullscreen kicks in.
+// maximized or fullscreen as it was, so there's no windowed flash before fullscreen kicks in. The
+// Steam version starts fullscreen the first time, as Steam players (and the Steam Deck) expect.
 const winStateFile = () => path.join(app.getPath('userData'), 'window.json');
 function loadWinState() {
   try {
@@ -140,7 +144,8 @@ function saveWinState() {
 function create() {
   const ws = SMOKE ? {} : loadWinState();
   win = new BrowserWindow({
-    width: 1440, height: 810, ...(ws.bounds || {}), minWidth: 640, minHeight: 360, fullscreen: !!ws.fullscreen,
+    width: 1440, height: 810, ...(ws.bounds || {}), minWidth: 640, minHeight: 360,
+    fullscreen: ws.fullscreen ?? (distribution === 'steam' && !SMOKE),
     title: 'Lost Marcus', backgroundColor: '#07050a', show: false,
     autoHideMenuBar: true, icon: path.join(__dirname, 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false },
@@ -201,9 +206,6 @@ function startUpdater() {
 ipcMain.on('update:auto', (e) => { e.returnValue = canAutoUpdate(); });
 ipcMain.on('update:install', () => { if (!canAutoUpdate()) return; try { require('electron-updater').autoUpdater.quitAndInstall(); } catch (err) { console.error(err); } });
 
-// One copy at a time: launching again (a second double-click, Play pressed twice) brings the open
-// window forward instead of starting a second game that writes the same save files.
-const primary = SMOKE || app.requestSingleInstanceLock();
 if (!primary) app.quit();
 else {
   app.on('second-instance', () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });

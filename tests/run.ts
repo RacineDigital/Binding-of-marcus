@@ -485,6 +485,33 @@ console.log('content:', JSON.stringify(counts));
   const sig = (f: ReturnType<typeof generateFloor>) => JSON.stringify(f.rooms.map((r) => [r.type, r.bossId, r.pickups, r.npcs]));
   ok(sig(generateFloor(a, FINAL_FLOOR)) === sig(generateFloor(b, FINAL_FLOOR, profile)), 'Daily final boss and rewards ignore completed story progress');
 }
+// ------------------------------------------------------------ controller families (button names and glyphs)
+{
+  const { padKindFromId, padLabel, DEFAULT_PAD, PAD_BINDABLE } = await import('../src/core/input');
+  const ids: [string, string][] = [
+    ['Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)', 'xbox'],
+    ['Xbox 360 Controller (XInput STANDARD GAMEPAD)', 'xbox'],
+    ['DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)', 'playstation'],
+    ['Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)', 'playstation'],
+    ['Pro Controller (STANDARD GAMEPAD Vendor: 057e Product: 2009)', 'nintendo'],
+    ['Steam Deck Controller (Vendor: 28de Product: 1205)', 'deck'],
+  ];
+  for (const [id, kind] of ids) ok(padKindFromId(id) === kind, `${id} is recognised as ${kind}`);
+  ok(padLabel(0, 'playstation') === 'Cross' && padLabel(0, 'nintendo') === 'B' && padLabel(4, 'deck') === 'L1' && padLabel(7, 'xbox') === 'RT', 'button names follow the controller family');
+  const bound = Object.values(DEFAULT_PAD).flat();
+  ok(new Set(bound).size === bound.length, 'no controller button does two things by default');
+  ok(!!DEFAULT_PAD.swap?.length, 'swapping pocket items has a controller button');
+  ok(!PAD_BINDABLE.includes(9) && DEFAULT_PAD.pause?.[0] === 9, 'Menu always pauses (it cannot be rebound to anything else)');
+  const G = globalThis as any, keep = G.bomDesktop;
+  G.bomDesktop = { steam: { info: () => ({ running: true, deck: true }), padType: () => 'PS4Controller' } };
+  const P = await import('../src/core/platform');
+  ok(P.steamPadKind() === 'playstation', 'on Steam, a PlayStation pad seen through Steam Input shows PlayStation buttons');
+  G.bomDesktop.steam.padType = () => 'SwitchProController'; ok(P.steamPadKind() === 'nintendo', 'a Switch Pro pad through Steam Input shows Switch buttons');
+  G.bomDesktop.steam.padType = () => null; ok(P.steamPadKind() === 'deck', 'a Steam Deck with no other pad shows Deck buttons');
+  G.bomDesktop.steam.padType = () => 'XBoxOneController'; ok(P.steamPadKind() === 'xbox', 'an Xbox pad through Steam Input shows Xbox buttons');
+  G.bomDesktop = keep;
+}
+
 // ------------------------------------------------------------ third-party notices cover everything shipped
 {
   const notices = fs.readFileSync('THIRD_PARTY_NOTICES.txt', 'utf8');

@@ -21,12 +21,12 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 /** Run electron/main.cjs against a fake Electron and return its IPC handlers. */
-function loadMain({ distribution, steamAppId = 0, env = {}, argv = [], onInstall = () => {}, steamLib } = {}) {
+function loadMain({ distribution, steamAppId = 0, env = {}, argv = [], onInstall = () => {}, steamLib, lock = true } = {}) {
   const handlers = new Map(), calls = { quit: 0, lock: 0 };
   const electron = {
     app: {
       isPackaged: true, setName() {}, on() {}, quit() { calls.quit++; }, whenReady: () => ({ then() {} }),
-      requestSingleInstanceLock() { calls.lock++; return true; }, commandLine: { appendSwitch() {} },
+      requestSingleInstanceLock() { calls.lock++; return lock; }, commandLine: { appendSwitch() {} },
     },
     ipcMain: { on: (name, fn) => handlers.set(name, fn), handle() {} },
     BrowserWindow: { getAllWindows: () => [] },
@@ -139,4 +139,21 @@ test('the Steam package config ships steam_api64.dll and unpacks the library; ot
   assert.ok(cfg.asarUnpack.some((p) => p.includes('steamworks.js')));
   assert.ok(cfg.extraFiles.some((f) => f.to === 'steam_api64.dll' && fs.existsSync(path.join(__dirname, '..', f.from))));
   assert.match(pkg.scripts['dist:steam'], /steam\/electron-builder\.cjs/);
+});
+
+test('a second copy of the game quits at once, without touching Steam', () => {
+  const f = fakeSteam();
+  const { handlers, calls } = loadMain({ distribution: 'steam', steamAppId: 1234, steamLib: f.lib, lock: false });
+  assert.equal(calls.quit, 1);
+  assert.deepEqual(f.log, []);
+  assert.equal(ipc(handlers, 'steam:info'), null);
+});
+
+test('Steam reports the controller in hand through Steam Input', () => {
+  const f = fakeSteam();
+  const steam = require('../electron/steam.cjs');
+  const lib = { ...f.lib, init: (id) => { const c = f.lib.init(id); c.input = { init() {}, getControllers: () => [{ getType: () => 'PS5Controller' }] }; return c; } };
+  const { handlers } = loadMain({ distribution: 'steam', steamAppId: 1234, steamLib: lib });
+  assert.equal(ipc(handlers, 'steam:pad'), 'PS5Controller');
+  void steam;
 });
