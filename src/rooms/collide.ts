@@ -91,6 +91,39 @@ export function moveBody(room: RoomData, b: Body, dx: number, dy: number, mode: 
   return _hit;
 }
 
+/** Would a body of radius r at (x, y) overlap a solid cell (the same inset boxes moveBody resolves against)? */
+export function circleBlocked(room: RoomData, x: number, y: number, r: number, mode: MoveMode): boolean {
+  if (mode === 'ghost') return false;
+  const c0 = Math.floor((x - r - room.ox) / TILE), c1 = Math.floor((x + r - room.ox) / TILE);
+  const r0 = Math.floor((y - r - room.oy) / TILE), r1 = Math.floor((y + r - room.oy) / TILE);
+  for (let rr = r0; rr <= r1; rr++) for (let c = c0; c <= c1; c++) {
+    if (!solidCell(room, c, rr, mode)) continue;
+    const x0 = room.ox + c * TILE + 1, y0 = room.oy + rr * TILE + 1, x1 = x0 + TILE - 2, y1 = y0 + TILE - 2;
+    const nx = Math.max(x0, Math.min(x, x1)), ny = Math.max(y0, Math.min(y, y1));
+    if ((x - nx) ** 2 + (y - ny) ** 2 < r * r - 0.01) return true;
+  }
+  return false;
+}
+
+/**
+ * Corner forgiveness. Pushing straight at the very edge of an obstacle should slip round it, not stop
+ * dead. Given a push along one axis (dir = -1 or 1 on that axis) that just got blocked, returns how far
+ * to steer sideways (signed px, the smaller way round) to clear it, or 0 when the obstacle is met
+ * squarely (more than `reach` px of overlap) and the body should simply stop.
+ */
+export function cornerSlide(room: RoomData, b: Body, axis: 0 | 1, dir: number, mode: MoveMode, reach = 8): number {
+  const ahead = (ox: number, oy: number) => axis === 0 ? circleBlocked(room, b.x + dir * 1.5 + ox, b.y + oy, b.r, mode) : circleBlocked(room, b.x + ox, b.y + dir * 1.5 + oy, b.r, mode);
+  const beside = (o: number) => axis === 0 ? circleBlocked(room, b.x, b.y + o, b.r, mode) : circleBlocked(room, b.x + o, b.y, b.r, mode);
+  if (!ahead(0, 0)) return 0;
+  for (let o = 1; o <= reach; o++) {
+    for (const s of [-1, 1]) {
+      const off = o * s;
+      if (axis === 0 ? !ahead(0, off) && !beside(off) : !ahead(off, 0) && !beside(off)) return off;
+    }
+  }
+  return 0;
+}
+
 /** Line of sight between two points for the given mode (grid sampling). */
 export function lineClear(room: RoomData, x0: number, y0: number, x1: number, y1: number, mode: MoveMode = 'shot'): boolean {
   const d = Math.hypot(x1 - x0, y1 - y0);

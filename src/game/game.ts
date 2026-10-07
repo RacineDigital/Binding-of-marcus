@@ -1,6 +1,6 @@
 // Top-level game: fixed-step loop, scenes (menu / run / death / ending), run lifecycle and global input.
 import { Renderer } from '../render/renderer';
-import { Input, DEFAULT_PAD } from '../core/input';
+import { Input, DEFAULT_PAD, type Action } from '../core/input';
 import { AudioEngine } from '../audio/audio';
 import { SaveManager } from '../save/save';
 import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
@@ -28,6 +28,9 @@ import { text, COL, FONT_TITLE, FONT_BODY } from '../ui/draw';
 import { steamAchieve, steamSync, onSteam, steamPadKind } from '../core/platform';
 
 export type Scene = 'menu' | 'run' | 'dead' | 'ending';
+/** One-shot actions kept through a short lock (room slide, title card) so a press is never lost. */
+const BUFFERED: Action[] = ['bomb', 'active', 'consumable', 'swap'];
+const BUFFER_S = 0.35;
 
 export class Game {
   r: Renderer; input: Input; audio: AudioEngine; save: SaveManager;
@@ -40,6 +43,7 @@ export class Game {
   fps = 60; private fpsAcc = 0; private fpsN = 0;
   unlockQueue: { name: string; reward: string; t: number; big: boolean }[] = [];
   dropHold = 0;
+  private buffered = new Map<Action, number>();
   perf = { update: 0, render: 0, present: 0 };
   private cv: HTMLCanvasElement;
   constructor(cv: HTMLCanvasElement) {
@@ -90,7 +94,7 @@ export class Game {
 
   pauseRun(): void {
     if (this.scene !== 'run' || !this.world || this.world.player.dead || this.world.deathT >= 0 || this.paused || this.fading) return;
-    this.paused = true; this.input.reset(); this.dropHold = 0;
+    this.paused = true; this.input.reset(); this.dropHold = 0; this.buffered.clear();
     this.menus.openPause(); this.audio.duck(0.4, 0.2);
   }
 
@@ -181,11 +185,16 @@ export class Game {
     // the key that opened the pause menu must not also count as 'back' inside it
     if (inp.wasPressed('pause')) { this.pauseRun(); return; }
     w.hud.fullMap = inp.isDown('map');
+    // A press made while the game can't take it (a room slide, a boss's title card) is kept for a
+    // moment and acted on as soon as control returns, instead of being dropped.
+    for (const a of BUFFERED) if (inp.wasPressed(a)) this.buffered.set(a, BUFFER_S);
+    for (const [a, t] of this.buffered) { if (t - dt <= 0) this.buffered.delete(a); else this.buffered.set(a, t - dt); }
     if (!w.inputLocked() && !w.player.dead) {
-      if (inp.wasPressed('bomb')) placeBomb(w);
-      if (inp.wasPressed('active')) this.useActive(false);
-      if (inp.wasPressed('consumable')) this.useConsumable();
-      if (inp.wasPressed('swap') && w.player.consumables.length > 1) { w.player.consumables.push(w.player.consumables.shift()!); this.audio.play('pageGet', { vol: 0.4 }); }
+      const take = (a: Action) => { if (!this.buffered.has(a)) return false; this.buffered.delete(a); return true; };
+      if (take('bomb')) placeBomb(w);
+      if (take('active')) this.useActive(false);
+      if (take('consumable')) this.useConsumable();
+      if (take('swap') && w.player.consumables.length > 1) { w.player.consumables.push(w.player.consumables.shift()!); this.audio.play('pageGet', { vol: 0.4 }); }
       if (inp.isDown('drop')) { this.dropHold += dt; if (this.dropHold > 0.8 && w.player.charms.length) { this.dropCharm(); this.dropHold = -99; } } else this.dropHold = 0;
     }
     snapshotWorld(w);

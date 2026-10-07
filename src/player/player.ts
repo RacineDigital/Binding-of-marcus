@@ -11,7 +11,7 @@ import { costumeFor, Costume, drawCostume, Frame } from '../art/costume';
 import { LOOKS } from '../art/look';
 import { volley, Beam, meleeSwing, Swing, SHOT_PX, beamScale, laserScale, overcharge, overchargeMul, laserColor } from '../projectiles/weapons';
 import { clamp, TAU } from '../core/math';
-import { moveBody } from '../rooms/collide';
+import { moveBody, cornerSlide } from '../rooms/collide';
 import { getItem } from '../items/registry';
 import { Side } from '../rooms/room';
 import { TILE, HURT_TOP, HURT_BOT, HURT_R } from '../core/constants';
@@ -159,7 +159,18 @@ export class Player {
     this.doorAssist(w, mv.x, mv.y, dt);
     const doors = w.openDoorList();
     const before = { x: this.x, y: this.y };
-    moveBody(w.room, this, this.vx * dt, this.vy * dt, this.flight ? 'fly' : 'walk', doors);
+    const mode = this.flight ? 'fly' : 'walk';
+    const hit = moveBody(w.room, this, this.vx * dt, this.vy * dt, mode, doors);
+    // corner forgiveness: a push along one axis that just clips an obstacle's edge slides round it
+    const blockX = hit.hx && !hit.wall, blockY = hit.hy && !hit.wall;
+    const axis: 0 | 1 | -1 = blockX && Math.abs(mv.x) > 0.7 && Math.abs(mv.y) < 0.3 ? 0 : blockY && Math.abs(mv.y) > 0.7 && Math.abs(mv.x) < 0.3 ? 1 : -1;
+    if (axis >= 0) {
+      const off = cornerSlide(w.room, this, axis as 0 | 1, Math.sign(axis === 0 ? mv.x : mv.y), mode);
+      if (off) {
+        const step = Math.sign(off) * Math.min(Math.abs(off), top * dt);
+        moveBody(w.room, this, axis === 0 ? 0 : step, axis === 0 ? step : 0, mode, doors);
+      }
+    }
     const moved = Math.hypot(this.x - before.x, this.y - before.y);
     // a puff of dust each time a foot lands (twice per walk cycle)
     const half = (WALK_FRAMES / 2) * WALK_STEP, stepBefore = Math.floor((this.walkDist + WALK_STEP) / half);
