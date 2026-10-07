@@ -26,5 +26,6 @@ contextBridge.exposeInMainWorld('bomDesktop', {
     info: () => ipcRenderer.sendSync('steam:info'),
     achieve: (id) => ipcRenderer.send('steam:achieve', String(id)),
     sync: (ids) => ipcRenderer.send('steam:sync', Array.isArray(ids) ? ids.map(String) : []),
+    padType: () => ipcRenderer.sendSync('steam:pad'),
   },
 });

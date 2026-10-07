@@ -23,19 +23,46 @@ export const DEFAULT_BINDINGS: Bindings = {
   pause: ['Escape', 'KeyP'], map: ['Tab'], drop: ['KeyR'], swap: ['KeyF'],
 };
 
-// Standard-mapping gamepad buttons per action.
-const PAD: Partial<Record<Action, number[]>> = {
+// Standard-mapping gamepad buttons per action (rebindable in Options -> Controls). The menus always
+// use A to confirm, B to go back, the D-pad or left stick to move and the bumpers to turn pages.
+export type PadBindings = Partial<Record<Action, number[]>>;
+export const DEFAULT_PAD: PadBindings = {
   shootDown: [0], shootRight: [1], shootLeft: [2], shootUp: [3],
-  bomb: [4], active: [5, 7], consumable: [6], focus: [10], pause: [9], map: [8], drop: [11],
+  bomb: [4], active: [5], consumable: [6], swap: [7], focus: [10], pause: [9], map: [8], drop: [11],
 };
+/** Buttons an action can be bound to: the face buttons, bumpers, triggers, View and the stick clicks (the D-pad stays for moving, Menu for pausing). */
+export const PAD_BINDABLE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11];
 
-const PAD_NAMES = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Back', 'Start', 'L3', 'R3'];
+/** The controller in hand, for its button names and glyphs. */
+export type PadKind = 'xbox' | 'playstation' | 'nintendo' | 'deck';
+const DPAD = ['D-pad Up', 'D-pad Down', 'D-pad Left', 'D-pad Right'];
+export const PAD_LABELS: Record<PadKind, string[]> = {
+  xbox: ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'LS', 'RS', ...DPAD],
+  playstation: ['Cross', 'Circle', 'Square', 'Triangle', 'L1', 'R1', 'L2', 'R2', 'Create', 'Options', 'L3', 'R3', ...DPAD],
+  // the standard mapping goes by position: the bottom face button is B on a Nintendo pad
+  nintendo: ['B', 'A', 'Y', 'X', 'L', 'R', 'ZL', 'ZR', '-', '+', 'LS', 'RS', ...DPAD],
+  deck: ['A', 'B', 'X', 'Y', 'L1', 'R1', 'L2', 'R2', 'View', 'Menu', 'L3', 'R3', ...DPAD],
+};
+/** Guess the family from the browser's gamepad id (vendor ids: Sony 054c, Nintendo 057e, Valve 28de). */
+export function padKindFromId(id: string): PadKind {
+  const s = id.toLowerCase();
+  if (/054c|playstation|dualsense|dualshock|ps[345] controller/.test(s)) return 'playstation';
+  if (/057e|nintendo|pro controller|joy-con/.test(s)) return 'nintendo';
+  if (/steam deck|28de-1205/.test(s)) return 'deck';
+  return 'xbox';
+}
+
 let liveInput: Input | null = null;
+/** The live input (for drawing prompts without a reference to the game). */
+export const currentInput = (): Input | null => liveInput;
+export function padLabel(b: number, kind: PadKind = liveInput?.padKind ?? 'xbox'): string { return PAD_LABELS[kind][b] ?? `Button ${b}`; }
+/** The first controller button bound to an action, if any. */
+export function padButtonOf(a: Action): number | undefined { return (liveInput?.padBindings ?? DEFAULT_PAD)[a]?.[0]; }
 
 /** What to press for an action right now: your own key binding, or the controller button when playing on a pad. */
 export function bindLabel(a: Action): string {
   const inp = liveInput;
-  if (inp?.usingPad) { const b = PAD[a]?.[0]; if (b !== undefined) return PAD_NAMES[b]; }
+  if (inp?.usingPad) { const b = padButtonOf(a); if (b !== undefined) return padLabel(b); }
   const codes = inp?.bindings[a] ?? DEFAULT_BINDINGS[a];
   return codes.length ? keyLabel(codes[0]) : 'unbound';
 }
@@ -69,6 +96,14 @@ export class Input {
   private padPressed = new Set<number>();
   padAxes = [0, 0, 0, 0];
   usingPad = false;
+  padBindings: PadBindings = structuredClone(DEFAULT_PAD);
+  /** The family of the controller in use (button names and glyphs). */
+  padKind: PadKind = 'xbox';
+  private padId = '';
+  /** Asked when a controller connects: the real family if something knows better (Steam Input, a Steam Deck). */
+  padKindHint: ((id: string) => PadKind | null) | null = null;
+  /** When set, the next controller button press is delivered here instead of to actions (for rebinding). */
+  captureNextPad: ((button: number) => void) | null = null;
   /** When set, the next keydown is delivered here instead of to actions (for rebinding). */
   captureNext: ((code: string) => void) | null = null;
   textCapture: ((key: string) => void) | null = null;
@@ -76,6 +111,8 @@ export class Input {
   private padRepeat = 0;
   private padMenuDir: MenuKey | null = null;
   anyKeyPressed = false;
+  /** When the mouse last moved or clicked (performance.now()), for hiding an idle cursor. */
+  lastMouse = 0;
   /** Mouse in virtual (480x270) coordinates; `clicked` is set for one menu update. */
   mouse = { x: -1, y: -1, moved: false, clicked: false, down: false, wheel: 0, active: false };
   /** Converts client pixels to virtual coordinates (set by the game, which knows the scaling). */
@@ -88,7 +125,8 @@ export class Input {
       this.usingPad = false;
       this.anyKeyPressed = true;
       if (this.captureNext) { const cb = this.captureNext; this.captureNext = null; cb(e.code); e.preventDefault(); return; }
-      if (this.textCapture) { this.textCapture(e.key); e.preventDefault(); }
+      // while typing (a seed), keys go to the text only: Enter/Esc end it without also acting in the menu
+      if (this.textCapture) { this.textCapture(e.key); e.preventDefault(); this.down.add(e.code); return; }
       if (!this.down.has(e.code)) {
         this.pressed.add(e.code);
         const m = this.codeToMenu(e.code);
@@ -106,8 +144,9 @@ export class Input {
     window.addEventListener('blur', () => this.reset());
     target.addEventListener('mousedown', () => target.focus());
     const pos = (e: PointerEvent | MouseEvent) => { if (this.toView) { const [x, y] = this.toView(e.clientX, e.clientY); this.mouse.x = x; this.mouse.y = y; } };
-    target.addEventListener('pointermove', (e) => { pos(e); this.mouse.moved = true; this.mouse.active = true; });
-    target.addEventListener('pointerdown', (e) => { pos(e); if (e.button === 0) { this.mouse.down = true; this.mouse.clicked = true; this.mouse.active = true; } });
+    // the mouse in use means keyboard-and-mouse prompts again
+    target.addEventListener('pointermove', (e) => { pos(e); this.mouse.moved = true; this.mouse.active = true; this.usingPad = false; this.lastMouse = performance.now(); });
+    target.addEventListener('pointerdown', (e) => { pos(e); this.usingPad = false; this.lastMouse = performance.now(); if (e.button === 0) { this.mouse.down = true; this.mouse.clicked = true; this.mouse.active = true; } });
     window.addEventListener('pointerup', () => { this.mouse.down = false; });
     target.addEventListener('wheel', (e) => { this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
     target.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -158,12 +197,18 @@ export class Input {
     this.padPrev = this.padDown;
     this.padDown = new Set();
     if (!pad) { this.padAxes = [0, 0, 0, 0]; return; }
+    if (pad.id !== this.padId) { this.padId = pad.id; this.refreshPadKind(); }
     pad.buttons.forEach((b, i) => { if (b.pressed || b.value > 0.5) this.padDown.add(i); });
     for (let i = 0; i < 4; i++) {
       const v = pad.axes[i] ?? 0;
       this.padAxes[i] = Math.abs(v) < 0.2 ? 0 : v;
     }
     for (const b of this.padDown) if (!this.padPrev.has(b)) {
+      if (this.captureNextPad) {
+        this.usingPad = true;
+        if (!PAD_BINDABLE.includes(b)) continue;
+        const cb = this.captureNextPad; this.captureNextPad = null; cb(b); continue;
+      }
       this.padPressed.add(b); this.usingPad = true; this.anyKeyPressed = true;
       const m: MenuKey | null = b === 12 ? 'up' : b === 13 ? 'down' : b === 14 ? 'left' : b === 15 ? 'right'
         : b === 0 ? 'confirm' : b === 1 ? 'back' : b === 9 ? 'back' : b === 4 ? 'tabL' : b === 5 ? 'tabR' : null;
@@ -182,16 +227,25 @@ export class Input {
     this.padMenuDir = dir;
   }
 
+  /** Work out which controller family is in hand (call again if the hint's answer may have changed). */
+  refreshPadKind(): void {
+    let k: PadKind | null = null;
+    try { k = this.padKindHint?.(this.padId) ?? null; } catch { k = null; }
+    this.padKind = k ?? padKindFromId(this.padId);
+  }
+  /** Buttons for an action; Start always pauses, so a rebind can never leave the game without a pause button. */
+  private padFor(a: Action): number[] {
+    const pb = this.padBindings[a] ?? [];
+    return a === 'pause' && !pb.includes(9) ? [...pb, 9] : pb;
+  }
   isDown(a: Action): boolean {
     for (const c of this.bindings[a]) if (this.down.has(c)) return true;
-    const pb = PAD[a];
-    if (pb) for (const b of pb) if (this.padDown.has(b)) return true;
+    for (const b of this.padFor(a)) if (this.padDown.has(b)) return true;
     return false;
   }
   wasPressed(a: Action): boolean {
     for (const c of this.bindings[a]) if (this.pressed.has(c)) return true;
-    const pb = PAD[a];
-    if (pb) for (const b of pb) if (this.padPressed.has(b)) return true;
+    for (const b of this.padFor(a)) if (this.padPressed.has(b)) return true;
     return false;
   }
   /** Called after each fixed simulation step to consume edge-triggered presses. */

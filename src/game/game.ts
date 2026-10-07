@@ -1,6 +1,6 @@
 // Top-level game: fixed-step loop, scenes (menu / run / death / ending), run lifecycle and global input.
 import { Renderer } from '../render/renderer';
-import { Input } from '../core/input';
+import { Input, DEFAULT_PAD } from '../core/input';
 import { AudioEngine } from '../audio/audio';
 import { SaveManager } from '../save/save';
 import { FIXED_DT, VIEW_W, VIEW_H } from '../core/constants';
@@ -25,7 +25,7 @@ import { Health } from '../player/health';
 import { spawnDrop } from './drops';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { text, COL, FONT_TITLE, FONT_BODY } from '../ui/draw';
-import { steamAchieve, steamSync, onSteam } from '../core/platform';
+import { steamAchieve, steamSync, onSteam, steamPadKind } from '../core/platform';
 
 export type Scene = 'menu' | 'run' | 'dead' | 'ending';
 
@@ -41,9 +41,14 @@ export class Game {
   unlockQueue: { name: string; reward: string; t: number; big: boolean }[] = [];
   dropHold = 0;
   perf = { update: 0, render: 0, present: 0 };
+  private cv: HTMLCanvasElement;
   constructor(cv: HTMLCanvasElement) {
+    this.cv = cv;
     this.r = new Renderer(cv);
     this.input = new Input(cv);
+    // on Steam the controller family comes from Steam Input (which shows every pad to the game as an Xbox one)
+    this.input.padKindHint = () => steamPadKind();
+    window.addEventListener('gamepadconnected', () => setTimeout(() => this.input.refreshPadKind(), 1500));
     this.input.toView = (cx, cy) => { const r = this.r, dpr = Math.min(window.devicePixelRatio || 1, 2); return [(cx * dpr - r.offX) / r.scale, (cy * dpr - r.offY) / r.scale]; };
     this.audio = createAudio();
     this.save = new SaveManager();
@@ -107,10 +112,21 @@ export class Game {
   applySettings(): void {
     const s = this.save.data.settings;
     this.input.bindings = structuredClone(s.bindings);
+    this.input.padBindings = { ...structuredClone(DEFAULT_PAD), ...structuredClone(s.padBindings ?? {}) };
     this.input.diagonalAim = s.diagonalAim;
     this.input.rumbleScale = s.rumble ?? 1;
     this.r.mode = s.scale; this.r.resize();
     this.audio.setVolumes(s.music, s.sfx);
+  }
+
+  /** The mouse cursor hides while a controller is in use, and when the mouse sits still during play. */
+  private cursorHidden = false;
+  private updateCursor(): void {
+    const idle = performance.now() - this.input.lastMouse > 2500;
+    const hide = this.input.usingPad || (this.scene === 'run' && !this.paused && idle);
+    if (hide === this.cursorHidden) return;
+    this.cursorHidden = hide;
+    this.cv.style.cursor = hide ? 'none' : '';
   }
 
   start(): void {
@@ -125,6 +141,7 @@ export class Game {
       this.fpsAcc += dt; this.fpsN++;
       if (this.fpsAcc >= 0.5) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; }
       this.input.pollPad(dt);
+      this.updateCursor();
       this.acc += dt;
       let steps = 0;
       const t0 = performance.now();

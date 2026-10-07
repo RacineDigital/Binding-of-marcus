@@ -3,7 +3,7 @@
 // "steam.appId", or the SteamAppId that Steam sets for games it launches). Anything that goes wrong
 // (Steam not running, the library missing, an achievement not set up in Steamworks yet) just leaves
 // the Steam features off: the game never depends on them, and keeps its own achievements in the save.
-let client = null;
+let client = null, inputReady = false;
 const status = { enabled: false, running: false, deck: false, language: '', reason: '' };
 const loaded = new Set();
 
@@ -21,8 +21,17 @@ function start({ appId, overlay = true, log = console.error, lib } = {}) {
   status.running = true; status.reason = '';
   try { status.deck = !!client.utils.isSteamRunningOnSteamDeck(); } catch { /* older client */ }
   try { status.language = String(client.apps.currentGameLanguage() || ''); } catch { /* not reported */ }
+  // Steam Input, only to ask which controller is in hand (for the right button glyphs): the game still
+  // reads the pad itself, the way Steam presents it
+  try { client.input.init(); inputReady = true; } catch { inputReady = false; }
   if (overlay) { try { sw.electronEnableSteamOverlay(); } catch (err) { log('steam: overlay unavailable', err && err.message); } }
   return status;
+}
+
+/** The Steam Input type of the first connected controller (e.g. 'PS5Controller', 'SteamDeckController'), or null. */
+function padType() {
+  if (!client || !inputReady) return null;
+  try { const c = client.input.getControllers(); return c.length ? String(c[0].getType()) : null; } catch { return null; }
 }
 
 /** Unlock one achievement (by the game's own id, which is also its Steam API name). */
@@ -74,4 +83,4 @@ function presence(p) {
 
 function info() { return { ...status }; }
 
-module.exports = { start, achieve, sync, presence, info };
+module.exports = { start, achieve, sync, presence, info, padType };

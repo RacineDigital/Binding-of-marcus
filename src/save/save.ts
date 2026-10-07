@@ -1,5 +1,5 @@
 // Persistent save data in localStorage: unlocks, collection, statistics, settings and the resumable run.
-import { Bindings, DEFAULT_BINDINGS } from '../core/input';
+import { Bindings, DEFAULT_BINDINGS, type PadBindings } from '../core/input';
 
 export interface Settings {
   music: number; sfx: number; shake: number; /** Hit pause strength: 0 off, 0.5 light, 1 full. */ hitPause?: number; scale: 'sharp' | 'integer' | 'stretch'; diagonalAim: boolean;
@@ -31,6 +31,8 @@ export interface Settings {
   seenVersion?: string;
   /** Enemy shots get a solid black ring and a thick white rim (readable without colour). */
   contrastShots?: boolean;
+  /** Controller buttons per action, where changed from the defaults. */
+  padBindings?: PadBindings;
 }
 export interface SaveData {
   version: number;

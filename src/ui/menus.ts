@@ -4,7 +4,7 @@ import { GAME_VERSION } from '../core/constants';
 import { errorCount, shareErrorLog } from '../core/errorlog';
 import type { Game } from '../game/game';
 import type { World } from '../game/world';
-import { MenuKey, ACTION_ORDER, ACTION_LABELS, keyLabel, DEFAULT_BINDINGS, Action, bindLabel } from '../core/input';
+import { MenuKey, ACTION_ORDER, ACTION_LABELS, keyLabel, DEFAULT_BINDINGS, DEFAULT_PAD, Action, bindLabel, type PadBindings } from '../core/input';
 import { text, COL, FONT_TITLE, FONT_BODY, wrap, measure, heading, panel } from './draw';
 import { VIEW_W, VIEW_H } from '../core/constants';
 import { CHARACTERS, CharacterDef } from '../player/characters';
@@ -16,7 +16,7 @@ import { itemIconCanvas } from '../art/items';
 import { describeItem } from '../items/describe';
 import { COMBOS } from '../items/preview';
 import { ACHIEVEMENTS, CHALLENGES } from '../data/achievements';
-import { formatSeed, normalizeSeed, RNG } from '../core/rng';
+import { formatSeed, normalizeSeed, randomSeed, RNG } from '../core/rng';
 import { dailySeed, dailyReader, todayKey, runScore, RunMode, MODE_NAMES } from '../game/progress';
 import { INTRO_STORY } from '../data/lore';
 import { ENDINGS, ENDING_BY_ID, EPILOGUES, EndingId } from '../data/endings';
@@ -40,6 +40,7 @@ import { BINDINGS, bindingById, type BindingId } from '../game/bindings';
 import { bindingSeal } from './bindingart';
 import { computeStats } from '../player/stats';
 import { onSteam } from '../core/platform';
+import { promptBar, drawGlyphs, glyphsFor, glyphsWidth, type Glyph } from './glyphs';
 
 export interface Screen {
   update(keys: MenuKey[], dt: number): void; render(ctx: CanvasRenderingContext2D): void; t: number; overlay?: boolean;
@@ -86,16 +87,6 @@ function keycaps(ctx: CanvasRenderingContext2D, labels: string[], rx: number, y:
     text(ctx, labels[i], x + w / 2, y - 1.3, 6.5, INK, 'center', FONT_BODY, 600, false);
     x -= 3;
   }
-}
-/** Control hints in a small dark pill along the bottom edge. */
-function hint(ctx: CanvasRenderingContext2D, s: string): void {
-  const w = measure(ctx, s, 6.5) + 16, h = 10, x = VIEW_W / 2 - w / 2, y = VIEW_H - 15;
-  ctx.save();
-  ctx.fillStyle = 'rgba(12,8,10,0.82)';
-  ctx.beginPath(); ctx.roundRect(x, y, w, h, 5); ctx.fill();
-  ctx.strokeStyle = 'rgba(201,164,106,0.35)'; ctx.lineWidth = 0.5; ctx.stroke();
-  ctx.restore();
-  text(ctx, s, VIEW_W / 2, y + 7.4, 6.5, 'rgba(230,215,195,0.85)', 'center', FONT_BODY, 600, false);
 }
 /** An open book: a worn leather cover, two foxed pages and a sewn spine. The in-game menus are pages of it. */
 function book(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, seed: number): void {
@@ -217,7 +208,7 @@ export class MenuSystem {
           text(ctx, line, VIEW_W / 2, 80 + i * 22, 10, '#e6d6bc', 'center', FONT_BODY, 400);
         });
         ctx.globalAlpha = 1;
-        hint(ctx, 'Press any key to continue');
+        promptBar(ctx, [[null, 'Press any key to continue', 'keys'], [null, 'Press any button to continue', 'pad']]);
       },
     };
   }
@@ -273,7 +264,7 @@ export class MenuSystem {
           text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${themeAt(r.seed, r.floor).name} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}`, 44, 96 + 9 * 15.5 + 2, 7, COL.dim);
         }
         ctx.globalAlpha = 1;
-        hint(ctx, `${g.input.usingPad ? 'D-pad' : 'Arrows / WASD'} to choose  ·  ${g.input.usingPad ? 'A' : 'Enter'} to select`);
+        promptBar(ctx, [['navV', 'choose'], ['confirm', 'select']]);
         text(ctx, 'v2.0', VIEW_W - 6, VIEW_H - 6, 6, 'rgba(200,190,170,0.4)', 'right');
       },
     };
@@ -307,7 +298,7 @@ export class MenuSystem {
         text(ctx, 'One UTC seed, a loaned reader, and the full item pool.', 240, 186, 7, INK2, 'center', FONT_BODY, 600, false);
         inkBlot(ctx, 240, 208, 90, 14, self.time, 'rgba(40,30,60,0.2)');
         text(ctx, 'Begin', 240, 212, 11, INK, 'center', FONT_TITLE, 400, false);
-        hint(ctx, 'Enter to begin · Esc back');
+        promptBar(ctx, [['confirm', 'begin'], ['back', 'back']]);
       },
     };
   }
@@ -317,6 +308,9 @@ export class MenuSystem {
     const self = this, g = this.g;
     let ci = Math.max(0, forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0);
     let row = 0, seed = presetSeed ?? '', editing = false;
+    // a controller can't type, so it picks the seed a character at a time (up/down change it, left/right move)
+    let padSeed: string[] | null = null, cur = 0;
+    const PICK = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let bi = challenge ? 0 : BINDINGS.indexOf(bindingById(presetBinding));
     const modes: RunMode[] = !challenge && g.save.isUnlocked('beat_final') ? ['normal', 'hard', 'endless'] : ['normal'];
     let mi = Math.max(0, modes.indexOf(presetMode));
@@ -334,16 +328,33 @@ export class MenuSystem {
       g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, modes[mi], BINDINGS[bi].id); }, 0.5);
     };
     const editSeed = () => {
+      if (g.input.usingPad) { padSeed = (seed.length === 8 ? seed : randomSeed()).split(''); cur = 0; self.sfxMove(); return; }
       editing = true; g.input.textCapture = (key) => {
         if (key === 'Enter' || key === 'Escape') { editing = false; g.input.textCapture = null; g.input.clearMenu(); return; }
         if (key === 'Backspace') seed = seed.slice(0, -1);
         else if (/^[a-zA-Z0-9]$/.test(key) && seed.length < 8) seed = normalizeSeed(seed + key);
       };
     };
+    const padSeedKeys = (keys: MenuKey[]) => {
+      const p = padSeed!;
+      for (const k of keys) {
+        if (k === 'back') { padSeed = null; g.audio.play('pageGet', { vol: 0.4 }); return; }
+        if (k === 'confirm') { seed = p.join(''); padSeed = null; g.audio.play('coin', { vol: 0.5 }); return; }
+        if (k === 'tabL') { seed = ''; padSeed = null; self.sfxMove(); return; }
+        if (k === 'tabR') { padSeed = randomSeed().split(''); self.sfxMove(); return; }
+        if (k === 'left' || k === 'right') { cur = (cur + (k === 'left' ? 7 : 1)) % 8; self.sfxMove(); }
+        if (k === 'up' || k === 'down') { const i = Math.max(0, PICK.indexOf(p[cur])); p[cur] = PICK[(i + (k === 'up' ? 1 : PICK.length - 1)) % PICK.length]; self.sfxMove(); }
+      }
+    };
     const scr: Screen = {
       t: 0,
       update(keys) {
-        if (editing) return;
+        if (editing) {
+          // a controller's B (or Start) gets out of typing too
+          if (keys.includes('back')) { editing = false; g.input.textCapture = null; }
+          return;
+        }
+        if (padSeed) { padSeedKeys(keys); return; }
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
           if (k === 'up' || k === 'down') { row = rows[(rows.indexOf(row) + (k === 'up' ? rows.length - 1 : 1)) % rows.length]; self.sfxMove(); }
@@ -363,7 +374,7 @@ export class MenuSystem {
         }
       },
       pointer(x, y, click, moved, wheel) {
-        if (editing) return;
+        if (editing || padSeed) return;
         if (x >= 26 && x < 162 && y >= 48 && y < 210) { row = 0; if (click || wheel) character(wheel || (x < 94 ? -1 : 1)); return; }
         if (!challenge && x >= 178 && x < 438 && y >= 117 && y <= 173) {
           if (moved || click) row = 1;
@@ -421,11 +432,22 @@ export class MenuSystem {
         text(ctx, b.cost, 178, 207, 7, '#b8c4c0');
         const modeName = modes[mi] === 'hard' ? 'Hard · score ×1.5' : modes[mi] === 'endless' ? 'Endless · looping chapters' : 'Normal';
         const seedText = editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : '') : seed.length === 8 ? formatSeed(seed) : 'Random';
-        for (const [x, width, r, label] of [[30, 152, 2, `Mode: ${modeName}`], [187, 142, 3, `Seed: ${seedText}`], [340, 109, 4, 'OPEN THE BOOK']] as const) {
+        for (const [x, width, r, label] of [[30, 152, 2, `Mode: ${modeName}`], [187, 142, 3, padSeed ? '' : `Seed: ${seedText}`], [340, 109, 4, 'OPEN THE BOOK']] as const) {
           panel(ctx, x, 220, width, 23, 1, row === r ? '#e5c88d' : '#405456', r === 4 ? '#36534e' : '#17272c');
-          text(ctx, label, x + width / 2, 235, r === 4 ? 8 : 7.5, row === r ? '#fff0d6' : '#c0cdc6', 'center');
+          if (label) text(ctx, label, x + width / 2, 235, r === 4 ? 8 : 7.5, row === r ? '#fff0d6' : '#c0cdc6', 'center');
         }
-        hint(ctx, editing ? 'Type an 8-character seed · Enter to confirm' : '↑/↓ focus · ←/→ choose · Enter confirm · Esc back');
+        if (padSeed) {
+          // the seed being picked: the chosen character lit, with arrows to change it
+          padSeed.forEach((c, i) => {
+            const cx = 220 + i * 11 + (i >= 4 ? 8 : 0), on = i === cur;
+            if (on) { ctx.fillStyle = 'rgba(229,200,141,0.18)'; ctx.fillRect(cx - 5, 224, 10, 15); text(ctx, '▲', cx, 223, 5, COL.gold, 'center'); text(ctx, '▼', cx, 246, 5, COL.gold, 'center'); }
+            text(ctx, c, cx, 235, 9, on ? COL.gold : '#e8e0cc', 'center', FONT_BODY, 700);
+          });
+          text(ctx, 'Seed', 196, 235, 6.5, '#a5b9b4', 'left');
+        }
+        promptBar(ctx, editing ? [[null, 'Type an 8-character seed'], ['confirm', 'done']]
+          : padSeed ? [['navV', 'change'], ['navH', 'move'], ['tabL', 'random'], ['tabR', 'roll'], ['confirm', 'done'], ['back', 'cancel']]
+          : [['navV', 'focus'], ['navH', 'choose'], ['confirm', 'confirm'], ['back', 'back']]);
       },
     };
     return scr;
@@ -460,7 +482,7 @@ export class MenuSystem {
           text(ctx, (done ? '✓ ' : '') + (locked ? '???' : c.name), 70, y, 11, locked ? '#8a7a6a' : INK, 'left', FONT_TITLE, 400, false);
           text(ctx, locked ? 'Finish the story to unlock challenges.' : c.desc + ' — ' + c.rules.join(' · '), 70, y + 11, 7, INK2, 'left', FONT_BODY, 600, false);
         });
-        hint(ctx, 'Enter to begin · Esc back');
+        promptBar(ctx, [['confirm', 'begin'], ['back', 'back']]);
       },
     };
   }
@@ -525,7 +547,7 @@ export class MenuSystem {
         wrap(ctx, un ? c.desc : 'Locked — ' + c.unlockHint, 7.5, 360).forEach((l, i) => text(ctx, l, 240, top + i * 9, 7.5, INK2, 'center', FONT_BODY, 600, false));
         if (un) text(ctx, c.passive, 240, top + 22, 7, '#4a3a6a', 'center', FONT_BODY, 600, false);
         if (un) drawMarks(ctx, g, c.id, 240, top + 41);
-        hint(ctx, pages > 1 ? 'Arrows or mouse to choose · Q/R or walk off the edge to turn the page · Enter to start · Esc back' : 'Arrows or mouse to choose · Enter to start a run · Esc back');
+        promptBar(ctx, pages > 1 ? [['nav', 'choose'], ['tabs', 'turn the page'], ['confirm', 'start'], ['back', 'back']] : [['nav', 'choose'], ['confirm', 'start a run'], ['back', 'back']]);
       },
     };
   }
@@ -642,7 +664,7 @@ export class MenuSystem {
         const found = all.filter((i) => seen.has(i.id)).length, met = beasts.filter((d) => kills[d.id]).length;
         text(ctx, tab === 'items' ? `${found} / ${all.length} curios found` : `${met} / ${beasts.length} creatures recorded`, 450, 31, 7, INK2, 'right', FONT_BODY, 600, false);
         if (tab === 'beasts') renderBeasts(ctx); else renderItems(ctx);
-        hint(ctx, `Arrows or mouse to browse · wheel to scroll · Enter or click a tab: ${tab === 'items' ? 'bestiary' : 'curios'} · Esc back`);
+        promptBar(ctx, [['nav', 'browse'], [null, 'wheel to scroll', 'keys'], [['confirm'], tab === 'items' ? 'bestiary' : 'curios'], ['back', 'back']]);
       },
     };
   }
@@ -670,7 +692,7 @@ export class MenuSystem {
           const lines = wrap(ctx, got ? desc : 'Combine two different attack styles to discover what they do together.', 7, 184);
           lines.slice(0, 2).forEach((line, j) => text(ctx, line, x, y + 11 + j * 8, 7, INK2, 'left', FONT_BODY, 600, false));
         });
-        hint(ctx, 'Discover combinations during a run · Esc back');
+        promptBar(ctx, [[null, 'Discover combinations during a run'], ['back', 'back']]);
       },
     };
   }
@@ -718,7 +740,7 @@ export class MenuSystem {
           r.items.slice(0, 8).forEach((id, j) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), 300 + j * 13, y - 4, 12, 12); });
           text(ctx, String(r.score), 444, y + 7, 9, INK, 'right', FONT_TITLE, 400, false);
         });
-        hint(ctx, '↑/↓ browse · Enter to replay that seed · Esc back');
+        promptBar(ctx, [['navV', 'browse'], ['confirm', 'replay that seed'], ['back', 'back']]);
       },
     };
   }
@@ -771,7 +793,7 @@ export class MenuSystem {
         ctx.fillStyle = 'rgba(110,50,40,0.75)'; ctx.fillRect(444, ty, 4, th);
         if (scroll > 0) text(ctx, '▲', 446, 44, 6, '#8a3a2a', 'center', FONT_BODY, 700, false);
         if (scroll < max) text(ctx, '▼ more', 448, 248, 6, '#8a3a2a', 'right', FONT_BODY, 700, false);
-        hint(ctx, '↑/↓ or mouse wheel to scroll achievements · Esc back');
+        promptBar(ctx, [['navV', 'scroll achievements'], ['back', 'back']]);
       },
     };
   }
@@ -856,29 +878,56 @@ export class MenuSystem {
           const v = o.value();
           if (v) text(ctx, (o.left && i === sel && !o.ok ? '◀ ' : '') + v + (o.right && i === sel && !o.ok ? ' ▶' : ''), 368, y, 8.5, INK, 'right', FONT_BODY, 600, false);
         });
-        hint(ctx, '↑/↓ or wheel to scroll · ←/→ adjust · Enter toggle · Esc back');
+        promptBar(ctx, [['navV', 'choose'], ['navH', 'adjust'], ['confirm', 'toggle'], ['back', 'back']]);
       },
     };
   }
+  /** Rebind controls: keyboard keys and controller buttons side by side (whichever you're holding is the one that rebinds). */
   controlsScreen(overlay: boolean): Screen {
     const self = this, g = this.g;
-    let sel = 0, waiting = false;
+    let sel = 0, waiting: 'key' | 'pad' | null = null, waitT = 0;
     const n = ACTION_ORDER.length + 1;
+    const st = () => g.save.data.settings;
+    const stick = (a: Action) => a.startsWith('move');
+    const stop = () => { waiting = null; g.input.captureNext = null; g.input.captureNextPad = null; g.input.clearMenu(); };
+    const bindPad = (a: Action, b: number) => {
+      const pb: PadBindings = { ...structuredClone(DEFAULT_PAD), ...structuredClone(st().padBindings ?? {}) };
+      // a button does one thing: take it off whatever else had it
+      for (const other of ACTION_ORDER) pb[other] = (pb[other] ?? []).filter((x) => x !== b);
+      pb[a] = [b];
+      st().padBindings = pb; g.applySettings(); g.save.markDirty(); g.audio.play('unlock');
+    };
     return {
       t: 0, overlay,
-      update(keys) {
-        if (waiting) return;
+      update(keys, dt) {
+        if (waiting) {
+          // nothing pressed for a while, or Back on the other device (B while waiting for a key, Esc while
+          // waiting for a button): leave it as it was
+          waitT -= dt;
+          if (waitT <= 0 || keys.includes('back')) stop();
+          return;
+        }
         for (const k of keys) {
           if (k === 'back') { self.pop(); return; }
           if (k === 'up' || k === 'down') { sel = (sel + (k === 'up' ? -1 : 1) + n) % n; self.sfxMove(); }
           if (k === 'confirm') {
-            if (sel === ACTION_ORDER.length) { g.save.data.settings.bindings = structuredClone(DEFAULT_BINDINGS); g.applySettings(); g.save.markDirty(); g.audio.play('coin'); continue; }
-            waiting = true;
+            if (sel === ACTION_ORDER.length) {
+              st().bindings = structuredClone(DEFAULT_BINDINGS); st().padBindings = structuredClone(DEFAULT_PAD);
+              g.applySettings(); g.save.markDirty(); g.audio.play('coin'); continue;
+            }
             const a: Action = ACTION_ORDER[sel];
+            if (g.input.usingPad) {
+              // the sticks always move and aim, and Menu always pauses
+              if (stick(a) || a === 'pause') { g.audio.play('deny'); continue; }
+              waiting = 'pad'; waitT = 5;
+              g.input.captureNextPad = (b) => { waiting = null; bindPad(a, b); g.input.clearMenu(); };
+              continue;
+            }
+            waiting = 'key'; waitT = 8;
             g.input.captureNext = (code) => {
-              waiting = false;
+              waiting = null;
               if (code !== 'Escape' || a === 'pause') {
-                const b = g.save.data.settings.bindings;
+                const b = st().bindings;
                 // remove this key from other actions to avoid conflicts
                 for (const other of ACTION_ORDER) b[other] = b[other].filter((c) => c !== code);
                 b[a] = [code];
@@ -890,21 +939,36 @@ export class MenuSystem {
           }
         }
       },
+      pointer(x, y, click, moved) {
+        if (waiting) return;
+        const i = Math.floor((y - 46 + 8) / 12.3);
+        if (x < 84 || x > 396 || i < 0 || i > ACTION_ORDER.length) return;
+        if (moved && i !== sel) { sel = i; self.sfxMove(); }
+        if (click) { sel = i; g.input.clearMenu(); (this as Screen).update(['confirm'], 0); }
+      },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 80, 8, 320, 256, 1, 6);
-        heading(ctx, 'Controls', 240, 27, 11, INK, 'center', false);
+        heading(ctx, 'Controls', 240, 25, 11, INK, 'center', false);
+        text(ctx, 'KEYBOARD', 318, 37, 6, INK2, 'right', FONT_BODY, 700, false);
+        text(ctx, 'CONTROLLER', 384, 37, 6, INK2, 'right', FONT_BODY, 700, false);
         ACTION_ORDER.forEach((a, i) => {
-          const y = 42 + i * 12.5;
-          if (i === sel) inkBlot(ctx, 240, y - 3, 290, 12, self.time, 'rgba(40,30,60,0.15)');
-          text(ctx, ACTION_LABELS[a], 98, y, 7.5, i === sel ? INK : INK2, 'left', FONT_BODY, 600, false);
-          if (waiting && i === sel) text(ctx, 'Press a key…', 382, y, 7.5, '#8a2a2a', 'right', FONT_BODY, 600, false);
-          else keycaps(ctx, g.save.data.settings.bindings[a].map(keyLabel), 382, y);
+          const y = 48 + i * 12.3;
+          if (i === sel) inkBlot(ctx, 240, y - 3, 300, 12, self.time, 'rgba(40,30,60,0.15)');
+          text(ctx, ACTION_LABELS[a], 94, y, 7.5, i === sel ? INK : INK2, 'left', FONT_BODY, 600, false);
+          if (waiting === 'key' && i === sel) text(ctx, 'Press a key…', 318, y, 7.5, '#8a2a2a', 'right', FONT_BODY, 600, false);
+          else keycaps(ctx, st().bindings[a].map(keyLabel), 318, y);
+          if (waiting === 'pad' && i === sel) { text(ctx, `Press a button… ${Math.ceil(waitT)}`, 384, y, 7.5, '#8a2a2a', 'right', FONT_BODY, 600, false); return; }
+          const pb = g.input.padBindings[a] ?? [];
+          const gs: Glyph[] = stick(a) ? [{ pad: 'lstick' }, { pad: 12 + ['moveUp', 'moveDown', 'moveLeft', 'moveRight'].indexOf(a) }]
+            : a === 'pause' ? [{ pad: 9 }] : pb.length ? pb.map((b) => ({ pad: b })) : [];
+          if (!gs.length) { text(ctx, '—', 384, y, 7.5, INK2, 'right', FONT_BODY, 600, false); return; }
+          drawGlyphs(ctx, gs, 384 - glyphsWidth(ctx, gs, 8), y - 2.6, 8);
         });
-        const y = 42 + ACTION_ORDER.length * 12.5;
+        const y = 48 + ACTION_ORDER.length * 12.3;
         if (sel === ACTION_ORDER.length) inkBlot(ctx, 240, y - 3, 200, 12, self.time, 'rgba(40,30,60,0.15)');
         text(ctx, 'Reset to defaults', 240, y, 8, INK, 'center', FONT_TITLE, 400, false);
-        hint(ctx, 'Enter then press a key to rebind · Controller: left stick move, right stick / face buttons fire, RB active, LB bomb, LT page');
+        promptBar(ctx, [['navV', 'choose'], ['confirm', g.input.usingPad ? 'rebind button' : 'rebind key'], [null, 'right stick aims too', 'pad'], ['back', 'back']]);
       },
     };
   }
@@ -951,7 +1015,7 @@ export class MenuSystem {
           text(ctx, l, VIEW_W / 2, y, k === 'title' ? 18 : k === 'h' ? 10 : 8, k === 'h' ? '#c8a878' : '#e6d6bc', 'center', k ? FONT_TITLE : FONT_BODY, k ? 400 : 600);
         });
         if (y0 + lines.length * 16 < -10) this.t = 0;
-        hint(ctx, 'Any key to return');
+        promptBar(ctx, [[null, 'Any key to return', 'keys'], [null, 'Any button to return', 'pad']]);
       },
     };
   }
@@ -960,7 +1024,9 @@ export class MenuSystem {
   private pauseMenu(): Screen {
     const self = this, g = this.g;
     const daily = g.world?.run.mode === 'daily';
-    const items = ['Resume', 'Help & controls', 'Options', daily ? "Retry today's seed" : 'Restart (same reader)', 'Save & quit to menu'];
+    // the desktop app can close straight from here (the run is saved exactly where you are)
+    const desk = (window as any).bomDesktop;
+    const items = ['Resume', 'Help & controls', 'Options', daily ? "Retry today's seed" : 'Restart (same reader)', 'Save & quit to menu', ...(desk?.quit ? ['Save & quit to desktop'] : [])];
     let sel = 0;
     const choose = () => {
       if (sel === 0) { g.resumeRun(); return; }
@@ -973,6 +1039,7 @@ export class MenuSystem {
         return;
       }
       if (sel === 4) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => g.quitToMenu(), 0.4); }
+      if (sel === 5) { g.saveSnapshot(); g.save.flush(); g.fadeTo(() => desk.quit(), 0.4); }
     };
     const BX = 36, BY = 18, BW = 408, BH = 236, L = BX + 22, R = BX + BW / 2 + 18;
     const scr: Screen = {
@@ -1014,7 +1081,7 @@ export class MenuSystem {
         ids.slice(0, 36).forEach((id, i) => ctx.drawImage(itemIconCanvas(id), R + (i % 9) * 19, 141 + Math.floor(i / 9) * 19));
         if (ids.length > 36) text(ctx, `+${ids.length - 36} more`, R + 168, 226, 6.5, INK2, 'right', FONT_BODY, 600, false);
         if (w.player.transformations.size) text(ctx, [...w.player.transformations].map((t) => TRANSFORM_EFFECTS[t]?.name ?? t).join(' · '), R, BY + BH - 20, 7, '#5a2a7a', 'left', FONT_BODY, 700, false);
-        hint(ctx, `${bindLabel('pause')} to resume`);
+        promptBar(ctx, [['navV', 'choose'], ['confirm', 'select'], ['pause', 'resume']]);
       },
     };
     return scr;
@@ -1080,7 +1147,7 @@ export class MenuSystem {
           });
         });
         text(ctx, `${spread + 1} / ${spreads()}`, BX + BW - 18, BY + BH - 10, 6.5, '#8a6a4a', 'right', FONT_BODY, 600, false);
-        hint(ctx, spread < spreads() - 1 ? '\u2190 \u2192 turn the page \u00b7 Esc close' : 'Enter or Esc to close');
+        promptBar(ctx, spread < spreads() - 1 ? [['navH', 'turn the page'], ['back', 'close']] : [['confirm', 'close']]);
       },
     };
   }
@@ -1102,18 +1169,28 @@ export class MenuSystem {
         book(ctx, BX, BY, BW, BH, 33);
         heading(ctx, 'Controls', L, 40, 11, INK, 'left', false);
         const pad = g.input.usingPad, b = g.save.data.settings.bindings, one = (a: Action) => [bindLabel(a)];
-        const rows: [string, string[]][] = pad
-          ? [['Move', ['L-stick']], ['Fire', ['R-stick', 'A B X Y']], ['Active item', ['RB']], ['Bomb', ['LB']], ['Page / sweet', ['LT']], ['Pause', ['Start']]]
-          : [
-            ['Move', [b.moveUp, b.moveLeft, b.moveDown, b.moveRight].map((c) => keyLabel(c[0] ?? ''))],
-            ['Fire', [b.shootUp, b.shootLeft, b.shootDown, b.shootRight].map((c) => keyLabel(c[0] ?? ''))],
-            ['Steady (slow, precise)', one('focus')], ['Cherry bomb', one('bomb')], ['Active item / interact', one('active')],
-            ['Page / sweet', one('consumable')], ['Swap pocket item', one('swap')], ['Drop charm (hold)', one('drop')],
-            ['Map & item info (hold)', one('map')], ['Pause', one('pause')],
-          ];
-        rows.forEach(([label, caps], i) => { const y = 58 + i * 16; text(ctx, label, L, y, 7.5, INK2, 'left', FONT_BODY, 600, false); keycaps(ctx, caps, L + 170, y + 1); });
+        const rows: [string, string[]][] = [
+          ['Move', [b.moveUp, b.moveLeft, b.moveDown, b.moveRight].map((c) => keyLabel(c[0] ?? ''))],
+          ['Fire', [b.shootUp, b.shootLeft, b.shootDown, b.shootRight].map((c) => keyLabel(c[0] ?? ''))],
+          ['Steady (slow, precise)', one('focus')], ['Cherry bomb', one('bomb')], ['Active item / interact', one('active')],
+          ['Page / sweet', one('consumable')], ['Swap pocket item', one('swap')], ['Drop charm (hold)', one('drop')],
+          ['Map & item info (hold)', one('map')], ['Pause', one('pause')],
+        ];
+        // on a controller, the buttons of the one in hand
+        const pb = (a: Action): Glyph[] => (g.input.padBindings[a] ?? []).slice(0, 1).map((x) => ({ pad: x }));
+        const padRows: Glyph[][] = [
+          [{ pad: 'lstick' }, { pad: 'dpad' }], [{ pad: 'rstick' }, ...(['shootUp', 'shootLeft', 'shootDown', 'shootRight'] as Action[]).flatMap(pb)],
+          pb('focus'), pb('bomb'), pb('active'), pb('consumable'), pb('swap'), pb('drop'), pb('map'), [{ pad: 9 }],
+        ];
+        rows.forEach(([label, caps], i) => {
+          const y = 58 + i * 16; text(ctx, label, L, y, 7.5, INK2, 'left', FONT_BODY, 600, false);
+          if (!pad) { keycaps(ctx, caps, L + 170, y + 1); return; }
+          const gs = padRows[i];
+          if (gs.length) drawGlyphs(ctx, gs, L + 170 - glyphsWidth(ctx, gs, 8.5), y - 2.4, 8.5); else text(ctx, '—', L + 170, y, 7.5, INK2, 'right', FONT_BODY, 600, false);
+        });
         text(ctx, 'Hold fire to charge beams, sprays and swings when you have them.', L, BY + BH - 24, 6.5, INK2, 'left', FONT_BODY, 600, false);
-        text(ctx, `${pad ? 'A' : 'Enter'}: change key bindings`, L, BY + BH - 13, 6.5, '#8a2a2a', 'left', FONT_BODY, 700, false);
+        const cw = drawGlyphs(ctx, glyphsFor('confirm'), L, BY + BH - 15.4, 7);
+        text(ctx, pad ? 'change controller buttons' : 'change key bindings', L + cw + 3, BY + BH - 13, 6.5, '#8a2a2a', 'left', FONT_BODY, 700, false);
         // reading the house
         heading(ctx, 'Reading the house', R, 40, 11, INK, 'left', false);
         const doors: [string, string][] = [['treasure', 'Treasure: choose one of two'], ['shop', 'Shop: spend buttons'], ['boss', 'The chapter\'s keeper'], ['library', 'Library: pages and books'],
@@ -1124,7 +1201,7 @@ export class MenuSystem {
         hearts.forEach(([sp, s], i) => { const y = 168 + i * 13; ctx.drawImage(sp.canvas, R, y - 7); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
         text(ctx, '3 unhurt combat rooms earn an unlocked chest.', R, 217, 6.5, INK2, 'left', FONT_BODY, 600, false);
         text(ctx, 'Stand by a curio to read what it does to you.', R, BY + BH - 13, 6.5, INK2, 'left', FONT_BODY, 600, false);
-        hint(ctx, `${pad ? 'A' : 'Enter'} to rebind · Esc back`);
+        promptBar(ctx, [['confirm', 'rebind'], ['back', 'back']]);
       },
     };
   }
@@ -1250,7 +1327,7 @@ export class MenuSystem {
         if (ey + 80 < VIEW_H - (next ? 28 : 14)) unlockedThisRun(ctx, w.run.flags.unlockedNow, VIEW_W / 2, ey + 58, COL.gold, '#e6d6bc');
         if (next) text(ctx, `Ending ${next.num} is still out there. ${next.clue}`, VIEW_W / 2, VIEW_H - 22, 6.5, 'rgba(220,200,160,0.8)', 'center');
         ctx.globalAlpha = 1;
-        if (this.t > 4) hint(ctx, 'Press Enter');
+        if (this.t > 4) promptBar(ctx, [['confirm', 'continue']]);
       },
     };
   }
@@ -1297,7 +1374,7 @@ export class MenuSystem {
         } else {
           for (const s2 of wrap(ctx, e.clue, 8, Wd)) { text(ctx, s2, X, y, 8, '#6a3a2a', 'left', FONT_BODY, 600, false); y += 10.5; }
         }
-        hint(ctx, '↑/↓ browse · Esc back');
+        promptBar(ctx, [['navV', 'browse'], ['back', 'back']]);
       },
     };
   }
@@ -1351,7 +1428,7 @@ export class MenuSystem {
           text(ctx, 'Not yet read', X, 56, 12, '#8a7a6a', 'left', FONT_TITLE, 400, false);
           text(ctx, where(n), X, 74, 8, '#6a3a2a', 'left', FONT_BODY, 600, false);
         }
-        hint(ctx, '↑/↓ or wheel to browse · Esc back');
+        promptBar(ctx, [['navV', 'browse'], ['back', 'back']]);
       },
     };
   }

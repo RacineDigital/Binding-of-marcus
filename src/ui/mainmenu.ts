@@ -17,6 +17,8 @@ import { CHALLENGES, ACHIEVEMENTS } from '../data/achievements';
 import { NOTES } from '../data/notes';
 import { ENDINGS } from '../data/endings';
 import { STORY_GUIDE } from '../data/storyguide';
+import { promptBar, drawGlyphs, glyphsFor } from './glyphs';
+import { padLabel } from '../core/input';
 
 // ---------------------------------------------------------------------------- scene painting
 interface SceneLayers { far: HTMLCanvasElement; mid: HTMLCanvasElement; near: HTMLCanvasElement; pages: { x: number; y: number; w: number; h: number; c: string }[] }
@@ -321,7 +323,7 @@ export function journalScreen(ms: MenuSystem): Screen {
   const entries: Entry[] = [
     { id: 'story', label: 'Story so far', icon: I.scroll, desc: () => 'A plain-language guide to the family, the book and every ending. Spoilers.', act: () => ms.push(storyGuideScreen(ms)) },
     { id: 'characters', label: 'Readers', icon: I.person, desc: () => 'Every reader you have met in the cellar.', act: () => ms.push(ms.charactersScreen()) },
-    { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press Enter inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
+    { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press ${g.input.usingPad ? padLabel(0) : 'Enter'} inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
     { id: 'synergies', label: 'Attack combinations', icon: I.chart, desc: () => `${g.save.data.discoveredCombos?.length ?? 0} attack combinations discovered.`, act: () => ms.push(ms.synergiesScreen()) },
     { id: 'history', label: 'Run History', icon: I.history, desc: () => `Your last ${Math.min(30, g.save.data.history?.length ?? 0)} stories, good and bad.`, act: () => ms.push(ms.historyScreen()) },
     { id: 'stats', label: newUnlocks(g) ? `Statistics (${newUnlocks(g)} new)` : 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements: what each one asks and what it gives.', act: () => ms.push(ms.statsScreen()) },
@@ -382,7 +384,7 @@ function storyGuideScreen(ms: MenuSystem): Screen {
         y += 9;
       }
       text(ctx, `${selected + 1} / ${STORY_GUIDE.length}`, VIEW_W - 25, VIEW_H - 11, 6.5, 'rgba(200,185,165,0.5)', 'right');
-      text(ctx, ms.g.input.usingPad ? '↑↓ browse  ·  B back' : '↑↓ browse  ·  Esc back', 24, VIEW_H - 11, 6.5, 'rgba(200,185,165,0.5)', 'left');
+      promptBar(ctx, [['navV', 'browse'], ['back', 'back']]);
     },
   };
 }
@@ -440,7 +442,7 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
       // one quiet line describing the highlighted entry
       text(ctx, entries[sel].desc(), X0 - 13, Y0 + entries.length * DY + 4, 7, 'rgba(225,210,190,0.6)', 'left', FONT_BODY, 500);
       ctx.restore();
-      if (o.back) text(ctx, g.input.usingPad ? 'B back' : 'Esc back', X0 - 13, VIEW_H - 10, 6.5, 'rgba(200,185,165,0.45)', 'left');
+      if (o.back) { const bw = drawGlyphs(ctx, glyphsFor('back'), X0 - 13, VIEW_H - 12.4, 7); text(ctx, 'back', X0 - 13 + bw + 2.5, VIEW_H - 10, 6.5, 'rgba(200,185,165,0.55)', 'left'); }
       if (o.logo) {
         const goal = nextGoal(g);
         text(ctx, goal, 24, VIEW_H - 9, 6.5, 'rgba(230,205,170,0.62)', 'left', FONT_BODY, 600);
@@ -529,7 +531,7 @@ export function profilesScreen(ms: MenuSystem): Screen {
       });
       if (msgT > 0) text(ctx, msg, VIEW_W / 2, 222, 8, COL.gold, 'center');
       text(ctx, store.kind === 'file' ? 'Saves are files in your app-data folder and are written every room.' : 'Saves live in this browser. Export a backup to keep them safe.', VIEW_W / 2, 238, 6.5, COL.dim, 'center');
-      text(ctx, '←/→ choose · ↑/↓ switch row · Enter select · Esc back', VIEW_W / 2, VIEW_H - 8, 6.5, 'rgba(220,205,185,0.65)', 'center');
+      promptBar(ctx, [['navH', 'choose'], ['navV', 'switch row'], ['confirm', 'select'], ['back', 'back']]);
     },
   };
 }

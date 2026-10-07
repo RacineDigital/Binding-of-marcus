@@ -93,6 +93,7 @@ ipcMain.on('app:distribution', (e) => { e.returnValue = distribution || 'github'
 ipcMain.on('steam:info', (e) => { e.returnValue = steam ? steam.info() : null; });
 ipcMain.on('steam:achieve', (_e, id) => { if (steam) steam.achieve(id); });
 ipcMain.on('steam:sync', (_e, ids) => { if (steam) steam.sync(ids); });
+ipcMain.on('steam:pad', (e) => { e.returnValue = steam ? steam.padType() : null; });
 
 const discord = new DiscordPresence(SMOKE ? '' : DISCORD_CLIENT_ID);
 /** The game reports what you're doing; this turns it into a Discord activity. */
