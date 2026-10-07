@@ -295,10 +295,12 @@ const bookbinder: EnemyDef = {
 // A towering mass of ink that keeps rewriting itself. Past three quarters of its health it starts
 // taking the shapes of the stories Marcus already finished (any boss, inked over), fighting the way
 // they fought; at the end it drops every shape and throws everything at once.
-/** The two final bosses share their moves; this picks shot shapes, colours and summons. */
-interface FinalStyle { main: string; alt: string; light: string; creep: string; glow: string; tint: string; summons: string[]; forms: string }
-const INK_STYLE: FinalStyle = { main: 'inkE', alt: 'dark', light: 'holy', creep: '#14112a', glow: '#8a7aff', tint: '#1a1440', summons: ['blot', 'pagewraith', 'voideye', 'mirrorshade'], forms: 'rewrites itself as' };
-const LIGHT_STYLE: FinalStyle = { main: 'holy', alt: 'wax', light: 'star', creep: '#e8d8a0', glow: '#ffe8a0', tint: '#fff2c8', summons: ['cherubmoth', 'choirboy', 'censer', 'penitent'], forms: 'remembers' };
+/** The two final bosses share their moves; this picks shot shapes, colours and summons.
+ *  pace scales how fast its shots fly; rest scales the pauses between its attacks. */
+interface FinalStyle { main: string; alt: string; light: string; creep: string; glow: string; tint: string; summons: string[]; forms: string; pace: number; rest: number }
+// the Unwritten is eased a little: shots 15% slower, pauses between attacks 20% longer
+const INK_STYLE: FinalStyle = { main: 'inkE', alt: 'dark', light: 'holy', creep: '#14112a', glow: '#8a7aff', tint: '#1a1440', summons: ['blot', 'pagewraith', 'voideye', 'mirrorshade'], forms: 'rewrites itself as', pace: 0.85, rest: 1.2 };
+const LIGHT_STYLE: FinalStyle = { main: 'holy', alt: 'wax', light: 'star', creep: '#e8d8a0', glow: '#ffe8a0', tint: '#fff2c8', summons: ['cherubmoth', 'choirboy', 'censer', 'penitent'], forms: 'remembers', pace: 1, rest: 1 };
 const styleOf = (e: Enemy): FinalStyle => (e.def.id === 'author' ? LIGHT_STYLE : INK_STYLE);
 
 type Move = 'spray' | 'charge' | 'rings' | 'beams' | 'rain' | 'drops' | 'spiral' | 'summon' | 'tendrils' | 'pages' | 'flower' | 'wall' | 'seekers' | 'cross';
@@ -321,7 +323,7 @@ const PHASE_LINES = ['', 'It starts rewriting itself.', 'It writes faster.', 'Th
 
 function startMove(e: Enemy, w: World, m: Move): void {
   e.data.move = m; e.data.mt = 0; e.data.mk = 0;
-  const fast = 1 + e.data.phase * 0.06;
+  const fast = (1 + e.data.phase * 0.06) * styleOf(e).pace;
   e.data.fast = fast;
   if (m === 'charge') { e.data.ca = angleTo(e.x, e.y, w.player.x, w.player.y); telegraph(w, e.x + Math.cos(e.data.ca) * 50, e.y + Math.sin(e.data.ca) * 50, 18, 0.5, '#8a7aff'); }
   if (m === 'beams') {
@@ -379,7 +381,7 @@ function runMove(e: Enemy, w: World, dt: number): boolean {
       ringShot(e, w, n, 80 * fast, off, { shape: S.light, r: 3.5 }); ringShot(e, w, n, 125 * fast, off + Math.PI / n, { shape: S.alt, r: 3 });
       w.audio.play('chime', { x: e.x, vol: 0.3, pitch: 0.8 + i * 0.1 });
     }); return t > 1.8;
-    case 'seekers': at([0.3, 0.9], () => { for (let i = 0; i < N(5); i++) shoot(e, w, (i / N(5)) * TAU + Math.random() * 0.3, 70, { shape: S.light, r: 4, homing: 1.4, range: 520 }); w.audio.play('secret', { x: e.x, vol: 0.3 }); }); return t > 1.8;
+    case 'seekers': at([0.3, 0.9], () => { for (let i = 0; i < N(5); i++) shoot(e, w, (i / N(5)) * TAU + Math.random() * 0.3, 70 * S.pace, { shape: S.light, r: 4, homing: 1.4, range: 520 }); w.audio.play('secret', { x: e.x, vol: 0.3 }); }); return t > 1.8;
     case 'summon': at([0.4], () => { const n = w.enemies.filter((x) => !x.dead && !x.isBoss).length; for (let i = 0; i < Math.max(0, 4 - n); i++) { const p = randomFloorPoint(w, 80); const k = w.spawnEnemy(S.summons[i % S.summons.length], p.x, p.y, false); if (k) k.noDrop = true; } w.audio.play('secret', { x: e.x, vol: 0.5 }); }); return t > 1;
     case 'tendrils': at([0.3, 0.7, 1.1, 1.5], (i) => { const a = angleTo(e.x, e.y, w.player.x, w.player.y); for (const s2 of e.data.phase >= 3 ? [-0.6, -0.2, 0.2, 0.6] : [-0.3, 0.3]) tendril(w, e.x, e.y, a + s2 + (i - 1) * 0.15, 14, 15, { shape: S.main }); w.audio.play('rumble', { x: e.x, vol: 0.4 }); }); return t > 2.0;
     case 'pages': at([0.3, 0.5, 0.7, 0.9, 1.1], () => { const a = aimAngle(e, w); for (const s2 of [-1, 1]) shoot(e, w, a - s2 * 0.8, 125 * fast, { curve: s2 * 1.4, shape: S.light, r: 3.5, range: 420 }); w.audio.play('pageGet', { x: e.x, vol: 0.5 }); }); return t > 1.6;
@@ -410,9 +412,9 @@ function rewrite(e: Enemy, w: World): void {
   const def = getEnemy(e.data.form);
   w.hud.toast(`It ${S.forms} ${def?.name ?? 'something you remember'}.`, 1.6);
 }
-const finalBoss = (id: string, name: string, desc: string, gore: string, glow: string, paint: (p: any, s: any) => void): EnemyDef => ({
+const finalBoss = (id: string, name: string, desc: string, gore: string, glow: string, paint: (p: any, s: any) => void, hp = 11000): EnemyDef => ({
   id, name, desc, boss: true, borrows: Object.keys(FORMS),
-  hp: 11000, r: 24, speed: 0, role: 'boss', cost: 0, hitY: 44, mass: 60, noKnock: true, gore, goreDecal: gore, light: [120, glow],
+  hp, r: 24, speed: 0, role: 'boss', cost: 0, hitY: 44, mass: 60, noKnock: true, gore, goreDecal: gore, light: [120, glow],
   sprites: () => rig({ w: 96, h: 104, paint, phases: 1, extra: { rage: [0, 1, 2, 3, 4, 5].map((f) => ({ x: { rage: 1 }, jaw: 0.5 + Math.abs(Math.sin(f)) * 0.5, breath: Math.sin(f * 1.05), t: f / 6 })) }, fps: { rage: 8 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.data.phase = 0; },
   update(e, w, dt) {
@@ -437,18 +439,18 @@ const finalBoss = (id: string, name: string, desc: string, gore: string, glow: s
     // bullet-hell layers under everything else, added as the fight goes on
     if (d.phase >= 2) {
       d.l1 = (d.l1 ?? 0) - dt;
-      if (d.l1 <= 0) { d.l1 = d.phase >= 6 ? 0.28 : 0.42; d.la = (d.la ?? 0) + 0.41; const k = d.phase >= 5 ? 3 : 2; for (let i = 0; i < k; i++) shoot(e, w, d.la + (i / k) * TAU, 72, { shape: S.alt, r: 3 }); }
+      if (d.l1 <= 0) { d.l1 = (d.phase >= 6 ? 0.28 : 0.42) * S.rest; d.la = (d.la ?? 0) + 0.41; const k = d.phase >= 5 ? 3 : 2; for (let i = 0; i < k; i++) shoot(e, w, d.la + (i / k) * TAU, 72 * S.pace, { shape: S.alt, r: 3 }); }
     }
     if (d.phase >= 4) {
       d.l2 = (d.l2 ?? 0.2) - dt;
-      if (d.l2 <= 0) { d.l2 = 0.5; d.lb = (d.lb ?? 0) - 0.33; for (let i = 0; i < 3; i++) shoot(e, w, d.lb + (i / 3) * TAU, 95, { shape: S.light, r: 3 }); }
+      if (d.l2 <= 0) { d.l2 = 0.5 * S.rest; d.lb = (d.lb ?? 0) - 0.33; for (let i = 0; i < 3; i++) shoot(e, w, d.lb + (i / 3) * TAU, 95 * S.pace, { shape: S.light, r: 3 }); }
     }
     if (d.phase >= 6) {
       d.l3 = (d.l3 ?? 4) - dt;
-      if (d.l3 <= 0) { d.l3 = 6.5; const pl = w.player; for (let i = 0; i < 6; i++) { const x = pl.x + (Math.random() - 0.5) * 120, y = pl.y + (Math.random() - 0.5) * 80; if (inRoom(w, x, y)) dropAt(w, x, y, i * 0.1, { shape: S.main, r: 5 }); } }
+      if (d.l3 <= 0) { d.l3 = 6.5 * S.rest; const pl = w.player; for (let i = 0; i < 6; i++) { const x = pl.x + (Math.random() - 0.5) * 120, y = pl.y + (Math.random() - 0.5) * 80; if (inRoom(w, x, y)) dropAt(w, x, y, i * 0.1, { shape: S.main, r: 5 }); } }
     }
     if (d.move) {
-      if (runMove(e, w, dt)) { d.move = null; d.idleT = Math.max(0.15, 0.8 - d.phase * 0.09) + Math.random() * 0.25; }
+      if (runMove(e, w, dt)) { d.move = null; d.idleT = (Math.max(0.15, 0.8 - d.phase * 0.09) + Math.random() * 0.25) * S.rest; }
       return;
     }
     // circle Marcus at a distance, never quite still (the arena is bigger than the screen)
@@ -484,7 +486,7 @@ const finalBoss = (id: string, name: string, desc: string, gore: string, glow: s
     w.r.addGlow(sx, sy - 50, 80, d.phase >= 3 ? '#ff3050' : styleOf(e).glow, e.def.id === 'author' ? 0.08 : 0.2);
   },
 });
-const unwritten = finalBoss('unwritten', 'The Unwritten', 'Everything the book left out, writing itself in. It wants the last word.', '#14112a', '#8a7aff', G.paintUnwritten);
+const unwritten = finalBoss('unwritten', 'The Unwritten', 'Everything the book left out, writing itself in. It wants the last word.', '#14112a', '#8a7aff', G.paintUnwritten, 6600);   // 40% less health than the Author's 11000
 
 const author = finalBoss('author', 'The Author', 'Grandfather, as he was when he first picked up the pen. He would like a better ending.', '#e8d8a0', '#ffe8a0', G.paintAuthor);
 
