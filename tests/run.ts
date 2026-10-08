@@ -437,7 +437,7 @@ console.log('content:', JSON.stringify(counts));
   ok(slotBreakChance(0) === 0.05 && Math.abs(slotBreakChance(1) - 0.07) < 1e-9 && Math.abs(slotBreakChance(10) - 0.25) < 1e-9, 'slot machines: 5% to break, 2% more each pull');
   ok(shopLevelFor(0) === 0 && shopLevelFor(49) === 0 && shopLevelFor(50) === 1 && shopLevelFor(149) === 2 && shopLevelFor(9999) === MAX_SHOP_LEVEL, 'a shop level for every 50 buttons donated, capped');
   ok(shopPrice(15, 0) === 15 && shopPrice(15, 2) < 15 && shopPrice(15, 4) < shopPrice(15, 2) && shopPrice(1, 4) === 1, 'shop discounts apply and never go below a button');
-  ok(shopCurios(0, 0) === 2 && shopCurios(0, 1) === 3 && shopCurios(0, 3) === 4 && shopCurios(5, 5) === 4, 'donations add curios to the shop, up to four');
+  ok(shopCurios(0, 0) === 1 && shopCurios(2, 0) === 2 && shopCurios(0, 1) === 2 && shopCurios(0, 3) === 3 && shopCurios(5, 5) === 4, 'donations add curios to the shop, up to four');
 }
 // ------------------------------------------------------------ shot size widens every beam and laser
 {

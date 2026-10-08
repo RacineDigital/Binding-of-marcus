@@ -1040,13 +1040,13 @@ function openChest(w: World, p: Pickup): void {
   if (kind === 'crimson') {
     const r = rng.next();
     if (r < 0.3) { w.hurtPlayer(1, 'a crimson box', { ignoreIframes: false }); w.fx.spray(p.x, p.y, 6, -Math.PI / 2, 1, 10, '#a01e2a'); }
-    else if (r < 0.5) spawnPedestal(w, p.x, p.y, w.run.pools.roll('curse'), 'deal');
+    else if (r < 0.42) spawnPedestal(w, p.x, p.y, w.run.pools.roll('curse'), 'deal');
     else { const n = rng.int(2, 3); for (let i = 0; i < n; i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'crimson') ?? 'ink', p.x, p.y, true, rng); }
   } else if (kind === 'reliquary') {
     spawnPedestal(w, p.x, p.y, w.run.pools.roll(rng.chance(0.5) ? 'treasure' : 'blessing'), 'treasure');
   } else {
     const n = kind === 'locked' ? rng.int(2, 4) : rng.int(1, 3);
-    if (kind === 'locked' && rng.chance(0.12)) { spawnPedestal(w, p.x, p.y, w.run.pools.roll('treasure'), 'normal'); return; }
+    if (kind === 'locked' && rng.chance(0.06)) { spawnPedestal(w, p.x, p.y, w.run.pools.roll('treasure'), 'normal'); return; }
     for (let i = 0; i < n; i++) spawnDrop(w, rollDropKind(rng, pl.stats.luck, 'chest') ?? 'button', p.x, p.y, true, rng);
   }
   w.after(2.5, () => { p.dead = true; });

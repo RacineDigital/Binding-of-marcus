@@ -70,7 +70,7 @@ export const ECHO_ITEMS: ItemDef[] = [
       w.fx.ring(pl.x, pl.y - 10, 30, 4, '#80c0ff', 0.4);
     } },
     icon: rewindTape, lore: 'Grandad taped everything off the telly. This one is labelled MARCUS – DO NOT RECORD OVER.' },
-  { id: 'grandads_radio', name: 'Grandad\'s Radio', kind: 'passive', quality: 2, pools: { treasure: 0.9 }, unlock: 'transform_crew',
+  { id: 'grandads_radio', name: 'Grandad\'s Radio', kind: 'passive', quality: 1, pools: { treasure: 0.9 }, unlock: 'transform_crew',
     pickup: 'Static every now and then', effect: ['Luck +1.', 'Every 9 seconds in a fight the radio crackles: every enemy in the room is confused for a moment.'],
     stats: { luck: 1 },
     hooks: { onTick: (w, dt) => {

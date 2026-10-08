@@ -637,7 +637,7 @@ export class World {
         if (k === Ob.Marked) {
           this.audio.play('secret');
           this.fx.stars(p.x, p.y - 6, 10, '#fff0a0', 60);
-          const drop = rng.weighted(['chest:tin', 'button5', 'bomb2', 'key', 'page', 'wax', 'item'], (x) => ({ 'chest:tin': 3, button5: 3, bomb2: 2, key: 2, page: 2, wax: 2, item: 0.4 } as any)[x]);
+          const drop = rng.weighted(['chest:tin', 'button5', 'bomb2', 'key', 'page', 'wax', 'item'], (x) => ({ 'chest:tin': 3, button5: 3, bomb2: 2, key: 2, page: 2, wax: 2, item: 0.2 } as any)[x]);
           if (drop === 'item') flow.spawnPedestal(this, p.x, p.y, this.run.pools.roll('secret'), 'normal');
           else if (drop) spawnDrop(this, drop, p.x, p.y);
           this.run.stats.secretsFound++;

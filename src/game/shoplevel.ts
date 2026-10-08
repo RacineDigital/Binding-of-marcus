@@ -21,5 +21,5 @@ export function shopPrice(base: number, level: number): number {
 }
 /** Curios for sale in a shop at this level (the rest of the counter is pickups). */
 export function shopCurios(floorIndex: number, level: number): number {
-  return Math.min(4, (floorIndex >= 2 ? 3 : 2) + (level >= 1 ? 1 : 0) + (level >= 3 ? 1 : 0));
+  return Math.min(4, (floorIndex >= 2 ? 2 : 1) + (level >= 1 ? 1 : 0) + (level >= 3 ? 1 : 0));
 }

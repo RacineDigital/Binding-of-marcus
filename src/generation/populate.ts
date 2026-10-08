@@ -412,8 +412,8 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'secret': {
       const r = rng.next();
-      if (r < 0.3) item(cx, cy, 'secret', 'normal');
-      else if (r < 0.65) for (let i = 0; i < rng.int(4, 7); i++) pk(rng.pick(['button', 'button', 'button5', 'key', 'bomb']), cx + rng.int(-40, 40), cy + rng.int(-24, 24));
+      if (r < 0.15) item(cx, cy, 'secret', 'normal');
+      else if (r < 0.6) for (let i = 0; i < rng.int(4, 7); i++) pk(rng.pick(['button', 'button', 'button5', 'key', 'bomb']), cx + rng.int(-40, 40), cy + rng.int(-24, 24));
       else if (r < 0.85) { pk('chest:tin', cx - 30, cy); pk('chest:locked', cx + 30, cy); }
       else { pk('heart', cx - 20, cy); pk('wax', cx, cy); pk('ink', cx + 20, cy); }
       break;
@@ -421,7 +421,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     case 'supersecret': {
       // on the hospital path, the bottom half of Grandfather's letter is hidden down here
       if (HOSPITAL_THEMES.includes(floor.theme.id)) { pk('item', cx, cy, { id: 'letter_bottom', style: 'normal' }); pk('heart', cx - 30, cy + 10); break; }
-      if (rng.chance(0.7)) item(cx, cy, rng.chance(0.5) ? 'secret' : 'deal', 'normal');
+      if (rng.chance(0.45)) item(cx, cy, rng.chance(0.5) ? 'secret' : 'deal', 'normal');
       else for (let i = 0; i < 4; i++) pk(rng.pick(['heart', 'wax', 'ink']), cx + (i - 1.5) * 20, cy);
       break;
     }
@@ -450,7 +450,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     case 'cursed': {
       const r = rng.next();
       if (r < 0.45) { pk('chest:crimson', cx - 26, cy); pk(rng.chance(0.5) ? 'chest:crimson' : 'chest:tin', cx + 26, cy); }
-      else if (r < 0.75) {
+      else if (r < 0.65) {
         item(cx, cy, 'curse', 'deal');
         const sl = [{ c: 2, r: 2, ch: 'M' }, { c: 12, r: 6, ch: 'M' }, { c: 2, r: 6, ch: 'F' }, { c: 12, r: 2, ch: 'F' }];
         room.spawns = castEnemies(room, floor, rng, sl, 1.3, run.mode === 'hard');
@@ -463,7 +463,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'library': {
-      const n = rng.chance(0.4) ? 2 : 1;
+      const n = rng.chance(0.15) ? 2 : 1;
       for (let i = 0; i < n; i++) { const id = run.pools.roll('library', prng); pk('item', cx + (n === 1 ? 0 : (i - 0.5) * 60), cy, { id, style: 'shop', price: 15, shop: true }); }
       for (const [c, r] of [[1, 1], [2, 1], [12, 1], [13, 1]]) room.setOb(c, r, Ob.Heap, 12, 0);
       break;
@@ -475,7 +475,7 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
       break;
     }
     case 'deal': {
-      const n = rng.int(1, 2) + (fi >= 4 ? 1 : 0);
+      const n = 1 + (fi >= 3 && rng.chance(0.4) ? 1 : 0);
       for (let i = 0; i < n; i++) { const id = run.pools.roll('deal', prng); pk('item', cx + (i - (n - 1) / 2) * 56, cy, { id, style: 'deal', deal: dealPrice(id) }); }
       for (const [c, r] of [[3, 2], [11, 2]]) room.setOb(c, r, Ob.Fire, 12, 3);
       break;

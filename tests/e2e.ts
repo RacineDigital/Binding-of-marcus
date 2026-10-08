@@ -120,7 +120,10 @@ const D = 'window.__bomDebug';
 
   console.log('item combinations');
   for (const build of [['printing_plate', 'creasing_iron', 'marrow', 'spectacles'], ['grandpas_pipe', 'marginalia', 'copper_filament', 'red_thread'], ['spilt_inkwell', 'ink_pact', 'bookends', 'paper_cut', 'overdue_notice', 'gilt_edge', 'reading_lamp', 'running_shoes', 'hot_cocoa', 'four_leaf']]) {
-    await ev(page, `(() => { const d = ${D}, w = d.world; d.god(); for (const e of w.enemies) e.hp = 0; for (const id of ${JSON.stringify(build)}) d.give(id); w.player.buttons = 25; for (let i = 0; i < 6; i++) d.spawn('valvehead'); })()`);
+    await ev(page, `(() => { const d = ${D}, w = d.world; d.god(); for (const e of w.enemies) e.hp = 0; for (const id of ${JSON.stringify(build)}) d.give(id); w.player.buttons = 25;
+      // level with Marcus, both sides and within reach: the test fires left and right, so a random spawn
+      // off that line could leave the build nothing to hit
+      const p = w.player; for (let i = 0; i < 6; i++) d.spawn('valvehead', p.x + (i % 2 ? -1 : 1) * (50 + (i >> 1) * 22), p.y + ((i >> 1) - 1) * 6); })()`);
     await page.waitForFunction(`!${D}.world.inputLocked() && !${D}.world.transition`, null, { timeout: 8000 }).catch(() => {});
     const hp0 = await ev<number>(page, `${D}.world.enemies.filter((e) => !e.dead).reduce((s, e) => s + e.hp, 0)`);
     await page.keyboard.down('ArrowRight'); await page.waitForTimeout(1500); await page.keyboard.up('ArrowRight');

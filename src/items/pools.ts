@@ -4,6 +4,9 @@ import type { PoolId, ItemDef } from './types';
 import { ALL_ITEMS, FALLBACK_ITEM, getItem } from './registry';
 import { itemRole } from './choice';
 
+/** How often an item of each quality comes up, relative to quality 2. */
+export const QUALITY_WEIGHT = [2, 1.6, 1, 0.55, 0.3];
+
 export class ItemPools {
   private rng: RNG;
   private taken = new Set<string>();
@@ -21,10 +24,14 @@ export class ItemPools {
     const second = this.roll('treasure', rng, other ? (i) => itemRole(i) !== role : undefined);
     return [first, second];
   }
-  /** Roll an item from a pool. qualityBias raises the odds of higher quality items. */
+  /**
+   * Roll an item from a pool. Quality sets how common an item is, as in the games this one grew up on:
+   * the weak and odd ones turn up all the time, the great ones rarely. qualityBias raises the odds of
+   * quality 3 and 4 (deals, boss rewards, upgraded shops).
+   */
   roll(pool: PoolId, rng: RNG = this.rng, filter?: (i: ItemDef) => boolean, qualityBias = 0): string {
     const cands = ALL_ITEMS.filter((i) => (i.pools[pool] ?? 0) > 0 && !this.taken.has(i.id) && (!i.unlock || this.unlocked(i.unlock)) && (!filter || filter(i)));
-    const pick = rng.weighted(cands, (i) => (i.pools[pool] ?? 0) * (i.quality >= 3 ? 1 + qualityBias : 1) * (i.quality === 4 ? 0.6 : 1));
+    const pick = rng.weighted(cands, (i) => (i.pools[pool] ?? 0) * QUALITY_WEIGHT[i.quality] * (i.quality >= 3 ? 1 + qualityBias : 1));
     if (!pick) {
       // pool exhausted: borrow from the treasure pool, then fall back
       if (pool !== 'treasure') return this.roll('treasure', rng, filter, qualityBias);

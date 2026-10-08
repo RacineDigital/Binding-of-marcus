@@ -390,6 +390,26 @@ The title menu keeps Continue, New Run, Daily Run, (Challenges once open), Journ
 Quit; What's new moved into the Journal (it still opens by itself after an update), and the
 footer is down to the next goal and the version.
 
+### Item tiers and item flow (after 3.17.4)
+
+Owner's direction: "take a page out of Isaac's book": lots of weak items, rare great ones, and
+fewer items overall. Measured with `tests/tools/itemflow.ts` (headless, 200 seeds x 6 floors).
+
+- **Rarity follows quality** (`QUALITY_WEIGHT` in `src/items/pools.ts`): x2 / x1.6 / x1 / x0.55 / x0.3
+  for quality 0-4. Treasure rolls went from Q0-1 0%, Q2 60%, Q3 38%, Q4 2% to Q0 26%, Q1 29%,
+  Q2 33%, Q3 10.5%, Q4 1.2%. Shop rolls: Q1 30% -> Q0-1 76%.
+- **Re-tiered ~90 items** with smaller numbers (every changed number also changed in its text):
+  17 to quality 0, ~45 to quality 1, ~20 quality 3 down to 2, Lamp Lure loses its damage, The Debt
+  +2.5 -> +2. Eight junk items moved from the shop into the treasure pool so treasure rooms can
+  roll junk (each item still lives in exactly one pool).
+- **Fewer items**: free items offered per floor 2.9-3.3 -> 2.5-3.0 (treasure and boss still one
+  each; everything else about 40% less); shop stock 2-3 -> 1-2 (upgrades still add up to 4).
+  Secret room item 30% -> 15%, super-secret 70% -> 45%, two-item library 40% -> 15%, deal rooms
+  one item (a second sometimes from Floor IV), cursed room item 30% -> 20%, locked chest item
+  12% -> 6%, crimson box item 20% -> 12%, marked rock item weight halved.
+- Not yet re-measured: how hard the later floors feel with weaker builds. Boss regression tests use
+  fixed builds, so they still pass; the run bot is too slow to re-run here.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
