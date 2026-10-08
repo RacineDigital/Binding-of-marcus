@@ -124,6 +124,8 @@ export interface InkState {
 interface InkRuntime { webs: Web[]; shards: Shard[]; bursts: number; hymnT: number; room: number }
 
 export const METER_MAX = 16;
+import { INK } from './inkflag';
+export { INK };
 const rt = new WeakMap<World, InkRuntime>();
 const runtime = (w: World): InkRuntime => { let r = rt.get(w); if (!r) rt.set(w, (r = { webs: [], shards: [], bursts: 0, hymnT: 0, room: -1 })); return r; };
 
@@ -149,6 +151,8 @@ export const brimming = (w: World): boolean => inkState(w).meter >= METER_MAX;
 
 /** The player's profile and stat contributions from the essences held (read by Player.recompute). */
 export function inkMods(w: World): { attack?: ProfilePart; stats?: StatMods }[] {
+  if (!INK.on) return [];
+
   const out: { attack?: ProfilePart; stats?: StatMods }[] = [];
   for (const s of inkState(w).slots) {
     const d = INKLINGS[s.id]; if (!d) continue;
@@ -206,6 +210,8 @@ export function canTakeInk(w: World, id: string): boolean {
 
 /** Every kill: fill the meter, leave Inklings, and run the essences' on-kill effects. */
 export function inkOnKill(w: World, e: Enemy, quiet: boolean): void {
+  if (!INK.on) return;
+
   const s = inkState(w);
   if (e.isBoss && !quiet && !e.friendly) { s.meter = METER_MAX; return; }
   const id = inkOf(e);
@@ -232,6 +238,8 @@ function spawnInkling(w: World, id: string, x: number, y: number): void {
 
 /** New enemies: those whose essence Marcus holds come at him faster; with ink carried, some are annotated. */
 export function inkOnSpawn(w: World, e: Enemy): void {
+  if (!INK.on) return;
+
   const id = inkOf(e); if (!id || e.parent) return;
   e.data.furious = inkLevel(w, id) > 0;
   const total = inkTotal(w);
@@ -288,6 +296,8 @@ function burst(w: World, x: number, y: number, lv: number, gen: number): void {
 
 /** Item-style hooks for the essences (called by World.itemHook after items and charms). */
 export function inkHook(w: World, name: string, ...args: any[]): void {
+  if (!INK.on) return;
+
   const s = inkState(w);
   if (!s.slots.length) return;
   const L = (id: string) => inkLevel(w, id);
@@ -370,6 +380,8 @@ function hymn(w: World, x: number, y: number, r: number): void {
 
 /** Before a volley: the cadence essences decide whether this one dives, lunges or stares. */
 export function inkVolley(w: World, prof: AttackProfile): { prof: AttackProfile; o: VolleyOpts; after: (ps: Proj[]) => void; lobs: number } {
+  if (!INK.on) return { prof, o: {}, after: () => {}, lobs: 0 };
+
   const s = inkState(w), o: VolleyOpts = {};
   let p = prof, tag = '';
   if (!s.slots.length) return { prof, o, after: () => {}, lobs: 0 };
@@ -399,6 +411,8 @@ export function inkVolley(w: World, prof: AttackProfile): { prof: AttackProfile;
 /** Spittle's lobbed blobs, fired after each volley. */
 const lobProf = new WeakMap<AttackProfile, [AttackProfile, number]>();
 export function inkLobs(w: World, prof: AttackProfile, x: number, y: number, ang: number, n: number): void {
+  if (!INK.on) return;
+
   const pl = w.player, lv = inkLevel(w, 'spit'), s = inkState(w);
   let c = lobProf.get(prof);
   if (!c || c[1] !== lv) { c = [{ ...prof, modes: new Set(prof.modes), arc: true, explode: lv >= 3 ? 16 : 10, split: 0, shots: 1, orbit: false, homing: 0, pierce: 0, rear: false, sides: false }, lv]; lobProf.set(prof, c); }
@@ -411,6 +425,8 @@ export function inkLobs(w: World, prof: AttackProfile, x: number, y: number, ang
 
 /** A player shot ended: Bury plants its charge where it fell. */
 export function inkShotEnd(w: World, p: Proj, landed: boolean): void {
+  if (!INK.on) return;
+
   const lv = inkLevel(w, 'bury');
   if (!lv || !landed || p.depth > 0 || p.fromFamiliar) return;
   burst(w, p.x, p.y, lv, 0);
@@ -418,6 +434,8 @@ export function inkShotEnd(w: World, p: Proj, landed: boolean): void {
 
 /** Every step: the gaze timer, ward shards, webs, and the seeker budget. */
 export function inkTick(w: World, dt: number): void {
+  if (!INK.on) return;
+
   const s = inkState(w), R = runtime(w);
   if (R.room !== w.room.id) { R.room = w.room.id; R.webs = []; R.bursts = 0; }
   s.bucket = Math.min(18, s.bucket + dt * 12);
@@ -471,6 +489,8 @@ var inklingIconFn: ((id: string, size: number) => HTMLCanvasElement) | undefined
 export function setInklingIconPainter(fn: (id: string, size: number) => HTMLCanvasElement): void { inklingIconFn = fn; }
 /** World-space drawing: webs on the floor, ward shards, auras, and the essence glyphs while brimming. */
 export function renderInkWorld(w: World, ctx: CanvasRenderingContext2D, camX: number, camY: number, layer: 'floor' | 'top'): void {
+  if (!INK.on) return;
+
   const R = runtime(w);
   if (layer === 'floor') {
     for (const web of R.webs) {

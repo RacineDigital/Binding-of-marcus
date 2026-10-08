@@ -12,6 +12,7 @@ import { TRANSFORM_EFFECTS } from '../src/player/player';
 import { TEMPLATES } from '../src/rooms/templates';
 import { generateLayout, generateTemplate } from '../src/generation/roomgen';
 import { validateTemplate } from '../src/rooms/validate';
+import { INK } from '../src/game/inkflag';
 import { SOUNDSCAPES, soundscapeFor } from '../src/audio/ambience';
 import { RNG } from '../src/core/rng';
 import { PixelArt } from '../src/render/pixel';
@@ -105,7 +106,8 @@ for (const it of ALL_ITEMS) {
   ok(it.effect.length > 0 || !!it.stats || !!it.health || !!it.give || !!it.flight, `item ${it.id} describes what it does`);
   if (it.kind === 'active') ok(!!it.active, `active ${it.id} has an active spec`);
   if (it.kind === 'familiar') ok(!!it.familiar, `familiar ${it.id} has a familiar spec`);
-  if (it.unlock) ok(ACHIEVEMENTS.some((a) => a.id === it.unlock), `item ${it.id} unlock ${it.unlock} is a real achievement`);
+  // (the ink items are out of every pool while the Inklings are switched off, so their unlocks may be absent)
+  if (it.unlock && !(it.unlock.startsWith('ink_') && !INK.on)) ok(ACHIEVEMENTS.some((a) => a.id === it.unlock), `item ${it.id} unlock ${it.unlock} is a real achievement`);
   const p = new PixelArt(18, 18);
   try { it.icon(p); ok(p.data.some((v) => v !== 0), `item ${it.id} icon draws something`); } catch (e) { ok(false, `item ${it.id} icon throws ${e}`); }
 }
@@ -262,7 +264,7 @@ console.log('content:', JSON.stringify(counts));
   const ach = new Set(ACHIEVEMENTS.map((a) => a.id));
   ok(NOTES.every((n) => !n.req || ach.has(n.req)), 'every note requirement is an achievement');
   ok(new Set(NOTES.map((n) => n.id)).size === NOTES.length, 'note ids unique');
-  ok(ALL_ITEMS.every((it) => !it.unlock || ach.has(it.unlock)), 'every item unlock is an achievement');
+  ok(ALL_ITEMS.every((it) => !it.unlock || ach.has(it.unlock) || (it.unlock.startsWith('ink_') && !INK.on)), 'every item unlock is an achievement');
   ok(ENDINGS.length === 5 && ENDINGS.every((e, k) => e.num === k + 1), 'five endings in order');
   ok(['letter_top', 'letter_bottom', 'grandfathers_letter'].every((id) => ALL_ITEMS.find((x) => x.id === id && Object.keys(x.pools).length === 0)), 'the letter never rolls from a pool');
 }
@@ -534,7 +536,12 @@ console.log('content:', JSON.stringify(counts));
   }
   for (const a of ANNOTATIONS) ok(!!INKLINGS[a.a] && !!INKLINGS[a.b] && a.a !== a.b, `annotation ${a.name} pairs two real essences`);
   for (const id of ['ink_blotter', 'fourth_margin', 'iron_gall', 'inkhorn', 'pumice_stone']) ok(!!ALL_ITEMS.find((i) => i.id === id), `ink item ${id} exists`);
-  for (const u of ['ink_first', 'ink_annotation', 'ink_mastery']) ok(!!ACHIEVEMENTS.find((a) => a.id === u) && ALL_ITEMS.some((i) => i.unlock === u), `${u} is an achievement that unlocks an item`);
+  if (INK.on) for (const u of ['ink_first', 'ink_annotation', 'ink_mastery']) ok(!!ACHIEVEMENTS.find((a) => a.id === u) && ALL_ITEMS.some((i) => i.unlock === u), `${u} is an achievement that unlocks an item`);
+  else {
+    ok(!ACHIEVEMENTS.some((a) => a.id.startsWith('ink_')), 'with the Inklings off, their achievements are left out');
+    const { INKWORK_ITEMS } = await import('../src/items/data/inkwork');
+    ok(INKWORK_ITEMS.every((it) => Object.keys(it.pools).length === 0), 'with the Inklings off, the ink items are in no pool');
+  }
 }
 
 // ------------------------------------------------------------ controller families (button names and glyphs)

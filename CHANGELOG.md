@@ -2,6 +2,15 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.17.2: busier rooms, no ink
+
+**More enemies.** Rooms are busier: about six creatures in a typical room (a little fewer in the
+first chapter), up to nine in a normal room and fifteen in a big one. Rooms built from hand-made
+groups fill out with more of the same creatures.
+
+**The Inklings are gone.** No ink meter, no essences dropping, nothing in the margins. The ink
+curios and their three achievements are gone with them.
+
 ## What's new in 3.17.1: the old soundtrack is back
 
 **The original soundtrack is back.** The recorded chapter themes from before 3.15 play again, and

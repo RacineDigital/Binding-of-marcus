@@ -1,4 +1,4 @@
-// Inklings in a real browser, stepped frame by frame (npm run dev first; part of npm run test:e2e):
+// Inklings (switched off in the game; turned on here) in a real browser, stepped frame by frame (npm run dev first; part of npm run test:e2e):
 // the meter and drops, writing, levelling and overwriting margins, every essence's effect, the
 // annotations, a crowded extreme build, and save & continue.
 //   npx tsx tests/inklings.ts
@@ -14,6 +14,7 @@ const base = process.env.BASE_URL || 'http://localhost:5173/';
   await page.goto(base); await page.waitForTimeout(2500);
   const r: any = await page.evaluate(`(async () => {
     const d = window.__bomDebug, g = d.game, I = d.ink;
+    I.INK.on = true;   // switched off in the game (game/inkflag.ts); this keeps the system working
     g.menus.stack = []; g.newRun('marcus', 'INKTEST2');
     await new Promise((res) => setTimeout(res, 2500));
     window.requestAnimationFrame = () => 0;

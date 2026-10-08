@@ -31,6 +31,7 @@ import { FLAWLESS_TARGET } from '../game/bindings';
 import { bindingSeal } from './bindingart';
 import { itemRole, ROLE_COLOR, ROLE_LABEL } from '../items/choice';
 import { inkState, inkCap, brimming, METER_MAX, INKLINGS } from '../game/inklings';
+import { INK } from '../game/inkflag';
 import { inklingIcon } from '../art/inklings';
 
 /** How long a boss title card holds the screen. */
@@ -487,6 +488,7 @@ export class Hud {
   private drawInk(ctx: CanvasRenderingContext2D): void {
     const w = this.w, s = inkState(w), cap = inkCap(w);
     this.inkBottom = 0;
+    if (!INK.on) return;
     if (!s.slots.length && s.meter <= 0 && !(w.game.save.data.inkSeen ?? []).length) return;
     const y = this.inkY, x0 = 5, full = brimming(w), SW = 17;
     const wide = cap * SW + 1;

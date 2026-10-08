@@ -1,3 +1,4 @@
+import { INK } from '../game/inkflag';
 // Achievements: each unlocks new content (items, characters, challenges) rather than raw power.
 export interface Achievement { id: string; name: string; desc: string; unlocks: string; hidden?: boolean; /** What a hidden one says before it's earned. */ clue?: string }
 export const ACHIEVEMENTS: Achievement[] = [
@@ -96,3 +97,6 @@ export const CHALLENGES: ChallengeDef[] = [
   { id: 'twins', name: 'Double Trouble', desc: 'Every boss arrives with a sibling.', char: 'edda', rules: ['Bosses come in pairs', 'Close Chapter V'], unlock: 'beat_final', goal: 4 },
   { id: 'ink', name: 'Inkstorm', desc: 'Split ink everywhere.', char: 'blot', rules: ['Start with Split Nib and Inkwell Heart', 'Finish the story'], unlock: 'win_blot', goal: 7 },
 ];
+
+// the Inklings are switched off (game/inkflag.ts): their three achievements can't be earned, so they are left out
+if (!INK.on) for (let i = ACHIEVEMENTS.length - 1; i >= 0; i--) if (ACHIEVEMENTS[i].id.startsWith('ink_')) ACHIEVEMENTS.splice(i, 1);

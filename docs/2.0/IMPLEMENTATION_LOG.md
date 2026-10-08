@@ -343,6 +343,21 @@ Kept: the Tab map frame, the boss bar frame and the item-description backdrop (r
 - `tests/e2e.ts` "walking right" now holds the key for 0.4 s of game time (the first run start can
   skip frames while it loads; it was failing on wall-clock timing).
 
+### Owner feedback after 3.17.1 (3.17.2)
+
+- **Density**: "about six per room". Budget ×2.1 (`DENSITY` in populate.ts), Chapter I near-start
+  cap 2.5 → 5, swarm groups 4–5, generated layouts 5–7 slots (+ up to 3 by depth), encounter rooms
+  fill their other slots with more of the group, and any room cast short is topped up to 6 (10 in
+  big rooms) with more of the creatures already in it, on open floor away from the doors (`fillRoom`).
+  Hard caps: 9 creatures in a normal room, 15 in a big one (swarms count each). Measured over 120
+  seeds x 7 chapters: median per combat room 5 in Chapter I, 6 in II–VII; averages 5.7–8.1
+  (before: medians 3–5, averages 3.3–6.1, with outliers up to 29).
+- **Inklings switched off** (`src/game/inkflag.ts`, `INK.on = false`): every entry point is a no-op,
+  the HUD margins and Journal page are hidden, the five ink items are in no pool, and the three ink
+  achievements are left out. The code and its tests stay (`tests/inklings.ts` turns it on).
+- **Music ringing** (reported): every synth track (21) and recording (30) was rendered/decoded and
+  scanned for a sustained narrow tone above 1.5 kHz; none found. Not reproduced; needs details.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at

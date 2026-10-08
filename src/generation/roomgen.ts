@@ -162,7 +162,7 @@ export function generateTemplate(rng: RNG, th: FloorTheme, floorIndex: number): 
     if (Math.abs(c - 7) + Math.abs(r - 4) <= 1) continue;
     free.push([c, r]);
   }
-  const slots = rng.int(3, 5) + Math.min(2, Math.floor(floorIndex / 3));
+  const slots = rng.int(5, 7) + Math.min(3, Math.floor(floorIndex / 2));
   const placed: [number, number][] = [];
   for (let tries = 0; tries < 80 && placed.length < slots && free.length; tries++) {
     const [c, r] = free[rng.int(0, free.length - 1)];

@@ -1,5 +1,6 @@
 // Items that work with Inklings (game/inklings.ts): how fast the ink comes, how much of it Marcus can
 // hold, and what he can do with what's written.
+import { INK } from '../../game/inkflag';
 import type { ItemDef } from '../types';
 import { I, ramp, hex, P } from './kit';
 import { inkState, weakestSlot, syncInk, METER_MAX, INKLINGS } from '../../game/inklings';
@@ -29,4 +30,5 @@ export const INKWORK_ITEMS: ItemDef[] = [
     } },
     icon: (p: P) => { const c = ramp('#b8b0a0'); p.ball(9, 10, 6, 4.5, c); for (const [x, y] of [[6, 9], [9, 8], [12, 10], [8, 12], [11, 12]]) p.set(x, y, '#8a8070'); } },
 ];
-
+// switched off with the Inklings: none of these can turn up
+if (!INK.on) for (const it of INKWORK_ITEMS) it.pools = {};

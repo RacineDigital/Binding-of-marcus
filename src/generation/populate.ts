@@ -12,6 +12,13 @@ import { TILE } from '../core/constants';
 import { shopLevelFor, shopPrice, shopCurios } from '../game/shoplevel';
 import type { SaveManager } from '../save/save';
 
+/** How full combat rooms are, relative to the original budget. */
+const DENSITY = 2.1;
+/** A room cast short of this (layouts with few slots) gets more of the same creatures on open floor. */
+const FILL_TO = 6, FILL_TO_BIG = 10;
+/** No room gets more than this many creatures (a swarm counts each one): normal rooms, then big ones. */
+const MAX_IN_ROOM = 9, MAX_IN_BIG_ROOM = 15;
+
 const FALLBACK: Record<string, Role[]> = {
   melee: ['melee', 'heavy', 'flyer'], flyer: ['flyer', 'swarm', 'melee'], shooter: ['shooter', 'turret', 'melee'],
   swarm: ['swarm', 'flyer', 'melee'], heavy: ['heavy', 'melee', 'shooter'], turret: ['turret', 'shooter', 'melee'],
@@ -147,6 +154,29 @@ function freeSpawns(room: RoomData, spawns: SpawnDef[]): void {
   }
 }
 
+const spentOf = (out: SpawnDef[]) => out.reduce((a, sp) => a + (getEnemy(sp.id)?.cost ?? 0), 0);
+/**
+ * Top a room up to FILL_TO creatures with more of those already cast there (so the room keeps its
+ * character), on open floor away from the doors, while the budget allows.
+ */
+function fillRoom(room: RoomData, rng: RNG, out: SpawnDef[], left: number, champ: number): void {
+  const big = room.cw * room.ch > 1, want = big ? FILL_TO_BIG : FILL_TO, cap = big ? MAX_IN_BIG_ROOM : MAX_IN_ROOM;
+  const kinds = [...new Set(out.map((sp) => sp.id))].filter((id) => { const d = getEnemy(id)!; return !d.cast?.company && d.role !== 'swarm'; });
+  if (!kinds.length) return;
+  const open: [number, number][] = [];
+  for (let r = 1; r < room.rows - 1; r++) for (let c = 1; c < room.cols - 1; c++) {
+    if (room.at(c, r) !== Ob.None || nearDoor(room, c, r)) continue;
+    if (out.some((sp) => Math.abs(sp.c - c) + Math.abs(sp.r - r) < 2)) continue;
+    open.push([c, r]);
+  }
+  for (let k = 0; k < 20 && out.length < Math.min(want, cap) && open.length; k++) {
+    const id = rng.pick(kinds), d = getEnemy(id)!;
+    if (d.cast?.max !== undefined && out.filter((sp) => sp.id === id).length >= d.cast.max) continue;
+    if (d.cost > left + 1.6) continue;
+    const [c, r] = open.splice(rng.int(0, open.length - 1), 1)[0];
+    out.push({ id, c, r, champion: rng.chance(champ) }); left -= d.cost;
+  }
+}
 function nearDoor(room: RoomData, c: number, r: number): boolean {
   for (const d of room.doors) { const [dc, dr] = room.doorInner(d.side, d.slot); if (Math.abs(dc - c) + Math.abs(dr - r) <= 3) return true; }
   return false;
@@ -166,8 +196,9 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
   };
   const cast = new Map<string, string>();
   const out: SpawnDef[] = [];
-  let budget = (2.4 + Math.min(room.distance, 6) * 0.55) * (DEPTH_BUDGET[Math.min(DEPTH_BUDGET.length - 1, floor.index)] + 0.15 * Math.max(0, floor.index - DEPTH_BUDGET.length + 1)) * budgetMul * (room.cw * room.ch > 1 ? 1.8 : 1);
-  if (floor.index === 0 && room.distance <= 1) budget = Math.min(budget, 2.5);
+  // rooms are busier on purpose (owner feedback, 3.17.2): about six creatures in a typical room
+  let budget = DENSITY * (2.4 + Math.min(room.distance, 6) * 0.55) * (DEPTH_BUDGET[Math.min(DEPTH_BUDGET.length - 1, floor.index)] + 0.15 * Math.max(0, floor.index - DEPTH_BUDGET.length + 1)) * budgetMul * (room.cw * room.ch > 1 ? 1.8 : 1);
+  if (floor.index === 0 && room.distance <= 1) budget = Math.min(budget, 5);
   const champ = 0.02 + floor.index * 0.012 + (hard ? 0.06 : 0);
   // slots are taken in mirrored pairs (left/right, then top/bottom), so a room's enemies stand in a
   // deliberate, symmetric formation rather than wherever the dice fell
@@ -182,10 +213,12 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
     if (m) { left.splice(left.indexOf(m), 1); order.push(m); }
   }
   // half the time (where the chapter has them) the room is cast from an authored encounter
-  if (th.encounters?.length && rng.chance(0.5)) { const enc = castEncounter(th.encounters, rng, order.filter((s) => !nearDoor(room, s.c, s.r)), budget, champ); if (enc) { room.flags.encounter = enc.name; return enc.out; } }
+  if (th.encounters?.length && rng.chance(0.5)) { const enc = castEncounter(th.encounters, rng, order.filter((s) => !nearDoor(room, s.c, s.r)), budget, champ, room.cw * room.ch > 1 ? MAX_IN_BIG_ROOM : MAX_IN_ROOM); if (enc) { room.flags.encounter = enc.name; fillRoom(room, rng, enc.out, budget - spentOf(enc.out), champ); return enc.out; } }
   let placed = 0;
   const counts = new Map<string, number>();
+  const cap = room.cw * room.ch > 1 ? MAX_IN_BIG_ROOM : MAX_IN_ROOM;
   for (const s of order) {
+    if (out.length >= cap) break;
     if (nearDoor(room, s.c, s.r)) continue;
     const key = s.ch === 'A' ? 'A' + rng.int(0, 1) : s.ch;
     let id = cast.get(key);
@@ -200,32 +233,46 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
     if (placed > 0 && cost > budget) continue;
     budget -= cost; placed++; counts.set(id, (counts.get(id) ?? 0) + 1);
     if (s.ch === 'W' || def.role === 'swarm') {
-      const n = rng.int(3, 4);
+      const n = Math.min(rng.int(4, 5), Math.max(2, cap - out.length));
       for (let i = 0; i < n; i++) out.push({ id, c: s.c + rng.float(-0.6, 0.6), r: s.r + rng.float(-0.5, 0.5) });
     } else out.push({ id, c: s.c, r: s.r, champion: rng.chance(champ) });
   }
   // creatures that only make sense with others around them (a lampkeeper with nothing to light)
+  fillRoom(room, rng, out, budget - spentOf(out), champ);
   return out.filter((sp) => { const need = getEnemy(sp.id)!.cast?.company ?? 0; return out.length - 1 >= need; });
 }
 
 /** Place an authored encounter on a room's slots: each creature takes the free slot that suits its
  *  role best (a slot of its own role, then one whose fallbacks include it, then any). Only groups
  *  that fit the room's budget (with a little slack) and its slot count are chosen. */
-function castEncounter(list: Encounter[], rng: RNG, slots: { c: number; r: number; ch: string }[], budget: number, champ: number): { name: string; out: SpawnDef[] } | null {
+function castEncounter(list: Encounter[], rng: RNG, slots: { c: number; r: number; ch: string }[], budget: number, champ: number, cap = MAX_IN_ROOM): { name: string; out: SpawnDef[] } | null {
   const costOf = (e: Encounter) => e.ids.reduce((a, id) => a + (getEnemy(id)?.cost ?? 9) * (getEnemy(id)?.role === 'swarm' ? 2.2 : 1), 0);
   const fits = list.filter((e) => e.ids.every((id) => getEnemy(id)) && costOf(e) <= budget + 0.6 && e.ids.length <= slots.length);
   const enc = rng.weighted(fits, (e) => e.weight ?? 1);
   if (!enc) return null;
   const free = slots.slice(), out: SpawnDef[] = [];
   const score = (ch: string, role: Role) => { const want = SLOT_ROLE[ch]; if (want === role) return 3; if (want !== 'any' && FALLBACK[want]?.includes(role)) return 2; return want === 'any' ? 1.5 : 1; };
-  for (const id of enc.ids) {
-    const role = getEnemy(id)!.role;
+  let spent = 0;
+  const counts = new Map<string, number>();
+  const place = (id: string): boolean => {
+    const def = getEnemy(id)!, role = def.role;
     let best = -1, bs = -1;
     free.forEach((s, i) => { const sc = score(s.ch, role) + rng.next() * 0.1; if (sc > bs) { bs = sc; best = i; } });
-    if (best < 0) break;
+    if (best < 0) return false;
     const s = free.splice(best, 1)[0];
-    if (role === 'swarm') { for (let i = rng.int(3, 4); i > 0; i--) out.push({ id, c: s.c + rng.float(-0.6, 0.6), r: s.r + rng.float(-0.5, 0.5) }); }
+    if (role === 'swarm') { for (let i = Math.min(rng.int(4, 5), Math.max(2, cap - out.length)); i > 0; i--) out.push({ id, c: s.c + rng.float(-0.6, 0.6), r: s.r + rng.float(-0.5, 0.5) }); }
     else out.push({ id, c: s.c, r: s.r, champion: rng.chance(champ) });
+    spent += def.cost * (role === 'swarm' ? 2.2 : 1); counts.set(id, (counts.get(id) ?? 0) + 1);
+    return true;
+  };
+  for (const id of enc.ids) if (!place(id)) break;
+  // then more of the same group in the room's remaining slots, while the budget lasts
+  const extra = enc.ids.filter((id) => !getEnemy(id)!.cast?.company);
+  for (let k = 0; k < 12 && free.length && extra.length && out.length < cap; k++) {
+    const id = rng.pick(extra), def = getEnemy(id)!;
+    if (def.cast?.max !== undefined && (counts.get(id) ?? 0) >= def.cast.max) continue;
+    if (spent + def.cost * (def.role === 'swarm' ? 2.2 : 1) > budget + 0.6) continue;
+    place(id);
   }
   return { name: enc.name, out };
 }
