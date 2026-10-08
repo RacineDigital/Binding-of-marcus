@@ -1,56 +1,67 @@
 // Fortunes, lore fragments and flavour text.
+// Fortunes, intro and ending text.
+//
+// The story (3.17.2): 4:04 a.m., the Harrow Lane bridge, rain. Marcus Hale, seventeen, finally
+// answered his sister's calls and drove for St. Agnes Hospital, where his grandfather Elias was
+// dying in Room 4. He never got there: the car went through the railings into the river. They
+// pulled him out and brought him to the same hospital. Two floors up, at the same minute, Elias
+// died. Marcus is in a coma. Inside it he is in Grandad's cellar on Harrow Lane, and the stairs
+// only go down: through the boiler rooms Elias kept running for forty-one years, the drains under
+// the bridge, the ward Marcus never visited, the funeral he missed. The endings are about what he
+// finally remembers about that night, saying goodbye, and whether he wakes up.
 export const FORTUNES = [
-  'The book remembers what you forgot.',
-  'Grandfather bound the fear so you could sleep.',
+  'Eleven missed calls. You only ever listened to the first one.',
+  'He kept that boiler running for forty-one years. It does not know he is gone.',
   'A marked stone is a door that has not decided yet.',
   'Two walls that share a silence share a secret.',
   'Buttons are just coins that learned to hold things together.',
-  'The Inkwell pays in hearts. It always collects.',
-  'Wax remembers every prayer. Some prayers remember back.',
+  'Every deal down here gets paid. Read what you sign.',
+  'The machines upstairs are breathing for you. Do not waste it.',
   'Not all fires want to go out.',
   'If you are never hurt below, something above will notice.',
-  'The last page is blank because you have not written it.',
+  'The river kept the car. It did not keep you.',
   'Stitch three moths together and you will fly.',
   'A room with no doors is only a room with hidden ones.',
-  'The shopkeeper is not as fragile as he looks. Or is he.',
+  'Mott says he is closed. Mott is never closed.',
   'Some sweets are kinder than others. Taste carefully.',
-  'The clock downstairs runs backwards on Thursdays.',
+  'The clock on the bridge still says 4:04.',
   'When the choir stops singing, look up.',
   'Your aunt could mend anything with the right needle.',
   'Boards nailed over a stair are only waiting for a loud noise.',
-  'Half a ticket gets you nowhere. Two halves get you in.',
+  'Half a letter gets you nowhere. Two halves get you in.',
   'Lost property keeps more than umbrellas.',
   'Dig deep enough and you will find what was hidden for you.',
   'Room 4 has a lock, and the key is made of paper.',
-  'He waited at four minutes past four. He is still waiting.',
-  'Your sister visited every day. Ask her what he said.',
+  'He waited until four minutes past four. Then he stopped waiting.',
+  'Your sister was there every day. She is still there now. Listen.',
   'Every ending is a door. The last one opens from the inside.',
   'The night nurse is not a nurse.',
-  'Read the notes in the margins, and the margins will read you.',
+  'Somebody upstairs is holding your hand.',
 ];
 export const INTRO_STORY = [
-  'Elias, Marcus\'s grandfather, made books in the cellar.',
-  'He wrote a storybook to help Marcus face the monsters he feared.',
-  'Elias died before he could finish it. His illness took him to St. Agnes Hospital.',
-  'A week after the funeral, Marcus opens the book and enters its story.',
+  '4:04 a.m. The Harrow Lane bridge. Rain.',
+  'Marcus Hale, seventeen, finally picked up his sister\'s calls and drove for the hospital. He went through the railings and into the river.',
+  'They brought him to St. Agnes. Two floors up, at the same minute, his grandfather died.',
+  'Marcus is still under. Somewhere in there he is in Grandad\'s cellar, and the stairs only go down.',
 ];
-/** After the Last Page: the ending for going all the way through the Margins. */
+/** Through the Static to Dead Air: the voicemail he never listened to. */
 export const TRUE_ENDING_STORY = [
-  'Nothing was left to write itself in.',
-  'Marcus filled the margins with his own small handwriting:',
-  '"He found the way out on his own."',
-  'The book closed. This time, he was holding it.',
+  'Under all the noise there was one message he had never played. Not Nell. Grandad, at ten past two.',
+  '"Don\'t you dare drive out here in this, kid. I\'m not going anywhere tonight."',
+  '"Come Saturday. Bring the good biscuits."',
+  'He had not let him down. He had been told to wait, and he had come anyway.',
 ];
-/** After the Foreword: the ending for following the light. */
+/** First Light: past the version of Grandad that guilt made. */
 export const LIGHT_ENDING_STORY = [
-  'In the story, Grandfather put the pen down and looked at Marcus for a long time.',
-  'Then he turned to the very first page, and wrote above everything else:',
-  '"For Marcus, who finished it."',
-  'In the bindery, morning light came through the window.',
+  'The thing at the top of the stairs had Grandad\'s face and none of his voice. When it fell, the real one was sitting on the step behind it.',
+  '"That wasn\'t me, you know. That was you, doing my voice."',
+  '"I was never angry with you, kid. Not once."',
+  'The light at the top of the stairs got brighter, and Marcus did not look away from it.',
 ];
+/** The first ending: the Surgeon falls and, for a moment, Marcus comes up. */
 export const ENDING_STORY = [
-  'The last page was blank.',
-  'Marcus dipped his fingers in the ink and wrote the only ending he knew:',
-  '"And then he went upstairs, and it was morning."',
-  'The book closed. The binding held.',
+  'At the bottom of everything, the Surgeon put his needle down.',
+  'Up in Intensive Care, the monitor jumped. Marcus\'s eyes opened for three seconds. The nurse wrote down the time.',
+  'Then he went back under. Not yet.',
+  'Somewhere above him, Nell said his name, and it sounded closer than before.',
 ];

@@ -244,7 +244,7 @@ const pressBrain: BossBrain = {
   onPhase(e, w) { w.hud.toast('The Typesetter runs off a second edition.'); },
 };
 const typesetter: EnemyDef = {
-  id: 'typesetter', name: 'The Typesetter', desc: 'The old press in the print shop. It printed the book you are lost in.', boss: true,
+  id: 'typesetter', name: 'The Typesetter', desc: 'The old press in the print shop. It stamps out the same night, over and over.', boss: true,
   hp: 380, r: 17, speed: 0, role: 'boss', cost: 0, hitY: 24, mass: 30, noKnock: true, gore: '#2a2a34', goreDecal: '#14122a',
   sprites: () => rig({ w: 76, h: 74, paint: G.paintPress, phases: 1, extra: { open: [0, 1, 2, 3].map((f) => ({ x: { open: 1 }, jaw: 0.85 + (f % 2) * 0.15, breath: Math.sin(f * 1.6) })) }, fps: { open: 8 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
@@ -280,10 +280,10 @@ const binderBrain: BossBrain = {
         return false;
       } },
   ],
-  onPhase(e, w, ph) { w.hud.toast(ph === 1 ? 'The Bookbinder pulls the thread tight.' : 'Every stitch at once.'); },
+  onPhase(e, w, ph) { w.hud.toast(ph === 1 ? 'The Surgeon pulls the thread tight.' : 'Every stitch at once.'); },
 };
 const bookbinder: EnemyDef = {
-  id: 'bookbinder', name: 'The Bookbinder', desc: 'He sewed the story shut. He would like to sew you into it.', boss: true,
+  id: 'bookbinder', name: 'The Surgeon', desc: 'He has been stitching you back together for days. He does not care whether you want to be.', boss: true,
   hp: 820, r: 12, speed: 0, role: 'boss', cost: 0, hitY: 32, mass: 10, noKnock: true, gore: '#5a1e24', goreDecal: '#2b2f66', light: [70, '#ff6070'],
   sprites: () => rig({ w: 56, h: 76, paint: G.paintBinder, phases: 2, extra: { raise: [0, 1, 2, 3].map((f) => ({ x: { raise: 1 }, raise: 1, jaw: 0.5 + (f % 2) * 0.4, breath: Math.sin(f * 1.6) })) }, fps: { raise: 6 } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.2; },
@@ -297,7 +297,7 @@ const bookbinder: EnemyDef = {
 // they fought; at the end it drops every shape and throws everything at once.
 /** The two final bosses share their moves; this picks shot shapes, colours and summons. */
 interface FinalStyle { main: string; alt: string; light: string; creep: string; glow: string; tint: string; summons: string[]; forms: string }
-const INK_STYLE: FinalStyle = { main: 'inkE', alt: 'dark', light: 'holy', creep: '#14112a', glow: '#8a7aff', tint: '#1a1440', summons: ['blot', 'pagewraith', 'voideye', 'mirrorshade'], forms: 'rewrites itself as' };
+const INK_STYLE: FinalStyle = { main: 'inkE', alt: 'dark', light: 'holy', creep: '#14112a', glow: '#8a7aff', tint: '#1a1440', summons: ['blot', 'pagewraith', 'voideye', 'mirrorshade'], forms: 'turns into' };
 const LIGHT_STYLE: FinalStyle = { main: 'holy', alt: 'wax', light: 'star', creep: '#e8d8a0', glow: '#ffe8a0', tint: '#fff2c8', summons: ['cherubmoth', 'choirboy', 'censer', 'penitent'], forms: 'remembers' };
 const styleOf = (e: Enemy): FinalStyle => (e.def.id === 'author' ? LIGHT_STYLE : INK_STYLE);
 
@@ -316,7 +316,7 @@ const BASE_MOVES: Move[] = ['tendrils', 'pages', 'rain', 'spiral', 'flower'];
 const LAST_MOVES: Move[] = ['beams', 'spiral', 'tendrils', 'rain', 'drops', 'flower', 'wall', 'cross', 'seekers'];
 /** Health fractions where it changes: eight phases in all. */
 const FINAL_TH = [0.88, 0.76, 0.64, 0.52, 0.4, 0.28, 0.14];
-const PHASE_LINES = ['', 'It starts rewriting itself.', 'It writes faster.', 'The pages turn on their own.', 'Every story at once.', 'It is running out of ink. It does not care.', 'The ink is everywhere.', 'The last line. Everything at once.'];
+const PHASE_LINES = ['', 'It starts changing shape.', 'It gets louder.', 'The phone keeps ringing.', 'Every voice at once.', 'It is coming apart. It does not care.', 'The water is everywhere.', 'The last second. Everything at once.'];
 
 
 function startMove(e: Enemy, w: World, m: Move): void {
@@ -484,9 +484,9 @@ const finalBoss = (id: string, name: string, desc: string, gore: string, glow: s
     w.r.addGlow(sx, sy - 50, 80, d.phase >= 3 ? '#ff3050' : styleOf(e).glow, e.def.id === 'author' ? 0.08 : 0.2);
   },
 });
-const unwritten = finalBoss('unwritten', 'The Unwritten', 'Everything the book left out, writing itself in. It wants the last word.', '#14112a', '#8a7aff', G.paintUnwritten);
+const unwritten = finalBoss('unwritten', 'The Noise', 'Every call, every alarm, every voice from that night, all at once. It wants the last word.', '#14112a', '#8a7aff', G.paintUnwritten);
 
-const author = finalBoss('author', 'The Author', 'Grandfather, as he was when he first picked up the pen. He would like a better ending.', '#e8d8a0', '#ffe8a0', G.paintAuthor);
+const author = finalBoss('author', 'The Old Man', 'Grandad, the way your guilt remembers him: tall, cold, disappointed. He was never like this.', '#e8d8a0', '#ffe8a0', G.paintAuthor);
 
 export const BOSSES_D: EnemyDef[] = [thornwife, rimebride, pendulum, typesetter, bookbinder, unwritten, author];
 void clamp; void dist; void hex; void eye;

@@ -183,7 +183,7 @@ function touch(w: World, n: Npc): void {
       n.cd = 0.3;
       if (w.hud.readingNote(note.title)) return;
       const fresh = w.game.save.readNote(note.id);
-      w.hud.showNote(note.title, note.text, note.by ?? 'Grandfather', { x: n.x, y: n.y });
+      w.hud.showNote(note.title, note.text, note.by ?? 'Grandad', { x: n.x, y: n.y });
       w.audio.play('pageGet', { x: n.x });
       if (fresh) {
         (w.run.flags.notesFound ??= []).push(note.id);
@@ -198,7 +198,7 @@ function touch(w: World, n: Npc): void {
       n.data.done = true; n.cd = 99;
       w.player.controlLock = 3; w.player.vx = w.player.vy = 0;
       w.audio.stinger('blessing'); w.whiteFlash = 0.8;
-      w.hud.showNote('The Last Page', 'There is one line left, and the pen is right there.', '');
+      w.hud.showNote('Awake', 'The beeping. A hand, holding yours. Squeeze back.', '');
       w.after(2.2, () => w.game.onVictory(), true);
       break;
     }

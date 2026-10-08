@@ -1,38 +1,38 @@
-/** A spoiler-marked, plain-language guide to the story's real-world timeline. */
+/** A spoiler-marked, plain-language guide to what is actually happening. */
 export const STORY_GUIDE = [
   {
     title: 'What is happening',
     lines: [
-      'Marcus is reading a storybook his grandfather Elias made for him. The monsters and rooms are part of that book; they are not loose in the real cellar.',
-      'The people, fears and memories inside the book come from Marcus’s family. The adventure lets him face feelings he could not face in the hospital.',
+      'Marcus Hale is seventeen and in a coma at St. Agnes Hospital. At 4:04 one rainy morning his car went off the Harrow Lane bridge and into the river.',
+      'Everything you play happens inside his head. He is in his grandfather\'s cellar, and it keeps going down: the boiler rooms, the drains, the ward, the chapel. The monsters are what that year left him with.',
     ],
   },
   {
     title: 'The family',
     lines: [
-      'Elias is Marcus’s grandfather, a bookbinder who made the book. Ada was Elias’s wife and Marcus’s grandmother. The clock stopped at 4:04 when Ada died.',
-      'Nell is Marcus’s older sister. She visited Elias in hospital every day. Marcus was frightened of the hospital corridors and stayed away. Edda is his aunt; Wren is his cousin.',
+      'Elias, Grandad, kept the boilers under St. Agnes running for forty-one years. The work wrecked his lungs. Ada, his wife, died years ago at four minutes past four; the clock on the bridge stopped then too.',
+      'Nell is Marcus\'s older sister. She visited Grandad every day. Marcus kept saying "this weekend". Edda is their aunt; Wren is their cousin.',
     ],
   },
   {
-    title: 'What happened',
+    title: 'That night',
     lines: [
-      'After decades working around glue, ink and paper dust, Elias became seriously ill and went to St. Agnes Hospital. He wrote parts of Marcus’s book there, including a second story set in a made-up version of the hospital.',
-      'Elias died before finishing the book. The game begins one week after his funeral, when Marcus opens it in the cellar. He is grieving and feels guilty that he never visited.',
+      'Grandad took a turn in the night. Nell called Marcus eleven times. He was at a party with his phone face-down. When he saw it, he drove, in the rain, far too fast.',
+      'At 4:04 the car went through the railings. At 4:04, in Room 4, two floors above the ward they brought Marcus to, Grandad died.',
     ],
   },
   {
-    title: 'The hospital story',
+    title: 'The back stair',
     lines: [
-      'The boarded back stair is a hidden route in Elias’s book. It leads to the imagined hospital and Room 4, where Elias stayed. The Patient and the Night Nurse are frightening figures in that story, not supernatural beings in the real hospital.',
-      'The Visit is the moment Marcus imagines the visit he was too afraid to make. It gives him a chance to sit with his grandfather and say goodbye.',
+      'A boarded back stair in the boiler rooms leads up into a version of St. Agnes: the waiting room, the night ward, intensive care, and Room 4, where Grandad was.',
+      'To get into Room 4 you need the letter Grandad wrote for Marcus, torn in two. Room 4 is the visit Marcus never made.',
     ],
   },
   {
     title: 'The endings',
     lines: [
-      'Morning closes the first telling of the adventure. In His Own Hand and For Marcus let Marcus change how the book ends and make it his own.',
-      'The Visit lets Marcus face his regret. Goodnight is the clearest goodbye: Marcus returns to his family, writes “Goodnight, Grandad,” and accepts that the book is finished.',
+      'Not Yet: Marcus beats the Surgeon at the Deep End and nearly wakes. The Voicemail: he finally hears the message Grandad left him that night. First Light: he gets past the angry Grandad his guilt invented, and finds the real one.',
+      'Room 4: he sits with Grandad and says goodbye. Wake Up: he comes round, with Nell holding his hand, and keeps his promise to visit on a Saturday.',
     ],
   },
 ];

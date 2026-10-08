@@ -70,7 +70,7 @@ export const PACT_ITEMS: ItemDef[] = [
       const n = h.redMax / 2; h.removeContainers(n); h.addExtra('ink', n * 2 + 2);
       w.shake(4); w.audio.play('bossRoar', { pitch: 0.6, vol: 0.5 });
     } },
-    icon: signature, lore: 'In red, at the bottom, where Grandfather never signed.' },
+    icon: signature, lore: 'In red, at the bottom, where Grandad never signed.' },
   { id: 'ink_wings', name: 'Wings of the Well', kind: 'passive', quality: 3, pools: { deal: 0.8 },
     pickup: 'Flight, damage up', effect: ['You can fly.', 'Damage +1.', 'Each fight opens with a wingbeat that throws nearby enemies back.'],
     stats: { damage: 1 }, flight: true, icon: inkWings,
@@ -89,7 +89,7 @@ export const PACT_ITEMS: ItemDef[] = [
     hooks: { onKill: (w, e) => { if (Math.random() < 0.25) w.addCreep(e.x, e.y, 18, 'player', 8, 4, '#6a2a9a'); } },
     icon: blackCat, lore: 'It crossed Marcus\'s path on the cellar stairs. Then it crossed it again, to be sure.' },
   { id: 'hex_doll', name: 'Hex Doll', kind: 'passive', quality: 3, pools: { curse: 0.8 },
-    pickup: 'Pass it on', effect: ['Damage +0.5.', 'When you are hurt, every enemy in the room takes 30 damage and is marked.', 'It takes half a heart from you at the start of every chapter (never your last).'],
+    pickup: 'Pass it on', effect: ['Damage +0.5.', 'When you are hurt, every enemy in the room takes 30 damage and is marked.', 'It takes half a heart from you at the start of every floor (never your last).'],
     stats: { damage: 0.5 },
     hooks: {
       onHurt: (w) => {

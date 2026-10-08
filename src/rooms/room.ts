@@ -6,7 +6,7 @@ export type RoomType =
   | 'arcade' | 'cursed' | 'library' | 'miniboss' | 'event' | 'deal' | 'blessing' | 'lostfound' | 'echo';
 
 export const ROOM_NAMES: Record<RoomType, string> = {
-  start: 'Landing', normal: '', boss: 'Chapter\'s End', treasure: 'The Curio', shop: 'Mott\'s Wares',
+  start: 'Landing', normal: '', boss: 'The Floor\'s End', treasure: 'The Curio', shop: 'Mott\'s Wares',
   secret: 'Crawlspace', supersecret: 'Deep Crawlspace', challenge: 'Proving Room', sacrifice: 'The Pincushion',
   arcade: 'Button Parlor', cursed: 'Hexed Room', library: 'The Archive', miniboss: 'Lurker\'s Den', event: 'Odd Room',
   deal: 'The Inkwell', blessing: 'Wax Chapel', lostfound: 'Lost & Found', echo: 'Where You Fell',

@@ -34,14 +34,14 @@ export function doorOdds(w: World): DoorOdds {
   const base = f.dealChance ?? 0.2;
   let c = base;
   parts.push({ label: 'Base chance', value: pct(base), good: true });
-  if (!f.redHit) { c += UNTOUCHED; parts.push({ label: 'No red hearts lost this chapter', value: '+' + pct(UNTOUCHED), good: true }); }
-  else parts.push({ label: 'Lost red hearts this chapter', value: '+0%', good: false });
+  if (!f.redHit) { c += UNTOUCHED; parts.push({ label: 'No red hearts lost this floor', value: '+' + pct(UNTOUCHED), good: true }); }
+  else parts.push({ label: 'Lost red hearts this floor', value: '+0%', good: false });
   if (!f.bossRedHit) { c += CLEAN_BOSS; parts.push({ label: w.room?.type === 'boss' ? 'Boss hasn\'t cost you a red heart' : 'No red hearts lost to the boss', value: '+' + pct(CLEAN_BOSS), good: true }); }
   else parts.push({ label: 'The boss cost you red hearts', value: '+0%', good: false });
-  if (f.lastDoorFloor === fi - 1) { c *= 0.5; parts.push({ label: 'A door opened last chapter', value: 'x1/2', good: false }); }
-  if (fi === 0) { c = 0; parts.push({ label: 'No doors in Chapter I', value: '0%', good: false }); }
-  else if (fi === FINAL_FLOOR && w.run.mode !== 'endless') { c = 0; parts.push({ label: 'No doors in the final chapter', value: '0%', good: false }); }
-  else if (f.margins && fi > FINAL_FLOOR) { c = 0; parts.push({ label: 'No doors past the Binding', value: '0%', good: false }); }
+  if (f.lastDoorFloor === fi - 1) { c *= 0.5; parts.push({ label: 'A door opened last floor', value: 'x1/2', good: false }); }
+  if (fi === 0) { c = 0; parts.push({ label: 'No doors on Floor I', value: '0%', good: false }); }
+  else if (fi === FINAL_FLOOR && w.run.mode !== 'endless') { c = 0; parts.push({ label: 'No doors on the last floor', value: '0%', good: false }); }
+  else if (f.margins && fi > FINAL_FLOOR) { c = 0; parts.push({ label: 'No doors past the Deep End', value: '0%', good: false }); }
   // while it's holding half of Grandfather's letter, the lost property desk always opens
   if (letterAtDesk(w) && c < 1) { c = 1; parts.push({ label: 'Lost property is holding your letter', value: '100%', good: true }); }
   return { total: Math.max(0, Math.min(1, c)), parts, split: doorSplit(w) };

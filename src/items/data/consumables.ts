@@ -20,7 +20,7 @@ export const PAGES: ConsumableDef[] = [
     use: (w) => { for (const r of w.floor.rooms) { r.seen = true; r.discovered = true; } w.audio.play('secret'); } },
   { id: 'pg_stair', name: 'The Stair Page', kind: 'page', desc: 'Back to the landing.', effect: ['Teleports you to the first room of the floor.'],
     use: (w) => { w.game.teleport(w.floor.startId); } },
-  { id: 'pg_crown', name: 'The Crown Page', kind: 'page', desc: 'Skip to the end of the chapter.', effect: ['Teleports you to the boss room.'],
+  { id: 'pg_crown', name: 'The Crown Page', kind: 'page', desc: 'Skip to the end of the floor.', effect: ['Teleports you to the boss room.'],
     use: (w) => { teleportTo(w, (t) => t === 'boss'); } },
   { id: 'pg_pocket', name: 'The Pocket Page', kind: 'page', desc: 'A little of everything.', effect: ['Spawns a button, a key, a cherry bomb and a heart.'],
     use: (w) => { for (const k of ['button', 'key', 'bomb', 'heart']) spawnDrop(w, k, w.player.x, w.player.y); } },

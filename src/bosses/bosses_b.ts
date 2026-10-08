@@ -410,7 +410,7 @@ const matronBrain: BossBrain = {
   onPhase(e, w) { w.hud.toast('Lights out. The night shift begins.'); w.floor.curse = w.floor.curse ?? null; w.run.flags.nightShift = true; },
 };
 const matron: EnemyDef = {
-  id: 'matron', name: 'The Matron', desc: 'Visiting hours are over. Your name is not in her book.', boss: true,
+  id: 'matron', name: 'The Matron', desc: 'Visiting hours are over. Your name is not on her list.', boss: true,
   hp: 330, r: 11, speed: 0, role: 'boss', cost: 0, hitY: 26, mass: 6, noKnock: true, gore: '#e8d0c8', goreDecal: '#6a2a2a',
   sprites: () => rig({ w: 50, h: 68, paint: G.paintMatron, phases: 1, extra: { raise: [{ raise: 1, lean: -0.4, jaw: 0.45 }] } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1; },

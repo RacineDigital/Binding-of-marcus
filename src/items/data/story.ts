@@ -27,24 +27,24 @@ function joinLetter(w: World): void {
   grantItem(w, 'grandfathers_letter', true);
   w.game.save.unlock('both_halves');
   w.audio.stinger('blessing');
-  w.hud.showNote('Grandfather\'s Letter', LETTER_TEXT, 'Grandad');
+  w.hud.showNote('Grandad\'s Letter', LETTER_TEXT, 'Grandad');
 }
 
 export const STORY_ITEMS: ItemDef[] = [
   { id: 'letter_top', name: 'Letter (first half)', kind: 'passive', quality: 0, pools: {}, tags: ['quest'],
-    pickup: '"Dear Marcus..."', effect: ['The top half of a letter in Grandfather\'s handwriting.', 'The bottom half is down a Deep Crawlspace on a hospital chapter: it\'s marked on your map.', 'Bring both to Room 4, after the Intensive Care boss.'],
+    pickup: '"Dear Marcus..."', effect: ['The top half of a letter in Grandad\'s handwriting.', 'The bottom half is down a Deep Crawlspace on a hospital floor: it\'s marked on your map.', 'Bring both to Room 4, after the Intensive Care boss.'],
     hooks: { onPickup: joinLetter }, icon: (p) => paper(p, 'top'),
     lore: 'Kept at the lost property desk, in an envelope with his name on it.' },
   { id: 'letter_bottom', name: 'Letter (second half)', kind: 'passive', quality: 0, pools: {}, tags: ['quest'],
-    pickup: '"...saved you the good chair."', effect: ['The bottom half of a letter in Grandfather\'s handwriting.', 'The top half is at Lost & Found: beat a hospital boss and take the door with the claim ticket.', 'Bring both to Room 4, after the Intensive Care boss.'],
+    pickup: '"...saved you the good chair."', effect: ['The bottom half of a letter in Grandad\'s handwriting.', 'The top half is at Lost & Found: beat a hospital boss and take the door with the claim ticket.', 'Bring both to Room 4, after the Intensive Care boss.'],
     hooks: { onPickup: joinLetter }, icon: (p) => paper(p, 'bottom'),
     lore: 'Hidden somewhere deep, where only a brave boy would dig.' },
-  { id: 'grandfathers_letter', name: 'Grandfather\'s Letter', kind: 'passive', quality: 2, pools: {}, tags: ['quest'],
+  { id: 'grandfathers_letter', name: 'Grandad\'s Letter', kind: 'passive', quality: 2, pools: {}, tags: ['quest'],
     pickup: 'Room 4 will let you in', effect: ['Damage +0.5, luck +1.', 'The door to Room 4 opens for you after the Intensive Care boss.'],
     stats: { damage: 0.5, luck: 1 }, icon: (p) => paper(p, 'whole'),
     lore: 'Both halves, taped together crooked. It smells of the hospital and of pipe smoke.' },
   { id: 'get_well_card', name: 'Get Well Soon', kind: 'passive', quality: 2, pools: { boss: 0.8 }, unlock: 'both_halves',
-    pickup: 'Health up, mends each chapter', effect: ['+1 heart container.', 'Heals one heart at the start of every chapter.'],
+    pickup: 'Health up, mends each floor', effect: ['+1 heart container.', 'Heals one heart at the start of every floor.'],
     health: { containers: 1, heal: 2 },
     hooks: { onFloor: (w, n) => { w.player.healRed(2 * n, true); } },
     icon: (p) => { const c = ramp('#e8c870'); p.poly([3, 5, 15, 3, 16, 15, 4, 16], c[3]); p.poly([3, 5, 9, 4, 10, 16, 4, 16], c[2]); I.heart(p, '#c83a4a', 12, 9, 0.5); p.rect(5, 12, 3, 1, hex('#4a4a7a')); },

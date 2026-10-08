@@ -73,7 +73,7 @@ export const FRIEND_ITEMS: ItemDef[] = [
       w.audio.play('snip', { x: pl.x, pitch: 1.8, vol: 0.5 }); w.hud.toast('Badger hisses!', 1);
     } },
     icon: familiarIcon('toffee'),
-    lore: 'Found under the bindery bench in a box marked FRAGILE. She is not fragile.' },
+    lore: 'Found under the workshop bench in a box marked FRAGILE. She is not fragile.' },
   { id: 'cherry_orchard', name: 'The Cherry Orchard', kind: 'passive', quality: 4, pools: { secret: 0.2 },
     pickup: '99 bombs', effect: ['Your cherry bombs are set to 99.'],
     hooks: { onPickup: (w) => { w.player.bombs = 99; } }, icon: orchard,

@@ -81,7 +81,7 @@ export const BINDERY_ITEMS: ItemDef[] = [
     pickup: 'Tied together', effect: ['35% chance for a hit to run a thread to another enemy, hurting it too.'],
     attack: { chain: 1, chainChance: 0.35, tint: '#c8283a' },
     icon: (p: P) => { for (let a = 0; a < TAU * 1.5; a += 0.2) p.set(9 + Math.cos(a) * (2 + a), 9 + Math.sin(a) * (2 + a) * 0.8, '#c8283a'); p.line(13, 12, 16, 16, hex('#a01828')); } },
-  { id: 'marginalia', name: 'Grandfather\'s Marginalia', kind: 'passive', quality: 3, pools: { library: 1 },
+  { id: 'marginalia', name: 'Grandad\'s Notebook', kind: 'passive', quality: 3, pools: { library: 1 },
     pickup: 'He wrote back', effect: ['Every 6th attack also sends one of his notes: it seeks the nearest enemy, passes through three, and marks them (marked enemies take 50% more damage).'],
     hooks: { onFire(w, ang) { if (counter(w, 'marginalia') % 6) return; const pl = w.player;
       w.proj.player(w, { ...pl.prof, homing: 1.4, pierce: 3, mark: 1, split: 0, explode: 0, shape: 'page', tint: '#d8c8a0' }, pl.x, pl.y, 8, ang, pl.stats.damage * 1.5, 170, 260, 1.3, 1); } },

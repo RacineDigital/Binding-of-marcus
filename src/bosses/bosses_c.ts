@@ -275,7 +275,7 @@ const blotBrain = (half: boolean): BossBrain => ({
 });
 const blotBrainF = blotBrain(false), blotBrainH = blotBrain(true);
 const blottedman: EnemyDef = {
-  id: 'blottedman', name: 'The Blotted Man', desc: 'The first mistake in the book. He was never erased.', boss: true,
+  id: 'blottedman', name: 'The Blotted Man', desc: 'A shape in the rain on the windscreen. You never saw its face, and it never left.', boss: true,
   hp: 420, r: 13, speed: 0, role: 'boss', cost: 0, hitY: 26, mass: 10, noKnock: true, gore: '#1e1a36', goreDecal: '#0e0c1c',
   sprites: () => rig({ w: 48, h: 66, paint: (p, s) => G.paintBlotted(p, s, 1), phases: 1 }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1; },
@@ -358,13 +358,13 @@ const unboundBrain: BossBrain = {
   ],
   onPhase(e, w, ph) {
     e.anim = 'open';
-    w.hud.toast(ph === 1 ? 'The book falls open.' : 'The binding snaps. The last page is all that remains.');
+    w.hud.toast(ph === 1 ? 'It comes apart at the seams.' : 'Everything you pushed down comes up at once.');
     w.whiteFlash = 0.5;
     if (ph === 2) w.audio.setMusic('finalBinding');
   },
 };
 const unbound: EnemyDef = {
-  id: 'unbound', name: 'The Unbound', desc: 'Every fear Grandfather stitched shut, all at once.', boss: true,
+  id: 'unbound', name: 'The Unbound', desc: 'Every fear you ever pushed down, all at once.', boss: true,
   hp: 900, r: 20, speed: 0, role: 'boss', cost: 0, hitY: 30, mass: 30, noKnock: true, flying: true, gore: '#e6dcc0', goreDecal: '#2b2f66', light: [100, '#ff6070'],
   sprites: () => rig({ w: 96, h: 84, paint: (p, s) => G.paintBook(p, s, false), phases: 1, fps: { open: 7 }, extra: { open: [0, 1, 2, 3].map((f) => ({ x: { open: 1 }, jaw: 0.85 + (f % 2) * 0.15, breath: Math.sin(f * 1.6) })) } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 1.4; e.z = 18; },
@@ -384,14 +384,14 @@ const remembersBrain: BossBrain = {
   attacks: unboundBrain.attacks.map((a) => ({ ...a, phases: undefined })),
   onPhase(e, w, ph) {
     e.anim = 'open';
-    w.hud.toast(ph === 1 ? 'It remembers how you did it last time.' : 'It will not let the book close again.');
+    w.hud.toast(ph === 1 ? 'It remembers how you did it last time.' : 'It will not let you leave again.');
     w.whiteFlash = 0.5;
     if (ph === 2) w.audio.setMusic('finalBinding');
   },
 };
 const itremembers: EnemyDef = {
   ...unbound,
-  id: 'itremembers', name: 'It Remembers', desc: 'You closed the book once. It has been waiting on the last page ever since.',
+  id: 'itremembers', name: 'It Remembers', desc: 'You beat it once. It has been waiting at the bottom ever since.',
   hp: 1250, light: [110, '#ff3050'],
   // the cover has grown skin and the eye has gone green: it is not the book you closed
   sprites: () => rig({ w: 96, h: 84, paint: (p, s) => G.paintBook(p, s, true), phases: 1, fps: { open: 7 }, extra: { open: [0, 1, 2, 3].map((f) => ({ x: { open: 1 }, jaw: 0.85 + (f % 2) * 0.15, breath: Math.sin(f * 1.6) })) } }),

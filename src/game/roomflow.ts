@@ -626,7 +626,7 @@ export function onBossKilled(w: World, e: Enemy): void {
   const pl0 = w.player, hasDie = (id: string | null) => !!id && !!getItem(id)?.tags?.includes('dice');
   if (e.def.id === 'itremembers' && (hasDie(pl0.active) || pl0.itemOrder.some((id) => (pl0.items.get(id) ?? 0) > 0 && hasDie(id)))) w.game.save.unlock('unlock_ozzie');
   const endless = w.run.mode === 'endless' && !w.run.challenge;
-  if (endless && fi === FINAL_FLOOR) { w.game.creditWin(); w.hud.banner('The story goes on', 'Endless: the chapters loop, and they bite harder'); }
+  if (endless && fi === FINAL_FLOOR) { w.game.creditWin(); w.hud.banner('The story goes on', 'Endless: the floors loop, and they bite harder'); }
   // the reward lands a beat later, but it is the room's from this moment: walking out (or saving)
   // before the beat can't lose it (see settleRoomReward)
   room.flags.reward = { kind: 'boss', champ: e.data.champ ?? null };
@@ -754,7 +754,7 @@ function bossReward(w: World, room: RoomData, pend: { champ?: string | null }, l
     w.doors.push({ def: d, open: 0, x: p.x, y: p.y, revealed: true });
     door.room.seen = true;
     w.audio.stinger(door.kind);
-    w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : forLetter ? 'Lost & Found has opened. They are holding half of Grandfather\'s letter for you.' : 'A door with a claim ticket on it has opened.', forLetter ? 3.5 : undefined);
+    w.hud.toast(door.kind === 'deal' ? 'An inky door has opened.' : door.kind === 'blessing' ? 'A door of wax has opened.' : forLetter ? 'Lost & Found has opened. They are holding half of Grandad\'s letter for you.' : 'A door with a claim ticket on it has opened.', forLetter ? 3.5 : undefined);
   }
 }
 

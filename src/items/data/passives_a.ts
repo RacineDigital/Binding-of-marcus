@@ -52,7 +52,7 @@ export const PASSIVES_A: ItemDef[] = [
     pickup: 'Fire rate up, a warm start', effect: ['For 4 seconds after you walk into a fight, fire rate +1 more.'], stats: { tears: 0.7 },
     hooks: { onRoomEnter(w) { if (w.enemies.some((e) => !e.dead && !e.friendly)) w.player.addTemp({ id: 'hot_cocoa', stats: { tears: 1 }, time: 4, room: true }); } },
     icon: (p) => { const m = ramp('#c8c8d8'); p.rect(4, 7, 9, 9, m[2]); p.rect(4, 7, 9, 1, m[4]); p.ring(14, 11, 2.5, m[2]); p.rect(5, 8, 7, 2, hex('#6a3a1e')); p.line(7, 2, 8, 5, hex('#e8e8f0')); p.line(10, 3, 9, 6, hex('#e8e8f0')); } },
-  { id: 'spectacles', name: 'Grandfather\'s Spectacles', kind: 'passive', quality: 2, pools: { shop: 1 },
+  { id: 'spectacles', name: 'Grandad\'s Spectacles', kind: 'passive', quality: 2, pools: { shop: 1 },
     pickup: 'See far, hit far', effect: ['Enemies more than 5 tiles away take 35% more damage.'], stats: { range: 60, shotSpeed: 0.15, size: 0.1 },
     hooks: { onHitEnemy(w, e, dmg) { if (directHit(w) && dist2(e.x, e.y, w.player.x, w.player.y) > 120 * 120 && !e.dead) { e.hp -= dmg * 0.35; if (Math.random() < 0.3) w.fx.text(e.x, e.y - e.hitY - 10, 'far!', '#c8e0ff'); } } },
     icon: (p) => { p.ring(5, 9, 3.5, '#c8a04a', 1.2); p.ring(13, 9, 3.5, '#c8a04a', 1.2); p.line(8, 9, 10, 9, hex('#c8a04a')); p.set(4, 8, '#e0f0ff'); p.set(12, 8, '#e0f0ff'); } },
@@ -211,7 +211,7 @@ export const PASSIVES_A: ItemDef[] = [
     pickup: 'Every shot is different', effect: ['Each shot gets a random effect: burning, slowing, poisoning, frightening or confusing.'],
     attack: { rainbow: true },
     icon: (p) => { p.rect(3, 7, 12, 9, hex('#3a6ab0')); ['#e04a4a', '#e8c040', '#4ab05a', '#b05ad8'].forEach((c, i) => { p.rect(4 + i * 3, 3, 2, 5, hex(c)); p.set(4 + i * 3, 2, hex(c)); }); } },
-  { id: 'grandpas_pipe', name: 'Grandfather\'s Pipe', kind: 'passive', quality: 3, pools: { treasure: 0.7 },
+  { id: 'grandpas_pipe', name: 'Grandad\'s Pipe', kind: 'passive', quality: 3, pools: { treasure: 0.7 },
     pickup: 'Damage up, smoke rings', effect: ['Every 5th attack also blows a slow smoke ring that drifts through enemies and confuses them.'], stats: { damageMult: 1.3, tears: -0.2 },
     hooks: { onFire(w, ang) { if (counter(w, 'pipe') % 5) return; const pl = w.player;
       w.proj.player(w, { ...pl.prof, pierce: 99, confuse: 1, split: 0, explode: 0, homing: 0, tint: '#d8d4cc', shape: 'ink' }, pl.x, pl.y, 8, ang, pl.stats.damage, 75, 190, 2.2, 1); } },

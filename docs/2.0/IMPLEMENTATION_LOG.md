@@ -355,6 +355,19 @@ Kept: the Tab map frame, the boss bar frame and the item-description backdrop (r
 - **Inklings switched off** (`src/game/inkflag.ts`, `INK.on = false`): every entry point is a no-op,
   the HUD margins and Journal page are hidden, the five ink items are in no pool, and the three ink
   achievements are left out. The code and its tests stay (`tests/inklings.ts` turns it on).
+- **Story rewrite** (owner: "less book, deeper, cooler to a normal person"). New premise, set out
+  in `src/data/lore.ts`: Marcus Hale, 17, crashed off the Harrow Lane bridge at 4:04 driving to
+  St. Agnes, where Grandad Elias (41 years the hospital's boiler man) died the same minute; Marcus
+  is in a coma and the game is inside it. Rewritten: intro, all five endings (ids kept for saves:
+  morning = Not Yet, own_hand = The Voicemail, for_marcus = First Light, the_visit = Room 4,
+  goodnight = Wake Up), epilogues, fortunes, story guide, all 25 notes (ids kept), achievements
+  text, character text, floor names/subtitles/title cards ("Floor I"; binding = The Deep End,
+  margins = The Static, lastpage = Dead Air, dedication = The Eulogy, foreword = First Light,
+  home = Awake), book-themed boss names/lines (bookbinder = The Surgeon, unwritten = The Noise,
+  author = The Old Man), "reader" -> "character", "Second Edition" -> "Hard", "chapter" -> "floor"
+  and "Grandfather" -> "Grandad" in player-facing item/UI strings. The intro wraps its lines now.
+  Not changed: the menus are still drawn as an open book, consumable "pages" and the ink-themed
+  item names, and art (bosses and floors keep their sprites under new names).
 - **Music ringing** (reported): every synth track (21) and recording (30) was rendered/decoded and
   scanned for a sustained narrow tone above 1.5 kHz; none found. Not reproduced; needs details.
 

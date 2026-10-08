@@ -35,7 +35,7 @@ export function onLetterFloor(w: World): void {
     }
   }
   const tip = !h.top && !h.bottom
-    ? 'Grandfather\'s letter is torn in two. One half is down the crawlspace on your map; the other is at Lost & Found, behind the boss.'
+    ? 'Grandad\'s letter is torn in two. One half is down the crawlspace on your map; the other is at Lost & Found, behind the boss.'
     : !h.bottom ? 'The rest of the letter is down the crawlspace marked on your map.'
     : 'The rest of the letter is at Lost & Found: beat the boss and take the door with the claim ticket.';
   w.after(2.8, () => w.hud.toast(tip, 5), true);

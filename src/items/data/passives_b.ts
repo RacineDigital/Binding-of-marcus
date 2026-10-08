@@ -102,7 +102,7 @@ export const PASSIVES_B: ItemDef[] = [
     hooks: { onRoomEnter(w) { const here = w.room; for (const r of w.floor.rooms) if ((r.type === 'secret' || r.type === 'supersecret') && !r.discovered && Math.abs(r.gx - here.gx) + Math.abs(r.gy - here.gy) === 1) {
       r.seen = true; w.hud.toast('The ring glints.', 1.6); w.audio.play('coinDrop', { pitch: 1.6, vol: 0.5 }); w.fx.stars(w.player.x, w.player.y - 10, 4, '#ffe48a'); return; } } },
     icon: (p) => { p.ring(9, 10, 5, '#d8a838', 1.6); p.ring(9, 10, 5, '#ffe48a', 0.5); p.ball(9, 4.5, 2.4, 2.2, ramp('#d01830')); p.set(8, 4, '#ffd0d8'); } },
-  { id: 'grandpas_map', name: 'Grandfather\'s Map', kind: 'passive', quality: 2, pools: { library: 1 },
+  { id: 'grandpas_map', name: 'Grandad\'s Map', kind: 'passive', quality: 2, pools: { library: 1 },
     pickup: 'Know the way', effect: ['Reveals the layout of every floor (not hidden rooms).'],
     hooks: { onPickup: (w) => revealMap(w, false), onFloor: (w) => revealMap(w, false) },
     icon: (p) => { p.rect(2, 3, 14, 12, hex('#d8c8a0')); p.line(5, 5, 8, 9, hex('#8a3a2a')); p.line(8, 9, 13, 7, hex('#8a3a2a')); p.line(4, 12, 7, 12, hex('#5a4a3a')); p.set(13, 7, '#c83a3a'); } },

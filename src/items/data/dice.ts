@@ -209,13 +209,13 @@ export const DICE: ItemDef[] = [
   DIE('d7', 'D7', '7', '#f0a0a0', 7, 3, 2, 'Again!', ['In a room you already cleared, brings its enemies back so you can clear it again for another reward.'], d7, { shop: 0.5 }),
   DIE('d8', 'D8', '8', '#c8a8f0', 'diamond', 4, 2, 'Reroll your stats', ['Rerolls your damage and fire rate multipliers (x0.6 to x1.6), plus your range and speed. For good.'], d8, { shop: 0.5 }, 'dmg_15'),
   DIE('d9', 'D9', '9', '#a0e8b8', 9, 2, 1, 'Reroll your charms', ['Each charm you carry becomes a different charm.'], d9, { shop: 0.6 }),
-  DIE('d10', 'D10', '10', '#f0d890', 'kite', 2, 1, 'Reroll the monsters', ['Every enemy in the room becomes a different enemy from this chapter.'], d10, { shop: 0.5 }),
+  DIE('d10', 'D10', '10', '#f0d890', 'kite', 2, 1, 'Reroll the monsters', ['Every enemy in the room becomes a different enemy from this floor.'], d10, { shop: 0.5 }),
   DIE('d12', 'D12', '12', '#d8b890', 5, 2, 1, 'Reroll the furniture', ['Rocks, urns, heaps, kegs and blocks in the room turn into other obstacles.'], d12, { shop: 0.4 }),
   DIE('d20', 'D20', '20', '#90d0e8', 6, 4, 2, 'Reroll the floor', ['Every pickup lying in the room (not items or shop stock) turns into a different pickup.'], d20, { shop: 0.5 }),
   DIE('d100', 'D100', '100', '#f0c050', 'ball', 6, 4, 'Reroll everything', ['Rerolls your items, every item pedestal and every pickup in the room, all at once.'],
     (w) => { const a = d4(w), b = reroll(w), c = d20(w); return a || b || c; }, { shop: 0.4 }, 'beat_author'),
   DIE('eternal_d6', 'Hollow Die', '6', '#f4f4f8', 'cube', 2, 2, 'Reroll your fate?', ['Rerolls every item pedestal in the room, but each item has a 1 in 4 chance to vanish instead.'], eternal, { shop: 0.6 }),
   DIE('spindown', 'Countdown Die', '', '#5a5a6a', 6, 6, 3, 'Count down', ['Every item pedestal in the room becomes the item listed just before it in the collection.'], spindown, { shop: 0.3 }, 'challenges_3'),
-  DIE('d_infinity', 'Shifting Die', '', '#2a2a3a', 'cube', 4, 3, 'Every die at once', ['Rolls the face it shows (D1, D4, Grandfather\'s Die, D7, D8, D9, D10, D12 or D20), then lands on a new face for next time.'], dInfinity, { shop: 0.5 }, 'all_dice'),
+  DIE('d_infinity', 'Shifting Die', '', '#2a2a3a', 'cube', 4, 3, 'Every die at once', ['Rolls the face it shows (D1, D4, Grandad\'s Die, D7, D8, D9, D10, D12 or D20), then lands on a new face for next time.'], dInfinity, { shop: 0.5 }, 'all_dice'),
 ];
 void hex;

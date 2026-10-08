@@ -207,10 +207,14 @@ export class MenuSystem {
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.82)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        // each line fades in on its own and wraps to the screen; the first is the time and place, set apart
+        let y = 62;
         INTRO_STORY.forEach((line, i) => {
           const a = clamp((this.t - i * 3.0) * 1.2, 0, 1);
           ctx.globalAlpha = a;
-          text(ctx, line, VIEW_W / 2, 80 + i * 22, 10, '#e6d6bc', 'center', FONT_BODY, 400);
+          const rows = wrap(ctx, line, 10, VIEW_W - 90);
+          rows.forEach((r, k) => text(ctx, r, VIEW_W / 2, y + k * 13, 10, i === 0 ? '#f2c8a0' : '#e6d6bc', 'center', FONT_BODY, i === 0 ? 700 : 400));
+          y += rows.length * 13 + 10;
         });
         ctx.globalAlpha = 1;
         promptBar(ctx, [[null, 'Press any key to continue', 'keys'], [null, 'Press any button to continue', 'pad']]);
@@ -298,9 +302,9 @@ export class MenuSystem {
         drawReader(ctx, sp, ch, self.time);
         ctx.restore();
         const S = g.save.data.stats;
-        const rows: [string, string][] = [['Reader', ch.name], ['Seed', formatSeed(seed)], ['Today\'s best', S['best_daily_' + day] ? String(S['best_daily_' + day]) : '—'], ['Best ever (Normal)', S.best_normal ? String(S.best_normal) : '—']];
+        const rows: [string, string][] = [['Character', ch.name], ['Seed', formatSeed(seed)], ['Today\'s best', S['best_daily_' + day] ? String(S['best_daily_' + day]) : '—'], ['Best ever (Normal)', S.best_normal ? String(S.best_normal) : '—']];
         rows.forEach(([k, v], i) => { text(ctx, k, 230, 104 + i * 16, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 380, 104 + i * 16, 9, INK, 'right', FONT_TITLE, 400, false); });
-        text(ctx, 'One UTC seed, a loaned reader, and the full item pool.', 240, 186, 7, INK2, 'center', FONT_BODY, 600, false);
+        text(ctx, 'One UTC seed, a loaned character, and the full item pool.', 240, 186, 7, INK2, 'center', FONT_BODY, 600, false);
         inkBlot(ctx, 240, 208, 90, 14, self.time, 'rgba(40,30,60,0.2)');
         text(ctx, 'Begin', 240, 212, 11, INK, 'center', FONT_TITLE, 400, false);
         promptBar(ctx, [['confirm', 'begin'], ['back', 'back']]);
@@ -413,7 +417,7 @@ export class MenuSystem {
         const stats = computeStats(c.base, [b.stats]);
         text(ctx, `DMG ${stats.damage.toFixed(1)}    RATE ${stats.fireRate.toFixed(2)}`, 96, 179, 7, '#e7d9bd', 'center');
         text(ctx, `SPEED ${stats.speed.toFixed(2)}    RANGE ${Math.round(stats.range / 24)}`, 96, 191, 7, '#a5b9b4', 'center');
-        text(ctx, '‹  READER  ›', 96, 204, 6, row === 0 ? COL.gold : '#889e9c', 'center');
+        text(ctx, '‹  CHARACTER  ›', 96, 204, 6, row === 0 ? COL.gold : '#889e9c', 'center');
         text(ctx, un ? c.title : 'A story still to unlock', 178, 59, 12, '#efe4cc', 'left', FONT_TITLE, 400);
         wrap(ctx, un ? c.desc : c.unlockHint, 7.5, 258).slice(0, 3).forEach((l, i) => text(ctx, l, 178, 73 + i * 9, 7.5, '#b9c7c3'));
         if (un) {
@@ -422,7 +426,7 @@ export class MenuSystem {
           for (const [n, spr] of [[c.health.wax ?? 0, H.wax], [c.health.ink ?? 0, H.ink]] as const) for (let i = 0; i < n; i += 2) { ctx.drawImage(spr.canvas, hx, 95, 8, 8); hx += 9; }
           c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), 424 - i * 14, 92, 12, 12); });
         }
-        text(ctx, challenge ? 'CHALLENGE KIT · FIXED BINDING' : 'THE BINDING · CHOOSE A PLAYSTYLE', 178, 110, 6.5, '#d4b779');
+        text(ctx, challenge ? 'CHALLENGE KIT · FIXED BINDING' : 'CHOOSE A PLAYSTYLE', 178, 110, 6.5, '#d4b779');
         BINDINGS.forEach((v, i) => {
           const x = 178 + i * 65, selected = bi === i;
           ctx.save(); ctx.globalAlpha = challenge && i ? 0.22 : 1;
@@ -435,9 +439,9 @@ export class MenuSystem {
         text(ctx, b.title, 178, 186, 6.5, b.color);
         text(ctx, b.benefit, 178, 197, 7.2, '#e7e5cd');
         text(ctx, b.cost, 178, 207, 7, '#b8c4c0');
-        const modeName = modes[mi] === 'hard' ? 'Hard · score ×1.5' : modes[mi] === 'endless' ? 'Endless · looping chapters' : 'Normal';
+        const modeName = modes[mi] === 'hard' ? 'Hard · score ×1.5' : modes[mi] === 'endless' ? 'Endless · looping floors' : 'Normal';
         const seedText = editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : '') : seed.length === 8 ? formatSeed(seed) : 'Random';
-        for (const [x, width, r, label] of [[30, 152, 2, `Mode: ${modeName}`], [187, 142, 3, padSeed ? '' : `Seed: ${seedText}`], [340, 109, 4, 'OPEN THE BOOK']] as const) {
+        for (const [x, width, r, label] of [[30, 152, 2, `Mode: ${modeName}`], [187, 142, 3, padSeed ? '' : `Seed: ${seedText}`], [340, 109, 4, 'GO DOWN']] as const) {
           panel(ctx, x, 220, width, 23, 1, row === r ? '#e5c88d' : '#405456', r === 4 ? '#36534e' : '#17272c');
           if (label) text(ctx, label, x + width / 2, 235, r === 4 ? 8 : 7.5, row === r ? '#fff0d6' : '#c0cdc6', 'center');
         }
@@ -533,8 +537,8 @@ export class MenuSystem {
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 30, 14, 420, 240, 1, pg ? 13 : 11);
-        heading(ctx, pg ? 'The Mirrored' : 'The Readers', 240, 36, 13, pg ? '#5a1a2a' : INK);
-        if (pages > 1) { text(ctx, pg ? '◀ Readers' : '', 64, 36, 7.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, pg ? '' : 'Mirrored ▶', 416, 36, 7.5, '#6a1a2a', 'right', FONT_BODY, 600, false); }
+        heading(ctx, pg ? 'The Mirrored' : 'Characters', 240, 36, 13, pg ? '#5a1a2a' : INK);
+        if (pages > 1) { text(ctx, pg ? '◀ Characters' : '', 64, 36, 7.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, pg ? '' : 'Mirrored ▶', 416, 36, 7.5, '#6a1a2a', 'right', FONT_BODY, 600, false); }
         list().forEach((c, i) => {
           const { x, y } = pos(i);
           const un = isUn(c);
@@ -754,14 +758,14 @@ export class MenuSystem {
         page(ctx, 20, 14, 440, 244, 1, 21);
         heading(ctx, 'Run History', 40, 38, 12, INK, 'left');
         const L = list();
-        if (!L.length) text(ctx, 'No finished runs yet. Every story you finish or lose is written down here.', 240, 120, 8, INK2, 'center', FONT_BODY, 600, false);
+        if (!L.length) text(ctx, 'No finished runs yet. Every run you finish or lose is kept here.', 240, 120, 8, INK2, 'center', FONT_BODY, 600, false);
         L.slice(scroll, scroll + 8).forEach((r, k) => {
           const i = k + scroll, y = 58 + k * 22, on = i === sel;
           if (on) inkBlot(ctx, 240, y + 5, 410, 21, self.time, 'rgba(40,30,60,0.15)');
           const ch = CHARACTERS.find((c) => c.id === r.char);
           const ending = r.ending ? ENDINGS.find((e) => e.id === r.ending)?.name : undefined;
           text(ctx, r.won ? ending ?? 'Won' : 'Lost', 40, y + 7, 8, r.won ? '#3a6a2a' : '#8a2a2a', 'left', FONT_TITLE, 400, false);
-          text(ctx, `${ch?.name ?? r.char} · ${r.mode === 'hard' ? 'Hard' : r.mode === 'daily' ? 'Daily' : r.mode === 'endless' ? 'Endless' : r.mode === 'challenge' ? 'Challenge' : 'Normal'} · Chapter ${r.floor + 1}`, 78, y + 2, 7.5, INK, 'left', FONT_BODY, 600, false);
+          text(ctx, `${ch?.name ?? r.char} · ${r.mode === 'hard' ? 'Hard' : r.mode === 'daily' ? 'Daily' : r.mode === 'endless' ? 'Endless' : r.mode === 'challenge' ? 'Challenge' : 'Normal'} · Floor ${r.floor + 1}`, 78, y + 2, 7.5, INK, 'left', FONT_BODY, 600, false);
           const extras = [r.unlocks?.length ? `${r.unlocks.length} unlock${r.unlocks.length === 1 ? '' : 's'}` : '', r.notes?.length ? `${r.notes.length} new note${r.notes.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
           const runNote = `${new Date(r.date).toLocaleDateString()} · ${fmtTime(r.time)} · ${bindingById(r.binding).name} · Seed ${formatSeed(r.seed)}${r.cause && !r.won ? ' · ' + r.cause : ''}${extras ? ' · ' + extras : ''}`;
           text(ctx, runNote, 78, y + 10, 6, INK2, 'left', FONT_BODY, 600, false);
@@ -799,7 +803,7 @@ export class MenuSystem {
         const rows: [string, string][] = [
           ['Runs started', String(S.runs ?? 0)], ['Stories finished', String(S.wins ?? 0)], ['Deaths', String(S.deaths ?? 0)],
           ['Enemies defeated', String(S.kills ?? 0)], ['Bosses defeated', String(S.bossKills ?? 0)], ['Curios collected', String(S.itemsCollected ?? 0)],
-          ['Secrets found', String(S.secretsFound ?? 0)], ['Buttons gathered', String(S.buttons ?? 0)], ['Chapters closed', String(S.floorsCleared ?? 0)],
+          ['Secrets found', String(S.secretsFound ?? 0)], ['Buttons gathered', String(S.buttons ?? 0)], ['Floors closed', String(S.floorsCleared ?? 0)],
           ['Bargains struck', String(S.deals ?? 0)], ['Best time', g.save.data.bestTime ? fmtTime(g.save.data.bestTime) : '—'], ['Best score', S.best_normal ? String(S.best_normal) : '—'], ['Best score (Hard)', S.best_hard ? String(S.best_hard) : '—'],
         ];
         rows.forEach(([k, v], i) => { text(ctx, k, 40, 54 + i * 14, 8.5, INK2, 'left', FONT_BODY, 600, false); text(ctx, v, 200, 54 + i * 14, 9, INK, 'right', FONT_BODY, 600, false); });
@@ -1058,7 +1062,7 @@ export class MenuSystem {
     const daily = g.world?.run.mode === 'daily';
     // the desktop app can close straight from here (the run is saved exactly where you are)
     const desk = (window as any).bomDesktop;
-    const items = ['Resume', 'Help & controls', 'Options', daily ? "Retry today's seed" : 'Restart (same reader)', 'Save & quit to menu', ...(desk?.quit ? ['Save & quit to desktop'] : [])];
+    const items = ['Resume', 'Help & controls', 'Options', daily ? "Retry today's seed" : 'Restart (same character)', 'Save & quit to menu', ...(desk?.quit ? ['Save & quit to desktop'] : [])];
     let sel = 0;
     const choose = () => {
       if (sel === 0) { g.resumeRun(); return; }
@@ -1225,7 +1229,7 @@ export class MenuSystem {
         text(ctx, pad ? 'change controller buttons' : 'change key bindings', L + cw + 3, BY + BH - 13, 6.5, '#8a2a2a', 'left', FONT_BODY, 700, false);
         // reading the house
         heading(ctx, 'Reading the house', R, 40, 11, INK, 'left', false);
-        const doors: [string, string][] = [['treasure', 'Treasure: choose one of two'], ['shop', 'Shop: spend buttons'], ['boss', 'The chapter\'s keeper'], ['library', 'Library: pages and books'],
+        const doors: [string, string][] = [['treasure', 'Treasure: choose one of two'], ['shop', 'Shop: spend buttons'], ['boss', 'The floor\'s boss'], ['library', 'Library: pages and books'],
           ['deal', 'Inkwell: pay in hearts'], ['blessing', 'Chapel: a gift'], ['challenge', 'Challenge: a fight for a prize'], ['secret', 'Hidden: bomb the walls']];
         doors.forEach(([k, s], i) => { const y = 56 + i * 13; const sp = doorSymbol(k); if (sp) sp.draw(ctx, R + 5, y + 2); text(ctx, s, R + 14, y, 7, INK2, 'left', FONT_BODY, 600, false); });
         const H = pickupSprites().hud;
@@ -1417,7 +1421,7 @@ export class MenuSystem {
     let sel = 0, scroll = 0;
     const VIS = 15;
     const follow = () => { if (sel < scroll) scroll = sel; if (sel >= scroll + VIS) scroll = sel - VIS + 1; };
-    const where = (n: NoteDef) => n.where?.includes('hospital') ? 'Found only up the back stair.' : n.req ? 'Turns up later in the story.' : 'Found lying around in the book.';
+    const where = (n: NoteDef) => n.where?.includes('hospital') ? 'Found only up the back stair.' : n.req ? 'Turns up later in the story.' : 'Found lying around down there.';
     return {
       t: 0,
       update(keys) {
@@ -1438,7 +1442,7 @@ export class MenuSystem {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         page(ctx, 20, 14, 440, 244, 1, 23);
         heading(ctx, 'Notes', 40, 38, 12, INK, 'left');
-        text(ctx, 'in Grandfather\'s hand', 41, 47, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        text(ctx, 'voicemails, texts and notes', 41, 47, 6.5, INK2, 'left', FONT_BODY, 600, false);
         const read = (n: NoteDef) => g.save.hasNote(n.id);
         text(ctx, `${NOTES.filter(read).length} / ${NOTES.length}`, 196, 38, 8, INK2, 'right', FONT_BODY, 600, false);
         if (g.save.isUnlocked('notes_all')) { ctx.fillStyle = '#c89a2a'; ctx.fillRect(28, 14, 5, 22); }
@@ -1455,7 +1459,7 @@ export class MenuSystem {
           text(ctx, n.title, X, 56, 12, INK, 'left', FONT_TITLE, 400, false);
           let y = 74;
           for (const s2 of wrap(ctx, n.text, 8, Wd)) { text(ctx, s2, X, y, 8, '#3a2a40', 'left', FONT_BODY, 600, false); y += 10.5; }
-          text(ctx, '— ' + (n.by ?? 'Grandfather'), X + Wd, y + 8, 7.5, INK2, 'right', FONT_BODY, 600, false);
+          text(ctx, '— ' + (n.by ?? 'Grandad'), X + Wd, y + 8, 7.5, INK2, 'right', FONT_BODY, 600, false);
         } else {
           text(ctx, 'Not yet read', X, 56, 12, '#8a7a6a', 'left', FONT_TITLE, 400, false);
           text(ctx, where(n), X, 74, 8, '#6a3a2a', 'left', FONT_BODY, 600, false);
@@ -1630,7 +1634,7 @@ function deathTip(w: World): string {
     'a room with a closed door you never opened may be a shop or treasure. Keys open them.',
     `hold ${bindLabel('map')} to see the map and exactly what each of your curios does.`,
     'chalk-marked stones hide something. A cherry bomb opens them, and cracked walls too.',
-    'getting through a chapter without losing a red heart makes a bargain door likelier after its boss.',
+    'getting through a floor without losing a red heart makes a bargain door likelier after its boss.',
   ];
   return general[(w.run.stats.kills + w.run.floorIndex) % general.length];
 }

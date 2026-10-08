@@ -7,13 +7,13 @@ import { BOSSES } from '../bosses/registry';
 import { CHARACTERS } from '../player/characters';
 
 export type RunMode = 'normal' | 'hard' | 'daily' | 'endless';
-export const MODE_NAMES: Record<RunMode, string> = { normal: 'Normal', hard: 'Second Edition (Hard)', daily: 'Daily Run', endless: 'Endless' };
+export const MODE_NAMES: Record<RunMode, string> = { normal: 'Normal', hard: 'Hard', daily: 'Daily Run', endless: 'Endless' };
 
 /** Score for a finished (or ended) run. Shown on the death and ending screens. */
 export function runScore(run: Run, won: boolean): { total: number; parts: [string, number][] } {
   const s = run.stats;
   const parts: [string, number][] = [
-    ['Chapters', run.floorIndex * 1500],
+    ['Floors', run.floorIndex * 1500],
     ['Bosses', s.bossesKilled.length * 1000],
     ['Enemies', s.kills * 10],
     ['Rooms', s.roomsCleared * 25],

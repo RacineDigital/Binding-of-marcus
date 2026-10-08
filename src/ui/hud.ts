@@ -221,9 +221,9 @@ export class Hud {
       [h.bottom, 'Bottom half', 'Deep Crawlspace, on the map'],
     ];
     const lines = rows.map(([got, name, where]) => got ? `\u2713 ${name}: found` : `\u2022 ${name}: ${where}`);
-    const wd = Math.max(measure(ctx, 'Grandfather\'s letter', 6, FONT_BODY, 700), ...lines.map((s) => measure(ctx, s, 5.5))) + 6;
+    const wd = Math.max(measure(ctx, 'Grandad\'s letter', 6, FONT_BODY, 700), ...lines.map((s) => measure(ctx, s, 5.5))) + 6;
     ctx.save();
-    text(ctx, 'Grandfather\'s letter', VIEW_W - 11, y + 7, 6, '#ffe08c', 'right', FONT_BODY, 700);
+    text(ctx, 'Grandad\'s letter', VIEW_W - 11, y + 7, 6, '#ffe08c', 'right', FONT_BODY, 700);
     lines.forEach((s, i) => text(ctx, s, VIEW_W - 11, y + 16 + i * 9, 5.5, rows[i][0] ? COL.up : COL.text, 'right'));
     ctx.restore();
   }
@@ -513,7 +513,7 @@ export class Hud {
     const offers = w.pickups.filter((p) => p.pedestal && p.data.id && p.data.group !== undefined && !p.dead);
     if (w.room.type === 'treasure' && offers.length > 1) {
       text(ctx, 'CHOOSE ONE CURIO', VIEW_W / 2, 52, 8, '#ecd9a7', 'center');
-      text(ctx, 'The other returns to the book.', VIEW_W / 2, 62, 7, '#b7cac4', 'center');
+      text(ctx, 'The other one disappears.', VIEW_W / 2, 62, 7, '#b7cac4', 'center');
     }
   }
 

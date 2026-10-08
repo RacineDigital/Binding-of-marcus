@@ -8,8 +8,8 @@ export interface Binding {
   keys?: number; bombs?: number; roomCharge?: number; active?: string;
 }
 export const BINDINGS: readonly Binding[] = [
-  { id: 'unbound', name: 'Unbound', title: 'LET THE BOOK SURPRISE YOU', color: '#d9ba7c', dark: '#654e30',
-    benefit: 'The reader\'s original starting kit.', cost: 'No added strengths or weaknesses.', stats: {} },
+  { id: 'unbound', name: 'Unbound', title: 'SURPRISE ME', color: '#d9ba7c', dark: '#654e30',
+    benefit: 'The character\'s original starting kit.', cost: 'No added strengths or weaknesses.', stats: {} },
   { id: 'ember', name: 'Ember', title: 'MAKE EVERY SHOT COUNT', color: '#efa784', dark: '#843c2c',
     benefit: 'Damage +25%. Stronger individual shots.', cost: 'Fire rate -15%. Misses cost more time.', stats: { damageMult: 1.25, tearsMult: 0.85 } },
   { id: 'wayfarer', name: 'Wayfarer', title: 'OPEN ANOTHER DOOR', color: '#a2d4c6', dark: '#305d56',

@@ -34,7 +34,7 @@ export function reroll(w: World): boolean {
 }
 
 export const ACTIVES: ItemDef[] = [
-  { id: 'old_dice', name: 'Grandfather\'s Die', kind: 'active', quality: 4, pools: { shop: 1 }, tags: ['dice'],
+  { id: 'old_dice', name: 'Grandad\'s Die', kind: 'active', quality: 4, pools: { shop: 1 }, tags: ['dice'],
     pickup: 'Reroll your fate', effect: ['Rerolls every item pedestal in the room into a new item.'], active: { charge: 6, type: 'room', use: (w) => { const ok = reroll(w); if (ok) markDie(w, 'old_dice'); return ok; } },
     icon: (p) => { const c = ramp('#e8dcc0'); p.rect(3, 4, 12, 12, c[2]); p.rect(3, 4, 12, 2, c[4]); p.rect(14, 5, 1, 11, c[0]); for (const [x, y] of [[5, 7], [9, 10], [12, 13], [12, 7], [5, 13]]) p.set(x, y, '#1a1010'); } },
   { id: 'stopped_watch', name: 'Stopped Watch', kind: 'active', quality: 3, pools: { shop: 0.8 }, tags: ['clock'], unlock: 'transform_clock',
@@ -98,8 +98,8 @@ export const ACTIVES: ItemDef[] = [
     pickup: 'Balance the books', effect: ['Doubles your buttons, up to 10 extra.'],
     active: { charge: 3, type: 'room', use: (w) => { const add = Math.min(10, w.player.buttons); if (!add) return false; w.player.buttons += add; w.audio.play('coinBig'); w.fx.text(w.player.x, w.player.y - 30, '+' + add, '#ffe070'); } },
     icon: (p) => I.book(p, '#5a4a2a', (q) => { I.coin(q, '#e8c040', 9, 9, 2.5); }) },
-  { id: 'bookbinders_press', name: 'Bookbinder\'s Press', kind: 'active', quality: 4, pools: { treasure: 0.4 }, unlock: 'win_elias',
-    pickup: 'Press them flat', effect: ['Crushes weakened enemies (under 40 health) outright and deals 50 damage to the rest.'],
+  { id: 'bookbinders_press', name: 'The Boiler Valve', kind: 'active', quality: 4, pools: { treasure: 0.4 }, unlock: 'win_elias',
+    pickup: 'Let the pressure out', effect: ['Crushes weakened enemies (under 40 health) outright and deals 50 damage to the rest.'],
     active: { charge: 4, type: 'room', use: (w) => { for (const e of w.enemies) if (!e.dead) { if (!e.isBoss && e.hp < 40) w.killEnemy(e); else w.damageEnemy(e, 50, { ang: Math.PI / 2, knock: 0, source: 'press' }); } w.shake(7); w.audio.play('slam'); w.whiteFlash = 0.3; } },
     icon: (p) => { const m = ramp('#5a5a66'); p.rect(3, 2, 12, 3, m[3]); p.rect(8, 5, 2, 5, m[2]); p.rect(4, 10, 10, 3, m[2]); p.rect(2, 14, 14, 3, ramp('#6a4a2a')[2]); } },
   { id: 'binders_awl', name: 'Binder\'s Awl', kind: 'active', quality: 2, pools: { treasure: 0.5 }, tags: ['thread'],

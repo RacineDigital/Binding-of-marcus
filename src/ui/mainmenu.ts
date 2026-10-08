@@ -290,7 +290,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
     desc: () => `${CHARACTERS.find((c) => c.id === run.charId)?.name ?? ''} · ${pickTheme({ seed: run.seed, flags: run.flags ?? {} } as any, run.floor).name} · Seed ${formatSeed(run.seed)}${run.mode === 'hard' ? ' · Hard' : run.mode === 'endless' ? ' · Endless' : ''}`,
     act: () => g.fadeTo(() => { if (!g.continueRun()) ms.openMain(); }, 0.4) });
   entries.push(
-    { id: 'new', label: 'New Run', icon: I.plus, desc: () => 'Pick a reader, a mode and (optionally) a seed.', act: () => ms.push(ms.newRunScreen()) },
+    { id: 'new', label: 'New Run', icon: I.plus, desc: () => 'Pick a character, a mode and (optionally) a seed.', act: () => ms.push(ms.newRunScreen()) },
     { id: 'daily', label: 'Daily Run', icon: I.sun, desc: () => 'One seed for everyone today.', act: () => ms.push(ms.dailyScreen()) },
   );
   if (CHALLENGES.some((c) => !c.unlock || g.save.isUnlocked(c.unlock))) entries.push({ id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) });
@@ -299,7 +299,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
     { id: 'news', label: 'What\'s new', icon: I.scroll, desc: () => `What changed in v${GAME_VERSION}.`, act: () => ms.push(ms.whatsNewScreen()) },
     { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls, save slots and credits.', act: () => ms.push(ms.optionsScreen()) },
   );
-  if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Close the book for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
+  if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Stop for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
   return entryList(ms, entries, { logo: true });
 }
 
@@ -308,7 +308,7 @@ function nextGoal(g: MenuSystem['g']): string {
   const has = (id: string) => g.save.isUnlocked(id);
   if (!has('beat_final')) {
     const chapter = ['beat_ch1', 'beat_ch2', 'beat_ch3', 'beat_ch4', 'beat_ch5', 'beat_ch6', 'beat_ch7'].findIndex((id) => !has(id));
-    return chapter >= 0 ? `NEXT GOAL · Defeat the Chapter ${chapter + 1} boss.` : 'NEXT GOAL · Finish the story at the Binding.';
+    return chapter >= 0 ? `NEXT GOAL · Defeat the Floor ${chapter + 1} boss.` : 'NEXT GOAL · Reach the Deep End and beat the Surgeon.';
   }
   if (!has('back_stair')) return 'NEXT GOAL · Look for the boarded back stair near the boilers.';
   if (!has('both_halves')) return 'NEXT GOAL · Find both halves of Elias’s letter in the hospital.';
@@ -316,22 +316,22 @@ function nextGoal(g: MenuSystem['g']): string {
   const endings = new Set(g.save.data.endings ?? []);
   if (!endings.has('goodnight')) {
     const otherFour = ['morning', 'own_hand', 'for_marcus', 'the_visit'].every((id) => endings.has(id));
-    return otherFour ? 'NEXT GOAL · See the other endings, then visit once more.' : 'NEXT GOAL · Explore the book for its other endings.';
+    return otherFour ? 'NEXT GOAL · See the other endings, then visit once more.' : 'NEXT GOAL · Find the other endings.';
   }
-  return 'NEXT GOAL · Fill another reader’s five ending marks.';
+  return 'NEXT GOAL · Fill another character’s five ending marks.';
 }
 /** The Journal: everything you have seen and done, one level down from the title. */
 export function journalScreen(ms: MenuSystem): Screen {
   const g = ms.g;
   const entries: Entry[] = [
-    { id: 'story', label: 'Story so far', icon: I.scroll, desc: () => 'A plain-language guide to the family, the book and every ending. Spoilers.', act: () => ms.push(storyGuideScreen(ms)) },
-    { id: 'characters', label: 'Readers', icon: I.person, desc: () => 'Every reader you have met in the cellar.', act: () => ms.push(ms.charactersScreen()) },
+    { id: 'story', label: 'Story so far', icon: I.scroll, desc: () => 'A plain-language guide to what happened, the family and every ending. Spoilers.', act: () => ms.push(storyGuideScreen(ms)) },
+    { id: 'characters', label: 'Characters', icon: I.person, desc: () => 'Everyone you have met down there.', act: () => ms.push(ms.charactersScreen()) },
     { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press ${g.input.usingPad ? padLabel(0) : 'Enter'} inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
     ...(INK.on ? [{ id: 'inklings', label: 'Inklings', icon: I.book, desc: () => `${g.save.data.inkSeen?.length ?? 0} of 16 essences written. What each creature leaves behind.`, act: () => ms.push(ms.inklingsScreen()) }] : []),
     { id: 'synergies', label: 'Attack combinations', icon: I.chart, desc: () => `${g.save.data.discoveredCombos?.length ?? 0} attack combinations discovered.`, act: () => ms.push(ms.synergiesScreen()) },
     { id: 'history', label: 'Run History', icon: I.history, desc: () => `Your last ${Math.min(30, g.save.data.history?.length ?? 0)} stories, good and bad.`, act: () => ms.push(ms.historyScreen()) },
     { id: 'stats', label: newUnlocks(g) ? `Statistics (${newUnlocks(g)} new)` : 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements: what each one asks and what it gives.', act: () => ms.push(ms.statsScreen()) },
-    { id: 'notes', label: 'Notes', icon: I.scroll, desc: () => `Grandfather's notes found: ${g.save.data.notes?.length ?? 0} of ${NOTES.length}.`, act: () => ms.push(ms.notesScreen()) },
+    { id: 'notes', label: 'Notes', icon: I.scroll, desc: () => `Notes and messages found: ${g.save.data.notes?.length ?? 0} of ${NOTES.length}.`, act: () => ms.push(ms.notesScreen()) },
     { id: 'endings', label: 'Endings', icon: I.bookmark, desc: () => `Endings found: ${g.save.data.endings?.length ?? 0} of ${ENDINGS.length}.`, act: () => ms.push(ms.endingsScreen()) },
   ];
   return entryList(ms, entries, { title: 'Journal', back: true });

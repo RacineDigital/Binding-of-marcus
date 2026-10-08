@@ -38,7 +38,7 @@ const PICKUP_TEXT: Record<string, [string, string, string]> = {
   ink: ['Ink Heart', 'Bottled darkness', 'Adds 1 ink heart. When it breaks, it splashes damage on every enemy in the room.'],
   brass: ['Wax Heart', 'Soft and warm', 'Adds 1 wax heart.'], // old saves
   gilded: ['Gilded Heart', 'Worth its weight', 'Adds 1 gilded heart. Spills buttons when it breaks.'],
-  key: ['Key', 'Opens things', 'Opens locked doors, locked boxes and the treasure room on later chapters.'],
+  key: ['Key', 'Opens things', 'Opens locked doors, locked boxes and the treasure room on later floors.'],
   goldKey: ['Golden Key', 'Opens everything', 'Every lock on this floor opens for free.'],
   bomb: ['Cherry Bomb', 'Handle with care', 'Place with {bomb}. Breaks rocks, opens hidden walls and hurts everything nearby.'],
   bomb2: ['Two Cherry Bombs', 'Handle with care', '+2 cherry bombs.'],

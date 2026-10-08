@@ -96,7 +96,7 @@ const WARD_ENCOUNTERS: Encounter[] = [
 
 export const FLOORS: FloorTheme[] = [
   {
-    id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Chapter I',
+    id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Floor I',
     floor: 'flag', wall: 'stone', ambience: 'dust',
     pal: { floor: '#435354', floor2: '#334147', grout: '#202a30', wall: '#495a60', wall2: '#303e48', mortar: '#18232c',
       rock: '#72807a', accent: '#c5a46d', stain: '#2d4940', heap: '#d8ccb0', heapKind: 'paper' },
@@ -108,7 +108,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 1, budget: 0.9,
   },
   {
-    id: 'boiler', name: 'The Boiler Rooms', subtitle: 'The house still breathes down here', chapter: 'Chapter II',
+    id: 'boiler', name: 'The Boiler Rooms', subtitle: 'The house still breathes down here', chapter: 'Floor II',
     floor: 'brick', wall: 'iron', ambience: 'embers',
     pal: { floor: '#4a3431', floor2: '#3b2a29', grout: '#1d1414', wall: '#4a4546', wall2: '#35302f', mortar: '#171213',
       rock: '#5e5552', accent: '#d9772c', stain: '#1a1614', heap: '#2d2a2c', heapKind: 'coal' },
@@ -120,7 +120,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 1.15, budget: 1.1,
   },
   {
-    id: 'underworks', name: 'The Underworks', subtitle: 'Everything drains down eventually', chapter: 'Chapter III',
+    id: 'underworks', name: 'The Underworks', subtitle: 'Everything drains down eventually', chapter: 'Floor III',
     floor: 'cobble', wall: 'sewer', ambience: 'drips',
     pal: { floor: '#394540', floor2: '#2e3834', grout: '#151c1a', wall: '#3d4a44', wall2: '#2c3632', mortar: '#111715',
       rock: '#56625b', accent: '#7fae5a', stain: '#40562a', heap: '#5a5238', heapKind: 'refuse' },
@@ -132,7 +132,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 1.3, budget: 1.3,
   },
   {
-    id: 'ward', name: 'The Forgotten Ward', subtitle: 'Nobody came to visit', chapter: 'Chapter IV',
+    id: 'ward', name: 'The Forgotten Ward', subtitle: 'Nobody came to visit', chapter: 'Floor IV',
     floor: 'tile', wall: 'ward', ambience: 'motes',
     pal: { floor: '#7d8a80', floor2: '#6b776e', grout: '#3a403c', wall: '#4f6a60', wall2: '#3a5048', mortar: '#1e2826',
       rock: '#8a8a82', accent: '#c2d4b0', stain: '#5a3a30', heap: '#d6d2c4', heapKind: 'linen' },
@@ -144,7 +144,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 1.5, budget: 1.5,
   },
   {
-    id: 'depths', name: 'The Depths', subtitle: 'Older than the house above', chapter: 'Chapter V',
+    id: 'depths', name: 'The Depths', subtitle: 'Older than the house above', chapter: 'Floor V',
     floor: 'earth', wall: 'cave', ambience: 'ash',
     pal: { floor: '#3e3230', floor2: '#322826', grout: '#181010', wall: '#3c302e', wall2: '#2a2120', mortar: '#120b0b',
       rock: '#5a4a44', accent: '#c2a27a', stain: '#4a1e1e', heap: '#d9cdb8', heapKind: 'bone' },
@@ -155,7 +155,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 1.7, budget: 1.7,
   },
   {
-    id: 'chapel', name: 'The Chapel', subtitle: 'Wax remembers every prayer', chapter: 'Chapter VI',
+    id: 'chapel', name: 'The Chapel', subtitle: 'Wax remembers every prayer', chapter: 'Floor VI',
     floor: 'checker', wall: 'chapel', ambience: 'glass',
     pal: { floor: '#6e6258', floor2: '#3c3438', grout: '#231d20', wall: '#5a4c4a', wall2: '#433836', mortar: '#1c1516',
       rock: '#8a7c70', accent: '#e8c46a', stain: '#6a4a2a', heap: '#efe4c2', heapKind: 'wax' },
@@ -166,7 +166,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 1.9, budget: 1.9,
   },
   {
-    id: 'hollow', name: 'The Hollow', subtitle: 'The page tears here', chapter: 'Chapter VII',
+    id: 'hollow', name: 'The Hollow', subtitle: 'Where memory gives out', chapter: 'Floor VII',
     floor: 'void', wall: 'torn', ambience: 'ink',
     pal: { floor: '#1e1a2e', floor2: '#171426', grout: '#0a0812', wall: '#2e2848', wall2: '#221d38', mortar: '#0c0a16',
       rock: '#3e3858', accent: '#8a7cff', stain: '#0e0c1c', heap: '#26234a', heapKind: 'ink' },
@@ -177,7 +177,7 @@ export const FLOORS: FloorTheme[] = [
     hpMul: 2.1, budget: 2.1,
   },
   {
-    id: 'binding', name: 'The Binding', subtitle: 'The last page is still blank', chapter: 'Final Chapter',
+    id: 'binding', name: 'The Deep End', subtitle: 'Where the stairs stop going down', chapter: 'The Bottom',
     floor: 'pages', wall: 'spines', ambience: 'pages',
     pal: { floor: '#b8a47e', floor2: '#a08c68', grout: '#4a3a28', wall: '#5a2e2a', wall2: '#40201e', mortar: '#1c0e0c',
       rock: '#7a6a58', accent: '#e8d8a0', stain: '#2b2f66', heap: '#e6dcc0', heapKind: 'pages' },
@@ -215,7 +215,7 @@ export const ALT_FLOORS: Record<string, FloorTheme> = {
   chapel: variant(FLOORS[5], { id: 'belfry', name: 'The Belfry', subtitle: 'Every bell still remembers its last toll',
     floor: 'brick', wall: 'chapel', pal: { floor: '#5a4232', floor2: '#4a3628', grout: '#1e1410', heap: '#efe4c2' }, ambience: 'dust',
     enemies: { choirboy: 5, censer: 6, penitent: 5, cherubmoth: 7, sootsprite: 3 } }),
-  hollow: variant(FLOORS[6], { id: 'inkwell', name: 'The Inkwell', subtitle: 'Deep enough to drown a story',
+  hollow: variant(FLOORS[6], { id: 'inkwell', name: 'The Black Water', subtitle: 'The river, from underneath',
     pal: { floor: '#141a2e', floor2: '#10142a', wall: '#1e2846', wall2: '#161e38', accent: '#4a8aff' },
     enemies: { blot: 8, voideye: 5, pagewraith: 5, hollowmaw: 4, mirrorshade: 3, drowner: 3 } }),
 };
@@ -245,7 +245,7 @@ export const NEW_FLOORS: FloorTheme[] = [
     hpMul: 1.3, budget: 1.3,
   },
   {
-    id: 'printshop', name: 'The Print Shop', subtitle: 'Iron type, inky rollers, no one at the press', chapter: '', tier: 3,
+    id: 'printshop', name: 'The Print Shop', subtitle: 'The machines run all night and nobody works them', chapter: '', tier: 3,
     floor: 'brick', wall: 'iron', ambience: 'pages',
     pal: { floor: '#3a3438', floor2: '#2e2a2e', grout: '#121014', wall: '#3e3a40', wall2: '#2c282e', mortar: '#100e12',
       rock: '#5a5660', accent: '#c83a3a', stain: '#1a1a2e', heap: '#e6dcc0', heapKind: 'pages' },
@@ -278,7 +278,7 @@ export const NEW_FLOORS: FloorTheme[] = [
     hpMul: 1.7, budget: 1.7,
   },
   {
-    id: 'stacks', name: 'The Library Stacks', subtitle: 'Shelves taller than the dark', chapter: '', tier: 5,
+    id: 'stacks', name: 'The Records Room', subtitle: 'Every file the hospital ever kept, shelved in the dark', chapter: '', tier: 5,
     floor: 'tile', wall: 'spines', ambience: 'pages',
     pal: { floor: '#4a2e2a', floor2: '#3a2422', grout: '#160c0a', wall: '#4a2a26', wall2: '#361e1c', mortar: '#140a08',
       rock: '#7a5a4a', accent: '#e8c070', stain: '#2a1a3a', heap: '#e6dcc0', heapKind: 'pages' },
@@ -299,7 +299,7 @@ for (const [k, v] of Object.entries(ALT_FLOORS)) v.tier = FLOORS.find((f) => f.i
  * them leads on, to the Last Page.
  */
 export const MARGINS_THEME: FloorTheme = {
-  id: 'margins', name: 'The Margins', subtitle: 'Where the notes nobody was meant to read are kept', chapter: 'Epilogue', tier: 7,
+  id: 'margins', name: 'The Static', subtitle: 'Where the signal breaks up', chapter: 'Beyond', tier: 7,
   floor: 'pages', wall: 'torn', ambience: 'ink',
   pal: { floor: '#c8bea6', floor2: '#b4a98e', grout: '#4a3e30', wall: '#2a2238', wall2: '#1e182a', mortar: '#0c0812',
     rock: '#5e5668', accent: '#c83a4a', stain: '#2b2f66', heap: '#e6dcc0', heapKind: 'pages' },
@@ -313,7 +313,7 @@ export const MARGINS_THEME: FloorTheme = {
 };
 /** The Last Page: one huge, empty page and what is writing itself onto it. */
 export const LASTPAGE_THEME: FloorTheme = {
-  ...MARGINS_THEME, id: 'lastpage', name: 'The Last Page', subtitle: 'It has been waiting for you to arrive', chapter: 'The End',
+  ...MARGINS_THEME, id: 'lastpage', name: 'Dead Air', subtitle: 'The one message nobody played', chapter: 'Beyond',
   floor: 'pages', wall: 'torn', ambience: 'pages',
   pal: { ...MARGINS_THEME.pal, floor: '#e6dcc4', floor2: '#ddd2b8', grout: '#a89878', wall: '#14101c', wall2: '#0c0a12', stain: '#14163a' },
   darkness: 0.3, enemies: { blot: 1 }, bosses: ['unwritten'], music: 'binding', hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
@@ -323,7 +323,7 @@ export const LASTPAGE_THEME: FloorTheme = {
  * the Foreword, where the Author waits.
  */
 export const DEDICATION_THEME: FloorTheme = {
-  ...MARGINS_THEME, id: 'dedication', name: 'The Dedication', subtitle: '"For my grandson, who was always braver than me"', chapter: 'Epilogue',
+  ...MARGINS_THEME, id: 'dedication', name: 'The Eulogy', subtitle: '"He was always braver than me"', chapter: 'Beyond',
   floor: 'tile', wall: 'chapel', ambience: 'motes',
   pal: { floor: '#e8e0cc', floor2: '#d8ccb0', grout: '#a8987a', wall: '#c8bca4', wall2: '#a8987e', mortar: '#5a4a38',
     rock: '#b8ac94', accent: '#ffd870', stain: '#c8b47a', heap: '#fff4dc', heapKind: 'wax' },
@@ -333,7 +333,7 @@ export const DEDICATION_THEME: FloorTheme = {
   music: 'chapel',
 };
 export const FOREWORD_THEME: FloorTheme = {
-  ...DEDICATION_THEME, id: 'foreword', name: 'The Foreword', subtitle: 'Before the story, there was the one who wrote it', chapter: 'The Beginning',
+  ...DEDICATION_THEME, id: 'foreword', name: 'First Light', subtitle: 'Someone is waiting at the top of the stairs', chapter: 'Above',
   floor: 'pages', pal: { ...DEDICATION_THEME.pal, floor: '#f4ecd8', floor2: '#ece2c8', grout: '#c8b890' },
   darkness: 0.15, enemies: { cherubmoth: 1 }, bosses: ['author'], hazards: { spikes: 0, pits: 0, fires: 0, kegs: 0 },
 };
@@ -386,7 +386,7 @@ export const ROOM4_THEME: FloorTheme = {
 };
 /** Home: the cellar in the morning. Nothing down here any more but the book. */
 export const HOME_THEME: FloorTheme = {
-  id: 'home', name: 'Home', subtitle: 'It is morning, and it is real', chapter: 'Afterword', tier: 0,
+  id: 'home', name: 'Awake', subtitle: 'The beeping, and a hand holding yours', chapter: 'Awake', tier: 0,
   floor: 'planks', wall: 'stone', ambience: 'motes',
   pal: { floor: '#8a6a48', floor2: '#7a5c3e', grout: '#3a2a1a', wall: '#8a7a68', wall2: '#6e604e', mortar: '#3a3024',
     rock: '#a89880', accent: '#ffe0a0', stain: '#6a5a40', heap: '#efe4c8', heapKind: 'pages' },
@@ -423,4 +423,4 @@ export function roman(n: number): string {
   for (const [v, r] of [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']] as [number, string][]) while (n >= v) { out += r; n -= v; }
   return out;
 }
-export function chapterLabel(depth: number): string { return depth === FINAL_FLOOR ? 'Final Chapter' : `Chapter ${roman(depth + 1)}`; }
+export function chapterLabel(depth: number): string { return depth === FINAL_FLOOR ? 'The Bottom' : `Floor ${roman(depth + 1)}`; }

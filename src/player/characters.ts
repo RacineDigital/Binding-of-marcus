@@ -17,7 +17,7 @@ export interface CharacterDef {
 export const CHARACTERS: CharacterDef[] = [
   {
     id: 'marcus', name: 'Marcus', title: 'The Grandson', look: 'marcus',
-    desc: 'Eleven years old, lost inside an oversized hoodie. Flicks ink when he is frightened, which is always.',
+    desc: 'Seventeen, in a coma at St. Agnes, and somewhere much further down than that. Lost inside his old hoodie. Fights harder when he is frightened, which is always.',
     base: { damage: 3.5, tears: 2.73, range: 230, shotSpeed: 1, speed: 1, luck: 0 },
     health: { red: 3 }, items: ['frightened'], buttons: 0, keys: 1, bombs: 1, unlockHint: '', passive: 'Frightened: getting hit makes him flick ink and fire much faster for a moment. Hits harder on his last half heart.',
   },
@@ -26,7 +26,7 @@ export const CHARACTERS: CharacterDef[] = [
     desc: 'Marcus\'s cousin. Quick, reckless, and never without her slingshot; she once drew Grandad wearing a crown. Her pebbles ricochet off walls.',
     base: { damage: 3.0, tears: 3.1, range: 210, shotSpeed: 1.15, speed: 1.2, luck: 0 },
     health: { red: 2, wax: 2 }, items: ['slingshot'], buttons: 5, keys: 0, bombs: 0,
-    unlock: 'beat_ch2', unlockHint: 'Defeat the Chapter II boss.', passive: 'Slingshot: pebbles ricochet off the walls. Fast but fragile.',
+    unlock: 'beat_ch2', unlockHint: 'Defeat the Floor II boss.', passive: 'Slingshot: pebbles ricochet off the walls. Fast but fragile.',
   },
   {
     id: 'edda', name: 'Edda', title: 'The Seamstress', look: 'edda',
@@ -34,19 +34,19 @@ export const CHARACTERS: CharacterDef[] = [
     base: { damage: 2.6, tears: 3.7, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 },
     health: { red: 2, wax: 4 }, items: ['thimble', 'stitchwork'], buttons: 0, keys: 1, bombs: 1,
     profile: { shape: 'needle', pierce: 1 },
-    unlock: 'beat_ch4', unlockHint: 'Defeat the Chapter IV boss.', passive: 'Stitchwork: needles pierce and stitch enemies together. Starts with the Thimble.',
+    unlock: 'beat_ch4', unlockHint: 'Defeat the Floor IV boss.', passive: 'Stitchwork: needles pierce and stitch enemies together. Starts with the Thimble.',
   },
   {
-    id: 'elias', name: 'Elias', title: 'The Binder', look: 'elias',
-    desc: 'What remains of the grandfather, still looking for the last page. He cannot hold red hearts, drifts over pits, and his shots pass through stone.',
+    id: 'elias', name: 'Elias', title: 'The Boiler Man', look: 'elias',
+    desc: 'Grandad, or what Marcus\'s head keeps of him: forty-one years in the boiler rooms, still on his rounds. He cannot hold red hearts, drifts over pits, and his shots pass through stone.',
     base: { damage: 3.1, tears: 2.6, range: 260, shotSpeed: 0.95, speed: 0.95, luck: 0 },
     health: { red: 0, wax: 6, noRed: true }, items: ['binders_awl'], buttons: 0, keys: 0, bombs: 2,
     profile: { spectral: true, tint: '#9ad0f0', shape: 'wax' }, flight: true,
-    unlock: 'beat_ch6', unlockHint: 'Defeat the Chapter VI boss.', passive: 'Wax hearts only. Flies, and his shots pass through stone.',
+    unlock: 'beat_ch6', unlockHint: 'Defeat the Floor VI boss.', passive: 'Wax hearts only. Flies, and his shots pass through stone.',
   },
   {
-    id: 'blot', name: 'The Blot', title: 'The Unwritten', look: 'blot',
-    desc: 'The ink Grandfather spilled across Chapter Seven, which learned to walk and then to fly. It cannot throw. It opens its mouth instead.',
+    id: 'blot', name: 'The Blot', title: 'The River', look: 'blot',
+    desc: 'The black water under the bridge, which learned to walk and then to fly. It cannot throw. It opens its mouth instead.',
     base: { damage: 4.4, tears: 2.3, range: 200, shotSpeed: 0.9, speed: 0.9, luck: -1 },
     health: { red: 0, ink: 6, noRed: true }, items: ['ink_maw'], buttons: 0, keys: 0, bombs: 0,
     profile: { shape: 'void' }, flight: true,
@@ -57,21 +57,21 @@ export const CHARACTERS: CharacterDef[] = [
     desc: 'The neighbour\'s boy, who never once said no to a bet. He keeps a six-sided die in his pocket and trusts it more than his eyes.',
     base: { damage: 3.2, tears: 2.73, range: 230, shotSpeed: 1, speed: 1.05, luck: 2 },
     health: { red: 2, wax: 2 }, items: ['old_dice', 'loaded_dice'], buttons: 7, keys: 1, bombs: 1,
-    unlock: 'unlock_ozzie', unlockHint: 'Defeat It Remembers while holding a die.', passive: 'Loaded: every shot rolls a die, and a six hits for triple. Starts with Grandfather\'s Die.',
+    unlock: 'unlock_ozzie', unlockHint: 'Defeat It Remembers while holding a die.', passive: 'Loaded: every shot rolls a die, and a six hits for triple. Starts with Grandad\'s Die.',
   },
   {
     id: 'nell', name: 'Nell', title: 'The Lamplighter', look: 'nell',
-    desc: 'Marcus\'s older sister, who visited Grandad every day. She came down after Marcus with a lamp, and she is furious about it.',
+    desc: 'Marcus\'s older sister, who visited Grandad every day and has not left Marcus\'s bedside since. She came down after him with a lamp, and she is furious about it.',
     base: { damage: 3.3, tears: 2.8, range: 220, shotSpeed: 1, speed: 1, luck: 0 },
     health: { red: 3 }, items: ['lamplight', 'pocket_lantern'], buttons: 0, keys: 1, bombs: 1,
-    unlock: 'beat_unwritten', unlockHint: 'Go through the tear after the Binding and defeat what waits on the Last Page.', passive: 'Lamplight: embers often set enemies alight, and burning enemies take more from her. Carries the Pocket Lantern.',
+    unlock: 'beat_unwritten', unlockHint: 'Go into the static after the Deep End and silence the Noise.', passive: 'Lamplight: embers often set enemies alight, and burning enemies take more from her. Carries the Pocket Lantern.',
   },
   {
     id: 'bram', name: 'Bram', title: 'The Bruiser', look: 'bram',
-    desc: 'The boy from the end of the street. He does not throw things. He hits them, with the bone folder he took from the bindery.',
+    desc: 'The boy from the end of the street. He does not throw things. He hits them, with the length of pipe he took from the boiler room.',
     base: { damage: 4.2, tears: 2.2, range: 200, shotSpeed: 0.95, speed: 0.88, luck: -1 },
     health: { red: 4 }, items: ['bone_folder', 'tin_heart'], buttons: 0, keys: 0, bombs: 2,
-    unlock: 'unlock_bram', unlockHint: 'Defeat three chapter bosses in one run without any of them hitting you.', passive: 'Fights up close with the Bone Folder: no shots, big swings. Slow and sturdy.',
+    unlock: 'unlock_bram', unlockHint: 'Defeat three floor bosses in one run without any of them hitting you.', passive: 'Fights up close with the Bone Folder: no shots, big swings. Slow and sturdy.',
   },
   {
     id: 'wick', name: 'Wick', title: 'The Moth Child', look: 'wick',
@@ -87,7 +87,7 @@ export const CHARACTERS: CharacterDef[] = [
     base: { damage: 3.2, tears: 2.8, range: 250, shotSpeed: 1, speed: 0.95, luck: 2 },
     health: { red: 2, wax: 4 }, items: ['grandmothers_ring', 'four_leaf', 'rose_cuttings'], buttons: 3, keys: 1, bombs: 1,
     profile: { shape: 'needle', tint: '#4a9a3a', slow: 0.35 },
-    unlock: 'unlock_ada', unlockHint: 'Finish The Visit while carrying Grandmother\'s Ring.', passive: 'Rose Cuttings: thorns slow what they hit and leave brambles behind. Starts with Grandmother\'s Ring.',
+    unlock: 'unlock_ada', unlockHint: 'Finish Room 4 while carrying Grandmother\'s Ring.', passive: 'Rose Cuttings: thorns slow what they hit and leave brambles behind. Starts with Grandmother\'s Ring.',
   },
 ];
 // ------------------------------------------------------------------ the mirrored
@@ -99,7 +99,7 @@ const T = (base: string, name: string, title: string, desc: string, d: Omit<Char
     unlockHint: `Earn all five marks as ${b.name}.`, ...d };
 };
 export const TAINTED: CharacterDef[] = [
-  T('marcus', 'Marcus', 'The Smudged', 'The boy who wrote himself into the book, and could not wash the ink off. Whatever he throws comes back to him.',
+  T('marcus', 'Marcus', 'The Smudged', 'The Marcus who stayed in the river. He cannot get the black water off. Whatever he throws comes back to him.',
     { base: { damage: 3.6, tears: 2.6, range: 230, shotSpeed: 1, speed: 1, luck: 0 }, health: { red: 3 }, items: ['t_smudge'], buttons: 0, keys: 1, bombs: 1,
       passive: 'The Smudge: every shot comes back to you, hitting going and coming. Shorter range.' }),
   T('wren', 'Wren', 'The Runaway', 'She ran so far she ran out of herself. Too quick to hold anything red, and her pebbles never stop bouncing.',
@@ -108,10 +108,10 @@ export const TAINTED: CharacterDef[] = [
   T('edda', 'Edda', 'The Unravelled', 'She stitched everyone else back together. Now every thread she throws pulls three of them tight at once.',
     { base: { damage: 2.8, tears: 3.4, range: 250, shotSpeed: 1.25, speed: 1, luck: 1 }, health: { red: 1, wax: 8 }, items: ['thimble', 't_unravel'], buttons: 0, keys: 1, bombs: 1,
       profile: { shape: 'needle', pierce: 1 }, passive: 'Unravelling: needles stitch the enemy they hit to two more. One heart, four bronze shields.' }),
-  T('elias', 'Elias', 'The Forgotten', 'He forgot where the story was going. The pages circle him now, a slow storm he cannot put down.',
+  T('elias', 'Elias', 'The Forgotten', 'He forgot where he was going. His papers circle him now, a slow storm he cannot put down.',
     { base: { damage: 3.0, tears: 2.8, range: 260, shotSpeed: 0.95, speed: 0.95, luck: 0 }, health: { red: 0, wax: 4, noRed: true }, items: ['binders_awl', 't_orbit'], buttons: 0, keys: 0, bombs: 2,
       profile: { spectral: true, tint: '#9ad0f0', shape: 'page' }, flight: true, passive: 'Lost Pages: your shots circle around you through stone. Flies, wax hearts only.' }),
-  T('blot', 'Blot', 'The Spill', 'It opened wide once and never closed again. The ink just keeps coming, all the way across the room.',
+  T('blot', 'Blot', 'The Spill', 'It opened wide once and never closed again. The water just keeps coming, all the way across the room.',
     { base: { damage: 3.8, tears: 2.2, range: 220, shotSpeed: 0.9, speed: 0.9, luck: -1 }, health: { red: 0, ink: 4, noRed: true }, items: ['t_spill'], buttons: 0, keys: 0, bombs: 0,
       profile: { shape: 'void' }, flight: true, passive: 'The Spill: a full-length ink beam that leaves burning ink behind. Flies, ink hearts only.' }),
   T('ozzie', 'Ozzie', 'The Broke', 'He bet everything he had, and then he bet himself. Every room he walks into is another throw of the die.',

@@ -112,7 +112,7 @@ export const REFERENCES: ItemDef[] = [
     } },
     icon: (p) => { snowflake(p, 9, 9, 7, '#a8e0ff', '#e8f8ff'); } },
   { id: 'trash_island', name: 'Flotsam', unlock: 'runs_5', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
-    pickup: 'Washed ashore', effect: ['Each chapter, a pile of three random pickups washes up beside you.'],
+    pickup: 'Washed ashore', effect: ['Each floor, a pile of three random pickups washes up beside you.'],
     hooks: {
       onPickup: (w) => { for (let i = 0; i < 3; i++) spawnDrop(w, rollDropKind(new RNG(Math.random()), w.player.stats.luck, 'small') ?? 'button', w.player.x, w.player.y + 12); },
       onFloor: (w) => { for (let i = 0; i < 3; i++) spawnDrop(w, rollDropKind(new RNG(Math.random()), w.player.stats.luck, 'small') ?? 'button', w.player.x, w.player.y + 12); },
@@ -134,7 +134,7 @@ export const REFERENCES: ItemDef[] = [
       p.poly([9, 5, 10.2, 8, 13, 8.2, 10.8, 10, 11.6, 13, 9, 11.2, 6.4, 13, 7.2, 10, 5, 8.2, 7.8, 8], hex('#fff0a0'));
     } },
   { id: 'cold_visions', name: 'Frosted Glass', unlock: 'secrets_25', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
-    pickup: 'See it all', effect: ['Reveals the layout of every chapter (not hidden rooms).', 'Range up.'],
+    pickup: 'See it all', effect: ['Reveals the layout of every floor (not hidden rooms).', 'Range up.'],
     stats: { range: 40 },
     hooks: {
       onPickup: (w) => { for (const r of w.floor.rooms) if (r.type !== 'secret' && r.type !== 'supersecret') r.seen = true; },
@@ -148,7 +148,7 @@ export const REFERENCES: ItemDef[] = [
   { id: 'ginseng_strip', name: 'Ginseng Tonic', kind: 'passive', quality: 2, pools: { blessing: 1 }, tags: ['drain'],
     pickup: 'Bitter, but it works', effect: ['Fire rate up. Speed up.'],
     stats: { tears: 0.45, speed: 0.1 },
-    lore: 'Grandfather swore by it. The label is in a language nobody in the house could read.',
+    lore: 'Grandad swore by it. The label is in a language nobody in the house could read.',
     icon: (p) => {
       const b = ramp('#4a9a5a');
       p.rect(6, 5, 6, 11, b[2]); p.rect(6, 5, 1, 11, b[4]); p.rect(11, 5, 1, 11, b[1]);
@@ -294,7 +294,7 @@ export const REFERENCES: ItemDef[] = [
       p.line(2, 15, 5, 13, hex('#6ad070'));
     } },
   { id: 'y2k_bug', name: 'Y2K Bug', unlock: 'runs_25', kind: 'passive', quality: 2, pools: { curse: 1 },
-    pickup: '00/00/00', effect: ['Every chapter your stats glitch: two random stats go up a lot, one goes down.'],
+    pickup: '00/00/00', effect: ['Every floor your stats glitch: two random stats go up a lot, one goes down.'],
     hooks: {
       onPickup: (w) => glitchStats(w),
       onFloor: (w) => glitchStats(w),

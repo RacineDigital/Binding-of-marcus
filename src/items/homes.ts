@@ -19,7 +19,7 @@ export const POOL_INFO: Partial<Record<PoolId, PoolInfo>> = {
   blessing: { name: 'Wax Chapel', item: 'Chapel item', color: '#fff4c8', ink: '#9a7a20', mark: '✚' },
   curse: { name: 'Hexed Room', item: 'Hexed item', color: '#c070ff', ink: '#6a2a9a', mark: '✖', dark: true },
   secret: { name: 'Crawlspace', item: 'Secret room item', color: '#a8a0c0', ink: '#4a4460', mark: '?' },
-  boss: { name: 'Chapter\'s End', item: 'Boss item', color: '#ff9a50', ink: '#a04a10', mark: '☠' },
+  boss: { name: 'Floor\'s End', item: 'Boss item', color: '#ff9a50', ink: '#a04a10', mark: '☠' },
   library: { name: 'The Archive', item: 'Archive item', color: '#80b0ff', ink: '#2a4a9a', mark: '❏' },
 };
 
