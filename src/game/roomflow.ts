@@ -26,7 +26,7 @@ import { solidCell, lineClear } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { sweetColor } from '../items/sweetcolor';
-import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, ROOM4_FLOOR, HOSPITAL_FIRST, enemyHpMul } from '../data/floors';
+import { FINAL_FLOOR, MARGINS_FLOOR, LASTPAGE_FLOOR, ROOM4_FLOOR, HOSPITAL_FIRST, enemyHpMul, roman } from '../data/floors';
 import { HOSPITAL_THEMES } from '../data/notes';
 import { checkProgress, onChapterCleared } from './progress';
 import { BOSS_ALIASES } from '../bosses/aliases';
@@ -34,6 +34,8 @@ import { CHALLENGES } from '../data/achievements';
 import { charById } from '../player/characters';
 import { chapterTrack } from '../audio/music';
 import { flawlessReward } from './bindings';
+import { inkOnSpawn, canTakeInk, writeInk, INKLINGS, inkState, inkLevel, weakestSlot, activeAnnotations } from './inklings';
+import { inklingIcon } from '../art/inklings';
 
 /** Each chapter's own recorded theme (by chapter id, so alternates never share one); its old track where it can't load. */
 export function themeMusic(t: { id: string; music: string }): string {
@@ -312,6 +314,7 @@ export function spawnEnemy(w: World, id: string, x: number, y: number, quick: bo
   const e = new Enemy(def, x, y, enemyHpMul(w.run.floorIndex, w.theme.tier ?? 0, !!def.boss) * (w.run.challenge === 'hard' || w.run.mode === 'hard' ? 1.3 : 1));
   e.spawnT = quick ? 0.25 : 0.55;
   def.init?.(e, w);
+  inkOnSpawn(w, e);
   w.enemies.push(e);
   return e;
 }
@@ -899,6 +902,21 @@ export function spawnPedestal(w: World, x: number, y: number, id: string, style:
   return p;
 }
 
+/** Write an Inkling into the margins (force: over the weakest margin when all are full). */
+export function takeInkling(w: World, p: Pickup, force: boolean): void {
+  const d = INKLINGS[p.data.id]; if (!d || p.collectT >= 0) return;
+  const before = force ? inkState(w).slots[weakestSlot(w)] : null;
+  const res = writeInk(w, d.id, force);
+  if (res === 'full') return;
+  p.collectT = 0;
+  const lv = inkLevel(w, d.id);
+  w.audio.play('inkHeart', { x: p.x, pitch: 0.8 + lv * 0.15 });
+  w.fx.burst(w.player.x, w.player.y - 12, 6, 14, d.color, 80, 0.5, 2);
+  const kicker = res === 'up' ? 'THE INK DEEPENS' : res === 'max' ? 'ALREADY MASTERED · ACTIVE CHARGED' : res === 'over' ? `WRITTEN OVER ${INKLINGS[before!.id].name.toUpperCase()}` : 'WRITTEN IN THE MARGIN';
+  w.hud.banner(`${d.name} ${roman(lv)}`, d.levels[lv - 1], inklingIcon(d.id), d.gist, kicker);
+  for (const a of activeAnnotations(w)) if (a.a === d.id || a.b === d.id) w.hud.toast(`Annotation: ${a.name}. ${a.text}`, 4);
+}
+
 export function touchPickup(w: World, p: Pickup): void {
   const pl = w.player, h = pl.health;
   const collect = (snd: string) => { p.collectT = 0; w.audio.play(snd, { x: p.x }); w.itemHook('onPickupCollect', p.kind); };
@@ -969,6 +987,11 @@ export function touchPickup(w: World, p: Pickup): void {
       w.hud.banner(c?.name ?? 'Charm', c?.desc ?? '', itemIconCanvas(p.data.id));
       break;
     }
+    case 'inkling':
+      // with every margin full it waits: stand on it and press {active} to write over the weakest
+      if (!canTakeInk(w, p.data.id)) return;
+      takeInkling(w, p, false);
+      break;
     default:
       if (p.isChest()) openChest(w, p);
   }

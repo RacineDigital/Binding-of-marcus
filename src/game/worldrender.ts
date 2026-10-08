@@ -19,6 +19,7 @@ import { Enemy } from '../enemies/enemy';
 import { hex, darken, toCss, ramp } from '../render/color';
 import { pickupSprites } from '../art/pickups';
 import { CHAMPIONS, ChampKind } from './roomflow';
+import { renderInkWorld } from './inklings';
 
 type Drawable = { y: number; kind: number; ref: any };
 const drawables: Drawable[] = [];
@@ -46,6 +47,7 @@ export function renderWorld(w: World): void {
     ctx.fillRect(snap(c.x - camX - c.r * 0.3), snap(c.y - camY - c.r * 0.25), 2, 1);
   }
   ctx.globalAlpha = 1;
+  renderInkWorld(w, ctx, camX, camY, 'floor');
   // --------------------------------------------------------------- obstacles (cached layer)
   if (w.obstacleDirty || !w.obstacleLayer) rebuildObstacleLayer(w);
   ctx.drawImage(w.obstacleLayer!, -camX, -camY);
@@ -126,6 +128,7 @@ export function renderWorld(w: World): void {
   w.proj.render(ctx, camX, camY, w, Team.Player);
   renderBeams(w, ctx, camX, camY);
   w.fx.render(ctx, camX, camY, (x, y, rr, c, a) => r.addGlow(x, y, rr, c, a));
+  renderInkWorld(w, ctx, camX, camY, 'top');
   w.proj.render(ctx, camX, camY, w, Team.Enemy);   // what can hurt you goes on top of everything
   renderAmbient(w, ctx, camX, camY);
   // --------------------------------------------------------------- lights

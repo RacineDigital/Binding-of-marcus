@@ -485,6 +485,23 @@ console.log('content:', JSON.stringify(counts));
   const sig = (f: ReturnType<typeof generateFloor>) => JSON.stringify(f.rooms.map((r) => [r.type, r.bossId, r.pickups, r.npcs]));
   ok(sig(generateFloor(a, FINAL_FLOOR)) === sig(generateFloor(b, FINAL_FLOOR, profile)), 'Daily final boss and rewards ignore completed story progress');
 }
+// ------------------------------------------------------------ Inklings: every creature is written in a real essence
+{
+  const { INKLINGS, ENEMY_INK, ANNOTATIONS } = await import('../src/game/inklings');
+  for (const d of Object.values(ENEMY_DEFS) as any[]) {
+    if (d.boss) continue;
+    ok(!!INKLINGS[ENEMY_INK[d.id]], `${d.id} leaves a known Inkling (${ENEMY_INK[d.id]})`);
+  }
+  for (const [e, id] of Object.entries(ENEMY_INK)) ok((Object.values(ENEMY_DEFS) as any[]).some((d) => d.id === e) && !!INKLINGS[id], `ink mapping ${e} -> ${id} names a real creature and essence`);
+  for (const d of Object.values(INKLINGS)) {
+    ok(d.levels.length === 3 && d.levels.every((l) => l.length > 10), `${d.id} describes all three levels`);
+    ok(Object.values(ENEMY_INK).includes(d.id), `${d.id} can be found on some creature`);
+  }
+  for (const a of ANNOTATIONS) ok(!!INKLINGS[a.a] && !!INKLINGS[a.b] && a.a !== a.b, `annotation ${a.name} pairs two real essences`);
+  for (const id of ['ink_blotter', 'fourth_margin', 'iron_gall', 'inkhorn', 'pumice_stone']) ok(!!ALL_ITEMS.find((i) => i.id === id), `ink item ${id} exists`);
+  for (const u of ['ink_first', 'ink_annotation', 'ink_mastery']) ok(!!ACHIEVEMENTS.find((a) => a.id === u) && ALL_ITEMS.some((i) => i.unlock === u), `${u} is an achievement that unlocks an item`);
+}
+
 // ------------------------------------------------------------ controller families (button names and glyphs)
 {
   const { padKindFromId, padLabel, DEFAULT_PAD, PAD_BINDABLE } = await import('../src/core/input');

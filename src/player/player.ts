@@ -11,6 +11,7 @@ import { costumeFor, Costume, drawCostume, Frame } from '../art/costume';
 import { LOOKS } from '../art/look';
 import { volley, Beam, meleeSwing, Swing, SHOT_PX, beamScale, laserScale, overcharge, overchargeMul, laserColor } from '../projectiles/weapons';
 import { clamp, TAU } from '../core/math';
+import { inkVolley, inkLobs } from '../game/inklings';
 import { moveBody, cornerSlide } from '../rooms/collide';
 import { getItem } from '../items/registry';
 import { Side } from '../rooms/room';
@@ -22,6 +23,8 @@ const MOVE_PX = 118;
 
 export class Player {
   x = 0; y = 0; z = 0; vx = 0; vy = 0; r = 5.5; hitR = 4;
+  /** Profile and stat contributions of the Inklings held (set by game/inklings.ts syncInk). */
+  inkMods: { attack?: ProfilePart; stats?: StatMods }[] = [];
   char: CharacterDef;
   spr: PlayerSprites;
   /** What the player is wearing: accessories from items, and an outfit from strong items or a transformation. */
@@ -88,6 +91,8 @@ export class Player {
       const T = TRANSFORM_EFFECTS[tf];
       if (T) { if (T.stats) mods.push(T.stats); if (T.attack) mergeProfile(prof, T.attack); if (T.flight) flight = true; }
     }
+    // Inklings written in the margins (game/inklings.ts) merge last, by the same rules
+    for (const m of this.inkMods) { if (m.stats) mods.push(m.stats); if (m.attack) mergeProfile(prof, m.attack); }
     // Stacked homing / piercing etc. are bounded to keep extreme builds sane.
     prof.shots = Math.min(prof.shots, 16);
     prof.split = Math.min(prof.split, 8);
@@ -322,7 +327,10 @@ export class Player {
     }
     for (let k = 0; k < volleys; k++) {
       const m = this.muzzle(ang);
-      volley(w, prof, st, m.x, m.y, m.z, ang, { inherit: { vx: this.vx, vy: this.vy } });
+      // the cadence Inklings (Dive, Lurch, Gaze) may turn this volley into something else
+      const iv = inkVolley(w, prof);
+      iv.after(volley(w, iv.prof, st, m.x, m.y, m.z, ang, { ...iv.o, inherit: { vx: this.vx, vy: this.vy } }));
+      if (iv.lobs) inkLobs(w, prof, m.x, m.y, ang, iv.lobs);
       this.altHand = -this.altHand;
     }
     this.onFired(w, ang, 'shot');

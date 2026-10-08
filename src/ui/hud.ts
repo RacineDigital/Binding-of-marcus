@@ -31,6 +31,8 @@ import { STING_HIT, StingKind } from '../audio/bossting';
 import { FLAWLESS_TARGET } from '../game/bindings';
 import { bindingSeal } from './bindingart';
 import { itemRole, ROLE_COLOR, ROLE_LABEL } from '../items/choice';
+import { inkState, inkCap, brimming, METER_MAX, INKLINGS } from '../game/inklings';
+import { inklingIcon } from '../art/inklings';
 
 /** How long a boss title card holds the screen. */
 const BOSS_CARD = 2.9;
@@ -328,6 +330,7 @@ export class Hud {
     this.drawActive(ctx);
     this.drawHearts(ctx);
     this.drawResources(ctx);
+    this.drawInk(ctx);
     if (!this.fullMap) this.drawRunIdentity(ctx);
     const eid = w.game.save.data.settings.descStyle !== 'card';
     if (w.game.save.data.settings.showStats && !(eid && this.panelFade > 0.05)) this.drawStats(ctx);
@@ -480,6 +483,7 @@ export class Hud {
     const rows = Math.ceil((pl.health.redMax / 2 + pl.health.extra.length + (pl.count('dust_jacket') > 0 ? 1 : 0)) / 6);
     const y0 = Math.max(30, 8 + Math.max(1, rows) * 10 + 4);
     panel(ctx, 4, y0 - 3, 101, 17, 1, '#4d6160', 'rgba(12,25,30,0.83)');
+    this.inkY = y0 + 17;
     const line = (spr: HTMLCanvasElement, n: number, x: number, special = false) => {
       ctx.drawImage(spr, x, y0 - 1);
       text(ctx, String(n).padStart(2, '0'), x + 12, y0 + 8, 8, special ? COL.gold : COL.text);
@@ -487,6 +491,32 @@ export class Hud {
     line(H.button.canvas, pl.buttons, 8);
     line(H.bomb.canvas, pl.bombs, 41);
     line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, 74, pl.goldKey);
+  }
+
+  private inkY = 47;
+  /**
+   * The margins: an ink meter, then a blot per margin with the essence written in it and its level.
+   * Hidden until the first Inkling is seen, so a new player meets it when it first matters.
+   */
+  private drawInk(ctx: CanvasRenderingContext2D): void {
+    const w = this.w, s = inkState(w), cap = inkCap(w);
+    if (!s.slots.length && s.meter <= 0 && !(w.game.save.data.inkSeen ?? []).length) return;
+    const y = this.inkY, x0 = 5, full = brimming(w), SW = 17;
+    const wide = cap * SW + 1;
+    panel(ctx, x0 - 1, y - 2, wide + 2, 24, 1, full ? '#a898ff' : '#4d4a70', 'rgba(14,12,26,0.85)');
+    for (let i = 0; i < cap; i++) {
+      const sx = x0 + 1 + i * SW, sl = s.slots[i];
+      if (!sl) { ctx.strokeStyle = 'rgba(150,140,190,0.35)'; ctx.lineWidth = 0.5; ctx.strokeRect(sx + 1.5, y + 0.5, 13, 13); continue; }
+      ctx.drawImage(inklingIcon(sl.id, 14), sx + 1, y);
+      // its level, as one to three ink strokes under it
+      for (let l = 0; l < 3; l++) { ctx.fillStyle = l < sl.lv ? INKLINGS[sl.id].color : 'rgba(120,110,150,0.35)'; ctx.fillRect(sx + 2 + l * 4.4, y + 15, 3.4, 1.6); }
+    }
+    // the meter: a line of ink along the bottom, pulsing when it brims
+    const k = Math.min(1, s.meter / METER_MAX);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x0 + 1, y + 18.5, wide - 2, 2);
+    ctx.fillStyle = full ? `rgba(210,200,255,${(0.75 + Math.sin(w.time * 8) * 0.25).toFixed(2)})` : '#6a5ad0';
+    ctx.fillRect(x0 + 1, y + 18.5, Math.round((wide - 2) * k), 2);
+    if (full) text(ctx, 'The ink brims: your next kill leaves an Inkling', x0 + wide + 5, y + 12, 6.5, '#d0c8ff');
   }
 
   private drawRunIdentity(ctx: CanvasRenderingContext2D): void {

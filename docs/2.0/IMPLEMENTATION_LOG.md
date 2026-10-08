@@ -74,7 +74,7 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 
 - **M1 — feel and stability** ✅ (this log's first entry): audit tooling, feel regression test, corner
   forgiveness, input buffering.
-- **M2 — Inklings**: ink meter, essence drops, three margin slots with levels I–III, 16 essences built
+- **M2 — Inklings** ✅: ink meter, essence drops, three margin slots with levels I–III, 16 essences built
   on reusable mechanics, furious/annotated enemies, HUD, pickup card, journal, tests.
 - **M3 — rooms**: a template validator (door approaches, reachability, lanes, enemy slots), a large
   authored layout library per room shape, procedural layouts that keep permanent rocks to the edges
@@ -98,13 +98,61 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 
 Verified: `tests/feel.ts` passes; unit tests and type check pass. Not verified by a person playing.
 
+### M2 — Inklings, the signature system (done)
+
+How it plays (all in `src/game/inklings.ts`, art in `src/art/inklings.ts`):
+- **Ink meter.** Every kill pours in the creature's weight (furious creatures 1.5×, champions +3).
+  At 16 it brims: every creature shows, over its head, the Inkling it would leave, and the next one
+  killed leaves it. The player chooses the essence by choosing the kill. Bosses fill the meter.
+- **Margins.** 3 (the Blot 4, +1 with the Fourth Margin). Writing an essence you hold raises it
+  I → II → III; a fourth copy charges the active item. With every margin full the Inkling stays on
+  the floor; standing on it, {active} writes it over the weakest margin (lowest level, oldest).
+- **16 essences on reusable mechanics**, each mapped from 2–5 creatures (all 43 standard enemies
+  are mapped; checked by tests): Swarm (on-kill seekers), Dive (cadence homing), Lurch (cadence
+  heavy shot), Spittle (lobbed splash side shots), Ember (burn + fire spread on death), Bloat
+  (death puddles, radial shots at III), Leech (hits charge the active), Gaze (timed piercing,
+  spectral stare), Ward (orbiting shards that block shots; at III they fire back), Bury (shots that
+  fall plant delayed bursts; at III bursts mark and chain through marked enemies), Snare (slow,
+  webs, pulling webs), Hymn (fear shockwave on kill), Hoard (clean-room payouts), Unwrite (execute
+  threshold), Phase (spectral, pierce, phase-after-hit), Scurry (kill haste).
+- **Annotations** (bespoke pairs, both at II+): Wildfire (Ember+Bury), Ink Web (Bloat+Snare),
+  Glare (Gaze+Lurch), Erasure (Unwrite+Swarm), Psalm (Hymn+Ward).
+- **The creatures react.** Kinds whose essence you hold are *furious* (+15% speed, more ink). The
+  more ink you carry, the more *annotated* creatures appear (ink ring, +35% health, always leave
+  their Inkling): up to 8% of spawns.
+- **Rules**: essence profile parts merge after items/charms/transformations with the same stacking
+  rules and caps; hooks run after items and charms in margin order; anything an essence spawns is
+  depth 1 (no splitting, no cadence, no recursive spawning); seekers and radial shots share an
+  18-token bucket refilling 12/s; at most 10 buried bursts pending, chains ≤ 2 generations.
+- **Presentation**: HUD margins panel (icons, level strokes, meter that pulses when brimming),
+  pickup blob with the creature's silhouette, inspect card (current/next level, overwrite warning,
+  annotation partners), first-brim explanation, Journal → Inklings page with accurate "written in"
+  hints for unseen essences.
+- **Items (5, all obtainable)**: Rocker Blotter (meter +40%), The Fourth Margin, Iron Gall (+0.15
+  damage per ink level), Inkhorn (active: brim the meter), Pumice Stone (active: erase the weakest
+  margin, brim the meter). **Achievements (3)**: First Draft, Annotated, Fully Inked (unlock them).
+- **Saves**: kept in the run's `flags.ink`, so Continue works with no save-format change;
+  `save.data.inkSeen` for the Journal (defaults to empty for old saves).
+
+Verified (automated): `tests/inklings.ts` — meter, brimming drop, write/level/overwrite, every
+essence's effect, two annotations, a 30-enemy extreme build for 600 steps (0.82 ms/step,
+36 peak projectiles, no errors), save & continue. Unit tests check every enemy maps to an essence and
+every ink item/achievement exists. The run bot played 3 seeds through 7 chapters with no errors;
+first tuning (meter 10, 22% annotated) filled all margins at III by chapter 4, so it was retuned to
+meter 16 and ≤ 8% annotated (margins full by chapter 2–3, III mostly late).
+**Not verified**: how it feels in human play; balance of individual essences.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
   random spots and can sit out of the firing line.
 
+- Inklings balance is only bot-tested (the bot kills instantly and takes everything).
+- Boss-specific essences are not implemented (bosses fill the meter instead).
+
 ## 6. Next steps (exact)
 
-1. M2: `src/game/inklings.ts` (data + runtime), hook into `World.killEnemy`, `Player.recompute`,
-   HUD margin slots and meter, pickup + inspect card, journal page, save fields with migration,
-   unit + browser tests.
+1. M3: template validator (`src/rooms/validate.ts`, done) in the unit tests; author the layout
+   library in families (edge bays, pits, pillars, cover, hazards, ambush, arenas, swarm/heavy duels);
+   procedural layouts keep permanent rocks to the edges and leave the door cross open.
+2. Human playtest of Inklings; tune meter size, annotated rate and the weakest essences.

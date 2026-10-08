@@ -54,7 +54,8 @@ const [nSeeds = '4', nCh = '7', char = 'marcus', first = '0'] = process.argv.sli
           dmg: +P.stats.damage.toFixed(2), tears: +P.stats.fireRate.toFixed(2), red: P.health.red / 2 + '/' + P.health.redMax / 2,
           shop: shopSeen ? shopSeen.buttons + ' vs [' + shopSeen.prices.join(',') + ']' : '-' };
       })()`);
-      rows.push({ seed: s, ...(r as object) }); console.log(JSON.stringify({ seed: s, ...(r as object) }));
+      const ink = await page.evaluate(`(() => { const d = window.__bomDebug, s = d.ink.inkState(d.world); return s.slots.map((x) => x.id + x.lv).join(' ') + ' meter ' + s.meter.toFixed(1); })()`);
+      rows.push({ seed: s, ...(r as object), ink }); console.log(JSON.stringify({ seed: s, ...(r as object), ink }));
       await page.evaluate(`window.__bomDebug.nextFloor()`); await page.waitForTimeout(2500);
     }
   }

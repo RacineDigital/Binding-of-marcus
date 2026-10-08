@@ -6,7 +6,7 @@ import { AttackProfile, luckChance } from './profile';
 import type { FinalStats } from '../player/stats';
 import { TAU, angleDiff, clamp, dist2, pointSegDist2 } from '../core/math';
 import { pointBlocked } from '../rooms/collide';
-import { Team } from './projectiles';
+import { Team, type Proj } from './projectiles';
 import type { Enemy } from '../enemies/enemy';
 
 export const SHOT_PX = 290;
@@ -14,7 +14,8 @@ export const SHOT_PX = 290;
 export interface VolleyOpts { dmgMul?: number; sizeMul?: number; fam?: boolean; rangeMul?: number; speedMul?: number; inherit?: { vx: number; vy: number } }
 
 /** Fire one volley of projectiles along `ang` using the profile. */
-export function volley(w: World, prof: AttackProfile, st: FinalStats, x: number, y: number, z: number, ang: number, o: VolleyOpts = {}): void {
+export function volley(w: World, prof: AttackProfile, st: FinalStats, x: number, y: number, z: number, ang: number, o: VolleyOpts = {}): Proj[] {
+  const made: Proj[] = [];
   const n = Math.max(1, Math.min(16, prof.shots));
   const dmg = st.damage * (o.dmgMul ?? 1);
   const spd = SHOT_PX * st.shotSpeed * (o.speedMul ?? 1);
@@ -38,7 +39,9 @@ export function volley(w: World, prof: AttackProfile, st: FinalStats, x: number,
     const a = ang + d;
     const p = w.proj.player(w, prof, x + px * off, y + py * off, z, a, dmg, spd, range, size, 0, !!o.fam);
     if (p && o.inherit) { p.vx += o.inherit.vx * 0.28; p.vy += o.inherit.vy * 0.28; p.bx = p.x; p.by = p.y; p.spd = Math.hypot(p.vx, p.vy); }
+    if (p) made.push(p);
   }
+  return made;
 }
 
 // ------------------------------------------------------------------ beams

@@ -9,6 +9,8 @@ import { getItem } from '../items/registry';
 import { homePool } from '../items/homes';
 import type { PoolId } from '../items/types';
 import { sweetColor } from '../items/sweetcolor';
+import { inklingIcon } from '../art/inklings';
+import { INKLINGS } from './inklings';
 
 export class Pickup {
   kind: string; x: number; y: number; z = 0; vx = 0; vy = 0; vz = 0; r = 5;
@@ -97,6 +99,15 @@ export function renderPickup(w: World, ctx: CanvasRenderingContext2D, p: Pickup,
         w.r.addGlow(sx, sy - 24, 22, home && AURA[home] ? AURA[home]!.glow : (it?.quality ?? 0) >= 3 ? '#ffe090' : '#b0a8ff', home && AURA[home] ? 0.3 : 0.18);
       }
       return;
+    }
+    case 'inkling': {
+      // a wet blob of ink holding a creature's silhouette, breathing and dripping
+      const ic = inklingIcon(p.data.id), bob = Math.sin(p.t * 3 + p.phase) * 1.5, s = 1 + Math.sin(p.t * 5) * 0.04;
+      ctx.save(); ctx.globalAlpha = alpha; ctx.translate(snap(sx), snap(y - 9 + bob)); ctx.scale(s, 1 / s);
+      ctx.drawImage(ic, -ic.width / 2, -ic.height / 2); ctx.restore();
+      w.r.addGlow(sx, y - 9, 16, INKLINGS[p.data.id]?.color ?? '#8080ff', 0.25);
+      if (Math.random() < 0.04) w.fx.stars(p.x + (Math.random() - 0.5) * 10, p.y - 10, 1, INKLINGS[p.data.id]?.color ?? '#8080ff', 8);
+      break;
     }
     case 'button': S.button.draw(ctx, sx, y, o); break;
     case 'button5': S.button5.draw(ctx, sx, y, o); break;

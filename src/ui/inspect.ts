@@ -10,6 +10,10 @@ import { pickupSprites } from '../art/pickups';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { sweetColor } from '../items/sweetcolor';
 import { bindLabel as K, fmtKeys } from '../core/input';
+import { INKLINGS, ENEMY_INK, ANNOTATIONS, inkLevel, inkState, canTakeInk, weakestSlot } from '../game/inklings';
+import { inklingIcon } from '../art/inklings';
+import { getEnemy } from '../enemies/registry';
+import { roman } from '../data/floors';
 
 export interface InspectInfo {
   key: string;
@@ -59,6 +63,22 @@ function inspectRaw(w: World, p: Pickup): InspectInfo | null {
     if (blind) return { key: 'blind', icon: itemIconCanvas(it.id, true), title: '???', subtitle: 'Something hidden by the Blight', lines: [{ text: 'You cannot make out what it is.', color: 'plain' }], quality: -1, kindLabel: '' };
     const kindLabel = p.data.swap ? 'LOST & FOUND  ·  take one, leave one' : it.kind === 'active' ? `ACTIVE ITEM  ·  ${K('active')} to use` : it.kind === 'familiar' ? 'FAMILIAR' : it.kind === 'trinket' ? 'CHARM' : 'PASSIVE ITEM';
     return { key: it.id, icon: itemIconCanvas(it.id, false), title: it.name, subtitle: it.pickup, lines: [...describeItem(it), ...previewLines(w, it.id)], quality: it.quality, kindLabel, tags: it.tags, itemId: it.id, pool: poolInfo(it) };
+  }
+  if (p.kind === 'inkling' && p.data.id) {
+    const d = INKLINGS[p.data.id]; if (!d) return null;
+    const held = inkLevel(w, d.id), full = !canTakeInk(w, d.id), slots = inkState(w).slots;
+    const lines: DescLine[] = [];
+    if (held >= 3) lines.push({ text: 'Mastered. Writing it again charges your active item by one.', color: 'plain' });
+    else if (held) { lines.push({ text: `Now (${roman(held)}): ${d.levels[held - 1]}`, color: 'plain' }); lines.push({ text: `Becomes ${roman(held + 1)}: ${d.levels[held]}`, color: 'up' }); }
+    else lines.push({ text: d.levels[0], color: 'plain' });
+    if (full) { const o = slots[weakestSlot(w)]; lines.push({ text: `Your margins are full: this writes over ${INKLINGS[o.id].name} ${roman(o.lv)}.`, color: 'down' }); }
+    for (const a of ANNOTATIONS) {
+      const other = a.a === d.id ? a.b : a.b === d.id ? a.a : null;
+      if (other && inkLevel(w, other)) lines.push({ text: `With ${INKLINGS[other].name} (both II+): ${a.name}. ${a.text}`, color: 'up' });
+    }
+    const from = Object.entries(ENEMY_INK).filter(([, v]) => v === d.id).map(([k]) => getEnemy(k)?.name).filter((n, i, a) => n && a.indexOf(n) === i).slice(0, 3).join(', ');
+    return { key: 'ink:' + d.id, icon: inklingIcon(d.id), title: `Inkling: ${d.name}`, subtitle: `The ink of the ${from}`, lines, quality: -1,
+      kindLabel: full ? `INKLING  ·  ${K('active')} to write over` : held ? 'INKLING  ·  walk over to deepen it' : 'INKLING  ·  walk over to write it' };
   }
   if (p.kind === 'charm' && p.data.id) {
     const it = getItem(p.data.id) ?? getConsumable(p.data.id) as any;

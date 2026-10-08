@@ -84,6 +84,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'tainted_bram', name: 'The Brute', desc: 'Earn all five marks as Bram.', unlocks: 'Unlocks Mirrored Bram.', hidden: true },
   { id: 'tainted_wick', name: 'The Swarm', desc: 'Earn all five marks as Wick.', unlocks: 'Unlocks Mirrored Wick.', hidden: true },
   { id: 'tainted_ada', name: 'The Withered', desc: 'Earn all five marks as Ada.', unlocks: 'Unlocks Mirrored Ada.', hidden: true },
+  { id: 'ink_first', name: 'First Draft', desc: 'Write an Inkling into your margins.', unlocks: 'Unlocks the Rocker Blotter.' },
+  { id: 'ink_annotation', name: 'Annotated', desc: 'Hold two Inklings that annotate each other, both at II or more.', unlocks: 'Unlocks the Inkhorn.' },
+  { id: 'ink_mastery', name: 'Fully Inked', desc: 'Fill every margin with Inklings at level III.', unlocks: 'Unlocks the Fourth Margin.' },
 ];
 export interface ChallengeDef { id: string; name: string; desc: string; char: string; rules: string[]; unlock?: string; goal: number }
 export const CHALLENGES: ChallengeDef[] = [

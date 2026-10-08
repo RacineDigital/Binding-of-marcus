@@ -192,7 +192,8 @@ export class Game {
     if (!w.inputLocked() && !w.player.dead) {
       const take = (a: Action) => { if (!this.buffered.has(a)) return false; this.buffered.delete(a); return true; };
       if (take('bomb')) placeBomb(w);
-      if (take('active')) this.useActive(false);
+      // standing on an Inkling with every margin full, {active} writes it over the weakest margin
+      if (take('active')) { if (w.nearInkling) flow.takeInkling(w, w.nearInkling, true); else this.useActive(false); }
       if (take('consumable')) this.useConsumable();
       if (take('swap') && w.player.consumables.length > 1) { w.player.consumables.push(w.player.consumables.shift()!); this.audio.play('pageGet', { vol: 0.4 }); }
       if (inp.isDown('drop')) { this.dropHold += dt; if (this.dropHold > 0.8 && w.player.charms.length) { this.dropCharm(); this.dropHold = -99; } } else this.dropHold = 0;
@@ -324,6 +325,7 @@ export class Game {
       pl.temp = s.temp ?? []; pl.transformations = new Set(s.transformations ?? []);
       pl.recompute();
       this.world = new World(this, run, pl);
+      syncInk(this.world);
       this.world.syncFamiliars();
       this.menus.stack = [];   // the main menu must not linger under the pause menu
       this.scene = 'run'; this.paused = false;
@@ -467,6 +469,7 @@ function challengeItems(ch: string): string[] {
 
 import { SynthAudio } from '../audio/synth';
 import { attachDebug } from './debug';
+import { syncInk } from './inklings';
 function createAudio(): AudioEngine { try { return new SynthAudio(); } catch { return new AudioEngine(); } }
 
 export function startGame(cv: HTMLCanvasElement, params: URLSearchParams): Game {

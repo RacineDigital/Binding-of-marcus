@@ -35,6 +35,7 @@ import { renderWorld } from './worldrender';
 import { Hud } from '../ui/hud';
 
 import { BEER } from '../projectiles/art';
+import { inkHook, inkOnKill, inkTick, canTakeInk } from './inklings';
 export interface Creep { x: number; y: number; r: number; team: 'player' | 'enemy'; dps: number; life: number; max: number; color: string; tick: number }
 export interface DoorRT { def: DoorDef; open: number; x: number; y: number; revealed: boolean }
 export interface Transition { snap: HTMLCanvasElement; dx: number; dy: number; t: number; dur: number; kind: 'slide' | 'fade' }
@@ -68,6 +69,8 @@ export class World {
   timeScale = 1; slowT = 0;
   labels: { x: number; y: number; text: string; color: string }[] = [];
   nearPedestal: Pickup | null = null;
+  /** An Inkling under Marcus that needs {active} to be written (every margin is full). */
+  nearInkling: Pickup | null = null;
   /** Seconds every remaining enemy has been unreachable and unhittable (soft-lock failsafe). */
   stuckT = 0;
   /** Closest pedestal or shop pickup, for the inspect card. */
@@ -147,6 +150,7 @@ export class World {
     flow.checkExit(this);
     flow.updateSpecial(this, dt);
     this.itemHook('onTick', dt);
+    inkTick(this, dt);
     tutorialTick(this, dt);
     for (let i = 0; i < this.tasks.length; i++) {
       const k = this.tasks[i]; k.t -= dt;
@@ -382,6 +386,7 @@ export class World {
       if (e.r > 12) this.shake(2);
     }
     e.def.onDeath?.(e, this);
+    if (!e.friendly) inkOnKill(this, e, quiet);
     this.run.stats.kills++;
     this.itemHook('onKill', e);
     if (this.game.save.stat('kills', 1) % 50 === 0) checkProgress(this);
@@ -755,16 +760,18 @@ export class World {
     };
     for (const [id, n] of pl.items) fire(id, n);
     for (const id of pl.charms) fire(id, 1);
+    try { inkHook(this, name, ...args); } catch (e) { console.error('ink hook', name, e); }
   }
   private collectPickups(): void {
     const pl = this.player;
-    this.nearPedestal = null; this.nearInspect = null;
+    this.nearPedestal = null; this.nearInspect = null; this.nearInkling = null;
     let nd = 42 * 42, ni = 44 * 44;
     for (const p of this.pickups) {
       if (p.dead || p.collectT >= 0) continue;
       const d2 = dist2(p.x, p.y, pl.x, pl.y);
       if (p.pedestal && p.data.id && d2 < nd) { nd = d2; this.nearPedestal = p; }
-      if ((p.pedestal ? !!p.data.id : p.price > 0 || p.deal > 0) && d2 < ni) { ni = d2; this.nearInspect = p; }
+      if ((p.pedestal ? !!p.data.id : p.price > 0 || p.deal > 0 || p.kind === 'inkling') && d2 < ni) { ni = d2; this.nearInspect = p; }
+      if (p.kind === 'inkling' && d2 < (p.r + pl.r + 6) ** 2 && !canTakeInk(this, p.data.id)) this.nearInkling = p;
       if (p.noCollect > 0 || p.z > 8) continue;
       const rr = p.r + pl.r;
       if (d2 < rr * rr) flow.touchPickup(this, p);

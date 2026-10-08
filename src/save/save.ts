@@ -40,6 +40,8 @@ export interface SaveData {
   itemsSeen: string[];             // collection
   /** Attack-style combinations the player has uncovered. */
   discoveredCombos?: string[];
+  /** Inkling essences ever written (the Journal's Inklings page). */
+  inkSeen?: string[];
   bossesBeaten: string[];
   challengesDone: string[];
   stats: Record<string, number>;

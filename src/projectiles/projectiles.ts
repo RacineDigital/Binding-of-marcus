@@ -9,6 +9,7 @@ import { TILE } from '../core/constants';
 import { shotSprite, GLOW_SHAPES, SHOT_COLORS, BEER } from './art';
 import type { World } from '../game/world';
 import type { Enemy } from '../enemies/enemy';
+import { inkShotEnd } from '../game/inklings';
 
 export const enum Team { Player = 0, Enemy = 1 }
 
@@ -330,6 +331,7 @@ export class Projectiles {
       // creep shots leave a puddle where they end, even point-blank
       if ((p.creep || prof?.creep) && !wall) w.addCreep(p.x, p.y, p.shape === 'beer' ? 12 : 9, 'player', p.dmg * (p.shape === 'beer' ? 0.6 : 0.35), p.shape === 'beer' ? 2.4 : 1.8, p.shape === 'beer' ? BEER : p.tint ?? undefined);
       w.audio.play('splat', { vol: 0.25, pitch: 1.2 - p.r * 0.02, x: p.x });
+      inkShotEnd(w, p, landed);
       if (prof) {
         if (prof.split > 0 && prof.splitOnExpire && p.depth === 0) this.split(w, p);
         if (prof.explode > 0 && (landed || prof.arc) && this.explosionsThisFrame < 14) { this.explosionsThisFrame++; w.explode(p.x, p.y, prof.explode * 1.1, Math.max(5, p.dmg * 1.6), { friendly: true, small: true }); }

@@ -40,6 +40,9 @@ import { BINDINGS, bindingById, type BindingId } from '../game/bindings';
 import { bindingSeal } from './bindingart';
 import { computeStats } from '../player/stats';
 import { onSteam } from '../core/platform';
+import { INKLINGS, ENEMY_INK } from '../game/inklings';
+import { inklingIcon } from '../art/inklings';
+import { getEnemy } from '../enemies/registry';
 import { promptBar, drawGlyphs, glyphsFor, glyphsWidth, type Glyph } from './glyphs';
 
 export interface Screen {
@@ -672,6 +675,31 @@ export class MenuSystem {
   }
 
   /** Archive of attack styles the player has personally combined. */
+  /** The Journal's Inklings page: every essence, what it does, and which creatures are written in it. */
+  inklingsScreen(): Screen {
+    const self = this, g = this.g;
+    const all = Object.values(INKLINGS), seen = new Set(g.save.data.inkSeen ?? []);
+    const from = (id: string) => Object.entries(ENEMY_INK).filter(([, v]) => v === id).map(([k]) => getEnemy(k)?.name).filter((n, i, a) => n && a.indexOf(n) === i).join(', ');
+    return {
+      t: 0,
+      update(keys) { if (keys.includes('back') || keys.includes('confirm')) self.pop(); },
+      render(ctx) {
+        ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+        page(ctx, 16, 10, 448, 250, 1, 23);
+        heading(ctx, 'Inklings', 36, 32, 12, INK, 'left');
+        text(ctx, `${seen.size} / ${all.length} written`, 444, 32, 8, INK2, 'right', FONT_BODY, 600, false);
+        text(ctx, 'When the ink meter brims, the next creature you kill leaves the essence it was written in.', 36, 44, 6.5, INK2, 'left', FONT_BODY, 600, false);
+        all.forEach((d, i) => {
+          const x = i < 8 ? 34 : 246, y = 56 + (i % 8) * 23, got = seen.has(d.id);
+          ctx.save(); if (!got) ctx.filter = 'grayscale(1) brightness(0.55)'; ctx.drawImage(inklingIcon(d.id, 14), x, y - 1); ctx.restore();
+          text(ctx, got ? d.name : 'Unknown essence', x + 18, y + 6, 8, got ? INK : '#8a7a6a', 'left', FONT_TITLE, 400, false);
+          const line = got ? d.gist : `Written in: ${from(d.id)}`;
+          wrap(ctx, line, 6.3, 190).slice(0, 2).forEach((l, j) => text(ctx, l, x + 18, y + 13 + j * 6.8, 6.3, INK2, 'left', FONT_BODY, 600, false));
+        });
+        promptBar(ctx, [[null, 'Find them by what you kill when the ink brims'], ['back', 'back']]);
+      },
+    };
+  }
   synergiesScreen(): Screen {
     const self = this, g = this.g;
     const combos = Object.entries(COMBOS);

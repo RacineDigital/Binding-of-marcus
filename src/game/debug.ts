@@ -5,10 +5,13 @@ import { syncFamiliars } from '../items/familiar_rt';
 import { placeBomb } from './bombs';
 import { ALL_ITEMS } from '../items/registry';
 import { ALL_ENEMY_DEFS } from '../enemies/registry';
+import * as Ink from './inklings';
 
 export function attachDebug(g: Game): void {
   (window as any).__bomDebug = {
     game: g,
+    /** The Inklings module, for tests (the same instance the game uses). */
+    ink: Ink,
     get world() { return g.world; },
     items: () => ALL_ITEMS.map((i) => i.id),
     enemies: () => ALL_ENEMY_DEFS().map((d) => d.id),

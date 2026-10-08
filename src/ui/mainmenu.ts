@@ -326,6 +326,7 @@ export function journalScreen(ms: MenuSystem): Screen {
     { id: 'story', label: 'Story so far', icon: I.scroll, desc: () => 'A plain-language guide to the family, the book and every ending. Spoilers.', act: () => ms.push(storyGuideScreen(ms)) },
     { id: 'characters', label: 'Readers', icon: I.person, desc: () => 'Every reader you have met in the cellar.', act: () => ms.push(ms.charactersScreen()) },
     { id: 'collection', label: 'Collection', icon: I.book, desc: () => `Curios found: ${g.save.data.itemsSeen.length}. Press ${g.input.usingPad ? padLabel(0) : 'Enter'} inside for the bestiary.`, act: () => ms.push(ms.collectionScreen()) },
+    { id: 'inklings', label: 'Inklings', icon: I.book, desc: () => `${g.save.data.inkSeen?.length ?? 0} of 16 essences written. What each creature leaves behind.`, act: () => ms.push(ms.inklingsScreen()) },
     { id: 'synergies', label: 'Attack combinations', icon: I.chart, desc: () => `${g.save.data.discoveredCombos?.length ?? 0} attack combinations discovered.`, act: () => ms.push(ms.synergiesScreen()) },
     { id: 'history', label: 'Run History', icon: I.history, desc: () => `Your last ${Math.min(30, g.save.data.history?.length ?? 0)} stories, good and bad.`, act: () => ms.push(ms.historyScreen()) },
     { id: 'stats', label: newUnlocks(g) ? `Statistics (${newUnlocks(g)} new)` : 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements: what each one asks and what it gives.', act: () => ms.push(ms.statsScreen()) },

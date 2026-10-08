@@ -2,6 +2,22 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## Lost Marcus 2.0 (in progress): Inklings
+
+**Inklings.** The monsters in the cellar are stories, and the ink they were written in can be
+taken. Every kill fills your ink meter; when it brims, each creature shows the Inkling it would
+leave behind, and the next one you kill leaves it. Write up to three into your margins: each
+changes how you fight. Kills that hatch seeking ink mites, every few volleys a heavy lunge or a
+piercing stare, shards that circle you and block shots, buried charges that burst, fire that
+spreads, webs, notes that frighten, and more: sixteen in all, each growing from I to III. Some
+pairs annotate each other into something new. Carry their ink and their kind comes at you
+faster, and inked champions start to appear. The Journal keeps every one you have written.
+
+**Five new curios** that work with the ink, unlocked by three new achievements.
+
+**Smoother movement.** Clipping the corner of a rock slides you round it instead of stopping you
+dead, and a bomb, item or page pressed during a room transition is no longer lost.
+
 ## What's new in 3.17.0: ready for Steam
 
 **Fixed: the way down after a boss.** Walking out of a boss room straight after the kill could
