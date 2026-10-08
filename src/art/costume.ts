@@ -155,19 +155,55 @@ function crownShape(f: Frame, base: string, hi: string, gem: string): void {
   p(5, -2, hi); p(10, -3, hi); p(14, -2, hi); p(6, 0, hi, 8, 1);
   p(9, 0, gem, 2, 1);
 }
-function wings(f: Frame, outer: string, inner: string, spot: string | null, big = 1): void {
-  const ctx = f.ctx, cx = f.bx + f.bw / 2, cy = f.by + 4;
-  const flap = Math.sin(f.t * 10) * 2;
-  for (const s of [-1, 1]) {
-    ctx.fillStyle = outer;
-    ctx.beginPath(); ctx.moveTo(cx + s * 2, cy + 1);
-    ctx.lineTo(cx + s * (12 * big), cy - 7 * big - flap); ctx.lineTo(cx + s * (14 * big), cy - 1 - flap * 0.5);
-    ctx.lineTo(cx + s * (10 * big), cy + 6 * big); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = inner;
-    ctx.beginPath(); ctx.moveTo(cx + s * 3, cy + 1);
-    ctx.lineTo(cx + s * (10 * big), cy - 5 * big - flap); ctx.lineTo(cx + s * (11 * big), cy - flap * 0.5);
-    ctx.lineTo(cx + s * (8 * big), cy + 4 * big); ctx.closePath(); ctx.fill();
-    if (spot) { ctx.fillStyle = spot; ctx.fillRect(Math.round(cx + s * 9 * big - 1), Math.round(cy - 2 * big - flap * 0.6), 2, 2); }
+/**
+ * Pixel wings, one side drawn from a grid (o outline, a outer, b inner, s spot) and mirrored for the
+ * other. The flap is four frames (up, level, down, level): each column is shifted up or down in
+ * proportion to how far out it is, so the tips lift and fall while the root stays on the back.
+ */
+const INSECT_WING = [
+  '......oooo...',
+  '....ooaaaaoo.',
+  '...oaabbbbaao',
+  '..oabbbbbsbao',
+  '.oabbbbbbbbao',
+  'oabbbbbbbbbao',
+  'oabbbbbbbaao.',
+  'oaabbbbaaoo..',
+  '.oabbbbbao...',
+  '.oabbbbbbao..',
+  '..oabbbbbao..',
+  '...oabbbbao..',
+  '....oaaaao...',
+  '.....oooo....',
+];
+const FEATHER_WING = [
+  '.........oo..',
+  '.......ooaao.',
+  '.....ooaabao.',
+  '...ooaabbbao.',
+  '..oaabbbbbbao',
+  '.oabbbbbbbbao',
+  'oabbbbbbbbbao',
+  'oabbbbbbbbao.',
+  'oabobbobbao..',
+  '.oo.oo.ooo...',
+];
+const FLAP = [-3, -1, 1, -1];
+function wings(f: Frame, line: string, outer: string, inner: string, spot: string | null, shape: 'insect' | 'feather' = 'insect'): void {
+  const ctx = f.ctx, cx = Math.round(f.bx + f.bw / 2), grid = shape === 'feather' ? FEATHER_WING : INSECT_WING;
+  const top = Math.round(f.by + 4) - (shape === 'feather' ? 7 : 8);
+  const sh = FLAP[Math.floor(f.t * 8) % FLAP.length], wd = grid[0].length - 1;
+  const col: Record<string, string> = { o: line, a: outer, b: inner, s: spot ?? inner };
+  for (const side of [-1, 1]) {
+    for (let y = 0; y < grid.length; y++) {
+      const row = grid[y];
+      for (let x = 0; x < row.length; x++) {
+        const c = col[row[x]]; if (!c) continue;
+        ctx.fillStyle = c;
+        const px = side > 0 ? cx + 2 + x : cx - 3 - x;
+        ctx.fillRect(px, top + y + Math.round((sh * x) / wd), 1, 1);
+      }
+    }
   }
 }
 /** A plait hanging down behind one shoulder (or down the back), tied off with a ribbon. */
@@ -315,14 +351,14 @@ const PAINT: Record<Acc, (f: Frame) => void> = {
   skeletonKey: (f) => { const p = B(f), x = f.bdir === 'side' ? 6 : 12; p(x, 8, '#e8e0cc', 1, 4); p(x - 1, 7, '#e8e0cc', 3, 1); p(x + 1, 11, '#e8e0cc'); },
   keyRing: (f) => { const p = B(f), x = f.bdir === 'side' ? 6 : 12; p(x, 8, '#c8a040', 2, 2); p(x + 1, 10, '#d8d0b0', 1, 2); p(x - 1, 10, '#b8a888', 1, 2); },
   // ---------------------------------------------------------------- back
-  wingsMoth: (f) => wings(f, '#8a7656', '#c8b490', '#3a2a1a'),
-  wingsSoot: (f) => wings(f, '#1a181c', '#3a3640', null),
-  wingsWax: (f) => wings(f, '#e8dcc0', '#fffaf0', '#f0b040'),
-  wingsIce: (f) => wings(f, 'rgba(140,200,240,0.75)', 'rgba(220,240,255,0.8)', '#ffffff', 1.1),
-  wingsQueen: (f) => wings(f, '#2a1a3a', '#5a3a7a', '#e8c050', 1.2),
-  wingsAngel: (f) => wings(f, '#dce8f4', '#ffffff', null, 0.85),
-  wingsPaper: (f) => wings(f, '#cfc4a8', '#f4ecd8', '#4a4a7a', 0.95),
-  wingsInk: (f) => wings(f, '#14112a', '#2e2858', '#6a64b8', 1.05),
+  wingsMoth: (f) => wings(f, '#3a2a1a', '#8a7656', '#c8b490', '#3a2a1a'),
+  wingsSoot: (f) => wings(f, '#0a090c', '#1a181c', '#3a3640', '#ff8a3a'),
+  wingsWax: (f) => wings(f, '#a8946a', '#e8dcc0', '#fffaf0', '#f0b040', 'feather'),
+  wingsIce: (f) => wings(f, '#4a7aa0', 'rgba(140,200,240,0.85)', 'rgba(220,240,255,0.8)', '#ffffff'),
+  wingsQueen: (f) => wings(f, '#120a1a', '#2a1a3a', '#5a3a7a', '#e8c050'),
+  wingsAngel: (f) => wings(f, '#8a9ab0', '#dce8f4', '#ffffff', null, 'feather'),
+  wingsPaper: (f) => wings(f, '#6a604a', '#cfc4a8', '#f4ecd8', '#4a4a7a'),
+  wingsInk: (f) => wings(f, '#06050e', '#14112a', '#2e2858', '#6a64b8'),
   capeVamp: (f) => cape(f, '#0e080c', '#a8162a', '#d8b048'),
   capeCobweb: (f) => {
     // a shawl of web over the shoulders: radiating strands and a few rings
