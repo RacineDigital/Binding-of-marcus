@@ -225,7 +225,7 @@ export class World {
     const pl = this.player;
     if (pl.dead) return;
     for (const e of this.enemies) {
-      if (e.dead || e.hidden || e.spawnT > 0 || e.friendly || e.charm > 0 || e.z > 12) continue;
+      if (e.dead || e.hidden || e.spawnT > 0 || e.friendly || e.charm > 0 || e.z > 12 || e.data.noContact) continue;
       const c = e.def.contact ?? 1;
       if (c <= 0) continue;
       // contact hitbox a little smaller than the sprite so grazes feel fair
@@ -298,6 +298,15 @@ export class World {
   blindItems(): boolean { return this.floor?.curse === 'unknown'; }
 
   // =============================================================== damage
+  /** A living creature whose aura covers e (never e itself), if any. */
+  wardOf(e: Enemy): Enemy | null {
+    if (e.isBoss) return null;
+    for (const x of this.enemies) {
+      const a = x.def.aura;
+      if (a && x !== e && !x.dead && !x.friendly && x.spawnT <= 0 && dist2(x.x, x.y, e.x, e.y) < a.r * a.r) return x;
+    }
+    return null;
+  }
   damageEnemy(e: Enemy, dmg: number, info: HurtInfo): void {
     if (e.dead || e.spawnT > 0 || e.friendly) return;
     if (e.invuln) {
@@ -313,6 +322,16 @@ export class World {
     let d = dmg;
     if (e.mark > 0) d *= 1.5;
     if (e.champion === 'armored') d *= 0.6;
+    const ward = this.wardOf(e);
+    if (ward) {
+      d *= ward.def.aura!.mul;
+      if ((info.source === 'shot' || info.source === 'melee') && this.time - (e.data.wardT ?? -1) > 0.1) {
+        e.data.wardT = this.time;
+        this.fx.sparks(e.x - Math.cos(info.ang) * e.r, e.y - e.hitY, 3, ward.def.aura!.color, 70, 0.18);
+        this.fx.bolt(ward.x, ward.y - ward.hitY, e.x, e.y - e.hitY, ward.def.aura!.color, 0.1);
+        this.audio.play('tink', { vol: 0.25, x: e.x, pitch: 1.5 });
+      }
+    }
     // a boss caught spent (or opened up) takes more; say so, but not on every tick of a beam
     if (e.isBoss && e.data.exposed && info.source !== 'burn' && info.source !== 'poison') {
       d *= 1.5;

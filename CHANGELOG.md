@@ -18,6 +18,15 @@ faster, and inked champions start to appear. The Journal keeps every one you hav
 **Smoother movement.** Clipping the corner of a rock slides you round it instead of stopping you
 dead, and a bomb, item or page pressed during a room transition is no longer lost.
 
+### The Cellar
+- Four new creatures: the **Paper Lurker** (a breathing paper mound that bursts out when you come
+  close; shoot it first and it tumbles out stunned), **Mildew** (puffs spores that linger on the
+  floor until you kill it), the **Lampkeeper** (anything in its lantern light takes half damage)
+  and the **Old Trunk** (hops where you stand, then gapes open and is easy to hurt).
+- Rooms are often cast from hand-made groups that play off each other, and no room gets four of
+  the same oddity.
+- The Wardrobe now shows the whole line of its charge before it runs.
+
 ### Sound
 - Every floor now has its own ambience: dripping cellars, the boiler's hum and crackle, pipes
   knocking in the underworks, distant monitors on the ward, page rustle in the stacks, a clock

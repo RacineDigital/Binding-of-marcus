@@ -32,6 +32,10 @@ export interface EnemyDef {
   onHurt?(e: Enemy, w: World, dmg: number, info: HurtInfo): number | void;
   noKnock?: boolean; noStatus?: boolean; noSeparate?: boolean;
   light?: [number, string];
+  /** Room casting rules: at most `max` per room; needs `company` other creatures or is left out. */
+  cast?: { max?: number; company?: number };
+  /** Other creatures within r of this one take `mul` of their damage (the Lampkeeper's light). */
+  aura?: { r: number; mul: number; color: string };
   boss?: boolean;
   spawnQuiet?: boolean;
   deathSound?: string;

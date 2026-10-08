@@ -216,6 +216,21 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.ellipse(sx, sy, sr, Math.max(1.5, sr * 0.35), 0, 0, TAU); ctx.fill();
   }
+  // a landing mark where a hopping creature will come down, and the edge of a protecting aura
+  const land = e.data.landAt as { x: number; y: number; r: number } | null | undefined;
+  if (land && !e.dead) {
+    const lx = snap(land.x - e.x + sx), ly = snap(land.y - e.y + sy), k = 0.5 + 0.5 * Math.sin(w.time * 18);
+    ctx.fillStyle = `rgba(0,0,0,${0.22 + 0.1 * k})`; ctx.beginPath(); ctx.ellipse(lx, ly, land.r, land.r * 0.4, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = `rgba(255,120,90,${0.35 + 0.25 * k})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(lx, ly, land.r + 2, land.r * 0.4 + 1, 0, 0, TAU); ctx.stroke();
+  }
+  if (e.def.aura && !e.dead && e.spawnT <= 0) {
+    const a = e.def.aura;
+    ctx.save(); ctx.globalAlpha = 0.28 + 0.08 * Math.sin(w.time * 3); ctx.strokeStyle = a.color; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.lineDashOffset = -w.time * 8;
+    ctx.beginPath(); ctx.ellipse(sx, sy, a.r, a.r * 0.75, 0, 0, TAU); ctx.stroke(); ctx.restore();
+  } else if (!e.dead && !e.hidden) {
+    const ward = w.wardOf(e);
+    if (ward) w.r.addGlow(sx, sy - e.z - e.hitY, e.r * 1.8, ward.def.aura!.color, 0.16);
+  }
   // bosses: a soft aura in the chapter's accent (red when badly hurt), a slow breath while idle,
   // and ink dripping off them near the end
   let breathe = false;

@@ -3,6 +3,9 @@ export type FloorStyle = 'flag' | 'brick' | 'cobble' | 'tile' | 'earth' | 'check
 export type WallStyle = 'stone' | 'iron' | 'sewer' | 'ward' | 'cave' | 'chapel' | 'torn' | 'spines';
 export type Ambience = 'dust' | 'embers' | 'drips' | 'motes' | 'ash' | 'glass' | 'ink' | 'pages';
 
+/** A deliberate group of creatures that play off each other; `name` is for debugging and tests. */
+export interface Encounter { name: string; ids: string[]; weight?: number }
+
 export interface FloorTheme {
   id: string; name: string; subtitle: string; chapter: string;
   floor: FloorStyle; wall: WallStyle; ambience: Ambience;
@@ -12,6 +15,8 @@ export interface FloorTheme {
   };
   ambient: string; darkness: number; playerLight: number;
   enemies: Record<string, number>; // enemy id -> weight
+  /** Authored groups a room may be cast from instead of slot by slot (see populate.ts castEncounter). */
+  encounters?: Encounter[];
   bosses: string[];
   music: string;
   hazards: { spikes: number; pits: number; fires: number; kegs: number; webs?: number };
@@ -21,6 +26,25 @@ export interface FloorTheme {
   tier?: number;
 }
 
+/** Chapter I encounters: each pairs a threat with something that changes how you answer it. */
+const CELLAR_ENCOUNTERS: Encounter[] = [
+  { name: 'lantern and spitters', ids: ['lampkeeper', 'gasper', 'gasper'] },
+  { name: 'lantern and guards', ids: ['lampkeeper', 'pillbug', 'gasper', 'ragcrawler'], weight: 0.8 },
+  { name: 'lantern and candles', ids: ['lampkeeper', 'candlewick', 'ragcrawler'], weight: 0.6 },
+  { name: 'paper ambush', ids: ['lurker', 'lurker', 'gasper'] },
+  { name: 'paper and moths', ids: ['lurker', 'moth', 'moth'] },
+  { name: 'mould bed', ids: ['mildew', 'ragcrawler', 'ragcrawler'] },
+  { name: 'mould and moths', ids: ['mildew', 'moth', 'moth'] },
+  { name: 'mould and shell', ids: ['mildew', 'pillbug', 'gasper'], weight: 0.8 },
+  { name: 'trunk and mites', ids: ['trunk', 'mite'], weight: 0.6 },
+  { name: 'mould and mites', ids: ['mildew', 'mite'], weight: 0.8 },
+  { name: 'paper and rags', ids: ['lurker', 'ragcrawler'], weight: 0.8 },
+  { name: 'trunk and hoppers', ids: ['trunk', 'dripling'], weight: 0.8 },
+  { name: 'nest guard', ids: ['mitenest', 'pillbug', 'gasper'] },
+  { name: 'needles', ids: ['spool', 'spool', 'ragcrawler'], weight: 0.8 },
+  { name: 'hoppers', ids: ['dripling', 'dripling', 'moth'] },
+];
+
 export const FLOORS: FloorTheme[] = [
   {
     id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Chapter I',
@@ -28,7 +52,8 @@ export const FLOORS: FloorTheme[] = [
     pal: { floor: '#435354', floor2: '#334147', grout: '#202a30', wall: '#495a60', wall2: '#303e48', mortar: '#18232c',
       rock: '#72807a', accent: '#c5a46d', stain: '#2d4940', heap: '#d8ccb0', heapKind: 'paper' },
     ambient: '#0d1724', darkness: 0.38, playerLight: 112,
-    enemies: { mite: 10, moth: 7, ragcrawler: 9, gasper: 7, dripling: 6, pillbug: 5, mitenest: 3, spool: 4, candlewick: 2 },
+    enemies: { mite: 10, moth: 7, ragcrawler: 9, gasper: 7, dripling: 6, pillbug: 5, mitenest: 3, spool: 4, candlewick: 2, lurker: 4, mildew: 3, lampkeeper: 2, trunk: 2 },
+    encounters: CELLAR_ENCOUNTERS,
     bosses: ['grubmother', 'wardrobe', 'twinsnips'],
     music: 'cellar', hazards: { spikes: 0.15, pits: 0.3, fires: 0.45, kegs: 0.15 }, fireVariants: [0, 0, 0, 2],
     hpMul: 1, budget: 0.9,
@@ -122,7 +147,7 @@ function variant(base: FloorTheme, o: ThemeOverride): FloorTheme {
 export const ALT_FLOORS: Record<string, FloorTheme> = {
   cellar: variant(FLOORS[0], { id: 'rootcellar', name: 'The Root Cellar', subtitle: 'Something grew down here while nobody looked',
     floor: 'earth', wall: 'cave', pal: { floor: '#4a3e30', floor2: '#3a3026', wall: '#4a3c2e', wall2: '#362c22', rock: '#6a5a44', stain: '#3a4a22', heap: '#c8b490' },
-    enemies: { mite: 8, moth: 8, ragcrawler: 8, gasper: 6, dripling: 6, pillbug: 7, mitenest: 4, rat: 5 } }),
+    enemies: { mite: 8, moth: 8, ragcrawler: 8, gasper: 6, dripling: 6, pillbug: 7, mitenest: 4, rat: 5, mildew: 4, lurker: 3, lampkeeper: 2, trunk: 2 } }),
   boiler: variant(FLOORS[1], { id: 'coalchute', name: 'The Coal Chute', subtitle: 'Black dust in every breath',
     floor: 'earth', ambience: 'ash', pal: { floor: '#2e2a2a', floor2: '#242020', rock: '#3a3436', stain: '#120e0e' }, darkness: 0.46,
     enemies: { sootsprite: 9, valvehead: 5, stoker: 8, cinderhopper: 7, pipeworm: 5, mite: 4 } }),

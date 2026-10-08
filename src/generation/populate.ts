@@ -7,7 +7,7 @@ import { generateLayout } from './roomgen';
 import type { Floor, Run } from '../game/run';
 import { getEnemy, ENEMY_DEFS } from '../enemies/registry';
 import type { Role } from '../enemies/enemy';
-import { FLOORS, DEPTH_BUDGET } from '../data/floors';
+import { FLOORS, DEPTH_BUDGET, type Encounter } from '../data/floors';
 import { TILE } from '../core/constants';
 import { shopLevelFor, shopPrice, shopCurios } from '../game/shoplevel';
 import type { SaveManager } from '../save/save';
@@ -181,23 +181,53 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
     const m = mirrorOf(a);
     if (m) { left.splice(left.indexOf(m), 1); order.push(m); }
   }
+  // half the time (where the chapter has them) the room is cast from an authored encounter
+  if (th.encounters?.length && rng.chance(0.5)) { const enc = castEncounter(th.encounters, rng, order.filter((s) => !nearDoor(room, s.c, s.r)), budget, champ); if (enc) { room.flags.encounter = enc.name; return enc.out; } }
   let placed = 0;
+  const counts = new Map<string, number>();
   for (const s of order) {
     if (nearDoor(room, s.c, s.r)) continue;
     const key = s.ch === 'A' ? 'A' + rng.int(0, 1) : s.ch;
     let id = cast.get(key);
     if (!id) { id = pickRole(SLOT_ROLE[s.ch]) ?? undefined; if (id) cast.set(key, id); }
     if (!id) continue;
+    // per-creature limits (a room of four lurkers or two lampkeepers is no encounter)
+    const atMax = (x: string) => { const m = getEnemy(x)!.cast?.max; return m !== undefined && (counts.get(x) ?? 0) >= m; };
+    for (let k = 0; atMax(id) && k < 4; k++) id = pickRole(SLOT_ROLE[s.ch]) ?? id;
+    if (atMax(id)) continue;
     const def = getEnemy(id)!;
     const cost = def.cost * (s.ch === 'W' ? 2.2 : 1);
     if (placed > 0 && cost > budget) continue;
-    budget -= cost; placed++;
+    budget -= cost; placed++; counts.set(id, (counts.get(id) ?? 0) + 1);
     if (s.ch === 'W' || def.role === 'swarm') {
       const n = rng.int(3, 4);
       for (let i = 0; i < n; i++) out.push({ id, c: s.c + rng.float(-0.6, 0.6), r: s.r + rng.float(-0.5, 0.5) });
     } else out.push({ id, c: s.c, r: s.r, champion: rng.chance(champ) });
   }
-  return out;
+  // creatures that only make sense with others around them (a lampkeeper with nothing to light)
+  return out.filter((sp) => { const need = getEnemy(sp.id)!.cast?.company ?? 0; return out.length - 1 >= need; });
+}
+
+/** Place an authored encounter on a room's slots: each creature takes the free slot that suits its
+ *  role best (a slot of its own role, then one whose fallbacks include it, then any). Only groups
+ *  that fit the room's budget (with a little slack) and its slot count are chosen. */
+function castEncounter(list: Encounter[], rng: RNG, slots: { c: number; r: number; ch: string }[], budget: number, champ: number): { name: string; out: SpawnDef[] } | null {
+  const costOf = (e: Encounter) => e.ids.reduce((a, id) => a + (getEnemy(id)?.cost ?? 9) * (getEnemy(id)?.role === 'swarm' ? 2.2 : 1), 0);
+  const fits = list.filter((e) => e.ids.every((id) => getEnemy(id)) && costOf(e) <= budget + 0.6 && e.ids.length <= slots.length);
+  const enc = rng.weighted(fits, (e) => e.weight ?? 1);
+  if (!enc) return null;
+  const free = slots.slice(), out: SpawnDef[] = [];
+  const score = (ch: string, role: Role) => { const want = SLOT_ROLE[ch]; if (want === role) return 3; if (want !== 'any' && FALLBACK[want]?.includes(role)) return 2; return want === 'any' ? 1.5 : 1; };
+  for (const id of enc.ids) {
+    const role = getEnemy(id)!.role;
+    let best = -1, bs = -1;
+    free.forEach((s, i) => { const sc = score(s.ch, role) + rng.next() * 0.1; if (sc > bs) { bs = sc; best = i; } });
+    if (best < 0) break;
+    const s = free.splice(best, 1)[0];
+    if (role === 'swarm') { for (let i = rng.int(3, 4); i > 0; i--) out.push({ id, c: s.c + rng.float(-0.6, 0.6), r: s.r + rng.float(-0.5, 0.5) }); }
+    else out.push({ id, c: s.c, r: s.r, champion: rng.chance(champ) });
+  }
+  return { name: enc.name, out };
 }
 
 /** Debug/preview: rebuild an unvisited single room from a named layout (used by the room screenshot tool). */

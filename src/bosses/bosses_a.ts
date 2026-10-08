@@ -115,7 +115,15 @@ const wardBrain: BossBrain = {
   },
   attacks: [
     { id: 'charge', weight: 3,
-      start(e, w) { e.setAnim('tilt'); e.data.ca = angleTo(e.x, e.y, w.player.x, w.player.y); w.audio.play('creak', { x: e.x }); },
+      start(e, w) {
+        e.setAnim('tilt'); e.data.ca = angleTo(e.x, e.y, w.player.x, w.player.y); w.audio.play('creak', { x: e.x });
+        // where it is about to run: marks along the line, like the Grubmother's lunge and Snip's dash
+        for (let d = 34; d < 400; d += 30) {
+          const x = e.x + Math.cos(e.data.ca) * d, y = e.y + Math.sin(e.data.ca) * d;
+          const [c, r] = w.room.cellAt(x, y); if (!w.room.inGrid(c, r) || w.room.at(c, r) !== 0) break;   // up to the first wall or obstacle
+          telegraph(w, x, y, 11, 0.55);
+        }
+      },
       run(e, w, t, dt) {
         if (t < 0.55) { e.x += (Math.random() - 0.5) * 1.2; return false; }
         e.setAnim('closed');

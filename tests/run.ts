@@ -165,6 +165,27 @@ ok(new Set(TEMPLATES.map((t) => t.name)).size === TEMPLATES.length, 'template na
   for (const th of themes) ok(!!SOUNDSCAPES[soundscapeFor(th)], `floor ${th.id} has a soundscape`);
   for (const [id, sc] of Object.entries(SOUNDSCAPES)) ok(sc.level > 0 && sc.level < 0.6 && sc.events.length > 0, `soundscape ${id} is sane`);
 }
+{
+  // casting rules hold in generated floors: per-room maximums, and company for creatures that need it
+  let seen = 0;
+  for (let i = 0; i < 60; i++) {
+    const run = new Run('cast' + i, 'marcus', () => true);
+    for (let f = 0; f < 3; f++) for (const room of generateFloor(run, f).rooms) {
+      const all = [...room.spawns, ...((room.flags.ambush as typeof room.spawns) ?? [])];
+      const n = new Map<string, number>(); for (const sp of all) n.set(sp.id, (n.get(sp.id) ?? 0) + 1);
+      for (const [id, k] of n) {
+        const c = getEnemy(id)?.cast; if (!c) continue; seen++;
+        if (c.max !== undefined) ok(k <= c.max, `room ${room.id} on cast${i}/${f} has ${k} ${id} (max ${c.max})`);
+        if (c.company) ok(all.length - 1 >= c.company, `${id} on cast${i}/${f} has company`);
+      }
+    }
+  }
+  ok(seen > 30, `new Chapter I creatures appear in generated floors (${seen})`);
+  for (const th of [...FLOORS, ...CHAPTER_POOL]) for (const enc of th.encounters ?? []) {
+    ok(enc.ids.every((id) => !!getEnemy(id) && !getEnemy(id)!.boss), `encounter '${enc.name}' on ${th.id} names real creatures`);
+    for (const id of new Set(enc.ids)) { const m = getEnemy(id)?.cast?.max; ok(m === undefined || enc.ids.filter((x) => x === id).length <= m, `encounter '${enc.name}' respects ${id}'s room maximum`); }
+  }
+}
 for (const c of CHARACTERS) for (const id of c.items) ok(ids.has(id), `character ${c.id} start item ${id} exists`);
 const counts = {
   items: ALL_ITEMS.length, passives: ALL_ITEMS.filter((i) => i.kind === 'passive').length, actives: ALL_ITEMS.filter((i) => i.kind === 'active').length,

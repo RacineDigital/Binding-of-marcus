@@ -16,7 +16,7 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 | Trinkets ("charms") | 17 | Plus 20 pages/sweets (consumables). | 40+ |
 | Characters | 10 (+10 mirrored "tainted" variants) | Distinct starting kits and passives (melee, beams, ricochet, ink hearts, dice). | 10 ✓ |
 | Floor environments | 8 story chapters, 6 extra chapters, 3 hospital floors, plus special floors (Margins, Last Page, Foreword, Room 4, Home) | The 7 "alternate" chapters (Root Cellar, Coal Chute, …) are palette/name variants of the main ones, so they don't count as distinct. | 12 ✓ (≈17 distinct) |
-| Standard enemies | 43 defs | 40 distinct behaviours (the three Sludge sizes and Blot/Blotlet share code). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
+| Standard enemies | 43 defs → **47 after M4** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4 adds 4 distinct ones (44). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
 | Bosses and minibosses | 31 defs | Rigged, multi-phase; Patient fight retuned in 3.14. | 35+ |
 | Authored room layouts | 40 templates + 10 set pieces → **157 + 10 after M3** | Before M3, 55% of rooms used a procedural layout that placed rock clusters and walls anywhere, including the middle of the room. M3: 30% procedural, rocks to the edges. | 300+ |
 | Challenge runs | 5 | | 25+ |
@@ -78,7 +78,8 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
   on reusable mechanics, furious/annotated enemies, HUD, pickup card, journal, tests.
 - **M3 — rooms** ✅ (first library pass): template validator, 117 new authored layouts in families,
   procedural layouts that keep permanent rocks to the edges and leave the door cross open.
-- **M4 — Chapter I to the 2.0 standard**: encounter sets, cellar-specific rooms and props, boss pass.
+- **M4 — Chapter I to the 2.0 standard** ✅ (first pass): four creatures for the roles the Cellar lacked,
+  authored encounter sets, per-creature casting rules, a measured boss pass.
 - **M5 — content expansion** in validated batches: trinkets → challenges (each with a new rule) →
   enemies by role → passives/actives built on the expanded pipeline → bosses.
 - **M6 — presentation, balance, release verification** (run bot balance passes, long-session soak).
@@ -191,6 +192,58 @@ recordings. The current "recorded" tracks (`assets/music/audio`, listed in `reco
 renders of the synth score and loop every 42–48 s, which is short for a floor. A composed score can
 replace those files (re-run `scripts/prepare-music.py`) with no engine work.
 
+### M4 — Chapter I (the Cellar) to the 2.0 standard (first pass done)
+
+The audit found the Cellar's nine creatures well made (tells, counters) but covering only chase,
+flank, ranged, turret and one guard: no ambusher, nothing that zones the floor, no heavy, and only
+the Mite Nest as support. Each new creature fills one of those roles, has a hand-drawn sprite
+(`src/art/hand/cellar2.ts`), a tell before it acts and a stated answer (`src/enemies/defs_cellar2.ts`):
+- **Paper Lurker** (ambush): a breathing paper mound, harmless to touch while buried; shudders when
+  you come close, then bursts out and zig-zags at you with crouch-and-lunge. Shooting the mound first
+  knocks it out stunned for 1.5× damage. Alone in a room it gives itself up, so a room never stays
+  locked on a hidden enemy.
+- **Mildew** (zoning): a rooted cap; glows and swells, then puffs three spore patches that hurt to
+  stand in (at most six alive). Killing it dries them up at once.
+- **Lampkeeper** (support/shield): allies in its lantern light take half damage (dashed ring on the
+  floor, gold glow on protected allies, gold glint and a thread to the keeper when a hit is turned).
+  It stands behind its group, away from you. New engine hook: `EnemyDef.aura`, applied in
+  `World.damageEnemy` via `wardOf`.
+- **Old Trunk** (heavy): rattles, hops at you with a landing mark where you stood, slams (4 slow
+  shots on chapter I, 6 later), then gapes open for 0.95 s taking 1.6× (closed: 0.75×). New engine
+  hook: `e.data.landAt` draws a landing mark for any creature.
+- All four map to Inkling essences (Bury, Bloat, Ward, Lurch) and join the Cellar and Root Cellar.
+
+**Encounters** (`FloorTheme.encounters`, `castEncounter` in `populate.ts`): 15 authored Cellar groups
+(e.g. lantern and spitters, paper ambush, mould bed, trunk and mites, nest guard), each pairing a
+threat with something that changes how you answer it. Half of a Cellar room's casts come from an
+encounter that fits its budget and slots; members take the slots that suit their role best.
+**Casting rules** (`EnemyDef.cast`): per-room maximums (Lurker, Mildew, Trunk ≤ 2; Lampkeeper ≤ 1)
+and required company (a Lampkeeper needs 2 others, counting an ambush's second wave).
+Measured over 300 seeds: 39% of Cellar rooms came from encounters; every new creature appears.
+
+**Boss pass** (`tests/tools/bossprobe.ts`): a bot fights each boss frame by frame with three builds;
+in `dodge` mode it scores 16 moves by predicted shot paths, moving bodies (bosses and adds),
+telegraph marks and spore patches. Results (5 trials each, base build, dodging):
+
+| Boss | Time to kill | Phase 2 at | Hits taken by the dodger |
+| --- | --- | --- | --- |
+| Grubmother | 23–25 s | ~9 s | 1–3 |
+| Wardrobe | 28–31 s | ~15 s | 3–9 |
+| Twin Snips | 28–31 s | ~15 s | 1–2 |
+
+Average build (3 shots): 12–17 s. Strong late-game build (21 damage, 3 shots): 4.4–4.9 s, still
+reaching phase 2. A Chapter I run rarely holds a build like that; no damage cap was added.
+Change from the pass: the **Wardrobe's charge now marks its whole path** (to the first wall)
+during its tilt, like the Grubmother's lunge and Snip's dash; it was the one boss charge with no
+direction shown. The probe found its own blind spots first (it ignored adds, body motion and
+telegraphs); the figures above are after fixing those.
+
+Verified (automated): `tests/cellar.ts` (17 checks: each creature's tell, behaviour and counter,
+a crowded room at 0.17 ms/step), `tests/bosses.ts` (each Cellar boss dies to the base build inside
+60 s, reaches phase 2, dodger ≤ 12 hits), unit checks for casting rules and encounter data, all
+earlier suites. **Not verified**: how the new creatures and encounters feel by hand; the dodging
+bot is a proxy for fairness, not a player.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
@@ -204,5 +257,6 @@ replace those files (re-run `scripts/prepare-music.py`) with no engine work.
 0. Audio: by-ear pass on ambience levels per floor; commission or record a score (see above).
 1. M3 follow-up: more authored layouts toward 300 (big 2x1/1x2/2x2 room layouts are still built
    from single-room layouts; give them their own), chapter-specific layout sets with weights.
-2. M4: Chapter I (Cellar) to the 2.0 standard: encounter sets per layout family, cellar props, boss pass.
+2. Carry the M4 pattern to Chapter II–VII: role audit per chapter, new creatures for missing
+   roles (toward 70), encounter sets per chapter, boss probe per chapter's bosses.
 3. Human playtest of Inklings and the new rooms; tune meter size, annotated rate, weakest essences.
