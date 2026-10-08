@@ -80,6 +80,8 @@ export class Enemy {
     if (this.champion === 'swift') m *= 1.35;
     // it recognises the ink Marcus took from its kind (game/inklings.ts)
     if (this.data.furious) m *= 1.15;
+    // driven on by a Foreman's whistle
+    if (this.data.hasteT > 0) m *= 1.4;
     return m;
   }
   move(w: World, dx: number, dy: number): { hx: boolean; hy: boolean; wall: boolean } {

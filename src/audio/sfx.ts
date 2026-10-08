@@ -34,6 +34,7 @@ export const RECIPES: Record<string, Recipe> = {
     const d = dist(c, 3, o); thump(c, d, R(170), 55, 0.09, 0.9);
     const bp = filter(c, 'bandpass', R(1100), 1.2, o); noise(c, 0, 0.05, bp, 0.6); clicks(c, o, 2, 0.03, 3000, 0.25);
   } },
+  whistle: { dur: 0.6, variants: 2, vol: 0.45, render: (c, o) => { osc(c, 'sine', R(1750), R(2050), 0, 0.5, o, 0.5, 0.03); osc(c, 'sine', R(2350), R(2750), 0, 0.5, o, 0.25, 0.03); hiss(c, o, 'bandpass', 3000, 2, 0.55, 0.3, 0.05); } },
   tink: { dur: 0.25, variants: 3, vol: 0.4, render: (c, o) => { fm(c, R(1900), 2.41, 1.2, 0, 0.18, o, 0.4); fm(c, R(2700), 1.7, 0.6, 0.01, 0.1, o, 0.15); } },
   crit: { dur: 0.5, variants: 2, vol: 0.6, render: (c, o) => { const d = dist(c, 6, o); thump(c, d, 220, 40, 0.18, 1); fm(c, 1320, 3.01, 2, 0.01, 0.4, o, 0.3); hiss(c, o, 'highpass', 3000, 1, 0.08, 0.5); } },
   death: { dur: 0.45, variants: 4, vol: 0.65, limit: 3, render: (c, o) => {

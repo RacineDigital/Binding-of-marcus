@@ -193,6 +193,7 @@ export class World {
     }
     if (e.freeze > 0) return;
     e.st += dt;
+    if (e.data.hasteT > 0) { e.data.hasteT -= dt; if (Math.random() < dt * 10) this.fx.smoke(e.x, e.y - e.hitY, 1, 'rgba(235,235,245,', 2, 0.4, 16); }
     e.def.update(e, this, dt);
     if (e.data.tellAt !== undefined) {
       // the tell: a swell and a white pulse while the shot is held

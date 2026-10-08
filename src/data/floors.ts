@@ -45,6 +45,23 @@ const CELLAR_ENCOUNTERS: Encounter[] = [
   { name: 'hoppers', ids: ['dripling', 'dripling', 'moth'] },
 ];
 
+/** Chapter II encounters. */
+const BOILER_ENCOUNTERS: Encounter[] = [
+  { name: "foreman's crew", ids: ['foreman', 'stoker', 'cinderhopper'] },
+  { name: 'foreman and sprites', ids: ['foreman', 'sootsprite', 'sootsprite'] },
+  { name: 'foreman and riveters', ids: ['foreman', 'riveter', 'brickback'], weight: 0.7 },
+  { name: 'bellows and hoppers', ids: ['bellows', 'cinderhopper', 'cinderhopper'] },
+  { name: 'bellows and valve', ids: ['bellows', 'valvehead'] },
+  { name: 'riveter pair', ids: ['riveter', 'riveter'], weight: 0.8 },
+  { name: 'riveter and sprite', ids: ['riveter', 'sootsprite'] },
+  { name: 'riveter behind bricks', ids: ['riveter', 'brickback'] },
+  { name: 'shield wall', ids: ['brickback', 'gasper', 'gasper'] },
+  { name: 'brick and worm', ids: ['brickback', 'pipeworm'] },
+  { name: 'stoker and toads', ids: ['stoker', 'cinderhopper'] },
+  { name: 'valve gallery', ids: ['valvehead', 'valvehead', 'sootsprite'], weight: 0.8 },
+  { name: 'toads and worm', ids: ['cinderhopper', 'cinderhopper', 'pipeworm'] },
+];
+
 export const FLOORS: FloorTheme[] = [
   {
     id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Chapter I',
@@ -64,7 +81,8 @@ export const FLOORS: FloorTheme[] = [
     pal: { floor: '#4a3431', floor2: '#3b2a29', grout: '#1d1414', wall: '#4a4546', wall2: '#35302f', mortar: '#171213',
       rock: '#5e5552', accent: '#d9772c', stain: '#1a1614', heap: '#2d2a2c', heapKind: 'coal' },
     ambient: '#140604', darkness: 0.36, playerLight: 90,
-    enemies: { sootsprite: 8, valvehead: 6, stoker: 7, cinderhopper: 6, pipeworm: 4, mite: 4, gasper: 4, moth: 3 },
+    enemies: { sootsprite: 8, valvehead: 6, stoker: 7, cinderhopper: 6, pipeworm: 4, mite: 4, gasper: 4, moth: 3, bellows: 3, foreman: 2, riveter: 4, brickback: 3 },
+    encounters: BOILER_ENCOUNTERS,
     bosses: ['furnaceheart', 'oldstoker', 'grubmother'],
     music: 'boiler', hazards: { spikes: 0.25, pits: 0.2, fires: 0.6, kegs: 0.35 }, fireVariants: [0, 0, 1, 2],
     hpMul: 1.15, budget: 1.1,
@@ -150,7 +168,7 @@ export const ALT_FLOORS: Record<string, FloorTheme> = {
     enemies: { mite: 8, moth: 8, ragcrawler: 8, gasper: 6, dripling: 6, pillbug: 7, mitenest: 4, rat: 5, mildew: 4, lurker: 3, lampkeeper: 2, trunk: 2 } }),
   boiler: variant(FLOORS[1], { id: 'coalchute', name: 'The Coal Chute', subtitle: 'Black dust in every breath',
     floor: 'earth', ambience: 'ash', pal: { floor: '#2e2a2a', floor2: '#242020', rock: '#3a3436', stain: '#120e0e' }, darkness: 0.46,
-    enemies: { sootsprite: 9, valvehead: 5, stoker: 8, cinderhopper: 7, pipeworm: 5, mite: 4 } }),
+    enemies: { sootsprite: 9, valvehead: 5, stoker: 8, cinderhopper: 7, pipeworm: 5, mite: 4, bellows: 3, riveter: 3, brickback: 3, foreman: 2 } }),
   underworks: variant(FLOORS[2], { id: 'flooded', name: 'The Flooded Drains', subtitle: 'The water is rising, slowly',
     pal: { floor: '#2e3e44', floor2: '#26343a', wall: '#34464a', stain: '#2a4a5a', rock: '#4a5a60' }, ambience: 'drips',
     enemies: { leech: 9, drowner: 8, sludge: 6, bloater: 5, grateeye: 5, rat: 5 } }),

@@ -16,7 +16,7 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 | Trinkets ("charms") | 17 | Plus 20 pages/sweets (consumables). | 40+ |
 | Characters | 10 (+10 mirrored "tainted" variants) | Distinct starting kits and passives (melee, beams, ricochet, ink hearts, dice). | 10 ✓ |
 | Floor environments | 8 story chapters, 6 extra chapters, 3 hospital floors, plus special floors (Margins, Last Page, Foreword, Room 4, Home) | The 7 "alternate" chapters (Root Cellar, Coal Chute, …) are palette/name variants of the main ones, so they don't count as distinct. | 12 ✓ (≈17 distinct) |
-| Standard enemies | 43 defs → **47 after M4** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4 adds 4 distinct ones (44). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
+| Standard enemies | 43 defs → **51 after M5a** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4 and M5a add 8 distinct ones (48). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
 | Bosses and minibosses | 31 defs | Rigged, multi-phase; Patient fight retuned in 3.14. | 35+ |
 | Authored room layouts | 40 templates + 10 set pieces → **157 + 10 after M3** | Before M3, 55% of rooms used a procedural layout that placed rock clusters and walls anywhere, including the middle of the room. M3: 30% procedural, rocks to the edges. | 300+ |
 | Challenge runs | 5 | | 25+ |
@@ -244,6 +244,30 @@ a crowded room at 0.17 ms/step), `tests/bosses.ts` (each Cellar boss dies to the
 earlier suites. **Not verified**: how the new creatures and encounters feel by hand; the dodging
 bot is a proxy for fairness, not a player.
 
+### M5a — Chapter II (the Boiler Rooms), same pattern (done)
+
+Role audit: only five Boiler creatures of its own (flyer, two turrets, heavy, hopper) plus borrowed
+Cellar ones; no environment manipulator, no support, no ranged harasser of its own, no shield.
+New (`src/enemies/defs_boiler2.ts`, sprites `src/art/hand/boiler3.ts`):
+- **Bellows** (environment): swells as it breathes in (dust drawn toward it), then blows a cone that
+  shoves you (direct collision-aware push) and makes any fire in it spit embers at you.
+- **Foreman** (support): keeps behind the others; lifts its whistle (steam rising), then hastens
+  allies within 100 px for 3 s (×1.4 speed, steam trailing off them). New hook: `data.hasteT` in
+  `Enemy.spd()`. New sound: `whistle`.
+- **Riveter** (ranged): plants with a sighting line that tracks you for 0.5 s, then locks and
+  brightens; three rivets go down the locked line; 1.1 s reload. New hook: `data.aimLine` drawn by
+  the renderer for any creature.
+- **Brickback** (shield): a firebrick slab turns shots from the side it faces (×0.15); it takes 0.75 s
+  to turn round; up close it raises the slab and slams it (ring of cinders), then is open (×1.3).
+- 13 Boiler encounters (foreman's crew, riveter behind bricks, shield wall, bellows and valve…);
+  the Coal Chute also gets the new creatures. Over 400 seeds, 37% of Boiler rooms came from
+  encounters and every encounter and new creature appeared.
+- Boss probe, base build, dodging bot, 4 trials: Furnace Heart 31–33 s (phase 2 at 16–19 s, 2–4 hits);
+  Old Stoker 27–31 s (phase 2 at ~14 s, 3–5 hits). No changes needed; both added to `tests/bosses.ts`.
+
+Verified (automated): `tests/boiler.ts` (16 checks: each tell, effect and counter, crowded room
+0.22 ms/step), boss regression for five bosses, all earlier suites. **Not verified**: by hand.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
@@ -257,6 +281,6 @@ bot is a proxy for fairness, not a player.
 0. Audio: by-ear pass on ambience levels per floor; commission or record a score (see above).
 1. M3 follow-up: more authored layouts toward 300 (big 2x1/1x2/2x2 room layouts are still built
    from single-room layouts; give them their own), chapter-specific layout sets with weights.
-2. Carry the M4 pattern to Chapter II–VII: role audit per chapter, new creatures for missing
+2. Carry the M4 pattern to Chapter III–VII (II done): role audit per chapter, new creatures for missing
    roles (toward 70), encounter sets per chapter, boss probe per chapter's bosses.
 3. Human playtest of Inklings and the new rooms; tune meter size, annotated rate, weakest essences.

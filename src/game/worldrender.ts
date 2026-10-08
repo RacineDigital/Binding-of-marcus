@@ -223,6 +223,12 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
     ctx.fillStyle = `rgba(0,0,0,${0.22 + 0.1 * k})`; ctx.beginPath(); ctx.ellipse(lx, ly, land.r, land.r * 0.4, 0, 0, TAU); ctx.fill();
     ctx.strokeStyle = `rgba(255,120,90,${0.35 + 0.25 * k})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(lx, ly, land.r + 2, land.r * 0.4 + 1, 0, 0, TAU); ctx.stroke();
   }
+  const aim = e.data.aimLine as { a: number; locked: boolean } | null | undefined;
+  if (aim && !e.dead) {
+    // a sighting line: thin and dim while it tracks you, bright once it has locked
+    ctx.save(); ctx.globalAlpha = aim.locked ? 0.75 + 0.25 * Math.sin(w.time * 40) : 0.35; ctx.strokeStyle = aim.locked ? '#ff4030' : '#ff8070'; ctx.lineWidth = aim.locked ? 2 : 1;
+    ctx.beginPath(); ctx.moveTo(sx + Math.cos(aim.a) * 10, sy - 6 + Math.sin(aim.a) * 6); ctx.lineTo(sx + Math.cos(aim.a) * 260, sy - 6 + Math.sin(aim.a) * 260); ctx.stroke(); ctx.restore();
+  }
   if (e.def.aura && !e.dead && e.spawnT <= 0) {
     const a = e.def.aura;
     ctx.save(); ctx.globalAlpha = 0.28 + 0.08 * Math.sin(w.time * 3); ctx.strokeStyle = a.color; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.lineDashOffset = -w.time * 8;
