@@ -18,7 +18,7 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 | Floor environments | 8 story chapters, 6 extra chapters, 3 hospital floors, plus special floors (Margins, Last Page, Foreword, Room 4, Home) | The 7 "alternate" chapters (Root Cellar, Coal Chute, …) are palette/name variants of the main ones, so they don't count as distinct. | 12 ✓ (≈17 distinct) |
 | Standard enemies | 43 defs | 40 distinct behaviours (the three Sludge sizes and Blot/Blotlet share code). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
 | Bosses and minibosses | 31 defs | Rigged, multi-phase; Patient fight retuned in 3.14. | 35+ |
-| Authored room layouts | 40 templates + 10 set pieces | 55% of rooms use a procedural layout instead (mirrored feature painting), which places rock clusters and walls anywhere, including the middle of the room. | 300+ |
+| Authored room layouts | 40 templates + 10 set pieces → **157 + 10 after M3** | Before M3, 55% of rooms used a procedural layout that placed rock clusters and walls anywhere, including the middle of the room. M3: 30% procedural, rocks to the edges. | 300+ |
 | Challenge runs | 5 | | 25+ |
 | Endings | 5 | Plus secret floors and a hospital route. | multiple ✓ |
 | Achievements | 82 | Each unlocks content (items, readers, challenges). | — |
@@ -76,9 +76,8 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
   forgiveness, input buffering.
 - **M2 — Inklings** ✅: ink meter, essence drops, three margin slots with levels I–III, 16 essences built
   on reusable mechanics, furious/annotated enemies, HUD, pickup card, journal, tests.
-- **M3 — rooms**: a template validator (door approaches, reachability, lanes, enemy slots), a large
-  authored layout library per room shape, procedural layouts that keep permanent rocks to the edges
-  and leave the door cross open.
+- **M3 — rooms** ✅ (first library pass): template validator, 117 new authored layouts in families,
+  procedural layouts that keep permanent rocks to the edges and leave the door cross open.
 - **M4 — Chapter I to the 2.0 standard**: encounter sets, cellar-specific rooms and props, boss pass.
 - **M5 — content expansion** in validated batches: trinkets → challenges (each with a new rule) →
   enemies by role → passives/actives built on the expanded pipeline → bosses.
@@ -142,6 +141,34 @@ first tuning (meter 10, 22% annotated) filled all margins at III by chapter 4, s
 meter 16 and ≤ 8% annotated (margins full by chapter 2–3, III mostly late).
 **Not verified**: how it feels in human play; balance of individual essences.
 
+### M3 — rooms (done: validator, generation rules, first library pass)
+
+- **Validator** (`src/rooms/validate.ts`), run by the unit tests on every authored layout and on
+  3,000 generated ones: 15x9 with known characters; each doorway and the cell inside it open; no
+  enemy slot in a door mouth (3 wide, 2 deep); every floor cell walkable from a door (sealed pockets
+  only beside a turret/flyer); at most 12 permanent obstacles (rock, block, pillar) in the room's core
+  unless tagged `centerpiece`. The 10 original templates that broke a rule were fixed.
+- **Procedural layouts** (`generation/roomgen.ts`): rock clusters grow from the walls and stay in a
+  two-cell band along them; walls are spurs from a wall, not free-standing bars; no permanent
+  obstacle or pit on the door-to-door cross (breakable props may stand there); unreachable pockets
+  are filled; core rocks capped at 12 unless the room is built round a ring or pillars. Measured on
+  6,000 layouts: rule breaks went from 1,860 (678 unreachable pockets, 1,182 over-cluttered cores)
+  to 0.
+- **Authored library** (`src/rooms/layouts.ts`): 117 new layouts (157 authored in all) in families:
+  edge bays (20), pits (12), pillar halls (9), breakable cover (9), hazards with lanes (12),
+  ambush (7), arenas (5), shooter cover (7), swarms (5), heavy duels (5), webs (4), lanes (4),
+  asymmetric (10), late-chapter dense rooms (8, chapter IV on). Several carry `minFloor` so harder
+  shapes appear later. Rooms are flipped at random on X and Y, so each plays up to four ways (not
+  counted toward the total). Rooms now use an authored layout 70% of the time (was 45%).
+- Rooms record their layout in `flags.layout`; `__bomDebug.layout(name)` stamps a named layout into
+  an unvisited room and `tests/tools/roomshot.ts` photographs layouts for review.
+
+Verified (automated): unit tests (211,889 checks incl. the validator on all 157 layouts and 3,000
+generated rooms), all e2e suites, boot test, and the run bot over 4 seeds × 7 chapters (no page
+errors, every run reached chapter 7 or the Binding). Screenshots of 9 layouts were reviewed; one
+(pillar nave) was too cramped and was opened up. **Not verified**: how the new rooms play by hand;
+whether the family mix needs per-chapter weighting.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
@@ -152,7 +179,7 @@ meter 16 and ≤ 8% annotated (margins full by chapter 2–3, III mostly late).
 
 ## 6. Next steps (exact)
 
-1. M3: template validator (`src/rooms/validate.ts`, done) in the unit tests; author the layout
-   library in families (edge bays, pits, pillars, cover, hazards, ambush, arenas, swarm/heavy duels);
-   procedural layouts keep permanent rocks to the edges and leave the door cross open.
-2. Human playtest of Inklings; tune meter size, annotated rate and the weakest essences.
+1. M3 follow-up: more authored layouts toward 300 (big 2x1/1x2/2x2 room layouts are still built
+   from single-room layouts; give them their own), chapter-specific layout sets with weights.
+2. M4: Chapter I (Cellar) to the 2.0 standard: encounter sets per layout family, cellar props, boss pass.
+3. Human playtest of Inklings and the new rooms; tune meter size, annotated rate, weakest essences.

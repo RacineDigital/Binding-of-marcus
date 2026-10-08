@@ -18,6 +18,15 @@ faster, and inked champions start to appear. The Journal keeps every one you hav
 **Smoother movement.** Clipping the corner of a rock slides you round it instead of stopping you
 dead, and a bomb, item or page pressed during a room transition is no longer lost.
 
+### Rooms
+- 117 new hand-made room layouts (157 in all): rock bays along the walls, pits and chasms, pillar
+  halls, breakable cover, spike and fire lanes, ambushes, arenas, shooter nests, swarms, heavy duels,
+  lopsided rooms and denser late-chapter rooms. Most rooms now use a hand-made layout.
+- Generated rooms keep their rocks along the walls and never block the straight paths between doors,
+  and every patch of floor can be reached.
+- Every layout is checked: doors open, no enemy waiting in a doorway, no sealed-off floor, no clutter
+  in the middle of the room.
+
 ## What's new in 3.17.0: ready for Steam
 
 **Fixed: the way down after a boss.** Walking out of a boss room straight after the kill could

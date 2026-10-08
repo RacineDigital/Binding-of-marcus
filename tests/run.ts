@@ -10,7 +10,8 @@ import { SONGS } from '../src/audio/songs';
 import { ITEM_ACC, ITEM_OUTFIT, TRANSFORM_OUTFIT } from '../src/art/costume';
 import { TRANSFORM_EFFECTS } from '../src/player/player';
 import { TEMPLATES } from '../src/rooms/templates';
-import { generateLayout } from '../src/generation/roomgen';
+import { generateLayout, generateTemplate } from '../src/generation/roomgen';
+import { validateTemplate } from '../src/rooms/validate';
 import { RNG } from '../src/core/rng';
 import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
@@ -141,7 +142,13 @@ for (const f of [...FLOORS, ...Object.values(ALT_FLOORS), ...CHAPTER_POOL]) {
 }
 for (const id of [...Object.keys(ITEM_ACC), ...Object.keys(ITEM_OUTFIT)]) ok(ALL_ITEMS.some((i) => i.id === id) || CONSUMABLES.some((c) => c.id === id), `costume item ${id} exists`);
 for (const id of Object.keys(TRANSFORM_EFFECTS)) ok(!!TRANSFORM_OUTFIT[id], `transformation ${id} has its own look`);
-for (const t of TEMPLATES) { ok(t.rows.length === 9 && t.rows.every((r) => r.length === 15), `template ${t.name} is 15x9`); }
+for (const t of TEMPLATES) { const bad = validateTemplate(t); ok(bad.length === 0, `template ${t.name}: ${bad.join('; ')}`); }
+ok(new Set(TEMPLATES.map((t) => t.name)).size === TEMPLATES.length, 'template names are unique');
+{
+  // generated layouts obey the same rules as authored ones: open doors, reachable floor, edge rocks
+  const rng = new RNG('layout-rules');
+  for (let i = 0; i < 3000; i++) { const t = generateTemplate(rng, CHAPTER_POOL[i % CHAPTER_POOL.length], i % 8); const bad = validateTemplate(t); ok(bad.length === 0, `generated layout ${i}: ${bad.join('; ')}\n${t.rows.join('\n')}`); }
+}
 {
   const rng = new RNG('layouts');
   const valid = new Set('.#@bo^~fpkuIwMFSWHTA');

@@ -24,6 +24,14 @@ export function attachDebug(g: Game): void {
       w.enterRoom(id, null, false);
       const c = w.room.center(); w.player.x = c.x; w.player.y = c.y + 30; w.snapCamera();
     },
+    /** Rebuild an unvisited normal room from a named layout and walk into it. */
+    async layout(name: string) {
+      const w = g.world; if (!w) return false;
+      const { previewLayout } = await import('../generation/populate');
+      const r = w.floor.rooms.find((x) => x.type === 'normal' && x.cw * x.ch === 1 && !x.visited && x !== w.room);
+      if (!r || !previewLayout(r, w.floor, name)) return false;
+      this.goto(r.id); return true;
+    },
     killAll() { const w = g.world; if (!w) return; for (const e of [...w.enemies]) if (!e.dead) w.killEnemy(e); },
     spawn(id: string, x?: number, y?: number) { const w = g.world; if (!w) return null; const c = w.room.center(); return w.spawnEnemy(id, x ?? c.x, y ?? c.y - 40, false); },
     bomb() { if (g.world) { g.world.player.bombs++; placeBomb(g.world); } },

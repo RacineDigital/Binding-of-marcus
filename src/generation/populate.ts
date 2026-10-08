@@ -200,6 +200,20 @@ function castEnemies(room: RoomData, floor: Floor, rng: RNG, slots: { c: number;
   return out;
 }
 
+/** Debug/preview: rebuild an unvisited single room from a named layout (used by the room screenshot tool). */
+export function previewLayout(room: RoomData, floor: Floor, name: string, seed = 'preview'): boolean {
+  const t = TEMPLATES.find((x) => x.name === name);
+  if (!t || room.cw * room.ch !== 1) return false;
+  const rng = new RNG(seed + name), slots: { c: number; r: number; ch: string }[] = [];
+  for (let r = 0; r < room.rows; r++) for (let c = 0; c < room.cols; c++) room.setOb(c, r, Ob.None);
+  stamp(room, t.rows, 0, 0, false, false, rng, floor, slots);
+  ensurePaths(room);
+  room.spawns = castEnemies(room, floor, rng, slots, 1);
+  freeSpawns(room, room.spawns);
+  room.cleared = room.spawns.length === 0; room.flags.layout = name;
+  return true;
+}
+
 export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, save?: SaveManager): void {
   const rng = new RNG(room.seed + ':pop');
   const fi = floor.index;
@@ -231,7 +245,11 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
         room.flags.variant = 'setpiece'; room.flags.setName = sp.name;
         break;
       }
-      for (const [oc, orr] of subs) stamp(room, rng.chance(0.55) ? generateLayout(rng, floor.theme, fi) : pickTemplate(rng, fi).rows, oc, orr, rng.chance(0.5), rng.chance(0.5), rng, floor, slots);
+      for (const [oc, orr] of subs) {
+        const t = rng.chance(0.3) ? null : pickTemplate(rng, fi);
+        room.flags.layout = [room.flags.layout, t ? t.name : 'generated'].filter(Boolean).join('+');
+        stamp(room, t ? t.rows : generateLayout(rng, floor.theme, fi), oc, orr, rng.chance(0.5), rng.chance(0.5), rng, floor, slots);
+      }
       // big rooms: decorate the seams with pillars
       if (room.cw === 2) for (const r of [1, room.rows - 2]) if (rng.chance(0.5)) room.setOb(17, r, Ob.Pillar);
       ensurePaths(room);

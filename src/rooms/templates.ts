@@ -2,6 +2,7 @@
 //  # rock   @ rock (may become chalk-marked)   b iron block   o pit   ^ spikes   ~ timed spikes
 //  f fire   p heap   k powder keg   u urn   I pillar   w web
 //  M melee  F flyer  S shooter  W swarm cluster  H heavy  T turret  A any
+import { LAYOUTS } from './layouts';
 export interface Template { name: string; rows: string[]; weight?: number; minFloor?: number; tags?: string[] }
 
 export const TEMPLATES: Template[] = [
@@ -405,6 +406,7 @@ export const TEMPLATES: Template[] = [
     '...............',
     '...............',
     '...............'], minFloor: 2 },
+  ...LAYOUTS,
 ];
 
 export const BOSS_TEMPLATE = [
