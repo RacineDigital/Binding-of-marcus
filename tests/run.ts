@@ -369,7 +369,8 @@ console.log('content:', JSON.stringify(counts));
   const themes = [...F.FLOORS, ...Object.values(F.ALT_FLOORS), ...F.NEW_FLOORS, F.MARGINS_THEME, F.LASTPAGE_THEME, F.DEDICATION_THEME, F.FOREWORD_THEME, ...F.HOSPITAL_FLOORS, F.ROOM4_THEME, F.HOME_THEME];
   const ids = new Set(themes.map((t) => t.id));
   for (const t of themes) ok(themeMusic(t) === 'rec_' + t.id, `${t.id} plays its own recording`);
-  for (const r of RECORDINGS) ok(ids.has(r.id), `recording ${r.id} belongs to a chapter`);
+  // (the one extra recording is the boss loop every boss fight plays)
+  for (const r of RECORDINGS) ok(ids.has(r.id) || r.id === 'boss', `recording ${r.id} belongs to a chapter or the bosses`);
   const files = fs.readdirSync('assets/music/audio').filter((f) => f.endsWith('.ogg')).map((f) => f.replace(/^\d+[-_ ]?/, '').replace(/\.ogg$/, ''));
   for (const r of RECORDINGS) ok(files.includes(r.id), `recording ${r.id} has its file`);
   ok(new Set(themes.map((t) => themeMusic(t))).size === themes.length, 'no two chapters share a theme');
@@ -380,10 +381,11 @@ console.log('content:', JSON.stringify(counts));
   const { SONGS } = await import('../src/audio/songs');
   const { LASTPAGE_FLOOR, ROOM4_FLOOR } = await import('../src/data/floors');
   const r = new Run('MUSIC1', 'marcus', () => true);
-  r.floorIndex = FINAL_FLOOR; ok(bossMusic(r) === 'finalBinding', 'the Binding plays Last Rites');
-  r.flags.margins = true; r.floorIndex = LASTPAGE_FLOOR; ok(bossMusic(r) === 'finalUnwritten', 'the Last Page plays Unwriting');
-  r.flags.light = true; ok(bossMusic(r) === 'finalAuthor', 'the Foreword plays The Final Draft');
-  const h = new Run('MUSIC2', 'marcus', () => true); h.flags.room4 = true; h.floorIndex = ROOM4_FLOOR; ok(bossMusic(h) === 'bossFinal', 'Room 4 keeps the final theme');
+  r.floorIndex = FINAL_FLOOR; ok(bossMusic(r) === 'rec_boss', 'the Deep End plays the boss loop');
+  r.flags.margins = true; r.floorIndex = LASTPAGE_FLOOR; ok(bossMusic(r) === 'rec_boss', 'Dead Air plays the boss loop');
+  r.flags.light = true; ok(bossMusic(r) === 'rec_boss', 'First Light plays the boss loop');
+  { const r2 = new Run('MUSIC3', 'marcus', () => true); r2.floorIndex = 0; ok(bossMusic(r2) === 'rec_boss', 'a first-floor boss plays the boss loop'); }
+  const h = new Run('MUSIC2', 'marcus', () => true); h.flags.room4 = true; h.floorIndex = ROOM4_FLOOR; ok(bossMusic(h) === 'rec_boss', 'Room 4 plays the boss loop');
   for (const id of ['finalBinding', 'finalUnwritten', 'finalAuthor']) ok(!!SONGS[id], `${id} is in the soundtrack`);
 }
 // ------------------------------------------------------------ set pieces

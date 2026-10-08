@@ -371,6 +371,14 @@ Kept: the Tab map frame, the boss bar frame and the item-description backdrop (r
 - **Music ringing** (reported): every synth track (21) and recording (30) was rendered/decoded and
   scanned for a sustained narrow tone above 1.5 kHz; none found. Not reproduced; needs details.
 
+### 3.17.3: boss music
+
+The owner's recorded boss loop ("Ink and Iron", 87 s, converted to Vorbis by
+`scripts/prepare-music.py` as `assets/music/audio/31-boss.ogg`) plays in every boss fight:
+`bossMusic()` returns `rec_boss` with the old synth boss themes as the fallback, and the two
+final-boss phase changes no longer switch tracks. Checked in a browser: the floor plays its theme,
+the boss room switches to the 87.3 s recording.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at

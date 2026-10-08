@@ -63,7 +63,12 @@ export function isEndingFloor(run: Run): boolean {
  * Each ending boss has its own theme: Last Rites at the Binding, Unwriting for the Unwritten on the
  * Last Page, The Final Draft for the Author in the Foreword. Room 4 keeps the older final theme.
  */
+/** Every boss fight plays the recorded boss loop, "Ink and Iron" (3.17.3); the old synth boss themes
+ *  stay as the fallback for when the recording can't load. */
 export function bossMusic(run: Run): string {
+  return chapterTrack('boss', oldBossMusic(run));
+}
+function oldBossMusic(run: Run): string {
   const fi = run.floorIndex;
   if (fi === FINAL_FLOOR && !run.flags.margins) return 'finalBinding';
   if (run.flags.margins && fi === LASTPAGE_FLOOR) return run.flags.light ? 'finalAuthor' : 'finalUnwritten';

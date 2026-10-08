@@ -1,4 +1,5 @@
 // Chapter V–VII bosses and the final boss.
+import { chapterTrack } from '../audio/music';
 import type { EnemyDef, Enemy } from '../enemies/enemy';
 import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle, crack, rivets, stitches, bigEye, maw, drips, rand01 } from '../art/creature';
 import { chase, aimAngle, shoot, spreadShot, ringShot, keepDistance, randomFloorPoint, distToPlayer, buzz } from '../enemies/ai';
@@ -360,7 +361,7 @@ const unboundBrain: BossBrain = {
     e.anim = 'open';
     w.hud.toast(ph === 1 ? 'It comes apart at the seams.' : 'Everything you pushed down comes up at once.');
     w.whiteFlash = 0.5;
-    if (ph === 2) w.audio.setMusic('finalBinding');
+    if (ph === 2) w.audio.setMusic(chapterTrack('boss', 'finalBinding'));
   },
 };
 const unbound: EnemyDef = {
@@ -386,7 +387,7 @@ const remembersBrain: BossBrain = {
     e.anim = 'open';
     w.hud.toast(ph === 1 ? 'It remembers how you did it last time.' : 'It will not let you leave again.');
     w.whiteFlash = 0.5;
-    if (ph === 2) w.audio.setMusic('finalBinding');
+    if (ph === 2) w.audio.setMusic(chapterTrack('boss', 'finalBinding'));
   },
 };
 const itremembers: EnemyDef = {

@@ -2,6 +2,11 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
+## What's new in 3.17.3: Ink and Iron
+
+**New boss music.** Every boss fight now plays "Ink and Iron", a new recorded boss theme, from the
+first floor's boss to the very last. It loops for as long as the fight lasts.
+
 ## What's new in 3.17.2: a new story, busier rooms, no ink
 
 **A new story.** No more storybook. 4:04 a.m., the Harrow Lane bridge, rain: Marcus Hale, seventeen,

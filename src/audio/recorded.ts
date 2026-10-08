@@ -31,4 +31,5 @@ export const RECORDINGS: Recording[] = [
   { id: 'icu', title: "Borrowed Breath", seconds: 76.8 },
   { id: 'room4', title: "The Good Chair", seconds: 90.0 },
   { id: 'home', title: "Morning Through the Window", seconds: 98.182 },
+  { id: 'boss', title: "Ink and Iron", seconds: 87.273 },
 ];
