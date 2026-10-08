@@ -51,6 +51,8 @@ export interface Screen {
 }
 
 const INK = '#2a1e18', INK2 = '#5a4636', PAPER = '#e6dabd';
+/** New-run page layout: where the playstyle marks sit (centre, spacing) and the first of the option lines. */
+const SEAL_X = 110, SEAL_DX = 24, OPT_Y = 200;
 
 /** An old, handled page: torn, scorched, foxed and creased (painted once, then cached). */
 function page(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, a = 1, seed = 3): void {
@@ -324,75 +326,92 @@ export class MenuSystem {
       },
       pointer(x, y, click, moved, wheel) {
         if (editing || padSeed) return;
-        if (x >= 26 && x < 162 && y >= 48 && y < 210) { row = 0; if (click || wheel) character(wheel || (x < 94 ? -1 : 1)); return; }
-        if (!challenge && x >= 178 && x < 438 && y >= 117 && y <= 173) {
-          if (moved || click) row = 1;
-          if (click) { bi = Math.min(3, Math.floor((x - 178) / 65)); self.sfxMove(); }
+        if (x >= 44 && x < 176 && y >= 30 && y < 168) { row = 0; if (click || wheel) character(wheel || (x < 110 ? -1 : 1)); return; }
+        if (!challenge && y >= 180 && y <= 200) {
+          const i = Math.round((x - SEAL_X) / SEAL_DX + 1.5);
+          if (i >= 0 && i < BINDINGS.length && Math.abs(x - (SEAL_X + (i - 1.5) * SEAL_DX)) <= 11) { if (moved || click) row = 1; if (click && bi !== i) { bi = i; self.sfxMove(); } }
+          return;
         }
-        if (y >= 218 && y <= 245) {
-          if (x >= 30 && x < 182) { row = 2; if (click) { mi = (mi + 1) % modes.length; self.sfxMove(); } }
-          else if (x >= 187 && x < 329) { row = 3; if (click) editSeed(); }
-          else if (x >= 340 && x < 449) { row = 4; if (click) begin(); }
+        if (x >= 240 && x < 360) for (const r of [2, 3, 4]) if (Math.abs(y - (OPT_Y + (r - 2) * 13 - 3)) <= 6 && rows.includes(r)) {
+          row = r;
+          if (click) { if (r === 2) { mi = (mi + 1) % modes.length; self.sfxMove(); } else if (r === 3) editSeed(); else begin(); }
         }
       },
+      // an old page, like the rest of the game's paper screens: the character on the left with their
+      // ending marks and the four playstyle marks, the story and numbers on the right
       render(ctx) {
-        ctx.fillStyle = 'rgba(4,8,12,0.86)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        panel(ctx, 16, 14, 448, 240, 1, '#8f7954', '#111d22');
-        heading(ctx, challenge ? CHALLENGES.find((c) => c.id === challenge)?.name ?? 'Challenge' : 'Choose your story', 240, 36, 13, '#ead6ab');
+        ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
         const c = CHARACTERS[ci], un = unlocked(c), b = BINDINGS[bi];
-        // The reader sits inside a foil-stamped book cover.
-        const cover = ctx.createLinearGradient(26, 48, 160, 211); cover.addColorStop(0, '#284044'); cover.addColorStop(1, '#101c24');
-        panel(ctx, 26, 48, 136, 163, 1, row === 0 ? '#e5c88d' : '#52676a', cover);
-        ctx.fillStyle = '#32494a'; ctx.fillRect(29, 51, 5, 157);
-        heading(ctx, un ? c.name : 'Unknown', 96, 68, 11, '#ead6ab');
-        const glow = ctx.createRadialGradient(96, 114, 3, 96, 114, 53); glow.addColorStop(0, '#496361'); glow.addColorStop(1, 'rgba(24,39,43,0)');
-        ctx.fillStyle = glow; ctx.fillRect(38, 76, 115, 78);
-        ctx.save(); ctx.translate(96, 150); ctx.scale(2.5, 2.5);
-        if (!un) ctx.filter = 'brightness(0)'; drawReader(ctx, self.sprites(c), c, self.time); ctx.restore();
-        if (!forceChar) { text(ctx, '‹', 42, 116, 20, COL.gold, 'center'); text(ctx, '›', 148, 116, 20, COL.gold, 'center'); }
-        if (un) {
-          ctx.fillStyle = '#c9c4a9'; ctx.fillRect(51, 153, 90, 18);
-          drawMarks(ctx, g, c.id, 96, 164);
-        }
-        const stats = computeStats(c.base, [b.stats]);
-        text(ctx, `DMG ${stats.damage.toFixed(1)}    RATE ${stats.fireRate.toFixed(2)}`, 96, 179, 7, '#e7d9bd', 'center');
-        text(ctx, `SPEED ${stats.speed.toFixed(2)}    RANGE ${Math.round(stats.range / 24)}`, 96, 191, 7, '#a5b9b4', 'center');
-        text(ctx, '‹  CHARACTER  ›', 96, 204, 6, row === 0 ? COL.gold : '#889e9c', 'center');
-        text(ctx, un ? c.title : 'A story still to unlock', 178, 59, 12, '#efe4cc', 'left', FONT_TITLE, 400);
-        wrap(ctx, un ? c.desc : c.unlockHint, 7.5, 258).slice(0, 3).forEach((l, i) => text(ctx, l, 178, 73 + i * 9, 7.5, '#b9c7c3'));
-        if (un) {
-          const H = pickupSprites().hud; let hx = 178;
-          for (let i = 0; i < c.health.red; i++) { ctx.drawImage(H.red.canvas, hx, 95, 8, 8); hx += 9; }
-          for (const [n, spr] of [[c.health.wax ?? 0, H.wax], [c.health.ink ?? 0, H.ink]] as const) for (let i = 0; i < n; i += 2) { ctx.drawImage(spr.canvas, hx, 95, 8, 8); hx += 9; }
-          c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), 424 - i * 14, 92, 12, 12); });
-        }
-        text(ctx, challenge ? 'CHALLENGE KIT · FIXED BINDING' : 'CHOOSE A PLAYSTYLE', 178, 110, 6.5, '#d4b779');
-        BINDINGS.forEach((v, i) => {
-          const x = 178 + i * 65, selected = bi === i;
-          ctx.save(); ctx.globalAlpha = challenge && i ? 0.22 : 1;
-          panel(ctx, x, 118, 60, 55, 1, selected ? v.color : '#35484d', selected ? v.dark : '#15252a');
-          if (selected) { ctx.fillStyle = v.color; ctx.fillRect(x + 7, 119, 46, 1); }
-          bindingSeal(ctx, v, x + 30, 138, 24);
-          text(ctx, v.name, x + 30, 163, 8, selected ? '#fff0d6' : '#aab9b5', 'center', FONT_TITLE, 400);
-          ctx.restore();
-        });
-        text(ctx, b.title, 178, 186, 6.5, b.color);
-        text(ctx, b.benefit, 178, 197, 7.2, '#e7e5cd');
-        text(ctx, b.cost, 178, 207, 7, '#b8c4c0');
-        const modeName = modes[mi] === 'hard' ? 'Hard · score ×1.5' : modes[mi] === 'endless' ? 'Endless · looping floors' : 'Normal';
-        const seedText = editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : '') : seed.length === 8 ? formatSeed(seed) : 'Random';
-        for (const [x, width, r, label] of [[30, 152, 2, `Mode: ${modeName}`], [187, 142, 3, padSeed ? '' : `Seed: ${seedText}`], [340, 109, 4, 'GO DOWN']] as const) {
-          panel(ctx, x, 220, width, 23, 1, row === r ? '#e5c88d' : '#405456', r === 4 ? '#36534e' : '#17272c');
-          if (label) text(ctx, label, x + width / 2, 235, r === 4 ? 8 : 7.5, row === r ? '#fff0d6' : '#c0cdc6', 'center');
-        }
-        if (padSeed) {
-          // the seed being picked: the chosen character lit, with arrows to change it
-          padSeed.forEach((c, i) => {
-            const cx = 220 + i * 11 + (i >= 4 ? 8 : 0), on = i === cur;
-            if (on) { ctx.fillStyle = 'rgba(229,200,141,0.18)'; ctx.fillRect(cx - 5, 224, 10, 15); text(ctx, '▲', cx, 223, 5, COL.gold, 'center'); text(ctx, '▼', cx, 246, 5, COL.gold, 'center'); }
-            text(ctx, c, cx, 235, 9, on ? COL.gold : '#e8e0cc', 'center', FONT_BODY, 700);
+        page(ctx, 30, 16, 420, 232, 1, ci + 2);
+        text(ctx, challenge ? 'Challenge: ' + (CHALLENGES.find((x) => x.id === challenge)?.name ?? '') : 'Choose your story', 240, 34, 9, INK2, 'center', FONT_BODY, 600, false);
+        // portrait
+        const sp = self.sprites(c);
+        ctx.save(); ctx.translate(110, 140); ctx.scale(4, 4);
+        ctx.fillStyle = 'rgba(60,40,30,0.25)'; ctx.beginPath(); ctx.ellipse(0, 0, 9, 2.5, 0, 0, TAU); ctx.fill();
+        if (!un) ctx.filter = 'brightness(0)';
+        drawReader(ctx, sp, c, self.time);
+        ctx.restore();
+        if (!forceChar) { text(ctx, '◀', 62, 102, 12, INK2, 'center', FONT_BODY, 600, false); text(ctx, '▶', 158, 102, 12, INK2, 'center', FONT_BODY, 600, false); }
+        if (un) drawMarks(ctx, g, c.id, 110, 161);
+        // playstyle: just the marks; the chosen one is inked in, and what it does is written under them
+        if (challenge) text(ctx, 'Challenge kit', 110, 192, 7, INK2, 'center', FONT_BODY, 600, false);
+        else {
+          if (row === 1) inkBlot(ctx, SEAL_X + (bi - 1.5) * SEAL_DX, 190, 24, 22, self.time, 'rgba(40,30,60,0.18)');
+          BINDINGS.forEach((v, i) => {
+            ctx.save(); ctx.globalAlpha = i === bi ? 1 : 0.32;
+            bindingSeal(ctx, { ...v, color: v.dark }, SEAL_X + (i - 1.5) * SEAL_DX, 190, 18);
+            ctx.restore();
           });
-          text(ctx, 'Seed', 196, 235, 6.5, '#a5b9b4', 'left');
+          text(ctx, b.benefit, 110, 210, 6, INK, 'center', FONT_BODY, 600, false);
+          text(ctx, b.cost, 110, 218, 6, INK2, 'center', FONT_BODY, 600, false);
+        }
+        if (row === 0 && !forceChar) text(ctx, '— character —', 110, 232, 6.5, INK2, 'center', FONT_BODY, 600, false);
+        if (row === 1) text(ctx, '— playstyle —', 110, 232, 6.5, INK2, 'center', FONT_BODY, 600, false);
+        // info
+        const x0 = 190;
+        text(ctx, un ? c.name : '???', x0, 62, 20, INK, 'left', FONT_TITLE, 400, false);
+        const nameW = measure(ctx, c.name, 20, FONT_TITLE, 400);
+        if (un && !(g.save.data.readersMet ?? []).includes(c.id)) text(ctx, 'NEW', x0 + nameW + 6, 50, 7, '#a02a2a', 'left', FONT_BODY, 700, false);
+        // a gold star once the story has been finished with this character
+        if (un && (c.id === 'marcus' ? g.save.isUnlocked('beat_final') : g.save.isUnlocked('win_' + c.id))) text(ctx, '★', x0 + nameW + 6, 58, 12, '#c89a2a', 'left', FONT_BODY, 700, false);
+        text(ctx, un ? c.title : 'Locked', x0, 74, 8, '#8a3a2a', 'left', FONT_BODY, 600, false);
+        const lines = wrap(ctx, un ? c.desc : c.unlockHint, 7.5, 245).slice(0, 3);
+        lines.forEach((l, i) => text(ctx, l, x0, 88 + i * 9, 7.5, INK2, 'left', FONT_BODY, 600, false));
+        if (un) {
+          const yb = 94 + lines.length * 9;
+          const st = computeStats(c.base, [b.stats]);
+          const stats: [string, number, number][] = [['Damage', st.damage, 5], ['Fire rate', st.fireRate, 4.5], ['Speed', st.speed, 1.6], ['Range', st.range / 24, 12]];
+          stats.forEach(([n, v, max], i) => {
+            text(ctx, n, x0, yb + i * 9, 7, INK2, 'left', FONT_BODY, 600, false);
+            ctx.fillStyle = 'rgba(60,40,30,0.2)'; ctx.fillRect(x0 + 40, yb + i * 9 - 5, 80, 4);
+            ctx.fillStyle = '#6a2a22'; ctx.fillRect(x0 + 40, yb + i * 9 - 5, 80 * clamp(v / max, 0, 1), 4);
+          });
+          // health, then the starting items as their icons
+          const H = pickupSprites().hud; let hx = x0;
+          const hy = yb + 31;
+          for (let i = 0; i < c.health.red; i++) { ctx.drawImage(H.red.canvas, hx, hy); hx += 11; }
+          for (let i = 0; i < (c.health.wax ?? 0) / 2; i++) { ctx.drawImage(H.wax.canvas, hx, hy); hx += 11; }
+          for (let i = 0; i < (c.health.ink ?? 0) / 2; i++) { ctx.drawImage(H.ink.canvas, hx, hy); hx += 11; }
+          c.items.forEach((id, i) => { if (getItem(id)) ctx.drawImage(itemIconCanvas(id), x0 + 245 - (c.items.length - i) * 18, hy - 3, 16, 16); });
+          wrap(ctx, c.passive, 6.5, 245).slice(0, 2).forEach((l, i) => text(ctx, l, x0, hy + 21 + i * 8, 6.5, '#4a3a6a', 'left', FONT_BODY, 600, false));
+        }
+        // mode, seed and begin
+        const modeName = modes[mi] === 'hard' ? 'Hard · score ×1.5' : modes[mi] === 'endless' ? 'Endless · looping floors' : 'Normal';
+        const seedText = editing ? seed + (Math.floor(self.time * 3) % 2 ? '_' : ' ') : seed.length === 8 ? formatSeed(seed) : 'Random';
+        const opts: [number, string][] = [[2, `Mode: ${modeName}`], [3, padSeed ? '' : `Seed: ${seedText}`], [4, 'Begin']];
+        opts.forEach(([r, label]) => {
+          const y = OPT_Y + (r - 2) * 13, on = row === r, off = r === 2 && modes.length < 2;
+          if (on) inkBlot(ctx, 300, y - 3, 150, 12, self.time, 'rgba(40,30,60,0.2)');
+          if (label) text(ctx, label, 300, y, on ? 9 : 8, off ? 'rgba(90,70,54,0.5)' : on ? (r === 2 && modes[mi] !== 'normal' ? '#8a1a1a' : INK) : INK2, 'center', FONT_TITLE, 400, false);
+        });
+        if (padSeed) {
+          // the seed being picked: the chosen character inked, with arrows to change it
+          const y = OPT_Y + 13;
+          padSeed.forEach((ch, i) => {
+            const cx = 262 + i * 10 + (i >= 4 ? 6 : 0), on = i === cur;
+            if (on) { text(ctx, '▲', cx, y - 9, 5, '#8a3a2a', 'center', FONT_BODY, 700, false); text(ctx, '▼', cx, y + 7, 5, '#8a3a2a', 'center', FONT_BODY, 700, false); }
+            text(ctx, ch, cx, y, 9, on ? '#8a1a1a' : INK, 'center', FONT_BODY, 700, false);
+          });
         }
         promptBar(ctx, editing ? [[null, 'Type an 8-character seed'], ['confirm', 'done']]
           : padSeed ? [['navV', 'change'], ['navH', 'move'], ['tabL', 'random'], ['tabR', 'roll'], ['confirm', 'done'], ['back', 'cancel']]

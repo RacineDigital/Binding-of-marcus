@@ -98,9 +98,10 @@ export async function gameplayOverhaulChecks(page: Page): Promise<[boolean, stri
   checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'ember'`), 'keyboard menu navigation starts the selected binding']);
   await page.evaluate(`(() => { const g = window.__bomDebug.game; g.quitToMenu(); g.menus.stack = []; g.menus.push(g.menus.newRunScreen()); })()`);
   const point = await page.evaluate(`({ scale: window.__bomDebug.game.r.scale / window.devicePixelRatio, x: window.__bomDebug.game.r.offX / window.devicePixelRatio, y: window.__bomDebug.game.r.offY / window.devicePixelRatio })`) as { scale: number; x: number; y: number };
-  await page.mouse.click(point.x + 405 * point.scale, point.y + 140 * point.scale);
-  await page.mouse.click(point.x + 393 * point.scale, point.y + 231 * point.scale);
+  // the Clockwork mark (last of the four under the portrait), then Begin
+  await page.mouse.click(point.x + 146 * point.scale, point.y + 190 * point.scale);
+  await page.mouse.click(point.x + 300 * point.scale, point.y + 223 * point.scale);
   await page.waitForFunction(`window.__bomDebug.game.scene === 'run'`);
-  checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'clockwork'`), 'mouse selection starts Clockwork through Open the Book']);
+  checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'clockwork'`), 'mouse selection starts Clockwork through Begin']);
   return checks;
 }
