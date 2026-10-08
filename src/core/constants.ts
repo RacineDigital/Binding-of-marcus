@@ -17,4 +17,4 @@ export function roomRows(ch: number): number { return ch === 1 ? ROOM_ROWS : ROO
 /** Marcus's hurt capsule, measured against his sprite: spine from 17px up (chin) to 6px up (hips). */
 export const HURT_TOP = 17, HURT_BOT = 6, HURT_R = 4;
 /** The game's version (kept in step with package.json by the test suite). */
-export const GAME_VERSION = '3.17.1';
+export const GAME_VERSION = '3.17.2';
