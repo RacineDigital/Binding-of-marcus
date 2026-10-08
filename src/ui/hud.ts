@@ -24,7 +24,7 @@ import { bindLabel, fmtKeys, ACTION_ORDER } from '../core/input';
 import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
-import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
+import { isWantedHalf, LETTER_HALVES } from '../game/letter';
 import { sweetColor } from '../items/sweetcolor';
 import { STING_HIT, StingKind } from '../audio/bossting';
 import { FLAWLESS_TARGET } from '../game/bindings';
@@ -211,23 +211,6 @@ export class Hud {
 
   /** Speedrun-style run clock under the map. */
   /** A first-run hint, centred at the top of the screen; it ticks green for a moment once done. */
-  /** On the hospital path: a two-line checklist for the halves of Grandfather's letter, and where each one is. */
-  private drawLetterHunt(ctx: CanvasRenderingContext2D): void {
-    const w = this.w, h = letterHunt(w);
-    if (!h) return;
-    let y = 64 + (w.floor.curse ? 8 : 0) + (w.game.save.data.settings.timer ? 12 : 0);
-    const rows: [boolean, string, string][] = [
-      [h.top, 'Top half', 'Lost & Found, after the boss'],
-      [h.bottom, 'Bottom half', 'Deep Crawlspace, on the map'],
-    ];
-    const lines = rows.map(([got, name, where]) => got ? `\u2713 ${name}: found` : `\u2022 ${name}: ${where}`);
-    const wd = Math.max(measure(ctx, 'Grandad\'s letter', 6, FONT_BODY, 700), ...lines.map((s) => measure(ctx, s, 5.5))) + 6;
-    ctx.save();
-    text(ctx, 'Grandad\'s letter', VIEW_W - 11, y + 7, 6, '#ffe08c', 'right', FONT_BODY, 700);
-    lines.forEach((s, i) => text(ctx, s, VIEW_W - 11, y + 16 + i * 9, 5.5, rows[i][0] ? COL.up : COL.text, 'right'));
-    ctx.restore();
-  }
-
   private drawTimer(ctx: CanvasRenderingContext2D): void {
     const t = this.w.run.stats.time;
     const m = Math.floor(t / 60), s = t % 60;
@@ -323,7 +306,6 @@ export class Hud {
     this.drawConsumables(ctx);
     if (w.floor.curse === 'lost') { if (!this.fullMap) text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right'); }
     else if (!this.fullMap) this.drawMinimap(ctx, false);
-    if (!this.fullMap) this.drawLetterHunt(ctx);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);

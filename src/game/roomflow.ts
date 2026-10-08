@@ -426,6 +426,23 @@ export function unlockDoor(w: World, def: DoorDef): void {
   for (const od of other.doors) if (od.to === w.room.id && od.side === opposite(def.side)) od.locked = false;
 }
 
+/**
+ * Arriving by teleport skips the door you would have unlocked or found on the way in, so a locked
+ * curio room or shop (or a crawlspace whose only way out is hidden) could trap you. Its locked doors
+ * open, and if every door is still hidden, those are found too.
+ */
+export function openWayOut(w: World): void {
+  for (const d of w.doors) if (d.def.locked) unlockDoor(w, d.def);
+  if (w.doors.length && w.doors.every((d) => d.def.hidden && !d.revealed)) {
+    for (const d of w.doors) {
+      d.revealed = true; d.def.hidden = false;
+      const other = w.floor.rooms[d.def.to];
+      other.discovered = true; other.seen = true;
+      for (const od of other.doors) if (od.to === w.room.id) od.hidden = false;
+    }
+  }
+}
+
 export function revealSecretsNear(w: World, x: number, y: number, r: number): void {
   for (const d of w.doors) {
     if (!d.def.hidden || d.revealed) continue;

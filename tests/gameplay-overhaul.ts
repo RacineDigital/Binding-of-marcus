@@ -82,6 +82,17 @@ export async function gameplayOverhaulChecks(page: Page): Promise<[boolean, stri
     check(w.run.seed === 'DAILY222' && w.run.mode === 'daily' && w.run.flags.dailyDay === '2001-01-01', 'a Daily retry retains its seed and original UTC day');
     recordScore(g.save, w.run, true);
     check(g.save.data.stats['best_daily_2001-01-01'] > 0, 'a run finished after midnight credits the day it began');
+    // teleporting into a locked curio room or shop opens its doors, so you can always leave
+    g.newRun('marcus', 'TPLOCKED'); w = d.world; d.nextFloor(); w = d.world;
+    for (const type of ['treasure', 'shop']) {
+      const r = w.floor.rooms.find((x) => x.type === type);
+      if (!r) continue;
+      w.room.cleared = true; w.lockdown = false;
+      g.teleport(r.id);
+      check(w.room.id === r.id && w.doors.length > 0 && w.doors.every((x) => !x.def.locked), 'teleporting into a locked ' + type + ' room unlocks its door');
+    }
+    const sr = w.floor.rooms.find((x) => x.type === 'secret');
+    if (sr) { w.room.cleared = true; g.teleport(sr.id); check(w.doors.some((x) => !x.def.hidden), 'teleporting into a crawlspace leaves a way out'); }
     g.menus.stack = []; g.menus.push(g.menus.newRunScreen());
     const screen = g.menus.stack.at(-1);
     screen.update(['down'], 0); screen.update(['right'], 0);

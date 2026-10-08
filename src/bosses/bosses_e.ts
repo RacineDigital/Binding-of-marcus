@@ -240,7 +240,7 @@ function asForm(e: Enemy, fn: (fd: EnemyDef) => void): void {
 }
 /** Seconds between shifts, by phase (it only starts shifting in phase 2). */
 const SHIFT = [18, 16, 13, 11];
-/** How long it is gone (and untouchable) while it shifts. */
+/** How long it fades while it shifts (it can still be hit). */
 const VANISH = 0.3;
 function shiftForm(e: Enemy, w: World): void {
   const pd = e.data, last = pd.form?.def.id;
@@ -250,7 +250,7 @@ function shiftForm(e: Enemy, w: World): void {
   // ...and come back as something else (or, now and then, as itself), a short step from where it was
   const p = nearPoint(w, e.x, e.y);
   telegraph(w, p.x, p.y, 26, 0.5, '#80c0ff');
-  pd.vanish = VANISH; pd.to = p; e.invuln = true;
+  pd.vanish = VANISH; pd.to = p;
   const pool = FORMS.filter((id) => id !== last && getEnemy(id));
   const next = pd.phase === 0 || Math.random() < 0.25 || !pool.length ? null : pool[Math.floor(Math.random() * pool.length)];
   pd.nextForm = next;
@@ -283,14 +283,14 @@ function arrive(e: Enemy, w: World): void {
 const patient: EnemyDef = {
   id: 'patient', name: 'The Patient', desc: 'The bed at the end of the ward. Everything Marcus was afraid he would find there, and it has forgotten which.', boss: true,
   borrows: FORMS,
-  hp: 4000, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
+  hp: 6000, r: 18, speed: 0, role: 'boss', cost: 0, hitY: 46, mass: 60, noKnock: true, flying: true, gore: '#dce4e0', goreDecal: '#14112a', light: [110, '#c8e8ff'],
   sprites: () => rig({ w: 92, h: 104, paint: G.paintPatient, phases: 3, aliases: { rage: 'idle' } }),
   init(e) { e.anim = 'idle'; e.data.idleT = 2; e.z = 6; e.data.shiftT = 12; },
   update(e, w, dt) {
     const pd = e.data;
     pd.phase ??= 0;
     // vanishing between forms
-    if (pd.vanish > 0) { pd.vanish -= dt; e.alpha = Math.max(0, pd.vanish / VANISH); if (pd.vanish <= 0) { e.alpha = 1; arrive(e, w); } return; }
+    if (pd.vanish > 0) { pd.vanish -= dt; e.invuln = false; e.alpha = Math.max(0.35, pd.vanish / VANISH); if (pd.vanish <= 0) { e.alpha = 1; arrive(e, w); } return; }
     // a phase line crossed while it was someone else: it snaps back to itself to scream about it
     const th = patientBrain.phases!;
     if (pd.form && pd.phase < th.length && e.hpFrac() <= th[pd.phase]) { pd.form = null; e.state = 'idle'; e.anim = 'idle'; e.z = 6; e.hidden = false; }
@@ -301,6 +301,9 @@ const patient: EnemyDef = {
       if (pd.hb <= 0) { pd.hb = [1.6, 1.3, 1.0, 0.8][pd.phase]; beep(e, w, 10 + pd.phase * 2, 70 + pd.phase * 8); }
       if (pd.phase >= 3) { pd.cbT = (pd.cbT ?? 2) - dt; if (pd.cbT <= 0) { pd.cbT = 2.6; codeBlueWall(e, w); } }
     } else bossUpdate(e, w, dt, patientBrain);
+    // it can always be hurt: no untouchable phase screams, shifts or borrowed hiding moves (3.17.5);
+    // it has a lot more health instead
+    e.invuln = false; e.hidden = false;
     if (Math.random() < dt * 5) w.fx.burst(e.x + (Math.random() - 0.5) * 40, e.y, 2, 1, pd.phase >= 2 ? '#14112a' : '#dce4e0', 20, 0.8);
     // time to forget again (not mid-phase-change)
     if (pd.phase >= 1 && e.state !== 'phase') { pd.shiftT = (pd.shiftT ?? 12) - dt; if (pd.shiftT <= 0) shiftForm(e, w); }

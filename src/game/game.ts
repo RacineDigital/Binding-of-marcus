@@ -412,6 +412,7 @@ export class Game {
     w.enterRoom(id, null, false);
     const c = w.room.center(); w.player.x = c.x; w.player.y = c.y + 10;
     w.snapCamera();
+    flow.openWayOut(w);
   }
 
   useActive(free: boolean): void {
