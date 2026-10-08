@@ -1,6 +1,7 @@
 # Cuts clips captured by tests/tools/reel.ts into a 1080x1920 Short: beat-synced cuts, captions, a blurred
-# backdrop, a "link in bio" end card and the Room 4 theme. Needs Pillow and ffmpeg.
-#   npx tsx tests/tools/reel.ts test-output/reel && python3 tests/tools/reel_compose.py [out.mp4]
+# backdrop and a "link in bio" end card, over one of the game's recordings. Two cuts: 'hype' (fast,
+# the boss theme) and 'story' (the coma story, slower). Needs Pillow and ffmpeg.
+#   npx tsx tests/tools/reel.ts test-output/reel && python3 tests/tools/reel_compose.py <hype|story> [out.mp4]
 import os, sys, subprocess, math, glob
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 
@@ -9,14 +10,13 @@ REEL = os.environ.get('REEL_DIR', os.path.join(REPO, 'test-output', 'reel'))
 FONT_B = REPO + '/node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-900-normal.woff'
 FONT_M = REPO + '/node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff'
 FONT_G = REPO + '/node_modules/@fontsource/pirata-one/files/pirata-one-latin-400-normal.woff'
-MUSIC = REPO + '/assets/music/audio/29-room4.ogg'
 FPS = 30
-BEAT = 0.469            # Room 4 theme, ~128 BPM
-MUSIC_START = 0.46      # first downbeat, so cuts land on beats
 W, H = 1080, 1920
 SQ_Y = 330              # top of the gameplay square
 GOLD, YEL, WHITE = (232, 192, 96), (255, 216, 74), (255, 255, 255)
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(REPO, 'test-output', 'lost_marcus_short.mp4')
+ARGS = [a for a in sys.argv[1:] if not a.startswith('--')]
+CUT = ARGS[0] if ARGS else 'hype'
+OUT = ARGS[1] if len(ARGS) > 1 else os.path.join(REPO, 'test-output', f'lost_marcus_{CUT}.mp4')
 PREVIEW = '--preview' in sys.argv
 
 def frames_of(d): return sorted(glob.glob(os.path.join(REEL, d, '*.jpg')))
@@ -31,23 +31,50 @@ def busiest(d, n, lo=0, hi=None):
         if v > best: best, bi = v, i
     return bi
 
-# (clip dir, beats, start frame or None for busiest, caption lines [(text, color)], options)
-TIMELINE = [
-    ('final/fight', 6, None, [('I MADE A ROGUELIKE', WHITE), ('THAT GETS THIS INSANE', YEL)], {}),
-    ('intro', 4, 22, [("IT STARTS IN", WHITE), ("GRANDAD'S CELLAR", YEL)], {}),
-    ('pickup', 5, 'end', [('FIND CURSED', WHITE), ('CURIOS', YEL)], {}),
-    ('fan', 4, None, [('237 ITEMS', YEL)], {}),
-    ('boom', 4, None, [('THAT ALL', WHITE), ('STACK', YEL)], {}),
-    ('beam', 4, None, [('CHARGE', WHITE), ('BEAMS', YEL)], {}),
-    ('melee', 4, None, [('SWING', WHITE), ('BLADES', YEL)], {}),
-    ('swarm', 4, None, [('RAISE AN', WHITE), ('ARMY', YEL)], {}),
-    ('boss/card', 5, 8, [('26 BOSSES', YEL)], {}),
-    ('boss/fight', 4, None, [('EVERY ONE', WHITE), ('A NEW FIGHT', YEL)], {}),
-    ('final/card', 4, 14, [('ALL THE WAY', WHITE), ('TO ROOM 4', YEL)], {}),
-    ('final/fight', 4, 'second', [('8 CHAPTERS', WHITE), ('OF THIS', YEL)], {}),
-    ('final/late', 3, 0, [('CAN YOU', WHITE), ('FINISH IT?', YEL)], {}),
-    ('END', 9, None, [], {}),
-]
+# Each cut: the music (a recording, its beat length and a downbeat to start on, so cuts land on beats),
+# the end card's line, and a timeline of (clip dir, beats, start frame or None for the busiest stretch,
+# caption lines [(text, colour)], options).
+CUTS = {
+    # fast and loud: "Ink and Iron", 88 BPM, starting where the full band comes in
+    'hype': dict(music='31-boss.ogg', beat=60 / 88, start=0.296 + 8 * 60 / 88,
+        tagline=[('A ROGUELIKE ABOUT THE NIGHT', WHITE), ('HE NEVER GOT TO SAY GOODBYE', WHITE)],
+        timeline=[
+            ('final/fight', 4, 0, [('I MADE A ROGUELIKE', WHITE), ('THAT GETS THIS INSANE', YEL)], {}),
+            ('cellar2', 3, None, [('NO ROOM', WHITE), ('IS SAFE', YEL)], {}),
+            ('fan', 3, None, [('200+ ITEMS', YEL)], {}),
+            ('boom', 3, None, [('THAT ALL', WHITE), ('STACK', YEL)], {}),
+            ('beam', 3, None, [('CHARGE', WHITE), ('BEAMS', YEL)], {}),
+            ('melee', 3, None, [('SWING', WHITE), ('BLADES', YEL)], {}),
+            ('swarm', 3, None, [('RAISE AN', WHITE), ('ARMY', YEL)], {}),
+            ('boiler2', 3, None, [('57 MONSTERS', YEL)], {}),
+            ('ward2', 3, None, [('EACH WITH', WHITE), ('A DIRTY TRICK', YEL)], {}),
+            ('boss/card', 4, 16, [('26 BOSSES', YEL)], {}),
+            ('boss/fight', 3, None, [('BUILT TO', WHITE), ('BREAK YOU', YEL)], {}),
+            ('surgeon/card', 4, 16, [('ALL THE WAY DOWN', WHITE), ('TO THE DEEP END', YEL)], {}),
+            ('surgeon/fight', 3, None, [('CAN YOU', WHITE), ('WAKE HIM UP?', YEL)], {}),
+            ('END', 8, None, [], {}),
+        ]),
+    # the story: "Four Minutes Past Four", 85 BPM, from the top
+    'story': dict(music='20-clocktower.ogg', beat=60 / 85, start=0.308,
+        tagline=[('FIVE ENDINGS.', WHITE), ('ONE OF THEM WAKES HIM UP.', WHITE)],
+        timeline=[
+            ('intro', 5, 10, [('4:04 AM.', WHITE), ('HE DROVE INTO THE RIVER', YEL)], {}),
+            ('final/card', 4, 18, [('TWO FLOORS UP,', WHITE), ('HIS GRANDAD DIED', YEL)], {}),
+            ('cellar2', 5, None, [('NOW HE\'S IN A COMA', WHITE), ('AND IT\'S A NIGHTMARE', YEL)], {}),
+            ('boiler2', 4, None, [('THE STAIRS', WHITE), ('ONLY GO DOWN', YEL)], {}),
+            ('under2', 4, None, [('EVERY FLOOR IS', WHITE), ('SOMETHING HE BURIED', YEL)], {}),
+            ('ward2', 4, None, [('THE WARD', WHITE), ('HE NEVER VISITED', YEL)], {}),
+            ('surgeon/card', 5, 16, [('AT THE BOTTOM', WHITE), ('SOMETHING IS WAITING', YEL)], {}),
+            ('surgeon/fight', 4, None, [('HE HAS TO', WHITE), ('FIGHT HIS WAY OUT', YEL)], {}),
+            ('final/fight', 5, 30, [('SOMEONE UPSTAIRS', WHITE), ('IS HOLDING HIS HAND', YEL)], {}),
+            ('END', 8, None, [], {}),
+        ]),
+}
+C = CUTS[CUT]
+MUSIC = REPO + '/assets/music/audio/' + C['music']
+BEAT = C['beat']
+MUSIC_START = C['start']
+TIMELINE = C['timeline']
 
 def font(path, size): return ImageFont.truetype(path, size)
 
@@ -113,7 +140,7 @@ def end_card(bg_sq, k, n):
         bb = g.getbbox(word); x = (W - (bb[2] - bb[0])) // 2 - bb[0]
         d.text((x, 360 + i * 200 - bb[1]), word, font=g, fill=GOLD, stroke_width=8, stroke_fill=(20, 8, 12))
     if t > 0.45:
-        sub = text_img([('A ROGUELIKE ABOUT THE', WHITE), ('STORIES GRANDAD SEWED SHUT', WHITE)], 62)
+        sub = text_img(C['tagline'], 62)
         frame.alpha_composite(sub, ((W - sub.width) // 2, 820))
     if t > 0.9:
         a2 = min(1, (t - 0.9) / 0.25); s2 = 1 + (1 - ease_out_back(a2)) * 0.5

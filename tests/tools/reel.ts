@@ -83,6 +83,8 @@ const HELPERS = `(() => {
     wv.cd = 5;
   };
   R.frame = (capture) => {
+    // a fresh save unlocks achievements as it goes: keep their pop-ups out of the footage
+    g.unlockQueue.length = 0;
     R.spawn(); R.ai(); window.__vstep(1000 / ${FPS});
     if (!capture) return null;
     const disp = g.r.display, [tx, ty] = R.focus();
@@ -121,6 +123,26 @@ async function run(page: Page, seed: string, floors = 0): Promise<void> {
   await ev(page, `g.menus.stack = []; g.newRun('marcus', '${seed}'); R.mode = { kind: 'idle' }; R.zoom = 1; R.waves = null;`);
   await pump(page, 20);
   for (let i = 0; i < floors; i++) { await ev(page, `d.nextFloor();`); await pump(page, 80); }
+}
+/** Start a run and go down floor by floor until the given floor theme comes up (seeds are fixed, so this is repeatable). */
+async function toTheme(page: Page, seeds: string[], themes: string[]): Promise<void> {
+  for (const seed of seeds) {
+    await run(page, seed);
+    for (let i = 0; i < 10; i++) {
+      const th: string = await page.evaluate('window.__bomDebug.world.floor.theme.id');
+      if (themes.includes(th)) return;
+      await ev(page, `d.world.run.flags.hospital = false; d.nextFloor();`); await pump(page, 80);
+    }
+  }
+  throw new Error('never reached ' + themes.join('/'));
+}
+/** A fight on one floor: the floor's own room, topped up with that floor's 2.0 creatures, and a build. */
+async function floorFight(page: Page, dir: string, seeds: string[], themes: string[], items: string[], ids: string[], mode = '{ kind: \'fight\' }', secs = 7): Promise<void> {
+  await toTheme(page, seeds, themes);
+  await fightRoom(page, items, 4);
+  await ev(page, `R.waves = { ids: ${JSON.stringify(ids)}, min: 8, hp: 1.3 }; R.mode = ${mode}; R.fx = null; R.zoom = 1;`);
+  await pump(page, 70);
+  await record(page, dir, FPS * secs);
 }
 /** Walk into the next uncleared room of a type, topping it up with more of its own enemies if it's quiet. */
 async function fightRoom(page: Page, items: string[], extra = 0): Promise<void> {
@@ -200,6 +222,32 @@ const SCENES: Record<string, (page: Page, dir: string) => Promise<void>> = {
     // skip ahead to the end of the fight and catch the death
     for (let i = 0; i < 90; i++) { await pump(page, 30); if (await page.evaluate(`(() => { const b = window.__bomDebug.world.enemies.find((e) => e.isBoss && !e.dead); return !b || b.hp / b.maxHp < 0.12; })()`)) break; }
     await record(page, path.join(dir, 'death'), FPS * 7, `!window.__bomDebug.world.enemies.some((e) => e.isBoss && !e.dead)`);
+  },
+  async cellar2(page, dir) {
+    await floorFight(page, dir, ['REELK'], ['cellar', 'rootcellar'], ['prism', 'burnt_toast', 'hot_cocoa', 'gavyns_pouch'],
+      ['lampkeeper', 'lurker', 'mildew', 'trunk', 'gasper', 'ragcrawler']);
+  },
+  async boiler2(page, dir) {
+    await floorFight(page, dir, ['REELL', 'REELM', 'REELN'], ['boiler', 'coalchute'], ['powder_ink', 'triple_seam', 'rubber_band', 'hot_cocoa', 'gavyns_pouch'],
+      ['foreman', 'riveter', 'bellows', 'brickback', 'sootsprite', 'cinderhopper']);
+  },
+  async under2(page, dir) {
+    await floorFight(page, dir, ['REELO', 'REELP', 'REELQ'], ['underworks', 'flooded'], ['burning_glass', 'long_needle', 'hot_cocoa', 'black_quill'],
+      ['sluicekeeper', 'bilgepriest', 'fumarole', 'leech', 'rat', 'drowner'], "{ kind: 'fight', release: 1.4 }");
+  },
+  async ward2(page, dir) {
+    await floorFight(page, dir, ['REELR', 'REELS', 'REELT'], ['ward', 'morgue'], ['prism', 'lamp_lure', 'split_nib', 'hot_cocoa', 'gavyns_pouch', 'shadow_twin'],
+      ['pill', 'pill', 'monitor', 'mourner', 'bloater']);
+  },
+  /** The Deep End: the Surgeon's card and the start of the fight. */
+  async surgeon(page, dir) {
+    await toTheme(page, ['REELU', 'REELV'], ['binding']);
+    const OP = ['powder_ink', 'prism', 'lamp_lure', 'hot_cocoa', 'gavyns_pouch', 'marrow', 'iron_filings', 'shadow_twin', 'moth_friend', 'sunday_roast'];
+    await ev(page, `for (const id of ${JSON.stringify(OP)}) d.give(id); const w = d.world;
+      const room = w.floor.rooms.find((r) => r.type === 'boss'); d.goto(room.id); R.mode = { kind: 'fight', far: 150, near: 95 }; R.fx = null; R.zoom = 1;`);
+    await record(page, path.join(dir, 'card'), FPS * 4);
+    await pump(page, FPS * 3);
+    await record(page, path.join(dir, 'fight'), FPS * 8);
   },
   async final(page, dir) {
     await ev(page, `g.menus.stack = []; g.newRun('marcus', 'ROOMFOUR'); R.mode = { kind: 'idle' }; R.zoom = 1;`);

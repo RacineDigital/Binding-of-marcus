@@ -233,7 +233,7 @@ export class Game {
       ui.fillStyle = 'rgba(0,0,0,0.4)'; ui.fillRect(tx + 2, ty + 2, W, H);
       ui.fillStyle = u.big ? '#efe2c0' : '#e2d6b8'; ui.fillRect(tx, ty, W, H);
       ui.fillStyle = u.big ? '#a02a2a' : '#8a6a3a'; ui.fillRect(tx, ty, 3, H);
-      text(ui, u.big ? 'A NEW READER' : 'UNLOCKED', tx + 8, ty + 7.5, 5.5, u.big ? '#a02a2a' : '#7a5a2a', 'left', FONT_BODY, 700, false);
+      text(ui, u.big ? 'NEW CHARACTER' : 'UNLOCKED', tx + 8, ty + 7.5, 5.5, u.big ? '#a02a2a' : '#7a5a2a', 'left', FONT_BODY, 700, false);
       text(ui, u.name, tx + 8, ty + 15.5, 8, '#2a1e18', 'left', FONT_TITLE, 400, false);
       text(ui, u.reward.length > 40 ? u.reward.slice(0, 39) + '…' : u.reward, tx + 8, ty + 23.5, 5.5, '#5a4636', 'left', FONT_BODY, 600, false);
       ui.globalAlpha = 1;
