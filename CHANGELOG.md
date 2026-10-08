@@ -27,6 +27,12 @@ dead, and a bomb, item or page pressed during a room transition is no longer los
   the same oddity.
 - The Wardrobe now shows the whole line of its charge before it runs.
 
+### The Boiler Rooms
+- Four new creatures: the **Bellows** (its gust shoves you and makes fires spit), the **Foreman**
+  (its whistle drives the others faster), the **Riveter** (its aim line follows you, then locks:
+  be off it) and the **Brickback** (its firebrick slab turns shots from the side it faces).
+- The boiler rooms get their own hand-made groups of creatures, like the Cellar.
+
 ### Sound
 - Every floor now has its own ambience: dripping cellars, the boiler's hum and crackle, pipes
   knocking in the underworks, distant monitors on the ward, page rustle in the stacks, a clock
