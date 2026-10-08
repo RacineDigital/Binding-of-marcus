@@ -23,7 +23,6 @@
     "dist:steam": "npm run build:single && electron-builder --win --dir --publish never --config steam/electron-builder.cjs",
     "dist:itch": "npm run build:single && electron-builder --win zip --publish never --config.extraMetadata.distribution=itch --config.directories.output=release-itch",
     "package:itch": "bash scripts/package-itch.sh",
-    "music:render": "node scripts/render-soundtrack.mjs",
     "steam:media": "tsx scripts/steam-media.ts",
     "steam:upload": "node scripts/steam-upload.mjs",
     "notices": "node scripts/notices.mjs",

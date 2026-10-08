@@ -282,7 +282,6 @@ export class Hud {
     const info = near ? inspectInfo(this.w, near) : null;
     if (near && info) { this.panelInfo = info; this.panelPickup = near; this.panelFade = Math.min(1, this.panelFade + dt * 8); }
     else this.panelFade = Math.max(0, this.panelFade - dt * 8);
-    this.bindShow = Math.max(0, this.bindShow - dt);
     const boss = this.w.bossList[0];
     if (boss) { const f = this.bossHpFrac(); this.bossTrail = f < this.bossTrail ? Math.max(f, this.bossTrail - dt * 0.35) : f; }
   }
@@ -507,26 +506,8 @@ export class Hud {
     if (full) text(ctx, 'The ink brims: your next kill leaves an Inkling', x0 + wide + 5, y + 12, 6.5, '#d0c8ff');
   }
 
-  private bindKey = -1; private bindShow = 0;
   private drawRunIdentity(ctx: CanvasRenderingContext2D): void {
-    const w = this.w, b = w.run.binding;
-    const streak = w.run.flags.cleanStreak ?? 0, progress = streak % FLAWLESS_TARGET;
-    // the binding and its clean-room streak: shown for a few seconds when a floor starts or the
-    // streak changes, then it fades, so it never sits over the doorway
-    const key = w.run.floorIndex * 1000 + streak;
-    if (key !== this.bindKey) { this.bindKey = key; this.bindShow = 3.5; }
-    const a = Math.min(1, this.bindShow / 0.6);
-    if (a > 0) {
-      ctx.save(); ctx.globalAlpha = a;
-      bindingSeal(ctx, b, 191, 19, 16);
-      text(ctx, b.name + ' binding', 203, 15, 7.5, b.color);
-      for (let i = 0; i < FLAWLESS_TARGET; i++) {
-        ctx.fillStyle = i < progress ? '#ddc48b' : '#34484b';
-        ctx.fillRect(203 + i * 8, 21, 5, 4);
-      }
-      text(ctx, '3 clean → chest', 233, 25, 6.5, '#c6d2c9');
-      ctx.restore();
-    }
+    const w = this.w;
     const offers = w.pickups.filter((p) => p.pedestal && p.data.id && p.data.group !== undefined && !p.dead);
     if (w.room.type === 'treasure' && offers.length > 1) {
       text(ctx, 'CHOOSE ONE CURIO', VIEW_W / 2, 52, 8, '#ecd9a7', 'center');

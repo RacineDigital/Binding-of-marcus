@@ -326,8 +326,10 @@ export function populateRoom(room: RoomData, floor: Floor, run: Run, prng: RNG, 
     }
     case 'treasure': {
       for (const [c, r] of [[1, 1], [13, 1], [1, 7], [13, 7]]) if (rng.chance(0.6)) room.setOb(c, r, Ob.Rock, 0, rng.int(0, 5));
-      const choices = run.pools.choice(prng);
-      choices.forEach((id, i) => pk('item', cx + (i ? 44 : -44), cy + 4, { id, style: 'treasure', group: 1 }));
+      // one curio, as it always was; now and then deeper in, a choice of two (take one, the other goes)
+      const choice = run.flags.treasureChoice === true || (run.mode === 'hard' ? fi >= 1 && rng.chance(0.5) : fi >= 2 && rng.chance(0.2));
+      if (choice) run.pools.choice(prng).forEach((id, i) => pk('item', cx + (i ? 44 : -44), cy + 4, { id, style: 'treasure', group: 1 }));
+      else pk('item', cx, cy + 4, { id: run.pools.roll('treasure', prng), style: 'treasure' });
       break;
     }
     case 'shop': {

@@ -7,8 +7,6 @@
 // Melody tokens are "degree:sixteenths" ("r" = rest, "|" = bar line for readability).
 import type { Song } from './score';
 import { FINAL_SONGS } from './finalsongs';
-import { driveSong } from './drive';
-import { RECORDINGS } from './recorded';
 
 const FILL_SYNTH = '....x...x..xx.xx';
 const ROCK_FILL_TOMS = '........11223333';
@@ -329,7 +327,3 @@ export const SONGS: Record<string, Song> = {
 
 // the final boss themes live in their own file
 Object.assign(SONGS, FINAL_SONGS);
-
-// Match the new recordings when music files are unavailable (standalone HTML).
-RECORDINGS.forEach((track, i) => { if (!['home', 'room4'].includes(track.id)) SONGS[track.id] = driveSong(track.id, track.title, i); });
-SONGS.menu = driveSong('cellar', 'Bindery Overdrive');

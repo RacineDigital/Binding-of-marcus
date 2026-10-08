@@ -188,8 +188,8 @@ page errors; unit tests check every floor maps to a soundscape. **Not verified**
 **Remaining asset work (honest)**: the soundtrack and all sounds are synthesised in-engine. The
 music system (adaptive layers, boss phases, stingers) is production-ready, but a soundtrack people
 would seek out needs a composer's recorded score, and the ambience would be better from field
-recordings. The current "recorded" tracks (`assets/music/audio`, listed in `recorded.ts`) are
-renders of the synth score and loop every 42–48 s, which is short for a floor. A composed score can
+recordings. (Correction, 3.17.1: the recordings in `assets/music/audio` are the original 3.3.0 chapter themes,
+restored after 3.15 had replaced them with synth renders; they run 68–82 s.) A composed score can
 replace those files (re-run `scripts/prepare-music.py`) with no engine work.
 
 ### M4 — Chapter I (the Cellar) to the 2.0 standard (first pass done)
@@ -327,6 +327,21 @@ the counters, ink margins, stats, binding banner, minimap, item tracker, letter 
 and pedestal labels; removed the first-run "Move with WASD" prompts from the HUD; the binding
 banner now shows for 3.5 s at a chapter start or when the clean streak changes, then fades.
 Kept: the Tab map frame, the boss bar frame and the item-description backdrop (readability).
+
+### Owner feedback after 3.17.0 (3.17.1)
+
+- **Music**: the 3.15 overhaul had replaced the 30 recorded chapter themes (uploaded in 3.3.0) with
+  synthesised arcade-rock renders marked combat-only, and raised the exploring low-pass from 1100 Hz
+  to 6500 Hz, so music never quietened between fights. Restored the original recordings, their
+  track list (`recorded.ts`), the 1100 Hz exploring muffle and the old synth fallbacks (including the
+  menu theme); removed the arcade-rock generator (`drive.ts`, `scripts/render-soundtrack.mjs`).
+  Kept the linear crossfade for recordings (no loudness bump mid-fade). Checked in a browser: a
+  room with no enemies sits on the muffled path (calm 1, combat 0); a fight opens it (0, 1).
+- **Treasure rooms**: back to one curio; a choice of two only from Chapter III on, 20% (Hard: from
+  Chapter II, 50%), as before 3.15. `run.flags.treasureChoice` forces a choice room for tests.
+- **Binding banner** removed from the HUD entirely.
+- `tests/e2e.ts` "walking right" now holds the key for 0.4 s of game time (the first run start can
+  skip frames while it loads; it was failing on wall-clock timing).
 
 ## 5. Known issues
 

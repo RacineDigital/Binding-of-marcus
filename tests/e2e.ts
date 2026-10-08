@@ -50,7 +50,9 @@ const D = 'window.__bomDebug';
   // move: input reaches the player
   await page.waitForFunction(`!${D}.world.inputLocked()`, null, { timeout: 5000 });
   const x0 = await ev<number>(page, `${D}.world.player.x`);
-  await page.keyboard.down('KeyD'); await page.waitForTimeout(400); await page.keyboard.up('KeyD');
+  // hold for 0.4 s of game time (the first run start can skip frames while it loads; this checks input, not frame rate)
+  const t0 = await ev<number>(page, `${D}.world.time`);
+  await page.keyboard.down('KeyD'); await page.waitForFunction(`${D}.world.time >= ${t0} + 0.4`, null, { timeout: 5000 }); await page.keyboard.up('KeyD');
   ok((await ev<number>(page, `${D}.world.player.x`)) > x0 + 15, 'walking right moves Marcus');
 
   console.log('pause, help and settings');

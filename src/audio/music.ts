@@ -115,13 +115,13 @@ export class Music {
   }
   /**
    * A recording is one full mix, so calm and combat are the same take: exploring hears it through a
-   * gentle low-pass (keeps the riff and drums present) and a little quieter; a fight opens it up.
+   * low-pass (muffled, as if from the next room) and a little quieter; a fight opens it up.
    */
   private startRec(name: string, buf: AudioBuffer): void {
     const c = this.ctx, t = c.currentTime + 0.06;
     const master = c.createGain(); master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(0.8, t + 1.2); master.connect(this.out);
     const calm = c.createGain(), combat = c.createGain();
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500; lp.Q.value = 0.5;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = 0.5;
     const soft = c.createGain(); soft.gain.value = 0.85;
     lp.connect(soft); soft.connect(calm); calm.connect(master); combat.connect(master);
     const s = c.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = 0; s.loopEnd = buf.duration;
