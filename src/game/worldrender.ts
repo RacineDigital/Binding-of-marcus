@@ -236,6 +236,14 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
     for (const k of [-0.6, 0, 0.6]) { ctx.beginPath(); if (flow.horiz) { const y = flow.at + k * flow.half + oy; ctx.moveTo(x0, y); ctx.lineTo(x1, y); } else { const x = flow.at + k * flow.half + ox; ctx.moveTo(x, y0); ctx.lineTo(x, y1); } ctx.stroke(); }
     ctx.restore();
   }
+  const holder = e.data.tetherBy as Enemy | null | undefined;
+  if (holder && !holder.dead && !e.dead && holder.state === 'kneel') {
+    // a Mourner's pale thread: thin while it draws out, brighter once it holds
+    const hx = snap(holder.x - e.x + sx), hy = snap(holder.y - holder.hitY - e.y + sy), held = holder.st > 0.5;
+    ctx.save(); ctx.globalAlpha = held ? 0.7 + 0.2 * Math.sin(w.time * 6) : 0.3; ctx.strokeStyle = '#e8e0ff'; ctx.lineWidth = held ? 1.5 : 1;
+    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + sx) / 2, Math.min(hy, sy - e.hitY) - 10, sx, sy - e.z - e.hitY); ctx.stroke(); ctx.restore();
+    if (held) w.r.addGlow(sx, sy - e.z - e.hitY, e.r * 1.6, '#e8e0ff', 0.14);
+  }
   const aim = e.data.aimLine as { a: number; locked: boolean } | null | undefined;
   if (aim && !e.dead) {
     // a sighting line: thin and dim while it tracks you, bright once it has locked

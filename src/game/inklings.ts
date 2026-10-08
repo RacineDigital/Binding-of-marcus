@@ -84,6 +84,8 @@ export const ENEMY_INK: Record<string, string> = {
   bellows: 'snare', foreman: 'hymn', riveter: 'gaze', brickback: 'ward',
   // Chapter III, 2.0
   sluicekeeper: 'snare', bilgepriest: 'phase', fumarole: 'bloat',
+  // Chapter IV, 2.0
+  pill: 'scurry', monitor: 'gaze', mourner: 'ward',
   mite: 'swarm', mitenest: 'swarm', skullmote: 'swarm', blotlet: 'swarm', marrowmaw: 'swarm',
   moth: 'dive', sootsprite: 'dive', cherubmoth: 'dive',
   ragcrawler: 'lurch', dripling: 'lurch', stoker: 'lurch', wheelwraith: 'lurch',

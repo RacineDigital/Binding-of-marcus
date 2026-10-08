@@ -78,6 +78,22 @@ const UNDER_ENCOUNTERS: Encounter[] = [
   { name: 'sludge and leech', ids: ['sludge', 'leech'] },
 ];
 
+/** Chapter IV encounters. */
+const WARD_ENCOUNTERS: Encounter[] = [
+  { name: 'mourner and orderly', ids: ['mourner', 'orderly', 'nursedoll'] },
+  { name: 'mourner and chair', ids: ['mourner', 'wheelwraith'] },
+  { name: 'mourner and sentinel', ids: ['mourner', 'dripsentinel', 'pill'], weight: 0.8 },
+  { name: 'monitor and pills', ids: ['monitor', 'pill'] },
+  { name: 'monitors', ids: ['monitor', 'monitor', 'sheetghost'], weight: 0.8 },
+  { name: 'monitor and nurses', ids: ['monitor', 'nursedoll', 'nursedoll'], weight: 0.8 },
+  { name: 'spilt tray', ids: ['pill', 'pill', 'orderly'] },
+  { name: 'pills and chair', ids: ['pill', 'wheelwraith'] },
+  { name: 'night shift', ids: ['orderly', 'orderly', 'nursedoll'] },
+  { name: 'sheets', ids: ['sheetghost', 'sheetghost', 'nursedoll'] },
+  { name: 'drip and mimic', ids: ['dripsentinel', 'mimic'], weight: 0.7 },
+  { name: 'chairs', ids: ['wheelwraith', 'wheelwraith'], weight: 0.7 },
+];
+
 export const FLOORS: FloorTheme[] = [
   {
     id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Chapter I',
@@ -121,7 +137,8 @@ export const FLOORS: FloorTheme[] = [
     pal: { floor: '#7d8a80', floor2: '#6b776e', grout: '#3a403c', wall: '#4f6a60', wall2: '#3a5048', mortar: '#1e2826',
       rock: '#8a8a82', accent: '#c2d4b0', stain: '#5a3a30', heap: '#d6d2c4', heapKind: 'linen' },
     ambient: '#040a0c', darkness: 0.44, playerLight: 86,
-    enemies: { orderly: 6, wheelwraith: 5, nursedoll: 6, sheetghost: 7, mimic: 3, dripsentinel: 5, leech: 3, bloater: 3, moth: 3 },
+    enemies: { orderly: 6, wheelwraith: 5, nursedoll: 6, sheetghost: 7, mimic: 3, dripsentinel: 5, leech: 3, bloater: 3, moth: 3, pill: 6, monitor: 4, mourner: 2 },
+    encounters: WARD_ENCOUNTERS,
     bosses: ['matron', 'sleepwalker', 'ratking'],
     music: 'ward', hazards: { spikes: 0.3, pits: 0.3, fires: 0.25, kegs: 0.15 }, fireVariants: [1, 1, 0, 2],
     hpMul: 1.5, budget: 1.5,
@@ -191,7 +208,7 @@ export const ALT_FLOORS: Record<string, FloorTheme> = {
     enemies: { leech: 9, drowner: 8, sludge: 6, bloater: 5, grateeye: 5, rat: 5, sluicekeeper: 4, bilgepriest: 2, fumarole: 3 } }),
   ward: variant(FLOORS[3], { id: 'morgue', name: 'The Morgue', subtitle: 'Cold drawers, cold hands',
     pal: { floor: '#6e7c86', floor2: '#5c6872', wall: '#4a5a6a', wall2: '#3a4856', stain: '#3a4a5a', heap: '#c8d0d8' }, darkness: 0.5,
-    enemies: { orderly: 7, sheetghost: 8, wheelwraith: 4, mimic: 4, dripsentinel: 5, nursedoll: 4 } }),
+    enemies: { orderly: 7, sheetghost: 8, wheelwraith: 4, mimic: 4, dripsentinel: 5, nursedoll: 4, pill: 5, monitor: 4, mourner: 3 } }),
   depths: variant(FLOORS[4], { id: 'catacombs', name: 'The Catacombs', subtitle: 'Shelves of the patient dead',
     floor: 'flag', wall: 'stone', pal: { floor: '#5a5048', floor2: '#4a423c', wall: '#4e4640', wall2: '#3a342e', rock: '#6e6458' },
     enemies: { skullorbit: 6, ossspider: 6, gravedigger: 5, marrowmaw: 3, sheetghost: 3 } }),
