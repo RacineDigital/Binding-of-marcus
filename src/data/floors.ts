@@ -62,6 +62,22 @@ const BOILER_ENCOUNTERS: Encounter[] = [
   { name: 'toads and worm', ids: ['cinderhopper', 'cinderhopper', 'pipeworm'] },
 ];
 
+/** Chapter III encounters. */
+const UNDER_ENCOUNTERS: Encounter[] = [
+  { name: 'sluice and rats', ids: ['sluicekeeper', 'rat'] },
+  { name: 'sluice and leeches', ids: ['sluicekeeper', 'leech', 'leech'] },
+  { name: 'sluice and drowned', ids: ['sluicekeeper', 'drowner', 'sludge'], weight: 0.8 },
+  { name: 'priest and pack', ids: ['bilgepriest', 'rat', 'leech'] },
+  { name: 'priest and bloaters', ids: ['bilgepriest', 'bloater', 'drowner'], weight: 0.8 },
+  { name: 'priest and sludge', ids: ['bilgepriest', 'sludge', 'sludge'], weight: 0.7 },
+  { name: 'gas and eyes', ids: ['fumarole', 'grateeye'] },
+  { name: 'gas and leeches', ids: ['fumarole', 'leech', 'leech'] },
+  { name: 'gas field', ids: ['fumarole', 'fumarole', 'rat'], weight: 0.8 },
+  { name: 'drowned choir', ids: ['drowner', 'drowner', 'bloater'] },
+  { name: 'grates and rats', ids: ['grateeye', 'grateeye', 'rat'] },
+  { name: 'sludge and leech', ids: ['sludge', 'leech'] },
+];
+
 export const FLOORS: FloorTheme[] = [
   {
     id: 'cellar', name: 'The Cellar', subtitle: 'Where the damp keeps its secrets', chapter: 'Chapter I',
@@ -93,7 +109,8 @@ export const FLOORS: FloorTheme[] = [
     pal: { floor: '#394540', floor2: '#2e3834', grout: '#151c1a', wall: '#3d4a44', wall2: '#2c3632', mortar: '#111715',
       rock: '#56625b', accent: '#7fae5a', stain: '#40562a', heap: '#5a5238', heapKind: 'refuse' },
     ambient: '#020a08', darkness: 0.4, playerLight: 88,
-    enemies: { rat: 8, leech: 6, bloater: 5, grateeye: 5, sludge: 6, drowner: 5, pillbug: 3, dripling: 4, stoker: 2 },
+    enemies: { rat: 8, leech: 6, bloater: 5, grateeye: 5, sludge: 6, drowner: 5, pillbug: 3, dripling: 4, stoker: 2, sluicekeeper: 3, bilgepriest: 2, fumarole: 4 },
+    encounters: UNDER_ENCOUNTERS,
     bosses: ['ratking', 'bilgemaw', 'furnaceheart'],
     music: 'underworks', hazards: { spikes: 0.2, pits: 0.45, fires: 0.25, kegs: 0.2 }, fireVariants: [0, 2, 2, 1],
     hpMul: 1.3, budget: 1.3,
@@ -171,7 +188,7 @@ export const ALT_FLOORS: Record<string, FloorTheme> = {
     enemies: { sootsprite: 9, valvehead: 5, stoker: 8, cinderhopper: 7, pipeworm: 5, mite: 4, bellows: 3, riveter: 3, brickback: 3, foreman: 2 } }),
   underworks: variant(FLOORS[2], { id: 'flooded', name: 'The Flooded Drains', subtitle: 'The water is rising, slowly',
     pal: { floor: '#2e3e44', floor2: '#26343a', wall: '#34464a', stain: '#2a4a5a', rock: '#4a5a60' }, ambience: 'drips',
-    enemies: { leech: 9, drowner: 8, sludge: 6, bloater: 5, grateeye: 5, rat: 5 } }),
+    enemies: { leech: 9, drowner: 8, sludge: 6, bloater: 5, grateeye: 5, rat: 5, sluicekeeper: 4, bilgepriest: 2, fumarole: 3 } }),
   ward: variant(FLOORS[3], { id: 'morgue', name: 'The Morgue', subtitle: 'Cold drawers, cold hands',
     pal: { floor: '#6e7c86', floor2: '#5c6872', wall: '#4a5a6a', wall2: '#3a4856', stain: '#3a4a5a', heap: '#c8d0d8' }, darkness: 0.5,
     enemies: { orderly: 7, sheetghost: 8, wheelwraith: 4, mimic: 4, dripsentinel: 5, nursedoll: 4 } }),

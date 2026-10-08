@@ -16,7 +16,7 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 | Trinkets ("charms") | 17 | Plus 20 pages/sweets (consumables). | 40+ |
 | Characters | 10 (+10 mirrored "tainted" variants) | Distinct starting kits and passives (melee, beams, ricochet, ink hearts, dice). | 10 ✓ |
 | Floor environments | 8 story chapters, 6 extra chapters, 3 hospital floors, plus special floors (Margins, Last Page, Foreword, Room 4, Home) | The 7 "alternate" chapters (Root Cellar, Coal Chute, …) are palette/name variants of the main ones, so they don't count as distinct. | 12 ✓ (≈17 distinct) |
-| Standard enemies | 43 defs → **51 after M5a** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4 and M5a add 8 distinct ones (48). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
+| Standard enemies | 43 defs → **54 after M5b** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4–M5b add 11 distinct ones (51). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
 | Bosses and minibosses | 31 defs | Rigged, multi-phase; Patient fight retuned in 3.14. | 35+ |
 | Authored room layouts | 40 templates + 10 set pieces → **157 + 10 after M3** | Before M3, 55% of rooms used a procedural layout that placed rock clusters and walls anywhere, including the middle of the room. M3: 30% procedural, rocks to the edges. | 300+ |
 | Challenge runs | 5 | | 25+ |
@@ -268,6 +268,34 @@ New (`src/enemies/defs_boiler2.ts`, sprites `src/art/hand/boiler3.ts`):
 Verified (automated): `tests/boiler.ts` (16 checks: each tell, effect and counter, crowded room
 0.22 ms/step), boss regression for five bosses, all earlier suites. **Not verified**: by hand.
 
+### M5b — Chapter III (the Underworks), same pattern (done)
+
+Role audit: swarm (rats), ambush (leech), heavy (bloater, sludge), turret (grate eye), shooter
+(drowned); no environment, support or zoning creature. New (`src/enemies/defs_under2.ts`, sprites
+`src/art/hand/under3.ts`):
+- **Sluice Keeper** (environment): turns its wheel; a band of floor through where you stand (across
+  or down the room) trickles for 0.9 s, then a current runs along it for 2.6 s, carrying you and any
+  walking creature at 85 px/s. New hook: `data.flow`, drawn by the renderer (dim while warning,
+  running stripes once open).
+- **Bilge Priest** (support): goes to a body that fell in the last 6 s, chants for 1.25 s (a blue
+  ring marks the spot), and raises it at half health (once per creature, twice per priest).
+  Standing on the spot breaks the rite and staggers it. New hook: `World.recentDeaths` (non-boss,
+  not spawned young, not already raised; per room). New sounds: `chant`, `bubble`.
+- **Fumarole** (zoning): a floor vent that bubbles, then belches a slow homing spore cloud
+  (24 px/s, 7 s life, at most three out per vent).
+- 12 Underworks encounters; the Flooded Tunnels get the new creatures. Over 400 seeds, 40% of
+  Underworks rooms came from encounters; every encounter and creature appeared.
+
+**Boss pass.** The probe now shoots any add within 70 px before the boss (as a player would);
+before that, summoned adds lived all fight and inflated hits. Bilge Maw: 35–40 s, phase 2 at ~19 s,
+0–3 hits. **The Rat King was an outlier**: 56–90 s and up to 12 hits (its two Rat Princes had 110
+health each on top of the King's 300, and up to six fast rats). Changed: Princes 110 → 85 health,
+rats summoned only while fewer than five live. After: 46–59 s, 3–9 hits. It stays the longest
+Chapter III fight on purpose (it is two fights). `tests/bosses.ts` now covers seven bosses.
+
+Verified (automated): `tests/under.ts` (12 checks), boss regression, all earlier suites. **Not
+verified**: by hand.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
@@ -281,6 +309,6 @@ Verified (automated): `tests/boiler.ts` (16 checks: each tell, effect and counte
 0. Audio: by-ear pass on ambience levels per floor; commission or record a score (see above).
 1. M3 follow-up: more authored layouts toward 300 (big 2x1/1x2/2x2 room layouts are still built
    from single-room layouts; give them their own), chapter-specific layout sets with weights.
-2. Carry the M4 pattern to Chapter III–VII (II done): role audit per chapter, new creatures for missing
+2. Carry the M4 pattern to Chapter IV–VII (II and III done): role audit per chapter, new creatures for missing
    roles (toward 70), encounter sets per chapter, boss probe per chapter's bosses.
 3. Human playtest of Inklings and the new rooms; tune meter size, annotated rate, weakest essences.

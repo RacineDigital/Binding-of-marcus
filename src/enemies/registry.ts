@@ -4,6 +4,7 @@ import { CELLAR2_ENEMIES } from './defs_cellar2';
 import { BOILER_ENEMIES } from './defs_boiler';
 import { BOILER2_ENEMIES } from './defs_boiler2';
 import { UNDER_ENEMIES } from './defs_under';
+import { UNDER2_ENEMIES } from './defs_under2';
 import { WARD_ENEMIES } from './defs_ward';
 import { DEPTHS_ENEMIES } from './defs_depths';
 import { CHAPEL_ENEMIES } from './defs_chapel';
@@ -11,7 +12,7 @@ import { HOLLOW_ENEMIES } from './defs_hollow';
 import { BOSSES } from '../bosses/registry';
 
 export const ENEMY_DEFS: EnemyDef[] = [
-  ...CELLAR_ENEMIES, ...CELLAR2_ENEMIES, ...BOILER_ENEMIES, ...BOILER2_ENEMIES, ...UNDER_ENEMIES, ...WARD_ENEMIES, ...DEPTHS_ENEMIES, ...CHAPEL_ENEMIES, ...HOLLOW_ENEMIES,
+  ...CELLAR_ENEMIES, ...CELLAR2_ENEMIES, ...BOILER_ENEMIES, ...BOILER2_ENEMIES, ...UNDER_ENEMIES, ...UNDER2_ENEMIES, ...WARD_ENEMIES, ...DEPTHS_ENEMIES, ...CHAPEL_ENEMIES, ...HOLLOW_ENEMIES,
 ];
 // regular enemies move about a third faster than they were first written to
 const ENEMY_PACE = 1.3;

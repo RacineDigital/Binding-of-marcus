@@ -73,7 +73,10 @@ const BUILDS: Record<string, string[]> = {
           }
           mv = best;
         }
-        const ax = b.x - pl.x, ay = (b.y - b.hitY) - pl.y, al = Math.hypot(ax, ay) || 1;
+        // shoot whatever is closing in first (as a player would), else the boss
+        const add = w.enemies.filter((x) => !x.dead && !x.isBoss && !x.friendly && x.spawnT <= 0 && Math.hypot(x.x - pl.x, x.y - pl.y) < 70).sort((p, q) => Math.hypot(p.x - pl.x, p.y - pl.y) - Math.hypot(q.x - pl.x, q.y - pl.y))[0];
+        const tgt = add || b;
+        const ax = tgt.x - pl.x, ay = (tgt.y - tgt.hitY) - pl.y, al = Math.hypot(ax, ay) || 1;
         // let go of fire for a moment every 1.5 s so charged attacks release
         aim = (t % 1.5) < 0.05 ? null : { x: ax / al, y: ay / al };
         g.step(1 / 60); inp.endStep(); t += 1 / 60;

@@ -47,6 +47,8 @@ export class World {
   player: Player;
   enemies: Enemy[] = []; proj = new Projectiles(); beams: Beam[] = []; pickups: Pickup[] = []; bombs: Bomb[] = [];
   familiars: Familiar[] = []; creep: Creep[] = []; npcs: Npc[] = [];
+  /** Creatures killed recently, for things that raise the dead (see defs_under2.ts). */
+  recentDeaths: { id: string; x: number; y: number; t: number; room: number; taken?: boolean }[] = [];
   fx = new FX(); flow = new FlowField();
   props!: PropSet;
   doors: DoorRT[] = [];
@@ -388,6 +390,8 @@ export class World {
   }
 
   killEnemy(e: Enemy, quiet = false): void {
+    // remembered for a while (a Bilge Priest can raise them); spawned young and the raised don't count
+    if (!e.isBoss && !e.friendly && !e.parent && !e.data.revived && !e.dead) { this.recentDeaths.push({ id: e.def.id, x: e.x, y: e.y, t: this.time, room: this.room.id }); if (this.recentDeaths.length > 16) this.recentDeaths.shift(); }
     if (e.dead) return;
     e.dead = true; e.hp = 0;
     if (!e.friendly && !quiet) { const k = (this.game.save.data.kills ??= {}); k[e.def.id] = (k[e.def.id] ?? 0) + 1; }

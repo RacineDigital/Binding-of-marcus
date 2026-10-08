@@ -180,7 +180,7 @@ const ratBrain = (prince: boolean): BossBrain => ({
   attacks: [
     { id: 'scatter', weight: 2, cooldown: 3,
       run(e, w, t) {
-        if (t > 0.4 && !e.data.s) { e.data.s = true; const n = w.enemies.filter((x) => !x.dead && x.def.id === 'rat').length; for (let i = 0; i < (n < 6 ? 3 : 0); i++) { const k = w.spawnEnemy('rat', e.x, e.y, true); if (k) k.noDrop = true; } w.audio.play('chitter', { x: e.x }); }
+        if (t > 0.4 && !e.data.s) { e.data.s = true; const n = w.enemies.filter((x) => !x.dead && x.def.id === 'rat').length; for (let i = 0; i < (n < 5 ? 3 : 0); i++) { const k = w.spawnEnemy('rat', e.x, e.y, true); if (k) k.noDrop = true; } w.audio.play('chitter', { x: e.x }); }
         if (t > 0.8) { e.data.s = false; return true; }
         return false;
       } },
@@ -224,7 +224,7 @@ const ratking: EnemyDef = {
 };
 const ratprince: EnemyDef = {
   id: 'ratprince', name: 'Rat Prince', desc: '', boss: true,
-  hp: 110, r: 11, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, noKnock: true, gore: '#6a3a3a', goreDecal: '#3a1a1a',
+  hp: 85, r: 11, speed: 0, role: 'boss', cost: 0, hitY: 10, mass: 4, noKnock: true, gore: '#6a3a3a', goreDecal: '#3a1a1a',
   sprites: () => rig({ w: 44, h: 40, paint: (p, s) => G.paintRatKing(p, s, 0.7), phases: 1 }),
   init(e) { e.anim = 'idle'; e.data.idleT = 0.8; },
   update(e, w, dt) { bossUpdate(e, w, dt, ratBrainP); },

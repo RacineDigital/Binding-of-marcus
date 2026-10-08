@@ -223,6 +223,19 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
     ctx.fillStyle = `rgba(0,0,0,${0.22 + 0.1 * k})`; ctx.beginPath(); ctx.ellipse(lx, ly, land.r, land.r * 0.4, 0, 0, TAU); ctx.fill();
     ctx.strokeStyle = `rgba(255,120,90,${0.35 + 0.25 * k})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(lx, ly, land.r + 2, land.r * 0.4 + 1, 0, 0, TAU); ctx.stroke();
   }
+  const flow = e.data.flow as { horiz: boolean; at: number; half: number; dir: number; warn: number; t: number } | null | undefined;
+  if (flow && !e.dead) {
+    // a sluice: a trickling band while it warns, a running current once it opens
+    const ox = sx - e.x, oy = sy - e.y, room = w.room;
+    const x0 = room.ox + TILE + ox, y0 = room.oy + TILE + oy, x1 = room.ox + (room.cols - 1) * TILE + ox, y1 = room.oy + (room.rows - 1) * TILE + oy;
+    const running = flow.t > flow.warn;
+    ctx.save();
+    ctx.globalAlpha = running ? 0.22 : 0.08 + 0.08 * Math.sin(w.time * 14); ctx.fillStyle = '#6ab0d8';
+    if (flow.horiz) ctx.fillRect(x0, flow.at - flow.half + oy, x1 - x0, flow.half * 2); else ctx.fillRect(flow.at - flow.half + ox, y0, flow.half * 2, y1 - y0);
+    ctx.globalAlpha = running ? 0.6 : 0.35; ctx.strokeStyle = '#bfe4f4'; ctx.lineWidth = 1; ctx.setLineDash([4, 6]); ctx.lineDashOffset = -w.time * (running ? 90 : 20) * flow.dir;
+    for (const k of [-0.6, 0, 0.6]) { ctx.beginPath(); if (flow.horiz) { const y = flow.at + k * flow.half + oy; ctx.moveTo(x0, y); ctx.lineTo(x1, y); } else { const x = flow.at + k * flow.half + ox; ctx.moveTo(x, y0); ctx.lineTo(x, y1); } ctx.stroke(); }
+    ctx.restore();
+  }
   const aim = e.data.aimLine as { a: number; locked: boolean } | null | undefined;
   if (aim && !e.dead) {
     // a sighting line: thin and dim while it tracks you, bright once it has locked
