@@ -33,6 +33,13 @@ dead, and a bomb, item or page pressed during a room transition is no longer los
   be off it) and the **Brickback** (its firebrick slab turns shots from the side it faces).
 - The boiler rooms get their own hand-made groups of creatures, like the Cellar.
 
+### The Underworks
+- Three new creatures: the **Sluice Keeper** (a band of floor trickles, then a current carries you
+  along it), the **Bilge Priest** (raises the fallen; stand on the spot to break its rite) and the
+  **Fumarole** (belches slow clouds of gas that drift after you).
+- Hand-made groups of creatures for the Underworks.
+- The Rat King's princes are a little less hardy, and it summons fewer rats at once.
+
 ### Sound
 - Every floor now has its own ambience: dripping cellars, the boiler's hum and crackle, pipes
   knocking in the underworks, distant monitors on the ward, page rustle in the stacks, a clock
