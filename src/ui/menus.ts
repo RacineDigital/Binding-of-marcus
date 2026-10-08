@@ -28,7 +28,6 @@ import { themeAt } from '../generation/floorgen';
 import { ease, clamp, TAU } from '../core/math';
 import { pickupSprites } from '../art/pickups';
 import { renderMenuScene, mainMenuScreen, profilesScreen } from './mainmenu';
-import { splashScreen } from './splash';
 import { ALL_ENEMY_DEFS } from '../enemies/registry';
 import { getSprites, EnemyDef } from '../enemies/enemy';
 import type { Sprite } from '../render/sprite';
@@ -184,8 +183,6 @@ export class MenuSystem {
     this.g.audio.setMusic('menu');
     this.g.audio.prepareMusic('cellar'); this.g.audio.prepareMusic('boss');
   }
-  /** Studio splash on launch, then the title. */
-  openSplash(): void { this.stack = [splashScreen(this, () => this.openMain())]; }
   openPause(): void { this.pauseScreen = this.pauseMenu(); this.pauseGuard = 0.2; }
   private pauseGuard = 0;
   inSubmenu(): boolean { return this.stack.length > 0; }
@@ -218,63 +215,6 @@ export class MenuSystem {
         });
         ctx.globalAlpha = 1;
         promptBar(ctx, [[null, 'Press any key to continue', 'keys'], [null, 'Press any button to continue', 'pad']]);
-      },
-    };
-  }
-
-  // ------------------------------------------------------------ main
-  mainScreen(): Screen {
-    const self = this, g = this.g;
-    const items = ['CONTINUE', 'NEW RUN', 'DAILY RUN', 'CHALLENGES', 'CHARACTERS', 'COLLECTION', 'STATISTICS', 'OPTIONS', 'CREDITS'];
-    let sel = g.save.data.run ? 0 : 1;
-    const enabled = (i: number) => i !== 0 || !!g.save.data.run;
-    return {
-      t: 0,
-      update(keys) {
-        for (const k of keys) {
-          if (k === 'up' || k === 'down') { do { sel = (sel + (k === 'up' ? -1 : 1) + items.length) % items.length; } while (!enabled(sel)); self.sfxMove(); }
-          if (k === 'confirm') {
-            self.sfxOk();
-            switch (sel) {
-              case 0: g.fadeTo(() => { if (!g.continueRun()) self.openMain(); }, 0.4); break;
-              case 1: self.push(self.newRunScreen()); break;
-              case 2: self.push(self.dailyScreen()); break;
-              case 3: self.push(self.challengesScreen()); break;
-              case 4: self.push(self.charactersScreen()); break;
-              case 5: self.push(self.collectionScreen()); break;
-              case 6: self.push(self.statsScreen()); break;
-              case 7: self.push(self.optionsScreen()); break;
-              case 8: self.push(self.creditsScreen()); break;
-            }
-          }
-        }
-      },
-      render(ctx) {
-        const a = ease.outCubic(clamp(this.t * 1.5, 0, 1));
-        ctx.globalAlpha = a;
-        // title
-        const ty = 54;
-        inkBlot(ctx, 128, ty - 10, 230, 46, self.time, 'rgba(8,4,12,0.55)');
-        text(ctx, 'Lost', 40, ty - 4, 30, '#efe2c8', 'left', FONT_TITLE, 400);
-        text(ctx, 'Marcus', 90, ty + 20, 24, '#c8a878', 'left', FONT_TITLE, 400);
-        // drips from the title
-        ctx.fillStyle = '#efe2c8';
-        for (const [x, l] of [[52, 6], [96, 9], [141, 4], [176, 7]] as [number, number][]) { const len = l + Math.sin(self.time * 1.3 + x) * 2; ctx.fillRect(x, ty + 1, 1.2, len); ctx.beginPath(); ctx.arc(x + 0.6, ty + 1 + len, 1.3, 0, TAU); ctx.fill(); }
-        items.forEach((it, i) => {
-          const y = 96 + i * 15.5;
-          const on = i === sel, en = enabled(i);
-          if (on) inkBlot(ctx, 92, y - 3.5, 118 + Math.sin(self.time * 4) * 2, 14, self.time);
-          const x = 44 + (on ? 6 : 0);
-          text(ctx, it, x, y, on ? 11 : 9.5, !en ? 'rgba(160,150,140,0.35)' : on ? '#fff4dc' : '#b8a890', 'left', FONT_TITLE, 400);
-          if (on) { const ms = self.sprites(CHARACTERS[0]); ctx.drawImage(ms.head.side.normal.canvas, x - 22, y - 13); }
-        });
-        if (g.save.data.run && sel === 0) {
-          const r = g.save.data.run;
-          text(ctx, `${CHARACTERS.find((c) => c.id === r.charId)?.name ?? ''} · ${themeAt(r.seed, r.floor).name} · Seed ${formatSeed(r.seed)}${r.mode === 'hard' ? ' · Hard' : r.mode === 'daily' ? ' · Daily' : ''}`, 44, 96 + 9 * 15.5 + 2, 7, COL.dim);
-        }
-        ctx.globalAlpha = 1;
-        promptBar(ctx, [['navV', 'choose'], ['confirm', 'select']]);
-        text(ctx, 'v2.0', VIEW_W - 6, VIEW_H - 6, 6, 'rgba(200,190,170,0.4)', 'right');
       },
     };
   }
@@ -868,7 +808,7 @@ export class MenuSystem {
       { label: 'Help & controls', value: () => '', ok: () => self.push(self.helpScreen(overlay)) },
       { label: 'Error log', value: () => logNote || (errorCount() ? `${errorCount()} logged` : 'No errors'), ok: () => { void shareErrorLog().then((s) => { logNote = s; setTimeout(() => (logNote = ''), 2500); }); } },
     ];
-    if (!overlay) opts.push({ label: 'Save slots', value: () => `Slot ${g.save.slot}`, ok: () => self.push(profilesScreen(self)) }, { label: 'Credits', value: () => '', ok: () => self.push(self.creditsScreen()) });
+    if (!overlay) opts.push({ label: 'Save slots', value: () => `Slot ${g.save.slot}`, ok: () => self.push(profilesScreen(self)) });
     if (!overlay) opts.push({ label: 'Erase all progress', value: () => '', ok: () => self.push(self.confirmScreen('Erase every unlock, statistic and saved run?', () => { g.save.reset(); self.openMain(); })) });
     opts.forEach((o) => { if (o.ok && !o.left) { o.left = o.ok; o.right = o.ok; } });
     // more options than fit on the page: show a window that follows the selection
@@ -1023,35 +963,6 @@ export class MenuSystem {
         page(ctx, 120, 90, 240, 90, 1, 12);
         wrap(ctx, q, 9, 210).forEach((l, i) => text(ctx, l, 240, 115 + i * 11, 9, INK, 'center', FONT_BODY, 600, false));
         ['Yes', 'No'].forEach((s, i) => { const x = 200 + i * 80; if (i === sel) inkBlot(ctx, x, 158, 50, 14, self.time, 'rgba(40,30,60,0.2)'); text(ctx, s, x, 161, 10, INK, 'center', FONT_TITLE, 400, false); });
-      },
-    };
-  }
-
-  // ------------------------------------------------------------ credits
-  creditsScreen(): Screen {
-    const self = this;
-    const lines = [
-      ['Lost Marcus', 'title'], ['A Papermoth Games production', ''], ['', ''],
-      ['Design, code, pixel art, music and sound', 'h'], ['Generated in-engine — every sprite, room, sound and song', ''], ['is painted or synthesised procedurally at runtime.', ''], ['', ''],
-      ['Built with Claude Code', 'h'], ['', ''],
-      ['Typefaces', 'h'], ['Cinzel — Natanael Gama (SIL OFL)', ''], ['Pirata One — Rodrigo Fuenzalida & Nicolás Massi (SIL OFL)', ''], ['Barlow Condensed — Jeremy Tribby (SIL OFL)', ''], ['', ''],
-      ['Licences', 'h'], ['The typefaces\' and libraries\' licences are in', ''], ['THIRD_PARTY_NOTICES.txt, beside the game.', ''], ['', ''],
-      ['With gratitude to', 'h'], ['Every grandparent who read the scary parts quietly', ''], ['and the room-by-room roguelikes that came before.', ''], ['', ''],
-      ['Thank you for reading.', 'title'],
-    ];
-    return {
-      t: 0,
-      update(keys) { if (keys.length) self.pop(); },
-      render(ctx) {
-        ctx.fillStyle = 'rgba(4,2,6,0.75)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        const y0 = VIEW_H - this.t * 18;
-        lines.forEach(([l, k], i) => {
-          const y = y0 + i * 16;
-          if (y < -20 || y > VIEW_H + 20) return;
-          text(ctx, l, VIEW_W / 2, y, k === 'title' ? 18 : k === 'h' ? 10 : 8, k === 'h' ? '#c8a878' : '#e6d6bc', 'center', k ? FONT_TITLE : FONT_BODY, k ? 400 : 600);
-        });
-        if (y0 + lines.length * 16 < -10) this.t = 0;
-        promptBar(ctx, [[null, 'Any key to return', 'keys'], [null, 'Any button to return', 'pad']]);
       },
     };
   }

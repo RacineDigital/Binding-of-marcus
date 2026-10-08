@@ -993,14 +993,13 @@ you. Wick: finish the story as Mothkin.
 
 ## What's new in 2.4 (beta)
 
-- **Papermoth Games.** A studio splash on launch: a folded-paper moth flutters in (any key skips it).
 - **Items change how you look.** Wear Grandmother's Ring (new), spectacles, masks, crowns, halos,
   wings, capes and more. The strongest items restyle your whole outfit, and every transformation
   is a new look: King Vamp, Mothkin, Inkblooded, Clockwork, Waxen Saint, Needleworker, Ossified,
   Hollowed and Drainer.
 - **A cleaner title menu.** Only what you can use: Continue (when a story is in progress), New Run,
   Daily Run, Challenges (once unlocked), Journal (readers, collection, bestiary, history, stats),
-  Options (now with save slots and credits) and Quit.
+  Options (now with save slots) and Quit.
 
 ## What's new in 2.3 (beta)
 

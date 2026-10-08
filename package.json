@@ -50,11 +50,11 @@
     "appId": 0,
     "depotId": 0
   },
-  "author": "Papermoth Games",
+  "author": "Racine Digital",
   "build": {
     "appId": "com.racinedigital.lostmarcus",
     "productName": "Lost Marcus",
-    "copyright": "\u00a9 Papermoth Games",
+    "copyright": "\u00a9 Racine Digital",
     "directories": {
       "output": "release-desktop",
       "buildResources": "electron"

@@ -480,7 +480,6 @@ export function startGame(cv: HTMLCanvasElement, params: URLSearchParams): Game 
   attachDebug(g);
   g.start();
   if (params.has('play')) g.newRun(params.get('char') || 'marcus', params.get('seed') || undefined);
-  else if (params.has('menu')) g.menus.openMain();
-  else g.menus.openSplash();
+  else g.menus.openMain();
   return g;
 }

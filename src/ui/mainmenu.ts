@@ -1,6 +1,6 @@
-// The title screen: a layered, parallax "bindery at night" scene (moonlit window, bookshelves,
-// drying pages, Marcus reading by a candle) with a menu that works with keys, pad and mouse,
-// plus the save-profile picker.
+// The title screen: a layered, parallax scene (moonlit window, bookshelves, drying pages, Marcus
+// reading by a candle) with a short menu that works with keys, pad and mouse, plus the save-profile
+// picker. Everything past the essentials lives one level down, in the Journal and Options.
 import { INK } from '../game/inkflag';
 import { GAME_VERSION } from '../core/constants';
 import { update } from '../core/update';
@@ -296,8 +296,7 @@ export function mainMenuScreen(ms: MenuSystem): Screen {
   if (CHALLENGES.some((c) => !c.unlock || g.save.isUnlocked(c.unlock))) entries.push({ id: 'challenges', label: 'Challenges', icon: I.skull, desc: () => 'Runs with special rules and unique rewards.', act: () => ms.push(ms.challengesScreen()) });
   entries.push(
     { id: 'journal', label: 'Journal', icon: I.book, desc: () => { const n = newUnlocks(g); return n ? `${n} new achievement${n > 1 ? 's' : ''} to read under Statistics.` : 'Story guide, readers, curios, combinations, notes and endings.'; }, act: () => ms.push(journalScreen(ms)) },
-    { id: 'news', label: 'What\'s new', icon: I.scroll, desc: () => `What changed in v${GAME_VERSION}.`, act: () => ms.push(ms.whatsNewScreen()) },
-    { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls, save slots and credits.', act: () => ms.push(ms.optionsScreen()) },
+    { id: 'options', label: 'Options', icon: I.gear, desc: () => 'Sound, video, controls and save slots.', act: () => ms.push(ms.optionsScreen()) },
   );
   if (desktop) entries.push({ id: 'quit', label: 'Quit', icon: I.door, desc: () => 'Stop for now. Progress is saved.', act: () => { g.save.flush(); (globalThis as any).bomDesktop.quit(); } });
   return entryList(ms, entries, { logo: true });
@@ -333,6 +332,7 @@ export function journalScreen(ms: MenuSystem): Screen {
     { id: 'stats', label: newUnlocks(g) ? `Statistics (${newUnlocks(g)} new)` : 'Statistics', icon: I.chart, desc: () => 'Lifetime numbers and achievements: what each one asks and what it gives.', act: () => ms.push(ms.statsScreen()) },
     { id: 'notes', label: 'Notes', icon: I.scroll, desc: () => `Notes and messages found: ${g.save.data.notes?.length ?? 0} of ${NOTES.length}.`, act: () => ms.push(ms.notesScreen()) },
     { id: 'endings', label: 'Endings', icon: I.bookmark, desc: () => `Endings found: ${g.save.data.endings?.length ?? 0} of ${ENDINGS.length}.`, act: () => ms.push(ms.endingsScreen()) },
+    { id: 'news', label: 'What\'s new', icon: I.scroll, desc: () => `What changed in v${GAME_VERSION}.`, act: () => ms.push(ms.whatsNewScreen()) },
   ];
   return entryList(ms, entries, { title: 'Journal', back: true });
 }
@@ -450,10 +450,8 @@ function entryList(ms: MenuSystem, entries: Entry[], o: { logo?: boolean; title?
       if (o.logo) {
         const goal = nextGoal(g);
         text(ctx, goal, 24, VIEW_H - 9, 6.5, 'rgba(230,205,170,0.62)', 'left', FONT_BODY, 600);
-        const info = g.save.slotInfo(g.save.slot);
-        text(ctx, `Slot ${g.save.slot}  ·  ${info.wins} win${info.wins === 1 ? '' : 's'}  ·  ${fmtHours(g.save.data.stats.playTime ?? 0)} played`, VIEW_W - 8, VIEW_H - 8, 6, 'rgba(200,185,165,0.45)', 'right');
-        text(ctx, `v${GAME_VERSION.split('.').slice(0, 2).join('.')}  ·  Papermoth Games`, VIEW_W - 8, VIEW_H - 16, 6, 'rgba(200,185,165,0.3)', 'right');
-        if (update.text) text(ctx, update.text, VIEW_W - 8, VIEW_H - 25, 6.5, update.ready ? '#a8e090' : '#e8c070', 'right');
+        text(ctx, `v${GAME_VERSION}`, VIEW_W - 8, VIEW_H - 9, 6, 'rgba(200,185,165,0.3)', 'right');
+        if (update.text) text(ctx, update.text, VIEW_W - 8, VIEW_H - 18, 6.5, update.ready ? '#a8e090' : '#e8c070', 'right');
       }
     },
   };

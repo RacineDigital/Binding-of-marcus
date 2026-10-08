@@ -22,7 +22,7 @@ const parts = [
   'Lost Marcus: third-party notices',
   '',
   'Lost Marcus includes the following third-party software and typefaces, used under the licences',
-  'reproduced below. Everything else in the game is (c) Papermoth Games.',
+  'reproduced below. Everything else in the game is (c) Racine Digital.',
 ];
 
 // typefaces (bundled into the game page)

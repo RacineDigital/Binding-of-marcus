@@ -379,6 +379,17 @@ The owner's recorded boss loop ("Ink and Iron", 87 s, converted to Vorbis by
 final-boss phase changes no longer switch tracks. Checked in a browser: the floor plays its theme,
 the boss room switches to the 87.3 s recording.
 
+### After 3.17.3: no studio splash, no credits, a shorter title menu
+
+At the owner's request: the Papermoth splash (`src/ui/splash.ts`) is deleted and the game opens
+straight on the title (or the intro on a first launch); the studio name is gone everywhere
+(package author and copyright are now Racine Digital, matching the app ID; THIRD_PARTY_NOTICES
+regenerated). The credits screen and its Options row are deleted; the font licences it pointed to
+remain in THIRD_PARTY_NOTICES.txt beside the game. The unused legacy `mainScreen()` went with them.
+The title menu keeps Continue, New Run, Daily Run, (Challenges once open), Journal, Options and
+Quit; What's new moved into the Journal (it still opens by itself after an update), and the
+footer is down to the next goal and the version.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
