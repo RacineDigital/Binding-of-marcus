@@ -10,7 +10,9 @@ export class AudioEngine {
   /** A boss's own sting for its title card (see bossting.ts). */
   bossSting(_id: string, _kind: 'chapter' | 'final' | 'echo' | 'champion'): void {}
   unlock(): void {}
-  setVolumes(_m: number, _s: number): void {}
+  setVolumes(_m: number, _s: number, _a?: number): void {}
+  /** The floor's ambience (see ambience.ts), or null for silence. */
+  setAmbience(_id: string | null): void {}
   duck(_amt: number, _t: number): void {}
   update(_dt: number): void {}
 }

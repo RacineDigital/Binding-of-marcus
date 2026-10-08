@@ -2,7 +2,7 @@
 import { Bindings, DEFAULT_BINDINGS, type PadBindings } from '../core/input';
 
 export interface Settings {
-  music: number; sfx: number; shake: number; /** Hit pause strength: 0 off, 0.5 light, 1 full. */ hitPause?: number; scale: 'sharp' | 'integer' | 'stretch'; diagonalAim: boolean;
+  music: number; sfx: number; /** Ambience volume (added in 2.0; older saves default to 0.6). */ ambience?: number; shake: number; /** Hit pause strength: 0 off, 0.5 light, 1 full. */ hitPause?: number; scale: 'sharp' | 'integer' | 'stretch'; diagonalAim: boolean;
   /** Reduce screen-wide flashes and hurt vignette intensity. */ reduceFlashes?: boolean;
   showStats: boolean; showFps: boolean; fireDropChance: number; bindings: Bindings; fullscreen: boolean; hudScale: number;
   /** Blend frames between simulation steps (smooth on 120+ Hz displays). */

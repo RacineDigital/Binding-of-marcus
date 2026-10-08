@@ -169,6 +169,28 @@ errors, every run reached chapter 7 or the Binding). Screenshots of 9 layouts we
 (pillar nave) was too cramped and was opened up. **Not verified**: how the new rooms play by hand;
 whether the family mix needs per-chapter weighting.
 
+### Audio — ambience bus (done)
+
+- `src/audio/ambience.ts`: a third audio bus beside music and effects, with its own **Ambience
+  volume** setting (Options; saves without it default to 60%, no migration needed). Each floor has a
+  soundscape: a looping room-tone bed (brown or pink noise, low-pass, a slow swell, mains hum where
+  it fits) plus sparse details from 12 synthesised kinds (drips, creaks, crackle, distant pipes,
+  chimes, page rustle, deep groans, ink bubbles, monitor beeps, gusts, moth wings, steam) and a clock
+  for the clock tower and Home. 17 soundscapes: the 8 story chapters, the 6 extra chapters, the
+  Margins, the hospital floors and Home; alternate chapters use their family's. Silent outside a
+  run; a fight pulls it down to 45% so combat sounds stay on top.
+- Levels measured offline: beds sit 11–19 dB under the calm music.
+
+Verified (automated): `tests/ambience.ts` (in `test:e2e`) — silent on the title, four floors each
+play their soundscape, all 12 details synthesise, the setting reaches the bus, fights duck it, no
+page errors; unit tests check every floor maps to a soundscape. **Not verified**: by ear.
+**Remaining asset work (honest)**: the soundtrack and all sounds are synthesised in-engine. The
+music system (adaptive layers, boss phases, stingers) is production-ready, but a soundtrack people
+would seek out needs a composer's recorded score, and the ambience would be better from field
+recordings. The current "recorded" tracks (`assets/music/audio`, listed in `recorded.ts`) are
+renders of the synth score and loop every 42–48 s, which is short for a floor. A composed score can
+replace those files (re-run `scripts/prepare-music.py`) with no engine work.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
@@ -179,6 +201,7 @@ whether the family mix needs per-chapter weighting.
 
 ## 6. Next steps (exact)
 
+0. Audio: by-ear pass on ambience levels per floor; commission or record a score (see above).
 1. M3 follow-up: more authored layouts toward 300 (big 2x1/1x2/2x2 room layouts are still built
    from single-room layouts; give them their own), chapter-specific layout sets with weights.
 2. M4: Chapter I (Cellar) to the 2.0 standard: encounter sets per layout family, cellar props, boss pass.

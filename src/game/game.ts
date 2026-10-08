@@ -1,4 +1,5 @@
 // Top-level game: fixed-step loop, scenes (menu / run / death / ending), run lifecycle and global input.
+import { soundscapeFor } from '../audio/ambience';
 import { Renderer } from '../render/renderer';
 import { Input, DEFAULT_PAD, type Action } from '../core/input';
 import { AudioEngine } from '../audio/audio';
@@ -120,7 +121,7 @@ export class Game {
     this.input.diagonalAim = s.diagonalAim;
     this.input.rumbleScale = s.rumble ?? 1;
     this.r.mode = s.scale; this.r.resize();
-    this.audio.setVolumes(s.music, s.sfx);
+    this.audio.setVolumes(s.music, s.sfx, s.ambience ?? 0.6);
   }
 
   /** The mouse cursor hides while a controller is in use, and when the mouse sits still during play. */
@@ -161,6 +162,7 @@ export class Game {
 
   private playAcc = 0;
   private step(dt: number): void {
+    this.audio.setAmbience(this.scene === 'run' && this.world && !this.world.player.dead ? soundscapeFor(this.world.theme) : null);
     this.audio.update(dt);
     updatePresence(this, dt);
     if (this.scene === 'run' && !this.paused) { this.playAcc += dt; if (this.playAcc >= 10) { this.save.stat('playTime', this.playAcc); this.playAcc = 0; } }

@@ -5,14 +5,17 @@ import { RECIPES, STINGERS, Recipe } from './sfx';
 import { impulse } from './dsp';
 import { Music } from './music';
 import { bossStingRecipe, StingKind } from './bossting';
+import { Ambience } from './ambience';
 
 export class SynthAudio extends AudioEngine {
   ctx: AudioContext | null = null;
   master!: GainNode; sfx!: GainNode; musicBus!: GainNode; reverb!: ConvolverNode; reverbIn!: GainNode;
   music: Music | null = null;
+  ambience: Ambience | null = null; ambBus!: GainNode;
   buffers = new Map<string, AudioBuffer[]>();
   recent = new Map<string, number[]>();
-  musicVol = 0.7; sfxVol = 0.8;
+  musicVol = 0.7; sfxVol = 0.8; ambVol = 0.6;
+  pendingAmbience: string | null = null;
   pendingTrack: string | null = null; pendingIntensity = 0;
   listenerX = 240;
   private rendering = false;
@@ -32,6 +35,9 @@ export class SynthAudio extends AudioEngine {
       const rvOut = c.createGain(); rvOut.gain.value = 0.32;
       this.reverbIn.connect(this.reverb); this.reverb.connect(rvOut); rvOut.connect(this.master);
       this.music = new Music(c, this.musicBus, this.reverbIn);
+      this.ambBus = c.createGain(); this.ambBus.gain.value = this.ambVol * 0.5; this.ambBus.connect(this.master);
+      this.ambience = new Ambience(c, this.ambBus, this.reverbIn);
+      this.ambience.set(this.pendingAmbience);
       if (this.pendingTrack) this.music.setTrack(this.pendingTrack);
       for (const t of this.pendingPrepare) this.music.prepare(t);
       this.music.setIntensity(this.pendingIntensity);
@@ -122,10 +128,11 @@ export class SynthAudio extends AudioEngine {
   setMusic(t: string | null): void { this.pendingTrack = t; this.music?.setTrack(t); }
   prepareMusic(t: string): void { if (this.music) this.music.prepare(t); else this.pendingPrepare.push(t); }
   private pendingPrepare: string[] = [];
-  setIntensity(i: number): void { this.pendingIntensity = i; this.music?.setIntensity(i); }
-  setVolumes(m: number, s: number): void {
-    this.musicVol = m; this.sfxVol = s;
-    if (this.ctx) { this.musicBus.gain.setTargetAtTime(m * 0.55, this.ctx.currentTime, 0.05); this.sfx.gain.setTargetAtTime(s, this.ctx.currentTime, 0.05); }
+  setIntensity(i: number): void { this.pendingIntensity = i; this.music?.setIntensity(i); this.ambience?.setIntensity(i); }
+  setAmbience(id: string | null): void { this.pendingAmbience = id; this.ambience?.set(id); }
+  setVolumes(m: number, s: number, a = this.ambVol): void {
+    this.musicVol = m; this.sfxVol = s; this.ambVol = a;
+    if (this.ctx) { const t = this.ctx.currentTime; this.musicBus.gain.setTargetAtTime(m * 0.55, t, 0.05); this.sfx.gain.setTargetAtTime(s, t, 0.05); this.ambBus.gain.setTargetAtTime(a * 0.5, t, 0.05); }
   }
   duck(amt: number, t: number): void {
     if (!this.ctx) return;
@@ -134,5 +141,5 @@ export class SynthAudio extends AudioEngine {
     this.musicBus.gain.setTargetAtTime(this.musicVol * 0.55 * amt, now, 0.05);
     this.musicBus.gain.setTargetAtTime(this.musicVol * 0.55, now + t, 0.4);
   }
-  update(dt: number): void { this.music?.update(dt); }
+  update(dt: number): void { this.music?.update(dt); this.ambience?.update(dt); }
 }

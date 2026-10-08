@@ -835,10 +835,11 @@ export class MenuSystem {
     type Opt = { label: string; value: () => string; left?: () => void; right?: () => void; ok?: () => void };
     const pct = (v: number) => Math.round(v * 100) + '%';
     let logNote = '';
-    const step = (k: 'music' | 'sfx' | 'shake', d: number) => { const s = st(); s[k] = clamp(Math.round((s[k] + d) * 10) / 10, 0, 1); g.applySettings(); g.save.markDirty(); g.audio.play('coin', { vol: 0.5 }); };
+    const step = (k: 'music' | 'sfx' | 'ambience' | 'shake', d: number) => { const s = st(); s[k] = clamp(Math.round(((s[k] ?? 0.6) + d) * 10) / 10, 0, 1); g.applySettings(); g.save.markDirty(); g.audio.play('coin', { vol: 0.5 }); };
     const opts: Opt[] = [
       { label: 'Music volume', value: () => pct(st().music), left: () => step('music', -0.1), right: () => step('music', 0.1) },
       { label: 'Effects volume', value: () => pct(st().sfx), left: () => step('sfx', -0.1), right: () => step('sfx', 0.1) },
+      { label: 'Ambience volume', value: () => pct(st().ambience ?? 0.6), left: () => step('ambience', -0.1), right: () => step('ambience', 0.1) },
       { label: 'Screen shake', value: () => pct(st().shake), left: () => step('shake', -0.1), right: () => step('shake', 0.1) },
       { label: 'Reduce flashing', value: () => (st().reduceFlash ? 'On' : 'Off'), ok: () => { st().reduceFlash = !st().reduceFlash; g.save.markDirty(); } },
       { label: 'High-contrast enemy shots', value: () => (st().contrastShots ? 'On' : 'Off'), ok: () => { st().contrastShots = !st().contrastShots; g.save.markDirty(); } },

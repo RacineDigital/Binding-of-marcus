@@ -18,6 +18,12 @@ faster, and inked champions start to appear. The Journal keeps every one you hav
 **Smoother movement.** Clipping the corner of a rock slides you round it instead of stopping you
 dead, and a bomb, item or page pressed during a room transition is no longer lost.
 
+### Sound
+- Every floor now has its own ambience: dripping cellars, the boiler's hum and crackle, pipes
+  knocking in the underworks, distant monitors on the ward, page rustle in the stacks, a clock
+  ticking in the tower. It quietens when a fight starts.
+- New **Ambience volume** setting, separate from music and effects.
+
 ### Rooms
 - 117 new hand-made room layouts (157 in all): rock bays along the walls, pits and chasms, pillar
   halls, breakable cover, spike and fire lanes, ambushes, arenas, shooter nests, swarms, heavy duels,

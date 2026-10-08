@@ -12,6 +12,7 @@ import { TRANSFORM_EFFECTS } from '../src/player/player';
 import { TEMPLATES } from '../src/rooms/templates';
 import { generateLayout, generateTemplate } from '../src/generation/roomgen';
 import { validateTemplate } from '../src/rooms/validate';
+import { SOUNDSCAPES, soundscapeFor } from '../src/audio/ambience';
 import { RNG } from '../src/core/rng';
 import { PixelArt } from '../src/render/pixel';
 import { CHARACTERS } from '../src/player/characters';
@@ -157,6 +158,12 @@ ok(new Set(TEMPLATES.map((t) => t.name)).size === TEMPLATES.length, 'template na
     ok(L.length === 9 && L.every((r) => r.length === 15 && [...r].every((ch) => valid.has(ch))), `generated layout ${i} is a valid 15x9 grid`);
     ok(L.join('').replace(/[^MFSWHTA]/g, '').length >= 2, `generated layout ${i} has enemy slots`);
   }
+}
+{
+  const { HOSPITAL_FLOORS, MARGINS_FLOOR: _m, ...floorsMod } = await import('../src/data/floors');
+  const themes = [...CHAPTER_POOL, ...HOSPITAL_FLOORS, ...Object.values(floorsMod).filter((v: any) => v && typeof v === 'object' && 'ambience' in v && 'id' in v)] as any[];
+  for (const th of themes) ok(!!SOUNDSCAPES[soundscapeFor(th)], `floor ${th.id} has a soundscape`);
+  for (const [id, sc] of Object.entries(SOUNDSCAPES)) ok(sc.level > 0 && sc.level < 0.6 && sc.events.length > 0, `soundscape ${id} is sane`);
 }
 for (const c of CHARACTERS) for (const id of c.items) ok(ids.has(id), `character ${c.id} start item ${id} exists`);
 const counts = {

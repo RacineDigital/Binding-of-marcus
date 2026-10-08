@@ -11,7 +11,7 @@
     "test": "tsx tests/run.ts",
     "smoke": "tsx tests/smoke.ts",
     "test:boot": "tsx tests/boot.ts",
-    "test:e2e": "tsx tests/e2e.ts && tsx tests/controller.ts && tsx tests/feel.ts && tsx tests/inklings.ts",
+    "test:e2e": "tsx tests/e2e.ts && tsx tests/controller.ts && tsx tests/feel.ts && tsx tests/inklings.ts && tsx tests/ambience.ts",
     "test:soak": "tsx tests/soak.ts",
     "test:extreme": "tsx tests/tools/extreme.ts",
     "test:synergy": "tsx tests/synergy.ts",
@@ -55,7 +55,7 @@
   "build": {
     "appId": "com.racinedigital.lostmarcus",
     "productName": "Lost Marcus",
-    "copyright": "© Papermoth Games",
+    "copyright": "\u00a9 Papermoth Games",
     "directories": {
       "output": "release-desktop",
       "buildResources": "electron"
