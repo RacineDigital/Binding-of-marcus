@@ -381,7 +381,7 @@ const matronBrain: BossBrain = {
       start(e) { e.setAnim('raise'); },
       run(e, w, t) {
         const n = Math.floor((t - 0.45) / 0.35);
-        if (t > 0.45 && n > (e.data.n ?? -1) && n < (e.data.phase ? 3 : 2)) { e.data.n = n; spreadShot(e, w, 5, aimAngle(e, w), 0.8, 190, { shape: 'holy', r: 3 }); w.audio.play('needle', { x: e.x }); }
+        if (t > 0.45 && n > (e.data.n ?? -1) && n < (e.data.phase ? 3 : 2)) { e.data.n = n; spreadShot(e, w, 5, aimAngle(e, w), 0.8, 165, { shape: 'holy', r: 3 }); w.audio.play('needle', { x: e.x }); }
         if (t > 1.3) { e.data.n = -1; e.setAnim('idle'); return true; }
         return false;
       } },

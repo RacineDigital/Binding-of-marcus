@@ -25,7 +25,6 @@ import { restockCost, donationLabel, shopStock } from '../game/npc';
 import { charById } from '../player/characters';
 import { mapIcon } from '../art/roomicons';
 import { letterHunt, isWantedHalf, LETTER_HALVES } from '../game/letter';
-import { tutorialLine } from '../game/tutorial';
 import { sweetColor } from '../items/sweetcolor';
 import { STING_HIT, StingKind } from '../audio/bossting';
 import { FLAWLESS_TARGET } from '../game/bindings';
@@ -211,18 +210,6 @@ export class Hud {
 
   /** Speedrun-style run clock under the map. */
   /** A first-run hint, centred at the top of the screen; it ticks green for a moment once done. */
-  private drawTutorial(ctx: CanvasRenderingContext2D): void {
-    const t = tutorialLine(this.w);
-    if (!t) return;
-    const s = (t.done ? '\u2713 ' : '') + t.text, size = 8;
-    const wd = measure(ctx, s, size) + 18, x = VIEW_W / 2 - wd / 2, y = 8;
-    ctx.save();
-    ctx.fillStyle = 'rgba(14,10,20,0.82)'; ctx.fillRect(x, y, wd, 15);
-    ctx.strokeStyle = t.done ? 'rgba(158,224,138,0.8)' : 'rgba(255,224,140,0.55)'; ctx.lineWidth = 0.7; ctx.strokeRect(x + 0.5, y + 0.5, wd - 1, 14);
-    text(ctx, s, VIEW_W / 2, y + 10.5, size, t.done ? COL.up : '#ffe8b0', 'center');
-    ctx.restore();
-  }
-
   /** On the hospital path: a two-line checklist for the halves of Grandfather's letter, and where each one is. */
   private drawLetterHunt(ctx: CanvasRenderingContext2D): void {
     const w = this.w, h = letterHunt(w);
@@ -235,7 +222,6 @@ export class Hud {
     const lines = rows.map(([got, name, where]) => got ? `\u2713 ${name}: found` : `\u2022 ${name}: ${where}`);
     const wd = Math.max(measure(ctx, 'Grandfather\'s letter', 6, FONT_BODY, 700), ...lines.map((s) => measure(ctx, s, 5.5))) + 6;
     ctx.save();
-    ctx.fillStyle = 'rgba(8,6,12,0.55)'; ctx.fillRect(VIEW_W - 8 - wd, y, wd, 27);
     text(ctx, 'Grandfather\'s letter', VIEW_W - 11, y + 7, 6, '#ffe08c', 'right', FONT_BODY, 700);
     lines.forEach((s, i) => text(ctx, s, VIEW_W - 11, y + 16 + i * 9, 5.5, rows[i][0] ? COL.up : COL.text, 'right'));
     ctx.restore();
@@ -245,7 +231,6 @@ export class Hud {
     const t = this.w.run.stats.time;
     const m = Math.floor(t / 60), s = t % 60;
     const str = `${m}:${s < 10 ? '0' : ''}${s.toFixed(2)}`;
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(VIEW_W - 50, 63, 44, 11);
     text(ctx, str, VIEW_W - 8, 71, 7, this.w.run.won ? '#ffd060' : '#e8e0d0', 'right');
   }
   banner(title: string, sub: string, icon: HTMLCanvasElement | null = null, note?: string, kicker?: string, dismissible = false): void { this.banners = [{ title, sub, t: 0, icon, note, kicker, dismissible }]; }
@@ -297,6 +282,7 @@ export class Hud {
     const info = near ? inspectInfo(this.w, near) : null;
     if (near && info) { this.panelInfo = info; this.panelPickup = near; this.panelFade = Math.min(1, this.panelFade + dt * 8); }
     else this.panelFade = Math.max(0, this.panelFade - dt * 8);
+    this.bindShow = Math.max(0, this.bindShow - dt);
     const boss = this.w.bossList[0];
     if (boss) { const f = this.bossHpFrac(); this.bossTrail = f < this.bossTrail ? Math.max(f, this.bossTrail - dt * 0.35) : f; }
   }
@@ -338,7 +324,6 @@ export class Hud {
     if (w.floor.curse === 'lost') { if (!this.fullMap) text(ctx, CURSE_NAMES.lost, VIEW_W - 8, 14, 7, COL.dim, 'right'); }
     else if (!this.fullMap) this.drawMinimap(ctx, false);
     if (!this.fullMap) this.drawLetterHunt(ctx);
-    if (!this.fullMap) this.drawTutorial(ctx);
     if (w.game.save.data.settings.showItems !== false && !this.fullMap) this.drawItemTracker(ctx);
     if (w.game.save.data.settings.timer && !this.fullMap) this.drawTimer(ctx);
     this.drawBossBar(ctx);
@@ -482,28 +467,31 @@ export class Hud {
     const H = pickupSprites().hud;
     const rows = Math.ceil((pl.health.redMax / 2 + pl.health.extra.length + (pl.count('dust_jacket') > 0 ? 1 : 0)) / 6);
     const y0 = Math.max(30, 8 + Math.max(1, rows) * 10 + 4);
-    panel(ctx, 4, y0 - 3, 101, 17, 1, '#4d6160', 'rgba(12,25,30,0.83)');
-    this.inkY = y0 + 17;
-    const line = (spr: HTMLCanvasElement, n: number, x: number, special = false) => {
-      ctx.drawImage(spr, x, y0 - 1);
-      text(ctx, String(n).padStart(2, '0'), x + 12, y0 + 8, 8, special ? COL.gold : COL.text);
+    const x = 6;
+    this.inkY = y0 + 40;
+    const line = (spr: HTMLCanvasElement, n: number, y: number, special = false) => {
+      ctx.drawImage(spr, x, y - 1);
+      text(ctx, String(n).padStart(2, '0'), x + 15, y + 8, 9, special ? COL.gold : COL.text);
     };
-    line(H.button.canvas, pl.buttons, 8);
-    line(H.bomb.canvas, pl.bombs, 41);
-    line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, 74, pl.goldKey);
+    line(H.button.canvas, pl.buttons, y0);
+    line(H.bomb.canvas, pl.bombs, y0 + 13);
+    line((pl.goldKey ? H.goldKey : H.key).canvas, pl.keys, y0 + 26, pl.goldKey);
   }
 
   private inkY = 47;
+  /** Where the margins end this frame (0 when hidden), so the stats start below them. */
+  private inkBottom = 0;
   /**
    * The margins: an ink meter, then a blot per margin with the essence written in it and its level.
    * Hidden until the first Inkling is seen, so a new player meets it when it first matters.
    */
   private drawInk(ctx: CanvasRenderingContext2D): void {
     const w = this.w, s = inkState(w), cap = inkCap(w);
+    this.inkBottom = 0;
     if (!s.slots.length && s.meter <= 0 && !(w.game.save.data.inkSeen ?? []).length) return;
     const y = this.inkY, x0 = 5, full = brimming(w), SW = 17;
     const wide = cap * SW + 1;
-    panel(ctx, x0 - 1, y - 2, wide + 2, 24, 1, full ? '#a898ff' : '#4d4a70', 'rgba(14,12,26,0.85)');
+    this.inkBottom = y + 22;
     for (let i = 0; i < cap; i++) {
       const sx = x0 + 1 + i * SW, sl = s.slots[i];
       if (!sl) { ctx.strokeStyle = 'rgba(150,140,190,0.35)'; ctx.lineWidth = 0.5; ctx.strokeRect(sx + 1.5, y + 0.5, 13, 13); continue; }
@@ -519,18 +507,25 @@ export class Hud {
     if (full) text(ctx, 'The ink brims: your next kill leaves an Inkling', x0 + wide + 5, y + 12, 6.5, '#d0c8ff');
   }
 
+  private bindKey = -1; private bindShow = 0;
   private drawRunIdentity(ctx: CanvasRenderingContext2D): void {
     const w = this.w, b = w.run.binding;
     const streak = w.run.flags.cleanStreak ?? 0, progress = streak % FLAWLESS_TARGET;
-    if (!tutorialLine(w)) {
-    panel(ctx, 180, 5, 120, 28, 1, '#566865', 'rgba(12,25,30,0.86)');
-    bindingSeal(ctx, b, 191, 19, 16);
-    text(ctx, b.name + ' binding', 203, 15, 7.5, b.color);
-    for (let i = 0; i < FLAWLESS_TARGET; i++) {
-      ctx.fillStyle = i < progress ? '#ddc48b' : '#34484b';
-      ctx.fillRect(203 + i * 8, 21, 5, 4);
-    }
-    text(ctx, '3 clean → chest', 233, 25, 6.5, '#c6d2c9');
+    // the binding and its clean-room streak: shown for a few seconds when a floor starts or the
+    // streak changes, then it fades, so it never sits over the doorway
+    const key = w.run.floorIndex * 1000 + streak;
+    if (key !== this.bindKey) { this.bindKey = key; this.bindShow = 3.5; }
+    const a = Math.min(1, this.bindShow / 0.6);
+    if (a > 0) {
+      ctx.save(); ctx.globalAlpha = a;
+      bindingSeal(ctx, b, 191, 19, 16);
+      text(ctx, b.name + ' binding', 203, 15, 7.5, b.color);
+      for (let i = 0; i < FLAWLESS_TARGET; i++) {
+        ctx.fillStyle = i < progress ? '#ddc48b' : '#34484b';
+        ctx.fillRect(203 + i * 8, 21, 5, 4);
+      }
+      text(ctx, '3 clean → chest', 233, 25, 6.5, '#c6d2c9');
+      ctx.restore();
     }
     const offers = w.pickups.filter((p) => p.pedestal && p.data.id && p.data.group !== undefined && !p.dead);
     if (w.room.type === 'treasure' && offers.length > 1) {
@@ -569,8 +564,7 @@ export class Hud {
   }
 
   private drawStats(ctx: CanvasRenderingContext2D): void {
-    const y0 = 112, x = 6;
-    panel(ctx, 3, 101, 35, 85, 0.76, '#435754', 'rgba(12,25,30,0.76)');
+    const y0 = Math.max(112, this.inkBottom + 12), x = 6;
     const rows = this.statRows();
     rows.forEach(([k, v], i) => {
       const y = y0 + i * 10;
@@ -644,7 +638,6 @@ export class Hud {
     const rows = Math.ceil(ids.length / cols);
     const top = bottom - rows * cell;
     ctx.save();
-    ctx.fillStyle = 'rgba(8,6,12,0.4)'; ctx.fillRect(right - cols * cell - 2, top - 2, cols * cell + 4, rows * cell + 4);
     ctx.imageSmoothingEnabled = false;
     ids.forEach((id, i) => {
       const x = right - cols * cell + (i % cols) * cell, y = top + Math.floor(i / cols) * cell;
@@ -703,8 +696,6 @@ export class Hud {
       ox = VIEW_W - 8 - winW / 2 - (cur.gx - minx + cur.cw / 2) * (cw + gap);
       oy = 8 + winH / 2 - (cur.gy - miny + cur.ch / 2) * (ch + gap);
       ctx.save();
-      ctx.fillStyle = 'rgba(8,6,12,0.55)'; ctx.fillRect(VIEW_W - 8 - winW, 6, winW, winH);
-      ctx.strokeStyle = 'rgba(160,140,120,0.35)'; ctx.lineWidth = 0.5; ctx.strokeRect(VIEW_W - 8 - winW, 6, winW, winH);
       ctx.beginPath(); ctx.rect(VIEW_W - 8 - winW, 6, winW, winH); ctx.clip();
     }
     // icons are painted at the screen's real pixel size, so they are as sharp as the text
@@ -901,7 +892,6 @@ export class Hud {
         const it = getItem(p.data.id);
         if (it) {
           const role = itemRole(it);
-          panel(ctx, sx - 27, sy + 7, 54, 11, 1, '#526763', 'rgba(12,25,30,0.9)');
           text(ctx, ROLE_LABEL[role], sx, sy + 15, 6.5, ROLE_COLOR[role], 'center');
         }
       }

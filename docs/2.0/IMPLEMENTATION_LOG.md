@@ -16,7 +16,7 @@ Reproduce the inventory with `npx tsx tests/tools/audit.ts`.
 | Trinkets ("charms") | 17 | Plus 20 pages/sweets (consumables). | 40+ |
 | Characters | 10 (+10 mirrored "tainted" variants) | Distinct starting kits and passives (melee, beams, ricochet, ink hearts, dice). | 10 ✓ |
 | Floor environments | 8 story chapters, 6 extra chapters, 3 hospital floors, plus special floors (Margins, Last Page, Foreword, Room 4, Home) | The 7 "alternate" chapters (Root Cellar, Coal Chute, …) are palette/name variants of the main ones, so they don't count as distinct. | 12 ✓ (≈17 distinct) |
-| Standard enemies | 43 defs → **54 after M5b** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4–M5b add 11 distinct ones (51). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
+| Standard enemies | 43 defs → **57 after M5c** | 40 distinct behaviours at the audit (the three Sludge sizes and Blot/Blotlet share code); M4–M5c add 14 distinct ones (54). Behaviours are bespoke with tells (flankers, lurchers, turrets…). | 70+ |
 | Bosses and minibosses | 31 defs | Rigged, multi-phase; Patient fight retuned in 3.14. | 35+ |
 | Authored room layouts | 40 templates + 10 set pieces → **157 + 10 after M3** | Before M3, 55% of rooms used a procedural layout that placed rock clusters and walls anywhere, including the middle of the room. M3: 30% procedural, rocks to the edges. | 300+ |
 | Challenge runs | 5 | | 25+ |
@@ -296,6 +296,38 @@ Chapter III fight on purpose (it is two fights). `tests/bosses.ts` now covers se
 Verified (automated): `tests/under.ts` (12 checks), boss regression, all earlier suites. **Not
 verified**: by hand.
 
+### M5c — Chapter IV (the Ward), same pattern (done)
+
+Role audit: teleporting melee (orderly), bouncing heavy (wheelchair), lobbing shooter (nurse),
+ghost flyer (bedsheet), ambush (mimic), zoning heavy (drip sentinel); no swarm, turret or protector.
+New (`src/enemies/defs_ward2.ts`, sprites `src/art/hand/ward3.ts`):
+- **Spilled Pills** (swarm): capsules rolling in straight lines, reflecting off walls; a 0.3 s wobble
+  before each turn toward you.
+- **Monitor** (turret): alarm flash (0.6 s), then six blips 0.12 s apart on one sine path (`wig`
+  with a shared phase), so the stream is a lane to step out of. New sound: `beep`.
+- **Mourner** (protector): kneels by the nearest other creature; after 0.5 s that creature is
+  invulnerable while the pale thread holds (drawn via `data.tetherBy`). Any hit on the Mourner
+  breaks the hold and it waits 1.5 s before kneeling again; death frees its charge. It never
+  tethers something already invulnerable for its own reasons.
+- 12 Ward encounters; the Morgue gets the new creatures. 39% of Ward rooms from encounters over
+  400 seeds; every encounter and creature appeared.
+- Boss probe (base build, dodging bot, 4 trials): Sleepwalker 31–34 s, phase 2 at ~16 s, 2–4 hits.
+  Matron 45–54 s, 3–10 hits, most from her aimed five-shot syringe fans at 190 px/s, the fastest
+  regular boss shot this early. Changed to 165 px/s; the bot's numbers stayed noisy (it threads
+  fans instead of stepping out of them). `tests/bosses.ts` now covers nine bosses.
+
+Verified (automated): `tests/ward.ts` (11 checks), all suites. **Not verified**: by hand.
+The boss regression allows the noisiest two (Rat King, Matron) up to 16 dodger hits (Matron: up to 12 over 9 fights): over 11 Rat
+King fights the bot took 2–13 (median 4), so one fight can exceed 12 by chance.
+
+### HUD change requested by the owner (3.17.0)
+
+Restored the pre-3.15 left column (coins, bombs, keys going down, no box); removed the boxes behind
+the counters, ink margins, stats, binding banner, minimap, item tracker, letter checklist, timer
+and pedestal labels; removed the first-run "Move with WASD" prompts from the HUD; the binding
+banner now shows for 3.5 s at a chapter start or when the clean streak changes, then fades.
+Kept: the Tab map frame, the boss bar frame and the item-description backdrop (readability).
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at
@@ -309,6 +341,6 @@ verified**: by hand.
 0. Audio: by-ear pass on ambience levels per floor; commission or record a score (see above).
 1. M3 follow-up: more authored layouts toward 300 (big 2x1/1x2/2x2 room layouts are still built
    from single-room layouts; give them their own), chapter-specific layout sets with weights.
-2. Carry the M4 pattern to Chapter IV–VII (II and III done): role audit per chapter, new creatures for missing
+2. Carry the M4 pattern to Chapter V–VII (II, III and IV done): role audit per chapter, new creatures for missing
    roles (toward 70), encounter sets per chapter, boss probe per chapter's bosses.
 3. Human playtest of Inklings and the new rooms; tune meter size, annotated rate, weakest essences.

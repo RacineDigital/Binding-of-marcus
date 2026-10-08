@@ -26,6 +26,7 @@ export function latestNews(): { title: string; blocks: NewsLine[] } {
   };
   for (const raw of lines.slice(start + 1, end)) {
     if (!raw.trim()) { flush(); if (blocks.length && blocks[blocks.length - 1].kind !== 'gap') blocks.push({ s: '', kind: 'gap' }); continue; }
+    if (/^###\s/.test(raw)) { flush(); blocks.push({ s: plain(raw.replace(/^###\s*/, '')), kind: 'head' }); continue; }
     if (/^\s*- /.test(raw)) { flush(); bullet = true; para.push(raw.replace(/^\s*- /, '')); continue; }
     para.push(raw.trim());
   }

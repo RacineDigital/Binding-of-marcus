@@ -2,7 +2,9 @@
 
 Every version of Lost Marcus, newest first. Each release page only lists what's new in that release.
 
-## Lost Marcus 2.0 (in progress): Inklings
+## What's new in 3.17.0: Inklings, new creatures, ready for Steam
+
+The first part of Lost Marcus 2.0, together with the Steam update in one build.
 
 **Inklings.** The monsters in the cellar are stories, and the ink they were written in can be
 taken. Every kill fills your ink meter; when it brims, each creature shows the Inkling it would
@@ -13,7 +15,7 @@ spreads, webs, notes that frighten, and more: sixteen in all, each growing from 
 pairs annotate each other into something new. Carry their ink and their kind comes at you
 faster, and inked champions start to appear. The Journal keeps every one you have written.
 
-**Five new curios** that work with the ink, unlocked by three new achievements.
+**Five new curios.** They work with the ink, and three new achievements unlock them.
 
 **Smoother movement.** Clipping the corner of a rock slides you round it instead of stopping you
 dead, and a bomb, item or page pressed during a room transition is no longer lost.
@@ -40,6 +42,21 @@ dead, and a bomb, item or page pressed during a room transition is no longer los
 - Hand-made groups of creatures for the Underworks.
 - The Rat King's princes are a little less hardy, and it summons fewer rats at once.
 
+### The Ward
+- Three new creatures: **Spilled Pills** (capsules that roll in straight lines and bounce, then
+  wobble and turn toward you), the **Monitor** (flashes red, then sends a weaving stream of blips
+  down one lane) and the **Mourner** (kneels by another creature and holds it: nothing hurts that
+  one until you hit the Mourner).
+- Hand-made groups of creatures for the Ward.
+- The Matron's syringes fly a little slower.
+
+### The HUD
+- Coins, bombs and keys are back in a column down the left side, as they used to be.
+- No more boxes behind the HUD: the counters, stats, ink margins, minimap and item list sit
+  straight on the screen.
+- The "Move with WASD" prompts are gone, and the binding banner shows for a few seconds when a
+  chapter starts or your clean streak changes, then fades.
+
 ### Sound
 - Every floor now has its own ambience: dripping cellars, the boiler's hum and crackle, pipes
   knocking in the underworks, distant monitors on the ward, page rustle in the stacks, a clock
@@ -55,7 +72,7 @@ dead, and a bomb, item or page pressed during a room transition is no longer los
 - Every layout is checked: doors open, no enemy waiting in a doorway, no sealed-off floor, no clutter
   in the middle of the room.
 
-## What's new in 3.17.0: ready for Steam
+### Ready for Steam
 
 **Fixed: the way down after a boss.** Walking out of a boss room straight after the kill could
 leave no trapdoor to the next chapter (and no curio or reward) when you came back. The reward now
