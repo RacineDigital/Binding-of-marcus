@@ -610,5 +610,18 @@ console.log('content:', JSON.stringify(counts));
   G.window = keep.window; G.location = keep.location; G.fetch = keep.fetch; G.bomDesktop = keep.bomDesktop;
   if (nav) Object.defineProperty(globalThis, 'navigator', nav); else delete G.navigator;
 }
+// rocks: you can walk right up to one from above (its art fills only the bottom of the tile), as from the sides
+{
+  const { RoomData } = await import('../src/rooms/room');
+  const { moveBody } = await import('../src/rooms/collide');
+  const room = new RoomData(0, 0, 0, 1, 1, 'normal', 'tmp');
+  const top = room.oy + 4 * TILE, cx = room.ox + 7 * TILE + TILE / 2;
+  const walk = (k: number, x: number, y: number, dx: number, dy: number) => { room.setOb(7, 4, k); const b = { x, y, r: 5.5 }; for (let i = 0; i < 60; i++) moveBody(room, b, dx, dy, 'walk'); room.setOb(7, 4, Ob.None); return b; };
+  const above = walk(Ob.Rock, cx, top - 30, 0, 2);
+  ok(above.y > top + 1 && above.y < top + 6, `walking down onto a rock stops just above its art (${(above.y - top).toFixed(1)} px into the tile; the art starts 6 px down)`);
+  ok(Math.abs(walk(Ob.Rock, cx - 40, top + 16, 2, 0).x - (room.ox + 7 * TILE - 4.5)) < 0.01, 'rocks still stop you at the same place from the side');
+  ok(walk(Ob.Pit, cx, top - 30, 0, 2).y < top - 2, 'pits keep their whole tile');
+  ok(walk(Ob.Block, cx, top - 30, 0, 2).y < top - 2, 'tall blocks keep their whole tile');
+}
 console.log(`${checks - failures}/${checks} checks passed`);
 if (failures) process.exit(1);

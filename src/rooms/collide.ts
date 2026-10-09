@@ -6,6 +6,22 @@ export type MoveMode = 'walk' | 'fly' | 'shot' | 'ghost';
 export interface Body { x: number; y: number; r: number }
 export interface OpenDoor { side: Side; pos: number } // pos = centre along the edge (x for N/S, y for E/W)
 
+/**
+ * The low obstacles only fill the bottom of their tile (a rock is drawn from about 6 px down), so for
+ * a walking body their box starts where the art does. Fires, pits and the tall blocks and pillars
+ * keep the whole tile.
+ */
+const WALK_TOP: Partial<Record<number, number>> = { [Ob.Rock]: 6, [Ob.Marked]: 6, [Ob.Heap]: 6, [Ob.Urn]: 5, [Ob.Keg]: 3 };
+/**
+ * Walking bodies meet obstacles with their feet: an oval as wide as the body but only this much of its
+ * height, so you can stand close above or below a rock (the body is drawn upward from the feet anyway)
+ * while meeting it square from the side still stops you.
+ */
+const FEET = 0.65;
+export function walkTop(room: RoomData, c: number, r: number, mode: MoveMode): number {
+  return mode === 'walk' ? WALK_TOP[room.grid[r * room.cols + c]] ?? 0 : 0;
+}
+
 export function solidCell(room: RoomData, c: number, r: number, mode: MoveMode): boolean {
   if (!room.inGrid(c, r)) return false;
   const k = room.grid[r * room.cols + c];
@@ -37,22 +53,23 @@ function resolveGrid(room: RoomData, b: Body, mode: MoveMode, axis: 0 | 1, hit: 
   for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
     if (!solidCell(room, c, r, mode)) continue;
     const rx = room.ox + c * TILE, ry = room.oy + r * TILE;
-    // inset hit box slightly so bodies slide around corners smoothly
+    // inset hit box slightly so bodies slide around corners smoothly (and much more at the top of a low obstacle)
     const inset = 1;
-    const x0 = rx + inset, y0 = ry + inset, x1 = rx + TILE - inset, y1 = ry + TILE - inset;
+    const x0 = rx + inset, y0 = ry + Math.max(inset, walkTop(room, c, r, mode)), x1 = rx + TILE - inset, y1 = ry + TILE - inset;
+    const k = mode === 'walk' ? 1 / FEET : 1;   // y stretch: the feet oval becomes a circle of radius b.r
     const nx = Math.max(x0, Math.min(b.x, x1)), ny = Math.max(y0, Math.min(b.y, y1));
-    let dx = b.x - nx, dy = b.y - ny;
+    const dx = b.x - nx, dy = (b.y - ny) * k;
     const d2 = dx * dx + dy * dy;
     if (d2 >= b.r * b.r) continue;
     hit.cell = [c, r];
     if (d2 > 1e-6) {
       const d = Math.sqrt(d2), push = b.r - d;
-      b.x += (dx / d) * push; b.y += (dy / d) * push;
+      b.x += (dx / d) * push; b.y += ((dy / d) * push) / k;
       if (Math.abs(dx) > Math.abs(dy)) hit.hx = true; else hit.hy = true;
     } else {
       // centre inside the tile: push out along the movement axis
       if (axis === 0) { const l = b.x - x0, rr = x1 - b.x; b.x = l < rr ? x0 - b.r : x1 + b.r; hit.hx = true; }
-      else { const t = b.y - y0, bb = y1 - b.y; b.y = t < bb ? y0 - b.r : y1 + b.r; hit.hy = true; }
+      else { const t = b.y - y0, bb = y1 - b.y, ry = b.r / k; b.y = t < bb ? y0 - ry : y1 + ry; hit.hy = true; }
     }
   }
 }
@@ -98,9 +115,10 @@ export function circleBlocked(room: RoomData, x: number, y: number, r: number, m
   const r0 = Math.floor((y - r - room.oy) / TILE), r1 = Math.floor((y + r - room.oy) / TILE);
   for (let rr = r0; rr <= r1; rr++) for (let c = c0; c <= c1; c++) {
     if (!solidCell(room, c, rr, mode)) continue;
-    const x0 = room.ox + c * TILE + 1, y0 = room.oy + rr * TILE + 1, x1 = x0 + TILE - 2, y1 = y0 + TILE - 2;
+    const x0 = room.ox + c * TILE + 1, y0 = room.oy + rr * TILE + Math.max(1, walkTop(room, c, rr, mode)), x1 = x0 + TILE - 2, y1 = room.oy + rr * TILE + TILE - 1;
     const nx = Math.max(x0, Math.min(x, x1)), ny = Math.max(y0, Math.min(y, y1));
-    if ((x - nx) ** 2 + (y - ny) ** 2 < r * r - 0.01) return true;
+    const k = mode === 'walk' ? 1 / FEET : 1;
+    if ((x - nx) ** 2 + ((y - ny) * k) ** 2 < r * r - 0.01) return true;
   }
   return false;
 }
@@ -112,6 +130,8 @@ export function circleBlocked(room: RoomData, x: number, y: number, r: number, m
  * squarely (more than `reach` px of overlap) and the body should simply stop.
  */
 export function cornerSlide(room: RoomData, b: Body, axis: 0 | 1, dir: number, mode: MoveMode, reach = 8): number {
+  // sliding up or down round an obstacle: the feet oval is shorter than it is wide, so the same allowance would reach further
+  if (axis === 0 && mode === 'walk') reach = Math.min(reach, 6);
   const ahead = (ox: number, oy: number) => axis === 0 ? circleBlocked(room, b.x + dir * 1.5 + ox, b.y + oy, b.r, mode) : circleBlocked(room, b.x + ox, b.y + dir * 1.5 + oy, b.r, mode);
   const beside = (o: number) => axis === 0 ? circleBlocked(room, b.x, b.y + o, b.r, mode) : circleBlocked(room, b.x + o, b.y, b.r, mode);
   if (!ahead(0, 0)) return 0;

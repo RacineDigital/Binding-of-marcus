@@ -35,8 +35,6 @@ import { TRANSFORM_EFFECTS } from '../player/player';
 import { drawPaper, wornFrame } from './paper';
 import { isFullscreen, setFullscreen } from '../core/fullscreen';
 import { doorSymbol } from '../art/roomicons';
-import { BINDINGS, bindingById, type BindingId } from '../game/bindings';
-import { bindingSeal } from './bindingart';
 import { computeStats } from '../player/stats';
 import { onSteam } from '../core/platform';
 import { INKLINGS, ENEMY_INK } from '../game/inklings';
@@ -51,8 +49,8 @@ export interface Screen {
 }
 
 const INK = '#2a1e18', INK2 = '#5a4636', PAPER = '#e6dabd';
-/** New-run page layout: where the playstyle marks sit (centre, spacing) and the first of the option lines. */
-const SEAL_X = 110, SEAL_DX = 24, OPT_Y = 200;
+/** New-run page layout: the first of the option lines. */
+const OPT_Y = 200;
 
 /** An old, handled page: torn, scorched, foxed and creased (painted once, then cached). */
 function page(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, a = 1, seed = 3): void {
@@ -255,18 +253,17 @@ export class MenuSystem {
   }
 
   // ------------------------------------------------------------ new run
-  newRunScreen(challenge: string | null = null, forceChar?: string, presetSeed?: string, presetMode: RunMode = 'normal', presetBinding: string = 'unbound'): Screen {
+  newRunScreen(challenge: string | null = null, forceChar?: string, presetSeed?: string, presetMode: RunMode = 'normal'): Screen {
     const self = this, g = this.g;
     let ci = Math.max(0, forceChar ? CHARACTERS.findIndex((c) => c.id === forceChar) : 0);
     let row = 0, seed = presetSeed ?? '', editing = false;
     // a controller can't type, so it picks the seed a character at a time (up/down change it, left/right move)
     let padSeed: string[] | null = null, cur = 0;
     const PICK = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let bi = challenge ? 0 : BINDINGS.indexOf(bindingById(presetBinding));
     const modes: RunMode[] = !challenge && g.save.isUnlocked('beat_final') ? ['normal', 'hard', 'endless'] : ['normal'];
     let mi = Math.max(0, modes.indexOf(presetMode));
     const unlocked = (c: CharacterDef) => !c.unlock || g.save.isUnlocked(c.unlock);
-    const rows = [0, ...(!challenge ? [1] : []), ...(modes.length > 1 ? [2] : []), 3, 4];
+    const rows = [0, ...(modes.length > 1 ? [2] : []), 3, 4];
     const character = (direction: number) => {
       if (forceChar) return;
       do ci = (ci + direction + CHARACTERS.length) % CHARACTERS.length; while (CHARACTERS[ci].tainted && !unlocked(CHARACTERS[ci]));
@@ -276,7 +273,7 @@ export class MenuSystem {
       const c = CHARACTERS[ci];
       if (!unlocked(c)) { g.audio.play('deny'); return; }
       g.audio.play('itemGet', { vol: 0.5 });
-      g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, modes[mi], BINDINGS[bi].id); }, 0.5);
+      g.fadeTo(() => { self.stack = []; g.newRun(c.id, seed.length === 8 ? seed : undefined, challenge, modes[mi]); }, 0.5);
     };
     const editSeed = () => {
       if (g.input.usingPad) { padSeed = (seed.length === 8 ? seed : randomSeed()).split(''); cur = 0; self.sfxMove(); return; }
@@ -312,12 +309,10 @@ export class MenuSystem {
           if (k === 'left' || k === 'right') {
             const d = k === 'left' ? -1 : 1;
             if (row === 0) character(d);
-            if (row === 1) { bi = (bi + d + BINDINGS.length) % BINDINGS.length; self.sfxMove(); }
             if (row === 2) { mi = (mi + d + modes.length) % modes.length; self.sfxMove(); }
           }
           if (k === 'confirm') {
-            if (row === 0) { row = challenge ? 4 : 1; self.sfxMove(); }
-            else if (row === 1) { row = 4; self.sfxMove(); }
+            if (row === 0) { row = 4; self.sfxMove(); }
             else if (row === 2) { mi = (mi + 1) % modes.length; self.sfxMove(); }
             else if (row === 3) editSeed();
             else begin();
@@ -327,21 +322,16 @@ export class MenuSystem {
       pointer(x, y, click, moved, wheel) {
         if (editing || padSeed) return;
         if (x >= 44 && x < 176 && y >= 30 && y < 168) { row = 0; if (click || wheel) character(wheel || (x < 110 ? -1 : 1)); return; }
-        if (!challenge && y >= 180 && y <= 200) {
-          const i = Math.round((x - SEAL_X) / SEAL_DX + 1.5);
-          if (i >= 0 && i < BINDINGS.length && Math.abs(x - (SEAL_X + (i - 1.5) * SEAL_DX)) <= 11) { if (moved || click) row = 1; if (click && bi !== i) { bi = i; self.sfxMove(); } }
-          return;
-        }
         if (x >= 240 && x < 360) for (const r of [2, 3, 4]) if (Math.abs(y - (OPT_Y + (r - 2) * 13 - 3)) <= 6 && rows.includes(r)) {
           row = r;
           if (click) { if (r === 2) { mi = (mi + 1) % modes.length; self.sfxMove(); } else if (r === 3) editSeed(); else begin(); }
         }
       },
-      // an old page, like the rest of the game's paper screens: the character on the left with their
-      // ending marks and the four playstyle marks, the story and numbers on the right
+      // an old page, like the rest of the game's paper screens: the character and their ending marks on
+      // the left, the story and numbers on the right
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.55)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-        const c = CHARACTERS[ci], un = unlocked(c), b = BINDINGS[bi];
+        const c = CHARACTERS[ci], un = unlocked(c);
         page(ctx, 30, 16, 420, 232, 1, ci + 2);
         text(ctx, challenge ? 'Challenge: ' + (CHALLENGES.find((x) => x.id === challenge)?.name ?? '') : 'Choose your story', 240, 34, 9, INK2, 'center', FONT_BODY, 600, false);
         // portrait
@@ -353,20 +343,7 @@ export class MenuSystem {
         ctx.restore();
         if (!forceChar) { text(ctx, '◀', 62, 102, 12, INK2, 'center', FONT_BODY, 600, false); text(ctx, '▶', 158, 102, 12, INK2, 'center', FONT_BODY, 600, false); }
         if (un) drawMarks(ctx, g, c.id, 110, 161);
-        // playstyle: just the marks; the chosen one is inked in, and what it does is written under them
-        if (challenge) text(ctx, 'Challenge kit', 110, 192, 7, INK2, 'center', FONT_BODY, 600, false);
-        else {
-          if (row === 1) inkBlot(ctx, SEAL_X + (bi - 1.5) * SEAL_DX, 190, 24, 22, self.time, 'rgba(40,30,60,0.18)');
-          BINDINGS.forEach((v, i) => {
-            ctx.save(); ctx.globalAlpha = i === bi ? 1 : 0.32;
-            bindingSeal(ctx, { ...v, color: v.dark }, SEAL_X + (i - 1.5) * SEAL_DX, 190, 18);
-            ctx.restore();
-          });
-          text(ctx, b.benefit, 110, 210, 6, INK, 'center', FONT_BODY, 600, false);
-          text(ctx, b.cost, 110, 218, 6, INK2, 'center', FONT_BODY, 600, false);
-        }
-        if (row === 0 && !forceChar) text(ctx, '— character —', 110, 232, 6.5, INK2, 'center', FONT_BODY, 600, false);
-        if (row === 1) text(ctx, '— playstyle —', 110, 232, 6.5, INK2, 'center', FONT_BODY, 600, false);
+        if (row === 0 && !forceChar) text(ctx, '— character —', 110, 186, 6.5, INK2, 'center', FONT_BODY, 600, false);
         // info
         const x0 = 190;
         text(ctx, un ? c.name : '???', x0, 62, 20, INK, 'left', FONT_TITLE, 400, false);
@@ -379,7 +356,7 @@ export class MenuSystem {
         lines.forEach((l, i) => text(ctx, l, x0, 88 + i * 9, 7.5, INK2, 'left', FONT_BODY, 600, false));
         if (un) {
           const yb = 94 + lines.length * 9;
-          const st = computeStats(c.base, [b.stats]);
+          const st = computeStats(c.base, []);
           const stats: [string, number, number][] = [['Damage', st.damage, 5], ['Fire rate', st.fireRate, 4.5], ['Speed', st.speed, 1.6], ['Range', st.range / 24, 12]];
           stats.forEach(([n, v, max], i) => {
             text(ctx, n, x0, yb + i * 9, 7, INK2, 'left', FONT_BODY, 600, false);
@@ -703,14 +680,14 @@ export class MenuSystem {
           if (k === 'back') { self.pop(); return; }
           if (k === 'up') sel = Math.max(0, sel - 1);
           if (k === 'down') sel = Math.min(Math.max(0, n - 1), sel + 1);
-          if (k === 'confirm' && list()[sel]) { const r = list()[sel]; self.push(self.newRunScreen(r.challenge ?? null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed, r.mode === 'hard' || r.mode === 'endless' ? r.mode : 'normal', r.binding)); return; }
+          if (k === 'confirm' && list()[sel]) { const r = list()[sel]; self.push(self.newRunScreen(r.challenge ?? null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed, r.mode === 'hard' || r.mode === 'endless' ? r.mode : 'normal')); return; }
         }
         if (sel < scroll) scroll = sel; if (sel >= scroll + 8) scroll = sel - 7;
       },
       pointer(_x, y, click, _m, wheel) {
         if (wheel) { sel = clamp(sel + wheel, 0, Math.max(0, list().length - 1)); return; }
         const i = Math.floor((y - 58) / 22) + scroll;
-        if (i >= 0 && i < list().length && y >= 50) { sel = i; if (click) { const r = list()[sel]; self.push(self.newRunScreen(r.challenge ?? null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed, r.mode === 'hard' || r.mode === 'endless' ? r.mode : 'normal', r.binding)); } }
+        if (i >= 0 && i < list().length && y >= 50) { sel = i; if (click) { const r = list()[sel]; self.push(self.newRunScreen(r.challenge ?? null, CHARACTERS.find((c) => c.id === r.char) ? r.char : undefined, r.seed, r.mode === 'hard' || r.mode === 'endless' ? r.mode : 'normal')); } }
       },
       render(ctx) {
         ctx.fillStyle = 'rgba(4,2,6,0.6)'; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
@@ -726,7 +703,7 @@ export class MenuSystem {
           text(ctx, r.won ? ending ?? 'Won' : 'Lost', 40, y + 7, 8, r.won ? '#3a6a2a' : '#8a2a2a', 'left', FONT_TITLE, 400, false);
           text(ctx, `${ch?.name ?? r.char} · ${r.mode === 'hard' ? 'Hard' : r.mode === 'daily' ? 'Daily' : r.mode === 'endless' ? 'Endless' : r.mode === 'challenge' ? 'Challenge' : 'Normal'} · Floor ${r.floor + 1}`, 78, y + 2, 7.5, INK, 'left', FONT_BODY, 600, false);
           const extras = [r.unlocks?.length ? `${r.unlocks.length} unlock${r.unlocks.length === 1 ? '' : 's'}` : '', r.notes?.length ? `${r.notes.length} new note${r.notes.length === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ');
-          const runNote = `${new Date(r.date).toLocaleDateString()} · ${fmtTime(r.time)} · ${bindingById(r.binding).name} · Seed ${formatSeed(r.seed)}${r.cause && !r.won ? ' · ' + r.cause : ''}${extras ? ' · ' + extras : ''}`;
+          const runNote = `${new Date(r.date).toLocaleDateString()} · ${fmtTime(r.time)} · Seed ${formatSeed(r.seed)}${r.cause && !r.won ? ' · ' + r.cause : ''}${extras ? ' · ' + extras : ''}`;
           text(ctx, runNote, 78, y + 10, 6, INK2, 'left', FONT_BODY, 600, false);
           const route = r.route?.length ? `Route · ${r.route.join(' → ')}` : '';
           if (route) text(ctx, route.length > 66 ? route.slice(0, 65) + '…' : route, 78, y + 18, 5.5, '#806c58', 'left', FONT_BODY, 500, false);

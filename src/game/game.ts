@@ -410,7 +410,7 @@ export class Game {
     this.audio.play('teleport');
     w.whiteFlash = 0.8;
     w.enterRoom(id, null, false);
-    const c = w.room.center(); w.player.x = c.x; w.player.y = c.y + 10;
+    const at = flow.teleportSpot(w); w.player.x = at.x; w.player.y = at.y;
     w.snapCamera();
     flow.openWayOut(w);
   }

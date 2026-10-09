@@ -91,28 +91,38 @@ export async function gameplayOverhaulChecks(page: Page): Promise<[boolean, stri
       g.teleport(r.id);
       check(w.room.id === r.id && w.doors.length > 0 && w.doors.every((x) => !x.def.locked), 'teleporting into a locked ' + type + ' room unlocks its door');
     }
+    // a teleport never lands you on the boss or on the Pincushion's spikes
+    const br = w.floor.rooms.find((x) => x.type === 'boss');
+    w.room.cleared = true; w.lockdown = false; g.teleport(br.id);
+    const boss = w.enemies.find((e) => e.isBoss && !e.dead);
+    check(!!boss && Math.hypot(boss.x - w.player.x, boss.y - w.player.y) > 60, 'teleporting into the boss room keeps you clear of the boss (' + (boss ? Math.round(Math.hypot(boss.x - w.player.x, boss.y - w.player.y)) : 'no boss') + ' px)');
+    let pin = w.floor.rooms.find((x) => x.type === 'sacrifice');
+    for (let k = 0; !pin && k < 40; k++) { g.newRun('marcus', 'PINCUSH' + k); w = d.world; pin = w.floor.rooms.find((x) => x.type === 'sacrifice'); }
+    check(!!pin, 'found a floor with a Pincushion room to teleport into');
+    if (pin) {
+      w.room.cleared = true; w.lockdown = false; g.teleport(pin.id);
+      const [pc, pr] = w.room.cellAt(w.player.x, w.player.y);
+      check(w.room.id === pin.id && w.room.at(pc, pr) === 0, 'teleporting into the Pincushion room lands on open floor, not the spikes');
+    }
     const sr = w.floor.rooms.find((x) => x.type === 'secret');
     if (sr) { w.room.cleared = true; g.teleport(sr.id); check(w.doors.some((x) => !x.def.hidden), 'teleporting into a crawlspace leaves a way out'); }
     g.menus.stack = []; g.menus.push(g.menus.newRunScreen());
     const screen = g.menus.stack.at(-1);
     screen.update(['down'], 0); screen.update(['right'], 0);
-    // Drawing every binding/reader makes layout failures visible to the screenshot pass.
-    for (const b of BINDINGS) { const s = g.menus.newRunScreen(null, 'marcus', undefined, 'normal', b.id); s.render(g.r.uiBegin()); }
-    check(true, 'all four binding cards render through the real menu');
+    // Drawing the page for a few characters makes layout failures visible to the screenshot pass.
+    for (const id of ['marcus', 'nell', 'bram']) { const s = g.menus.newRunScreen(null, id); s.render(g.r.uiBegin()); }
+    check(true, 'the new-run page renders through the real menu');
     return checks;
   })()`);
   // Real input, in addition to the lifecycle checks above.
   await page.evaluate(`(() => { const g = window.__bomDebug.game; g.quitToMenu(); g.menus.stack = []; g.menus.push(g.menus.newRunScreen()); })()`);
-  await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowRight');
   await page.keyboard.press('Enter'); await page.keyboard.press('Enter');
   await page.waitForFunction(`window.__bomDebug.game.scene === 'run'`);
-  checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'ember'`), 'keyboard menu navigation starts the selected binding']);
+  checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'unbound'`), 'keyboard: Enter, Enter starts a run with the character\'s own kit']);
   await page.evaluate(`(() => { const g = window.__bomDebug.game; g.quitToMenu(); g.menus.stack = []; g.menus.push(g.menus.newRunScreen()); })()`);
   const point = await page.evaluate(`({ scale: window.__bomDebug.game.r.scale / window.devicePixelRatio, x: window.__bomDebug.game.r.offX / window.devicePixelRatio, y: window.__bomDebug.game.r.offY / window.devicePixelRatio })`) as { scale: number; x: number; y: number };
-  // the Clockwork mark (last of the four under the portrait), then Begin
-  await page.mouse.click(point.x + 146 * point.scale, point.y + 190 * point.scale);
   await page.mouse.click(point.x + 300 * point.scale, point.y + 223 * point.scale);
   await page.waitForFunction(`window.__bomDebug.game.scene === 'run'`);
-  checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'clockwork'`), 'mouse selection starts Clockwork through Begin']);
+  checks.push([await page.evaluate(`window.__bomDebug.world.run.binding.id === 'unbound'`), 'clicking Begin starts a run (no playstyle to pick)']);
   return checks;
 }

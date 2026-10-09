@@ -67,13 +67,13 @@ const PADS = {
   console.log('picking a seed without a keyboard');
   await ev(page, `(() => { const m = ${D}.game.menus; m.stack = []; m.push(m.newRunScreen(null, undefined, 'AAAABBBB')); })()`);
   await page.waitForTimeout(150);
-  await tap(DOWN, 2);                 // reader -> binding -> seed
+  await tap(DOWN);                    // character -> seed
   await tap(A);                       // open the seed picker
   await tap(UP);                      // A -> B
   await tap(RIGHT); await tap(DOWN);  // second character: A -> 9 (wraps backwards)
   await page.screenshot({ path: path.join(SHOTS, 'pad-seed.png') });
   await tap(A);                       // done
-  await tap(DOWN); await tap(A);      // OPEN THE BOOK
+  await tap(DOWN); await tap(A);      // Begin
   await page.waitForFunction(`${D}.game.scene === 'run' && !!${D}.world`, null, { timeout: 8000 });
   ok((await ev<string>(page, `${D}.world.run.seed`)) === 'B9AABBBB', 'the picked seed starts the run');
 
@@ -112,7 +112,7 @@ const PADS = {
   console.log('typing a seed on the keyboard');
   await ev(page, `(() => { const m = ${D}.game.menus; m.stack = []; m.push(m.newRunScreen(null)); })()`);
   await page.waitForTimeout(150);
-  await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await page.keyboard.type('zzzzyyyy');
   await page.keyboard.press('Enter'); await page.waitForTimeout(150);

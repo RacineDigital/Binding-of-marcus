@@ -28,7 +28,6 @@ import { isWantedHalf, LETTER_HALVES } from '../game/letter';
 import { sweetColor } from '../items/sweetcolor';
 import { STING_HIT, StingKind } from '../audio/bossting';
 import { FLAWLESS_TARGET } from '../game/bindings';
-import { bindingSeal } from './bindingart';
 import { itemRole, ROLE_COLOR, ROLE_LABEL } from '../items/choice';
 import { inkState, inkCap, brimming, METER_MAX, INKLINGS } from '../game/inklings';
 import { INK } from '../game/inkflag';

@@ -22,7 +22,7 @@ import { rollBargain, onLeaveFloor, ticketFor, letterAtDesk } from './bargain';
 import { onLetterFloor, room4Refusal } from './letter';
 import { itemIconCanvas } from '../art/items';
 import { dist2, TAU } from '../core/math';
-import { solidCell, lineClear } from '../rooms/collide';
+import { solidCell, lineClear, circleBlocked } from '../rooms/collide';
 import { TRANSFORM_EFFECTS } from '../player/player';
 import { SWEET_EFFECTS } from '../items/data/consumables';
 import { sweetColor } from '../items/sweetcolor';
@@ -424,6 +424,29 @@ export function unlockDoor(w: World, def: DoorDef): void {
   def.locked = false;
   const other = w.floor.rooms[def.to];
   for (const od of other.doors) if (od.to === w.room.id && od.side === opposite(def.side)) od.locked = false;
+}
+
+/**
+ * Where a teleport puts you: never the middle of the room by default (that is where a boss stands, and
+ * where the Pincushion keeps its spikes). The open floor tile nearest the lower middle of the room
+ * that is clear of every obstacle and hazard and well away from every enemy; if nowhere is that far
+ * from them, the open tile furthest from the nearest one.
+ */
+export function teleportSpot(w: World): { x: number; y: number } {
+  const room = w.room, c0 = room.center(), want = { x: c0.x, y: c0.y + 40 };
+  const foes = w.enemies.filter((e) => !e.dead && !e.friendly);
+  let best: { x: number; y: number } | null = null, bestScore = Infinity, far: { x: number; y: number } | null = null, farD = -1;
+  for (let r = 0; r < room.rows; r++) for (let c = 0; c < room.cols; c++) {
+    if (room.at(c, r) !== Ob.None) continue;
+    const p = room.cellCenter(c, r);
+    if (circleBlocked(room, p.x, p.y, w.player.r + 2, 'walk')) continue;
+    const near = foes.reduce((m, e) => Math.min(m, Math.hypot(e.x - p.x, e.y - p.y) - e.r), Infinity);
+    if (near > farD) { farD = near; far = p; }
+    if (near < 80) continue;
+    const score = Math.hypot(p.x - want.x, p.y - want.y);
+    if (score < bestScore) { bestScore = score; best = p; }
+  }
+  return best ?? far ?? { x: c0.x, y: c0.y + 10 };
 }
 
 /**
