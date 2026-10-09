@@ -20,26 +20,32 @@ export interface Soundscape {
   events: [AmbientEvent, number][];
   /** A clock: ticks per second (tick-tock alternates). */
   clock?: number;
+  /**
+   * Trim on the whole soundscape (bed, hum, one-offs and their echo) so that, at the default volumes,
+   * it is about a fifth of what you hear while exploring and the music the rest (measured per floor
+   * with tests/tools/mixprobe.ts).
+   */
+  mix?: number;
 }
 
 export const SOUNDSCAPES: Record<string, Soundscape> = {
-  cellar: { noise: 'brown', lp: 480, level: 0.32, swell: 0.3, swellHz: 0.07, events: [['drip', 7], ['creak', 4], ['flutter', 2]] },
-  boiler: { noise: 'brown', lp: 300, level: 0.36, swell: 0.2, swellHz: 0.11, hum: [[55, 0.05], [110, 0.018]], events: [['crackle', 10], ['clang', 4], ['hiss', 3]] },
-  underworks: { noise: 'pink', lp: 900, level: 0.1, swell: 0.25, swellHz: 0.05, events: [['drip', 18], ['clang', 3], ['bubble', 4]] },
-  ward: { noise: 'pink', lp: 2400, level: 0.07, swell: 0.1, swellHz: 0.03, hum: [[60, 0.014], [120, 0.007]], events: [['beep', 3], ['creak', 2]] },
-  depths: { noise: 'brown', lp: 220, level: 0.48, swell: 0.5, swellHz: 0.05, events: [['groan', 4], ['crackle', 3], ['gust', 2]] },
-  chapel: { noise: 'pink', lp: 700, level: 0.08, swell: 0.45, swellHz: 0.04, events: [['chime', 4], ['gust', 3], ['flutter', 1]] },
-  hollow: { noise: 'brown', lp: 340, level: 0.34, swell: 0.35, swellHz: 0.06, events: [['bubble', 10], ['groan', 3], ['rustle', 2]] },
-  binding: { noise: 'pink', lp: 1200, level: 0.08, swell: 0.3, swellHz: 0.05, events: [['rustle', 10], ['flutter', 3], ['groan', 1]] },
-  attic: { noise: 'pink', lp: 1000, level: 0.07, swell: 0.6, swellHz: 0.06, events: [['creak', 8], ['gust', 3], ['flutter', 3]] },
-  greenhouse: { noise: 'pink', lp: 1800, level: 0.1, swell: 0.3, swellHz: 0.08, events: [['drip', 9], ['rustle', 5], ['hiss', 1]] },
-  printshop: { noise: 'brown', lp: 420, level: 0.24, swell: 0.15, swellHz: 0.1, hum: [[50, 0.03]], events: [['clang', 5], ['rustle', 6], ['hiss', 2]] },
-  cistern: { noise: 'pink', lp: 600, level: 0.09, swell: 0.4, swellHz: 0.04, events: [['drip', 14], ['chime', 2], ['bubble', 3]] },
-  clocktower: { noise: 'pink', lp: 900, level: 0.1, swell: 0.4, swellHz: 0.05, events: [['gust', 4], ['creak', 3], ['chime', 1]], clock: 1 },
-  stacks: { noise: 'pink', lp: 1400, level: 0.09, swell: 0.2, swellHz: 0.04, events: [['rustle', 12], ['creak', 2]] },
-  margins: { noise: 'brown', lp: 260, level: 0.4, swell: 0.6, swellHz: 0.03, events: [['bubble', 6], ['rustle', 6], ['groan', 2]] },
-  hospital: { noise: 'pink', lp: 2600, level: 0.06, swell: 0.1, swellHz: 0.03, hum: [[60, 0.016], [180, 0.004]], events: [['beep', 7], ['hiss', 1]] },
-  home: { noise: 'pink', lp: 800, level: 0.06, swell: 0.2, swellHz: 0.05, events: [['creak', 2]], clock: 1 },
+  cellar: { noise: 'brown', lp: 480, level: 0.32, swell: 0.3, swellHz: 0.07, events: [['drip', 7], ['creak', 4], ['flutter', 2]], mix: 0.66 },
+  boiler: { noise: 'brown', lp: 300, level: 0.36, swell: 0.2, swellHz: 0.11, hum: [[55, 0.05], [110, 0.018]], events: [['crackle', 10], ['clang', 4], ['hiss', 3]], mix: 0.59 },
+  underworks: { noise: 'pink', lp: 900, level: 0.1, swell: 0.25, swellHz: 0.05, events: [['drip', 18], ['clang', 3], ['bubble', 4]], mix: 0.46 },
+  ward: { noise: 'pink', lp: 2400, level: 0.07, swell: 0.1, swellHz: 0.03, hum: [[60, 0.014], [120, 0.007]], events: [['beep', 3], ['creak', 2]], mix: 0.77 },
+  depths: { noise: 'brown', lp: 220, level: 0.48, swell: 0.5, swellHz: 0.05, events: [['groan', 4], ['crackle', 3], ['gust', 2]], mix: 0.34 },
+  chapel: { noise: 'pink', lp: 700, level: 0.08, swell: 0.45, swellHz: 0.04, events: [['chime', 4], ['gust', 3], ['flutter', 1]], mix: 0.53 },
+  hollow: { noise: 'brown', lp: 340, level: 0.34, swell: 0.35, swellHz: 0.06, events: [['bubble', 10], ['groan', 3], ['rustle', 2]], mix: 0.52 },
+  binding: { noise: 'pink', lp: 1200, level: 0.08, swell: 0.3, swellHz: 0.05, events: [['rustle', 10], ['flutter', 3], ['groan', 1]], mix: 0.57 },
+  attic: { noise: 'pink', lp: 1000, level: 0.07, swell: 0.6, swellHz: 0.06, events: [['creak', 8], ['gust', 3], ['flutter', 3]], mix: 0.63 },
+  greenhouse: { noise: 'pink', lp: 1800, level: 0.1, swell: 0.3, swellHz: 0.08, events: [['drip', 9], ['rustle', 5], ['hiss', 1]], mix: 0.5 },
+  printshop: { noise: 'brown', lp: 420, level: 0.24, swell: 0.15, swellHz: 0.1, hum: [[50, 0.03]], events: [['clang', 5], ['rustle', 6], ['hiss', 2]], mix: 0.87 },
+  cistern: { noise: 'pink', lp: 600, level: 0.09, swell: 0.4, swellHz: 0.04, events: [['drip', 14], ['chime', 2], ['bubble', 3]], mix: 0.46 },
+  clocktower: { noise: 'pink', lp: 900, level: 0.1, swell: 0.4, swellHz: 0.05, events: [['gust', 4], ['creak', 3], ['chime', 1]], clock: 1, mix: 0.39 },
+  stacks: { noise: 'pink', lp: 1400, level: 0.09, swell: 0.2, swellHz: 0.04, events: [['rustle', 12], ['creak', 2]], mix: 0.56 },
+  margins: { noise: 'brown', lp: 260, level: 0.4, swell: 0.6, swellHz: 0.03, events: [['bubble', 6], ['rustle', 6], ['groan', 2]], mix: 0.41 },
+  hospital: { noise: 'pink', lp: 2600, level: 0.06, swell: 0.1, swellHz: 0.03, hum: [[60, 0.016], [180, 0.004]], events: [['beep', 7], ['hiss', 1]], mix: 0.8 },
+  home: { noise: 'pink', lp: 800, level: 0.06, swell: 0.2, swellHz: 0.05, events: [['creak', 2]], clock: 1, mix: 0.62 },
 };
 const ALIAS: Record<string, string> = {
   lastpage: 'binding', foreword: 'binding', dedication: 'binding',
@@ -83,6 +89,7 @@ export class Ambience {
   current: string | null = null;
   private clockT = 0; private tock = false;
   private fight = 0;
+  private trim = 1;
   /** One-offs fired so far (for tests). */
   fired = 0;
 
@@ -106,6 +113,8 @@ export class Ambience {
     }
     this.scape = id ? SOUNDSCAPES[id] ?? null : null;
     const s = this.scape; if (!s) return;
+    this.trim = s.mix ?? 1;
+    this.bus.gain.setTargetAtTime(this.trim * (this.fight ? 0.45 : 1), now, 0.6);
     const out = c.createGain(); out.gain.value = 0; out.connect(this.bus);
     out.gain.setTargetAtTime(1, now, 0.6);
     const nodes: AudioScheduledSourceNode[] = [];
@@ -130,7 +139,7 @@ export class Ambience {
   setIntensity(i: number): void {
     const v = i > 0.5 ? 1 : 0; if (v === this.fight) return;
     this.fight = v;
-    this.bus.gain.setTargetAtTime(v ? 0.45 : 1, this.c.currentTime, 0.8);
+    this.bus.gain.setTargetAtTime(this.trim * (v ? 0.45 : 1), this.c.currentTime, 0.8);
   }
 
   update(dt: number): void {
@@ -147,7 +156,7 @@ export class Ambience {
     const p = c.createStereoPanner(); p.pan.value = pan;
     const v = c.createGain(); v.gain.value = vol;
     g.connect(v); v.connect(p); p.connect(this.bus);
-    const send = c.createGain(); send.gain.value = wet; v.connect(send); send.connect(this.reverbIn);
+    const send = c.createGain(); send.gain.value = wet * this.trim; v.connect(send); send.connect(this.reverbIn);
     return g;
   }
   private env(g: GainNode, t: number, a: number, d: number, peak = 1): void {
