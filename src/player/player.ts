@@ -383,12 +383,12 @@ export class Player {
   private fireLaser(w: World, ang: number, offset: number, dmg: number, extraW: number, o: { color?: string; status?: string; orbit?: boolean } = {}): void {
     const prof = this.prof, oc = overchargeMul(prof);
     const b = new Beam(prof);
-    b.ang = ang; b.offset = offset; b.laser = true; b.dur = 0.12;
+    b.ang = ang; b.offset = offset; b.laser = true; b.dur = 0.18;
     // shot size, overcharge and Growing Pains all widen it
-    b.width = (2 + extraW) * laserScale(this.stats.size) * oc.width * (1 + Math.min(1.5, prof.grow));
+    b.width = (6 + extraW) * laserScale(this.stats.size) * oc.width * (1 + Math.min(1.5, prof.grow));
     b.dmg = dmg * oc.dmg; b.color = o.color ?? laserColor(prof, '#ff5a6a', w); b.status = o.status ?? null;
     // wiggly items: the laser lingers a moment and lashes side to side
-    if (prof.wiggle) { b.lash = 0.22 * Math.min(2, prof.wiggle); b.dur = 0.24; }
+    if (prof.wiggle) { b.lash = 0.22 * Math.min(2, prof.wiggle); b.dur = 0.28; }
     if (o.orbit) { const t = w.time * 4; b.followPlayer = false; b.x = this.x + Math.cos(t) * 18; b.y = this.y - 11 + Math.sin(t) * 10; }
     w.beams.push(b);
   }

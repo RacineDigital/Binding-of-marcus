@@ -410,6 +410,16 @@ fewer items overall. Measured with `tests/tools/itemflow.ts` (headless, 200 seed
 - Not yet re-measured: how hard the later floors feel with weaker builds. Boss regression tests use
   fixed builds, so they still pass; the run bot is too slow to re-run here.
 
+### After 3.17.5: lasers and the ambience mix
+
+- **Lasers** (`renderLaser` in `src/projectiles/weapons.ts`): 3x as wide (6 px base; familiars 5), last
+  0.18 s and animate: the tip shoots out (ease-out over ~2 frames), holds, then the beam thins while
+  its back end races to the tip. Six layers from a soft outer glow to a white-hot centre, flares at
+  the hands and the tip, sparks along it, a spark shower where it lands. Reach is now exactly the
+  shot range (was 1.3x, at least 120 px). Damage still lands on the first frame.
+- **Ambience** (`mix` per soundscape in `src/audio/ambience.ts`): measured with
+  `tests/tools/mixprobe.ts`, each floor's bed was 22-43% of the mix while exploring; trimmed to ~20%.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at

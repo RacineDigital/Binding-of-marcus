@@ -204,7 +204,8 @@ export function updateBeams(w: World, dt: number): void {
     const a = b.ang + b.offset + b.sweep + (prof.wiggle && !b.laser ? Math.sin(b.t * 14 + b.phase) * 0.12 * Math.min(2, prof.wiggle) : 0);
     const lead = b.child ? 0 : 1;
     const ox = b.x + Math.cos(a) * (prof.short ? 2 : 6) * lead, oy = b.y + Math.sin(a) * (prof.short ? 1 : 4) * lead;
-    const maxLen = b.maxLen || (b.laser ? Math.max(120, pl.stats.range * 1.3) : prof.short ? Math.max(64, pl.stats.range * 0.45) : 900);
+    // a laser reaches exactly as far as your shots fly
+    const maxLen = b.maxLen || (b.laser ? Math.max(48, pl.stats.range) : prof.short ? Math.max(64, pl.stats.range * 0.45) : 900);
     // homing: lock onto the enemy nearest the aim (lasers once, when they fire; beams keep their target)
     if (prof.homing > 0 && !b.child && (!b.laser || b.t <= dt * 1.5)) { b.target = homingTarget(w, ox, oy, a, prof.homing, maxLen, b.target && !b.target.dead ? b.target : null); }
     b.pts = traceBeam(w, ox, oy, a, prof, maxLen, true, b.target);
@@ -224,6 +225,8 @@ export function updateBeams(w: World, dt: number): void {
       if (first) {
         const ex = b.pts[b.pts.length - 2], ey = b.pts[b.pts.length - 1];
         if (prof.creep) w.addCreep(ex, ey, 8, 'player', b.dmg * 0.35, 1.8);
+        // a shower of sparks where it lands
+        w.fx.spray(ex, ey, 8, a + Math.PI, 1.4, b.child ? 3 : 6, lighter(b.color, 0.35), 110, 0.28);
         if (!b.child) laserLanding(w, b, ex, ey, a, maxLen);
       }
     } else {
@@ -367,6 +370,7 @@ export function renderBeams(w: World, ctx: CanvasRenderingContext2D, camX: numbe
     const k = b.laser ? 1 - b.t / b.dur : Math.min(1, b.t / 0.06) * Math.min(1, (b.dur - b.t) / 0.1);
     const wid = warm ? 1 : b.width * (0.75 + 0.25 * Math.sin(b.t * 60)) * k;
     if (!b.enemyBeam && b.prof?.short) { renderInkBeam(w, ctx, b, camX, camY); continue; }
+    if (!b.enemyBeam && b.laser) { renderLaser(w, ctx, b, camX, camY); continue; }
     const layers: [number, string, number][] = b.enemyBeam
       ? [[wid + 4, 'rgba(160,20,40,0.35)', 1], [wid, warm ? 'rgba(255,80,80,0.6)' : '#d8324a', 1], [Math.max(1, wid * 0.4), '#ffd0d0', 1]]
       : [[wid + 4, hexA(b.color, 0.3), 1], [wid, b.color, 1], [Math.max(1, wid * 0.35), '#e8e4ff', 1]];
@@ -383,6 +387,88 @@ export function renderBeams(w: World, ctx: CanvasRenderingContext2D, camX: numbe
     if (!warm) { w.r.addLight(pts[0] - camX, pts[1] - camY, 50, 0.6); w.r.addLight(pts[pts.length - 2] - camX, pts[pts.length - 1] - camY, 40, 0.6); }
   }
 }
+/**
+ * A player laser: it shoots out from the hands in a few frames, holds, then thins and its back end
+ * races after the tip as it goes. Layered from a soft outer glow to a white-hot centre, with a flare
+ * at each end and sparks running along it.
+ */
+function renderLaser(w: World, ctx: CanvasRenderingContext2D, b: Beam, camX: number, camY: number): void {
+  const t = b.t, dur = b.dur;
+  const out = 1 - (1 - Math.min(1, t / 0.035)) ** 3;              // the tip shoots out (ease-out)
+  const fade = Math.max(0, Math.min(1, (t - dur * 0.4) / (dur * 0.6)));
+  const back = fade * fade;                                        // then the back end catches up
+  const W = b.width * (1 - 0.8 * fade * fade) * (1 + 0.07 * Math.sin(t * 95));
+  const seg = slicePolyline(b.pts, back, out);
+  if (seg.length < 4 || W < 0.3) return;
+  const col = b.color, hot = lighter(col, 0.55);
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const stroke = (lw: number, c: string) => {
+    ctx.strokeStyle = c; ctx.lineWidth = Math.max(1, lw);
+    ctx.beginPath(); ctx.moveTo(seg[0] - camX, seg[1] - camY);
+    for (let i = 2; i < seg.length; i += 2) ctx.lineTo(seg[i] - camX, seg[i + 1] - camY);
+    ctx.stroke();
+  };
+  stroke(W + 8, hexA(col, 0.1));
+  stroke(W + 4, hexA(col, 0.28));
+  stroke(W + 1, darker(col, 0.25));
+  stroke(W, col);
+  stroke(W * 0.55, hot);
+  stroke(Math.max(1, W * 0.2), '#ffffff');
+  // flares: at the hands while it is still attached, and at the tip
+  const x0 = seg[0] - camX, y0 = seg[1] - camY, x1 = seg[seg.length - 2] - camX, y1 = seg[seg.length - 1] - camY;
+  const flare = (x: number, y: number, r: number) => {
+    ctx.fillStyle = hexA(col, 0.35); ctx.beginPath(); ctx.arc(x, y, r * 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = hot; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, r * 0.5, 0, Math.PI * 2); ctx.fill();
+    const s = r * 2.2 * (1 - fade);
+    ctx.fillRect(Math.round(x - s), Math.round(y), Math.round(s * 2), 1); ctx.fillRect(Math.round(x), Math.round(y - s), 1, Math.round(s * 2));
+  };
+  if (back < 0.02) flare(x0, y0, W * 0.75);
+  flare(x1, y1, W * (0.6 + 0.3 * (1 - out)));
+  // sparks running along the beam and flicking off its sides
+  const len = polylineLength(seg);
+  for (let i = 0; i < 10; i++) {
+    const u = (i * 0.137 + t * 6) % 1, p = pointAlong(seg, u * len), side = (i % 2 ? 1 : -1) * (W * 0.5 + ((i * 7) % 5) * (0.5 + fade * 2));
+    ctx.globalAlpha = (1 - fade) * 0.9; ctx.fillStyle = i % 3 ? hot : '#ffffff';
+    ctx.fillRect(Math.round(p.x - camX + p.nx * side), Math.round(p.y - camY + p.ny * side), 1, 1);
+  }
+  ctx.globalAlpha = 1; ctx.restore();
+  for (let i = 0; i < seg.length; i += 4) w.r.addGlow(seg[i] - camX, seg[i + 1] - camY, 16 + b.width * 2, col, 0.32 * (1 - fade));
+  w.r.addLight(x1, y1, 44 + b.width * 3, 0.7 * (1 - fade));
+  if (back < 0.02) w.r.addLight(x0, y0, 40, 0.6);
+}
+function polylineLength(p: number[]): number { let L = 0; for (let i = 2; i < p.length; i += 2) L += Math.hypot(p[i] - p[i - 2], p[i + 1] - p[i - 1]); return L; }
+/** The part of a polyline between fractions a and b of its length. */
+function slicePolyline(p: number[], a: number, b: number): number[] {
+  const L = polylineLength(p), from = a * L, to = b * L, out: number[] = [];
+  let d = 0;
+  for (let i = 2; i < p.length; i += 2) {
+    const x0 = p[i - 2], y0 = p[i - 1], x1 = p[i], y1 = p[i + 1], l = Math.hypot(x1 - x0, y1 - y0);
+    if (l > 0 && d + l >= from && d <= to) {
+      const s = Math.max(0, (from - d) / l), e = Math.min(1, (to - d) / l);
+      if (!out.length) out.push(x0 + (x1 - x0) * s, y0 + (y1 - y0) * s);
+      out.push(x0 + (x1 - x0) * e, y0 + (y1 - y0) * e);
+    }
+    d += l;
+  }
+  return out;
+}
+/** A point d along a polyline, with the unit normal of the segment it is on. */
+function pointAlong(p: number[], d: number): { x: number; y: number; nx: number; ny: number } {
+  for (let i = 2; i < p.length; i += 2) {
+    const x0 = p[i - 2], y0 = p[i - 1], l = Math.hypot(p[i] - x0, p[i + 1] - y0);
+    if (d <= l || i === p.length - 2) { const k = l ? Math.min(1, d / l) : 0, ux = l ? (p[i] - x0) / l : 1, uy = l ? (p[i + 1] - y0) / l : 0; return { x: x0 + (p[i] - x0) * k, y: y0 + (p[i + 1] - y0) * k, nx: -uy, ny: ux }; }
+    d -= l;
+  }
+  return { x: p[0], y: p[1], nx: 0, ny: 1 };
+}
+function mixHex(h: string, to: number, k: number): string {
+  const s = h.replace('#', ''); if (s.length !== 6) return h;
+  const c = [0, 2, 4].map((i) => Math.round(parseInt(s.slice(i, i + 2), 16) * (1 - k) + to * k));
+  return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+const lighter = (h: string, k: number) => mixHex(h, 255, k);
+const darker = (h: string, k: number) => mixHex(h, 0, k);
 /**
  * The Blot's beam: not light but a gush of ink. A ragged black column with a violet heart, edges that
  * bulge and churn as it pours, droplets flung off the sides and a splash where it lands.

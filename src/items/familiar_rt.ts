@@ -172,7 +172,7 @@ export function updateFamiliars(w: World, dt: number): void {
           const oc = overchargeMul(pl.prof); const b = new Beam(prof); b.dur = 0.35; b.width = 5 * beamScale(pl.stats.size) * oc.width; b.dmg = pl.stats.damage * sh.dmg * 0.55 * oc.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = laserColor(pl.prof, '#6a58ff', w);
           w.beams.push(b);
         } else if (sh.laser || copy === 'laser') {
-          const oc = overchargeMul(pl.prof); const b = new Beam(prof); b.laser = true; b.dur = 0.1; b.width = 2 * laserScale(pl.stats.size) * oc.width; b.dmg = (copy ? pl.stats.damage * sh.dmg : sh.dmg) * oc.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = copy ? laserColor(pl.prof, '#ff5a6a', w) : laserColor(pl.prof, '#6ad0ff', w);
+          const oc = overchargeMul(pl.prof); const b = new Beam(prof); b.laser = true; b.dur = 0.16; b.width = 5 * laserScale(pl.stats.size) * oc.width; b.dmg = (copy ? pl.stats.damage * sh.dmg : sh.dmg) * oc.dmg; b.ang = ang; b.followPlayer = false; b.x = f.x; b.y = f.y - 6; b.color = copy ? laserColor(pl.prof, '#ff5a6a', w) : laserColor(pl.prof, '#6ad0ff', w);
           w.beams.push(b);
         } else {
           const st = { ...pl.stats, damage: sh.inherit ? pl.stats.damage * sh.dmg : sh.dmg, fireRate: sh.rate, range: sh.range ?? 200 };
