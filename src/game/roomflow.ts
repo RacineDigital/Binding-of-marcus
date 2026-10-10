@@ -316,6 +316,17 @@ const RETIRED: Record<string, string> = { rustcrab: 'stoker', boneknight: 'grave
 export function spawnEnemy(w: World, id: string, x: number, y: number, quick: boolean): Enemy | null {
   const def = getEnemy(RETIRED[id] ?? id);
   if (!def) { console.warn('unknown enemy', id); return null; }
+  // never inside a rock, a pit or a wall: a creature summoned or split off mid-fight steps out to the
+  // nearest open spot (room spawns are already on open tiles)
+  const mode = def.flying ? 'fly' : 'walk';
+  if (!def.boss && circleBlocked(w.room, x, y, def.r, mode)) {
+    let best: { x: number; y: number } | null = null, bd = Infinity;
+    for (let r = 0; r < w.room.rows; r++) for (let c = 0; c < w.room.cols; c++) {
+      const p = w.room.cellCenter(c, r), d = Math.hypot(p.x - x, p.y - y);
+      if (d < bd && d < TILE * 4 && !circleBlocked(w.room, p.x, p.y, def.r, mode)) { bd = d; best = p; }
+    }
+    if (best) { x = best.x; y = best.y; }
+  }
   const e = new Enemy(def, x, y, enemyHpMul(w.run.floorIndex, w.theme.tier ?? 0, !!def.boss) * (w.run.challenge === 'hard' || w.run.mode === 'hard' ? 1.3 : 1));
   e.spawnT = quick ? 0.25 : 0.55;
   def.init?.(e, w);

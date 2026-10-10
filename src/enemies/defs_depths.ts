@@ -1,4 +1,5 @@
 // Chapter V enemies: bones, diggers and maws.
+import { sprites2 } from '../art/creatures2';
 import type { EnemyDef, Enemy } from './enemy';
 import { frames, eye, teeth, ramp, hex, legs, glowEye, sprinkle, gridFrames } from '../art/creature';
 import * as H from '../art/hand/depths';
@@ -9,9 +10,10 @@ import { telegraph } from '../bosses/boss';
 const bone = () => ramp('#e0d6c0');
 
 const skullmote: EnemyDef = {
-  id: 'skullmote', name: 'Skull Mote', desc: '', hp: 6, r: 4, speed: 0, flying: true, role: 'swarm', cost: 0.5, hitY: 10, gore: '#e0d6c0', noSeparate: true,
-  sprites: () => ({ idle: gridFrames(H.MOTE, H.BONE_PAL) }),
+  id: 'skullmote', name: 'Skull Mote', desc: 'A loose skull circling the Ossuary Lantern, chattering. Loose, it hunts you.', hp: 6, r: 4, speed: 0, flying: true, role: 'swarm', cost: 0.5, hitY: 10, gore: '#e0d6c0', noSeparate: true,
+  sprites: () => sprites2('skullmote'),
   update(e, w, dt) {
+    e.animate(dt, 8);   // the jaw chatters
     const core: Enemy | null = e.parent;
     if (core && !core.dead) {
       e.data.a = (e.data.a ?? 0) + dt * 2.6;

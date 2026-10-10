@@ -2,8 +2,7 @@
 //   Sluice Keeper (environment: a current through one band of the room), Bilge Priest (support:
 //   raises the fallen), Fumarole (zoning: slow drifting gas clouds).
 import type { EnemyDef, Enemy } from './enemy';
-import { gridFrames } from '../art/creature';
-import * as H from '../art/hand/under3';
+import { sprites2 } from '../art/creatures2';
 import { keepDistance, chase, distToPlayer } from './ai';
 import { angleTo, dist2 } from '../core/math';
 import { moveBody } from '../rooms/collide';
@@ -22,7 +21,7 @@ export interface Flow { horiz: boolean; at: number; half: number; dir: 1 | -1; w
 const sluicekeeper: EnemyDef = {
   id: 'sluicekeeper', name: 'Sluice Keeper', desc: 'Turns its wheel and a band of floor starts to trickle; then a current runs along it and carries you. Step out of the band in time.',
   hp: 18, r: 8, speed: 26, role: 'special', cost: 1.4, hitY: 10, gore: '#4a6a5a', goreDecal: '#1e2a24', cast: { max: 1 },
-  sprites: () => ({ walk: gridFrames(H.KEEPER.slice(0, 2), H.KEEPER_PAL), turn: gridFrames([H.KEEPER[2]], H.KEEPER_PAL) }),
+  sprites: () => sprites2('sluicekeeper'),
   init(e) { e.anim = 'walk'; e.cd = 2 + Math.random(); },
   update(e, w, dt) {
     const f = e.data.flow as Flow | null | undefined;
@@ -53,7 +52,7 @@ const sluicekeeper: EnemyDef = {
         w.audio.play('creak', { x: e.x, vol: 0.5 });
       }
     } else if (e.state === 'turn') {
-      e.sx = 1 + Math.sin(e.st * 18) * 0.05;
+      e.sx = 1 + Math.sin(e.st * 18) * 0.05; e.animate(dt, 9);
       if (e.st > 0.9) { e.setState('idle'); e.cd = 5.5 + Math.random() * 1.5; w.audio.play('splash', { x: e.x, vol: 0.5 }); }
     }
   },
@@ -68,12 +67,12 @@ const sluicekeeper: EnemyDef = {
 const priest: EnemyDef = {
   id: 'bilgepriest', name: 'Bilge Priest', desc: 'Chants over the fallen and raises them again. Stand on the spot it is chanting over to break the rite, or kill it first.',
   hp: 16, r: 6, speed: 34, role: 'special', cost: 1.6, hitY: 14, gore: '#3a5a8a', goreDecal: '#1a2a40', cast: { max: 1, company: 2 },
-  sprites: () => ({ idle: gridFrames([H.PRIEST[0]], H.PRIEST_PAL), cast: gridFrames([H.PRIEST[1]], H.PRIEST_PAL) }),
+  sprites: () => sprites2('bilgepriest'),
   init(e) { e.anim = 'idle'; e.data.raised = 0; },
   update(e, w, dt) {
     const deaths = w.recentDeaths.filter((d) => !d.taken && d.room === w.room.id && w.time - d.t < 6 && dist2(d.x, d.y, e.x, e.y) < 220 * 220);
     if (e.state === 'idle') {
-      e.setAnim('idle'); e.flip = w.player.x < e.x;
+      e.setAnim('idle'); e.animate(dt, 4); e.flip = w.player.x < e.x;
       const target = e.data.raised < 2 ? deaths[0] : undefined;
       if (target && distToPlayer(e, w) > 40) {
         if (dist2(target.x, target.y, e.x, e.y) > 22 * 22) chase(e, w, e.def.speed * 1.3 * e.spd(), dt, target.x, target.y);
@@ -81,6 +80,7 @@ const priest: EnemyDef = {
       } else keepDistance(e, w, 110, 170, e.def.speed * e.spd(), dt);
       e.sy = 1 + Math.sin(e.t * 3) * 0.03;
     } else if (e.state === 'rite') {
+      e.animate(dt, 8);
       const r = e.data.rite as { id: string; x: number; y: number };
       if (Math.random() < dt * 25) w.fx.burst(r.x + (Math.random() - 0.5) * 16, r.y, 2, 1, '#5aa0ff', 30, 0.5, 1, -40);
       if (dist2(w.player.x, w.player.y, r.x, r.y) < 22 * 22) {
@@ -106,12 +106,12 @@ const priest: EnemyDef = {
 const fumarole: EnemyDef = {
   id: 'fumarole', name: 'Fumarole', desc: 'A crack that bubbles, then belches slow clouds of gas that drift after you. They are slower than you; kill the crack.',
   hp: 18, r: 8, speed: 0, role: 'turret', cost: 1.3, hitY: 4, mass: 99, noKnock: true, gore: '#6aa040', goreDecal: '#2a3a1a', cast: { max: 2 }, spawnQuiet: true,
-  sprites: () => ({ idle: gridFrames(H.VENT, H.VENT_PAL) }),
+  sprites: () => sprites2('fumarole'),
   init(e) { e.cd = 1.8 + Math.random(); e.data.clouds = []; },
   update(e, w, dt) {
     e.data.clouds = (e.data.clouds as { active: boolean }[]).filter((p) => p.active);
     e.cd -= dt;
-    e.frame = e.cd < 0.7 ? Math.floor(e.t * 10) % 2 : 0;
+    e.setAnim(e.cd < 0.7 ? 'hot' : 'idle'); e.animate(dt, e.cd < 0.7 ? 12 : 4);
     if (e.cd < 0.7 && Math.random() < dt * 20) w.fx.burst(e.x + (Math.random() - 0.5) * 10, e.y, 3, 1, '#a8e070', 30, 0.5, 1, -50);
     if (e.cd <= 0) {
       e.cd = 3.6;

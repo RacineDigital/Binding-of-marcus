@@ -289,8 +289,10 @@ function drawEnemyBody(w: World, ctx: CanvasRenderingContext2D, e: Enemy, sx: nu
       else if (e.mark > 0) { tint = '#c040ff'; tintAmt = 0.3; }
       else if (e.champion) { tint = e.champion === 'armored' ? '#8a8aa8' : e.champion === 'swift' ? '#40c0ff' : '#e04040'; tintAmt = 0.35; }
       // rigged bosses pick their own pose and draw their eyes live
+      // ordinary creatures breathe: a slow, slight swell, each out of step with the rest
+      const br = !e.isBoss && !e.dead && e.freeze <= 0 ? Math.sin(w.time * 2.7 + e.id * 1.3) * 0.03 : 0;
       if (rigged) drawRigged(e, ctx, w, sx, sy, { tint, tintAmt });
-      else spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx, sy: e.sy, alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
+      else spr.draw(ctx, sx, sy - e.z, { flip: e.flip, flash: e.flash > 0 ? (e.isBoss ? 0.5 : 0.85) : 0, sx: e.sx * (1 - br * 0.5), sy: e.sy * (1 + br), alpha: e.alpha < 1 ? e.alpha : undefined, tint, tintAmt });
     }
   }
   if (champ) ctx.restore();

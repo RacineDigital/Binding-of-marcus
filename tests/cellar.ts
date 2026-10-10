@@ -38,7 +38,7 @@ const base = process.env.BASE_URL || 'http://localhost:5173/';
     clear(); pl.x = c.x; pl.y = c.y + 80; const L3 = spawn('lurker'); step(60 * 3.4); out.lurkAloneReveals = L3.state !== 'buried';
 
     // Mildew: glows, then puffs three spore patches; they hurt; killing it dries them up
-    clear(); pl.x = c.x - 120; pl.y = c.y + 60; const M = spawn('mildew'); M.cd = 0.8; step(20); out.mildewSwells = M.frame === 1;
+    clear(); pl.x = c.x - 120; pl.y = c.y + 60; const M = spawn('mildew'); M.cd = 0.8; step(20); out.mildewSwells = M.anim === 'swell';
     step(40); out.mildewPatches = w.creep.filter((k) => k.team === 'enemy').length;
     w.killEnemy(M); step(40); out.mildewDried = w.creep.filter((k) => k.team === 'enemy').length;
 

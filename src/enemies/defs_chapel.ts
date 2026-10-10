@@ -1,4 +1,5 @@
 // Chapter VI enemies: choir, censers, penitents and cherub moths.
+import { sprites2 } from '../art/creatures2';
 import type { EnemyDef } from './enemy';
 import { snap } from '../render/snap';
 import { frames, ramp, hex, glowEye, eye, gridFrames } from '../art/creature';
@@ -27,7 +28,7 @@ const choirboy: EnemyDef = {
 const censer: EnemyDef = {
   id: 'censer', name: 'Swinging Censer', desc: 'Hangs from nothing and swings, puffing smoke in a slow spiral.', hp: 20, r: 7, speed: 0, flying: true, role: 'turret', cost: 1.7, hitY: 18, mass: 99, noKnock: true,
   gore: '#c8a04a', light: [40, '#ffb050'],
-  sprites: () => ({ idle: gridFrames(H.CENSER, H.CENSER_PAL) }),
+  sprites: () => sprites2('censer'),
   init(e) { e.data.ax = e.x; e.data.ay = e.y; e.cd = 0.5; e.data.spin = Math.random() * TAU; },
   update(e, w, dt) {
     const sw = Math.sin(e.t * 1.6) * 0.9;
@@ -41,7 +42,7 @@ const censer: EnemyDef = {
     const ay = sy - e.z;
     ctx.strokeStyle = '#6a5a3a'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(snap(e.data.ax - w.camX), snap(e.data.ay - w.camY - 80)); ctx.lineTo(sx, ay - 20); ctx.stroke();
-    e.sprites.idle[0].draw(ctx, sx, ay, { flash: e.flash > 0 ? 1 : 0 });
+    e.sprites.idle[Math.floor(w.time * 6 + e.id) % e.sprites.idle.length].draw(ctx, sx, ay, { flash: e.flash > 0 ? 1 : 0 });
   },
 };
 

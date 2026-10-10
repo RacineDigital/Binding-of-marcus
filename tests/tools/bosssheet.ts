@@ -1,10 +1,10 @@
 // Contact sheets of every boss: each animation's frames side by side at 3x on a floor-coloured
 // background, with the hitbox drawn over the first frame (circle = body radius, line = hit height).
-//   npx tsx tests/tools/bosssheet.ts [outDir] [id,id,...]   (npm run dev first)
+//   npx tsx tests/tools/bosssheet.ts [outDir] [id,id,...] [enemies]   (npm run dev first; 'enemies' sheets the regular creatures)
 import { chromium } from 'playwright-core';
 import { CHROME } from '../browser';
 import * as fs from 'fs';
-const out = process.argv[2] ?? 'test-output/bosses', only = process.argv[3] ?? '';
+const out = process.argv[2] ?? 'test-output/bosses', only = process.argv[3] ?? '', regular = process.argv[4] === 'enemies';
 (async () => {
   fs.mkdirSync(out, { recursive: true });
   const b = await chromium.launch({ executablePath: CHROME, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -14,7 +14,7 @@ const out = process.argv[2] ?? 'test-output/bosses', only = process.argv[3] ?? '
   const n: number = await p.evaluate(`(async () => {
     const { ALL_ENEMY_DEFS } = await import('/src/enemies/registry.ts'); const { getSprites } = await import('/src/enemies/enemy.ts');
     const only = ${JSON.stringify(only)}.split(',').filter(Boolean);
-    const defs = ALL_ENEMY_DEFS().filter((d) => d.boss && (!only.length || only.includes(d.id)));
+    const defs = ALL_ENEMY_DEFS().filter((d) => (${regular} ? !d.boss : d.boss) && (!only.length || only.includes(d.id)));
     window.__sheets = [];
     for (const d of defs) {
       const set = getSprites(d), S = 3, pad = 10;

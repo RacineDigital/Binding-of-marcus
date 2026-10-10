@@ -1,4 +1,5 @@
 // Chapter I enemies: the cellar's mites, moths, crawlers and nests.
+import { sprites2 } from '../art/creatures2';
 import { EnemyDef, Enemy } from './enemy';
 import { gridFrames, scaledFrames, glowEye } from '../art/creature';
 import * as H from '../art/hand/cellar';
@@ -10,7 +11,7 @@ import type { World } from '../game/world';
 const mite: EnemyDef = {
   id: 'mite', name: 'Ink Mite', desc: 'Buzzes in erratic loops. Harmless alone.', hp: 3, r: 4, speed: 58, flying: true, role: 'swarm', cost: 0.35, hitY: 8,
   gore: '#2a2458', contact: 1,
-  sprites: () => ({ idle: gridFrames(H.MITE, H.MITE_PAL) }),
+  sprites: () => sprites2('mite'),
   init(e) { e.anim = 'idle'; },
   update(e, w, dt) { buzz(e, w, e.def.speed, dt, 0.55); e.animate(dt, 18); },
 };

@@ -3,8 +3,7 @@
 //   the others), Riveter (ranged: a locked aim line, then three rivets down it), Brickback (shield:
 //   a firebrick slab blocks shots from the side it faces).
 import { EnemyDef, Enemy } from './enemy';
-import { gridFrames, scaledFrames } from '../art/creature';
-import * as H from '../art/hand/boiler3';
+import { sprites2 } from '../art/creatures2';
 import { chase, keepDistance, distToPlayer, ringShot, hasLOS } from './ai';
 import { angleTo, angleDiff, dist2 } from '../core/math';
 import { moveBody } from '../rooms/collide';
@@ -20,22 +19,22 @@ const CONE = 0.42, REACH = 125;
 const bellows: EnemyDef = {
   id: 'bellows', name: 'Bellows', desc: 'Swells as it breathes in, then blows: the gust shoves you back and makes fires spit. Step out of its line.',
   hp: 16, r: 8, speed: 30, role: 'special', cost: 1.5, hitY: 9, gore: '#8a5430', goreDecal: '#3a2418', cast: { max: 1 },
-  sprites: () => ({ idle: scaledFrames(H.BELLOWS, H.BELLOWS_PAL, [[1, 1], [1.12, 1.18], [0.9, 0.82]]) }),
-  init(e) { e.cd = 1.4 + Math.random(); e.frame = 0; },
+  sprites: () => sprites2('bellows'),
+  init(e) { e.cd = 1.4 + Math.random(); e.anim = 'idle'; },
   update(e, w, dt) {
     if (e.state === 'idle') {
-      keepDistance(e, w, 70, 120, e.def.speed * e.spd(), dt); e.frame = 0;
+      keepDistance(e, w, 70, 120, e.def.speed * e.spd(), dt); e.setAnim('idle'); e.animate(dt, 4);
       e.flip = w.player.x < e.x;
       e.cd -= dt;
       if (e.cd <= 0 && distToPlayer(e, w) < 150) { e.setState('inhale'); e.data.ga = angleTo(e.x, e.y, w.player.x, w.player.y); w.audio.play('extinguish', { x: e.x, vol: 0.3, pitch: 0.5 }); }
     } else if (e.state === 'inhale') {
       // it can still turn while breathing in; the direction locks when it blows
       e.data.ga = angleTo(e.x, e.y, w.player.x, w.player.y); e.flip = Math.cos(e.data.ga) < 0;
-      e.frame = 1;
+      e.setAnim('suck'); e.frame = Math.min(2, Math.floor(e.st / 0.24));
       if (Math.random() < dt * 30) { const a = e.data.ga + (Math.random() - 0.5) * CONE * 2, d = 40 + Math.random() * 40; w.fx.burst(e.x + Math.cos(a) * d, e.y + Math.sin(a) * d, 6, 1, '#c8b8a0', -60, 0.4, 1, 0); }
       if (e.st > 0.7) { e.setState('blow'); w.audio.play('extinguish', { x: e.x, vol: 0.6, pitch: 0.8 }); }
     } else if (e.state === 'blow') {
-      e.frame = 2;
+      e.setAnim('blow'); e.animate(dt, 12);
       const a = e.data.ga;
       if (Math.random() < dt * 40) { const s = a + (Math.random() - 0.5) * CONE * 2; w.fx.burst(e.x + Math.cos(s) * 14, e.y + Math.sin(s) * 14, 8, 1, '#e8dcc8', 150, 0.5, 1, 0); }
       // the gust shoves you while you stand in it
@@ -67,7 +66,7 @@ const HASTE_R = 100;
 const foreman: EnemyDef = {
   id: 'foreman', name: 'Foreman', desc: 'Blows its whistle to drive the others faster for a few seconds. Steam rises before it blows.',
   hp: 18, r: 7, speed: 32, role: 'special', cost: 1.5, hitY: 13, gore: '#9a4a2a', goreDecal: '#3a1a10', cast: { max: 1, company: 2 },
-  sprites: () => ({ walk: gridFrames(H.FOREMAN, H.FOREMAN_PAL) }),
+  sprites: () => sprites2('foreman'),
   init(e) { e.anim = 'walk'; e.cd = 2 + Math.random(); },
   update(e, w, dt) {
     const pals = others(e, w);
@@ -77,11 +76,11 @@ const foreman: EnemyDef = {
         const a = angleTo(w.player.x, w.player.y, cx, cy);
         chase(e, w, e.def.speed * e.spd(), dt, cx + Math.cos(a) * 30, cy + Math.sin(a) * 30);
       } else keepDistance(e, w, 90, 150, e.def.speed * e.spd(), dt);
-      e.flip = w.player.x < e.x; e.animate(dt, 5);
+      e.flip = w.player.x < e.x; e.setAnim('walk'); e.animate(dt, 6);
       e.cd -= dt;
       if (e.cd <= 0 && pals.some((p) => dist2(p.x, p.y, e.x, e.y) < HASTE_R * HASTE_R)) { e.setState('lift'); w.audio.play('extinguish', { x: e.x, vol: 0.3, pitch: 1.6 }); }
     } else if (e.state === 'lift') {
-      e.sy = 1.12; e.sx = 0.92;
+      e.sy = 1.12; e.sx = 0.92; e.setAnim('lift'); e.animate(dt, 8);
       if (Math.random() < dt * 20) w.fx.smoke(e.x, e.y - e.hitY * 2.2, 1, 'rgba(230,230,240,', 3, 0.5, 20);
       if (e.st > 0.6) {
         e.setState('idle'); e.cd = 5 + Math.random() * 1.5;
@@ -100,17 +99,18 @@ const foreman: EnemyDef = {
 const riveter: EnemyDef = {
   id: 'riveter', name: 'Riveter', desc: 'Plants and aims: the red line follows you, then locks and brightens. Three rivets follow it. Be off the line.',
   hp: 15, r: 8, speed: 46, role: 'shooter', cost: 1.5, hitY: 8, gore: '#5e5e6a', goreDecal: '#2a2a30', cast: { max: 2 },
-  sprites: () => ({ walk: gridFrames(H.RIVETER, H.RIVETER_PAL) }),
+  sprites: () => sprites2('riveter'),
   init(e) { e.anim = 'walk'; e.cd = 1.2 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
-      keepDistance(e, w, 100, 170, e.def.speed * e.spd(), dt); e.animate(dt, 8); e.flip = w.player.x < e.x;
+      keepDistance(e, w, 100, 170, e.def.speed * e.spd(), dt); e.setAnim('walk'); e.animate(dt, 10); e.flip = w.player.x < e.x;
       e.cd -= dt;
       if (e.cd <= 0 && hasLOS(e, w) && distToPlayer(e, w) < 230) { e.setState('aim'); e.data.aim = angleTo(e.x, e.y, w.player.x, w.player.y); w.audio.play('tink', { x: e.x, vol: 0.3, pitch: 0.7 }); }
     } else if (e.state === 'aim') {
       if (e.st < 0.5) e.data.aim = angleTo(e.x, e.y, w.player.x, w.player.y);
       else if (!e.data.locked) { e.data.locked = true; w.audio.play('tink', { x: e.x, vol: 0.5, pitch: 1.4 }); }
       e.data.aimLine = { a: e.data.aim, locked: e.st >= 0.5 };
+      e.setAnim('aim'); e.frame = e.st >= 0.5 ? Math.floor(e.st * 16) % 2 : 1;
       e.flip = Math.cos(e.data.aim) < 0;
       if (e.st > 0.9) { e.setState('fire'); e.data.n = 0; e.data.aimLine = null; }
     } else if (e.state === 'fire') {
@@ -133,7 +133,7 @@ const riveter: EnemyDef = {
 const brickback: EnemyDef = {
   id: 'brickback', name: 'Brickback', desc: 'Its firebrick slab turns shots from the side it faces, and it is slow to turn. Get round it, or hit it after it slams the slab down.',
   hp: 26, r: 9, speed: 28, role: 'heavy', cost: 2, hitY: 11, mass: 2.5, gore: '#a8442a', goreDecal: '#3a1a10', cast: { max: 2 },
-  sprites: () => ({ walk: gridFrames([H.BRICK], H.BRICK_PAL), raise: gridFrames([H.BRICK_RAISE], H.BRICK_PAL) }),
+  sprites: () => sprites2('brickback'),
   init(e) { e.anim = 'walk'; e.data.face = 1; e.cd = 1.5; },
   update(e, w, dt) {
     // it faces left or right, and only changes its mind slowly
@@ -141,7 +141,7 @@ const brickback: EnemyDef = {
     if (want !== e.data.face) { e.data.turnT = (e.data.turnT ?? 0) + dt; if (e.data.turnT > 0.75) { e.data.face = want; e.data.turnT = 0; e.sx = 0.8; } } else e.data.turnT = 0;
     e.flip = e.data.face < 0;
     if (e.state === 'idle') {
-      chase(e, w, e.def.speed * e.spd(), dt); e.setAnim('walk');
+      chase(e, w, e.def.speed * e.spd(), dt); e.setAnim('walk'); e.animate(dt, 5);
       e.cd -= dt;
       if (e.cd <= 0 && distToPlayer(e, w) < 60) { e.setState('raise'); e.setAnim('raise'); w.audio.play('creak', { x: e.x, vol: 0.4 }); }
     } else if (e.state === 'raise') {

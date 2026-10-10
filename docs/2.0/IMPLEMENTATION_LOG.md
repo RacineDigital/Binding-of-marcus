@@ -420,6 +420,20 @@ fewer items overall. Measured with `tests/tools/itemflow.ts` (headless, 200 seed
 - **Ambience** (`mix` per soundscape in `src/audio/ambience.ts`): measured with
   `tests/tools/mixprobe.ts`, each floor's bed was 22-43% of the mix while exploring; trimmed to ~20%.
 
+### Enemy pass (after 3.17.6): cleaner spawns, painted sprites, livelier behaviour
+
+- **Spawning** (`tests/tools/spawnaudit.ts`, 6,287 rooms): no enemies share a tile, stand on a solid
+  tile or start within two tiles of a door, but 9.7% started with their body overlapping a
+  neighbour's and jolted apart when they woke. Rising enemies now separate while they rise; a
+  creature spawned mid-fight (nests, splitters, revives) steps out of any rock or wall to the
+  nearest open spot; finishing the rise lands with a squash and an ink splash.
+- **Sprites** (`src/art/creatures2.ts`): the 14 creatures added in 2.0 plus the Ink Mite, Skull Mote and
+  Swinging Censer are repainted with the shaded painter (as the Gasper and Rag Crawler are) at
+  full size, with 4-6 frame animations per state instead of 1-2 frame hand grids. Their old grids
+  (`hand/cellar2|boiler3|under3|ward3.ts`) are deleted.
+- **Behaviour, every regular enemy**: a slow breathing sway, no flickering about-face (one turn per
+  0.15 s), and stride animations hold still while the creature isn't moving.
+
 ## 5. Known issues
 
 - One randomized e2e check ("the build fights") failed once and passed on re-run: enemies spawn at

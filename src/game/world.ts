@@ -173,7 +173,16 @@ export class World {
   private updateEnemy(e: Enemy, dt: number): void {
     if (e.dead) return;
     e.t += dt;
-    if (e.spawnT > 0) { e.spawnT -= dt; e.flash = Math.max(0, e.flash - dt); return; }
+    if (e.spawnT > 0) {
+      e.spawnT -= dt; e.flash = Math.max(0, e.flash - dt);
+      // fully risen: it lands with a squash and a little splash of the ink it came out of
+      if (e.spawnT <= 0 && !e.def.spawnQuiet && !e.isBoss) {
+        e.sx = 1.28; e.sy = 0.78;
+        this.fx.burst(e.x, e.y - 2, 2, 6, 'rgba(30,24,60,0.9)', 26, 0.35);
+        this.fx.ring(e.x, e.y, Math.max(3, e.r * 0.6), e.r * 1.6, 'rgba(40,32,80,0.7)', 0.22, false);
+      }
+      return;
+    }
     e.flash = Math.max(0, e.flash - dt);
     e.sx += (1 - e.sx) * Math.min(1, dt * 10); e.sy += (1 - e.sy) * Math.min(1, dt * 10);
     // statuses
@@ -196,7 +205,16 @@ export class World {
     if (e.freeze > 0) return;
     e.st += dt;
     if (e.data.hasteT > 0) { e.data.hasteT -= dt; if (Math.random() < dt * 10) this.fx.smoke(e.x, e.y - e.hitY, 1, 'rgba(235,235,245,', 2, 0.4, 16); }
+    const x0 = e.x, y0 = e.y, flip0 = e.flip;
     e.def.update(e, this, dt);
+    if (!e.isBoss) {
+      // no flickering about-face: a creature can't turn round twice in a blink (e.g. with you straight above it)
+      if (e.flip !== flip0) { if (e.t - (e.data.flipT ?? -9) < 0.15) e.flip = flip0; else e.data.flipT = e.t; }
+      // no walking on the spot: a stride animation holds its first frame while the creature isn't moving
+      const moved = Math.hypot(e.x - x0, e.y - y0);
+      e.data.stillT = moved < 0.02 * dt * 60 ? (e.data.stillT ?? 0) + dt : 0;
+      if (e.data.stillT > 0.12 && (e.anim === 'walk' || e.anim === 'run') && e.z <= 0) { e.frame = 0; e.ftime = 0; }
+    }
     if (e.data.tellAt !== undefined) {
       // the tell: a swell and a white pulse while the shot is held
       const k = 1 - (e.data.tellAt - e.t) / TELL;
@@ -209,9 +227,9 @@ export class World {
   private separateEnemies(): void {
     const es = this.enemies;
     for (let i = 0; i < es.length; i++) {
-      const a = es[i]; if (a.hidden || a.def.noSeparate || a.spawnT > 0) continue;
+      const a = es[i]; if (a.hidden || a.def.noSeparate) continue;
       for (let j = i + 1; j < es.length; j++) {
-        const b = es[j]; if (b.hidden || b.def.noSeparate || b.spawnT > 0) continue;
+        const b = es[j]; if (b.hidden || b.def.noSeparate) continue;
         if (a.mode === 'fly' !== (b.mode === 'fly')) continue;
         const dx = b.x - a.x, dy = b.y - a.y, rr = (a.r + b.r) * 0.85;
         const d2 = dx * dx + dy * dy;

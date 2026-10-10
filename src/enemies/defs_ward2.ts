@@ -2,8 +2,7 @@
 //   Spilled Pills (swarm: rolling capsules that bounce), Monitor (turret: a sine-wave stream),
 //   Mourner (support: tethers one ally and makes it untouchable until the Mourner is hit).
 import type { EnemyDef, Enemy } from './enemy';
-import { gridFrames } from '../art/creature';
-import * as H from '../art/hand/ward3';
+import { sprites2 } from '../art/creatures2';
 import { keepDistance, chase, distToPlayer, aimAngle, shoot } from './ai';
 import { angleTo, dist2 } from '../core/math';
 import type { World } from '../game/world';
@@ -15,7 +14,7 @@ import type { World } from '../game/world';
 const pill: EnemyDef = {
   id: 'pill', name: 'Spilled Pills', desc: 'Capsules that roll in straight lines and bounce off walls. They wobble before they turn toward you.',
   hp: 4, r: 4, speed: 78, role: 'swarm', cost: 0.35, hitY: 4, gore: '#e8e0d8', goreDecal: '#b04848', contact: 1,
-  sprites: () => ({ roll: gridFrames(H.PILL, H.PILL_PAL) }),
+  sprites: () => sprites2('pill'),
   init(e) { e.anim = 'roll'; e.data.a = Math.random() * Math.PI * 2; e.cd = 1 + Math.random() * 1.5; },
   update(e, w, dt) {
     if (e.state === 'idle') {
@@ -40,17 +39,17 @@ const pill: EnemyDef = {
 const monitor: EnemyDef = {
   id: 'monitor', name: 'Monitor', desc: 'Its screen flashes red, then it sends a weaving stream of blips that all follow one path. Step out of the lane.',
   hp: 18, r: 7, speed: 0, role: 'turret', cost: 1.4, hitY: 16, mass: 99, noKnock: true, gore: '#4a5a5a', goreDecal: '#1a2424', cast: { max: 2 },
-  sprites: () => ({ idle: gridFrames(H.MONITOR, H.MONITOR_PAL) }),
+  sprites: () => sprites2('monitor'),
   init(e) { e.cd = 1.5 + Math.random(); },
   update(e, w, dt) {
     if (e.state === 'idle') {
-      e.frame = 0; e.cd -= dt;
+      e.setAnim('idle'); e.animate(dt, 5); e.cd -= dt;
       if (e.cd <= 0) { e.setState('alarm'); e.data.a = aimAngle(e, w); w.audio.play('beep', { x: e.x, vol: 0.4 }); }
     } else if (e.state === 'alarm') {
-      e.frame = Math.floor(e.st * 10) % 2;
+      e.setAnim('alarm'); e.frame = Math.floor(e.st * 10) % 2;
       if (e.st > 0.6) { e.setState('stream'); e.data.n = 0; e.data.a = angleTo(e.x, e.y, w.player.x, w.player.y); }
     } else if (e.state === 'stream') {
-      e.frame = 1;
+      e.setAnim('stream'); e.animate(dt, 10);
       const want = 1 + Math.floor(e.st / 0.12);
       while (e.data.n < Math.min(6, want)) { e.data.n++; shoot(e, w, e.data.a, 120, { wig: 16, shape: 'water', r: 3.2 }); w.audio.play('beep', { x: e.x, vol: 0.25, pitch: 1.4 }); }
       if (e.data.n >= 6 && e.st > 0.8) { e.setState('idle'); e.cd = 2.4 + Math.random() * 0.6; }
@@ -65,13 +64,13 @@ const monitor: EnemyDef = {
 const mourner: EnemyDef = {
   id: 'mourner', name: 'Mourner', desc: 'Kneels beside one of the others and holds it: while the pale thread holds, that one cannot be hurt. Hit the Mourner to break it.',
   hp: 16, r: 6, speed: 34, role: 'special', cost: 1.6, hitY: 12, gore: '#c8c0d0', goreDecal: '#4a4458', cast: { max: 1, company: 1 },
-  sprites: () => ({ stand: gridFrames([H.MOURNER[0]], H.MOURNER_PAL), kneel: gridFrames([H.MOURNER[1]], H.MOURNER_PAL) }),
+  sprites: () => sprites2('mourner'),
   init(e) { e.anim = 'stand'; e.data.ward = null; },
   update(e, w, dt) {
     const ward = e.data.ward as Enemy | null;
     if (ward && (ward.dead || e.state !== 'kneel')) release(e);
     if (e.state === 'idle') {
-      e.setAnim('stand');
+      e.setAnim('stand'); e.animate(dt, 3);
       const cands = w.enemies.filter((x) => x !== e && !x.dead && !x.isBoss && !x.friendly && x.spawnT <= 0 && x.def.id !== 'mourner' && !x.data.tetherBy && !x.invuln);
       const t = cands.sort((a, b) => dist2(a.x, a.y, e.x, e.y) - dist2(b.x, b.y, e.x, e.y))[0];
       if (t && (e.data.flinch ?? 0) <= 0) {
@@ -81,6 +80,7 @@ const mourner: EnemyDef = {
       e.data.flinch = (e.data.flinch ?? 0) - dt;
       e.flip = w.player.x < e.x;
     } else if (e.state === 'kneel') {
+      e.animate(dt, 5);
       const t = e.data.ward as Enemy | null;
       if (!t) { e.setState('idle'); return; }
       // it holds its charge while it stays near; if the charge walks off, it follows
